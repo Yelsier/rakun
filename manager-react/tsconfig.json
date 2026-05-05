@@ -18,9 +18,6 @@
       "@rakun-kit/core/internal-content-types/*": [
         "../core/dist/esm/internal-content-types/*.d.ts"
       ],
-      "@rakun-kit/core/lib/*": ["../core/dist/esm/lib/*.d.ts"],
-      "@rakun-kit/core/lib/fields/*": ["../core/dist/esm/lib/fields/*.d.ts"],
-      "@rakun-kit/core/lib/utils/*": ["../core/dist/esm/lib/utils/*.d.ts"],
       "@rakun-kit/core/types": ["../core/dist/esm/lib/types/index.d.ts"]
     },
     "declaration": true,

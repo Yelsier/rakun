@@ -8,11 +8,11 @@ Typical imports:
 
 ```ts
 import {
+  ContentType,
+  Fields,
   rakunBootstrap,
   ensureRakunInitialized,
 } from "@rakun-kit/core";
-import ContentType from "@rakun-kit/core/lib/ContentType";
-import { Fields } from "@rakun-kit/core/lib/fields/index";
 ```
 
 The main entrypoint exports:
@@ -31,9 +31,6 @@ Relevant subpaths:
 - `@rakun-kit/core/client`: client-facing types and utilities.
 - `@rakun-kit/core/logger`: logger.
 - `@rakun-kit/core/errors`: application errors.
-- `@rakun-kit/core/lib/ContentType`: `ContentType` class.
-- `@rakun-kit/core/lib/fields/index`: `Fields` factory.
-- `@rakun-kit/core/lib/*`, `@rakun-kit/core/lib/fields/*`, `@rakun-kit/core/lib/utils/*`: internal APIs published by the package.
 - `@rakun-kit/core/types`: types derived from content types.
 
 ## Bootstrap

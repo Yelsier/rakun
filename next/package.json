@@ -28,8 +28,10 @@
   "files": [
     "dist"
   ],
+  "dependencies": {
+    "@rakun-kit/core": "^1.0.0"
+  },
   "peerDependencies": {
-    "@rakun-kit/core": "^1.0.0",
     "@rakun-kit/manager-react": "^1.0.0",
     "@rakun-kit/trpc": "^1.0.0",
     "@trpc/server": "^11.10.0",

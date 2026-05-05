@@ -27,6 +27,8 @@ import {
   normalizePathSegments,
 } from "./shared";
 
+export * from "@rakun-kit/core";
+
 export type RakunNextOptions = {
   bootstrap?: RakunBootstrapOptions;
   healthPath?: string | false;

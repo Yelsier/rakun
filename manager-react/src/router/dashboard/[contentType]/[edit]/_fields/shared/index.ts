@@ -1,9 +1,9 @@
 import type { MaybeTranslatableValue, TranslatableValue } from '@rakun-kit/core/types'
 import type { SerializedEditorState } from 'lexical'
 import { useEffect, useState } from 'react'
-import type { ListFieldValueItem } from '@rakun-kit/core/lib/fields/List'
-import { RelationFieldValue } from '@rakun-kit/core/lib/fields/Relation'
-import { LinkfieldValue } from '@rakun-kit/core/lib/fields/Link'
+import type { ListFieldValueItem } from '@rakun-kit/core'
+import { RelationFieldValue } from '@rakun-kit/core'
+import { LinkfieldValue } from '@rakun-kit/core'
 
 import { deepEqual } from '@/helpers/deepEqual'
 import { useEditErrorStore } from '@/hooks/app-store'

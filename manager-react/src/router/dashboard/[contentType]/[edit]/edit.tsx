@@ -12,7 +12,7 @@ import {
   NotepadText,
   ScrollText,
 } from "lucide-react";
-import { EncodedField } from "@rakun-kit/core/lib/fields/Field";
+import { EncodedField } from "@rakun-kit/core";
 import { useQueries } from "@tanstack/react-query";
 
 import type { FieldRef } from "./ContentTypeEdit";

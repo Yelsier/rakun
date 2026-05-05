@@ -42,8 +42,7 @@ with Express and Next.js integrations available.
 Define content types in application code:
 
 ```ts
-import ContentType from "@rakun-kit/core/lib/ContentType";
-import { Fields } from "@rakun-kit/core/lib/fields/index";
+import { ContentType, Fields } from "@rakun-kit/core";
 
 export const Post = new ContentType({
   name: "Post",

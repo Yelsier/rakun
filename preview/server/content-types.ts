@@ -1,5 +1,4 @@
-import ContentType from "@rakun-kit/core/lib/ContentType";
-import { Fields } from "@rakun-kit/core/lib/fields/index";
+import { ContentType, Fields } from "@rakun-kit/core";
 
 export const Header = new ContentType({
   name: "Header",

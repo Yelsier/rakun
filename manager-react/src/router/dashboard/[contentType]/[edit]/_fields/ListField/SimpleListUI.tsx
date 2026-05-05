@@ -2,8 +2,8 @@
 
 import { CheckIcon, Plus, Trash } from 'lucide-react'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { EncodedSimpleListField } from '@rakun-kit/core/lib/fields/SimpleList'
-import type { EncodedRelationField } from '@rakun-kit/core/lib/fields/Relation'
+import type { EncodedSimpleListField } from '@rakun-kit/core'
+import type { EncodedRelationField } from '@rakun-kit/core'
 import type { TranslatableValue } from '@rakun-kit/core/types'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'

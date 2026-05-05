@@ -2,7 +2,7 @@
 
 import { ChevronsUpDown, GripVertical, Plus, Trash } from 'lucide-react'
 import React, { useCallback, useEffect, useRef } from 'react'
-import type { ListFieldValueItem } from '@rakun-kit/core/lib/fields/List'
+import type { ListFieldValueItem } from '@rakun-kit/core'
 
 import type { ListPropsRef } from '.'
 import { fieldsMap, type FieldRef } from '../../ContentTypeEdit'

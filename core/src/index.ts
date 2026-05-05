@@ -133,6 +133,22 @@ export type {
   OutputProxy,
 } from "./api/proxies";
 export { getRakunBootstrapOptions } from "./bootstrapState";
+export { default as ContentType } from "./lib/ContentType";
+export * from "./lib/fields";
+export * from "./lib/fields/Boolean";
+export * from "./lib/fields/ContentReference";
+export * from "./lib/fields/Date";
+export * from "./lib/fields/Field";
+export * from "./lib/fields/File";
+export * from "./lib/fields/Iterator";
+export * from "./lib/fields/Link";
+export * from "./lib/fields/List";
+export * from "./lib/fields/Number";
+export * from "./lib/fields/Relation";
+export * from "./lib/fields/Select";
+export * from "./lib/fields/SelfRelation";
+export * from "./lib/fields/SimpleList";
+export * from "./lib/fields/String";
 
 export {
   type AnyRakunOperation,
@@ -178,15 +194,19 @@ export {
   getPermissionList,
   hasPermissions,
   mapPermissions,
+  PermissionsList,
   type Permission,
 } from "./lib/Permissions";
 export type { MaybeTranslatableValue, TranslatableValue } from "./lib/types";
+export { getListField } from "./lib/utils/getListField";
 export { getTranslation } from "./lib/utils/getTranslation";
+export { Id, isId, type Id as IdType } from "./lib/utils/id";
+export { isTranslatableObject } from "./lib/utils/isTranslatableObject";
+export { slugify } from "./lib/utils/slugify";
 export { Language, ManagerUser, Seo } from "./internal-content-types";
 export type { LanguageSchema } from "./internal-content-types/Language";
 export type { ManagerUserSchema } from "./internal-content-types/ManagerUser";
 export type { EncodedContentType } from "./lib/ContentType";
-export type { FileOptimizeOptions } from "./lib/fields/File";
 export type { ListOutput } from "./schemas/manager/list";
 export type {
   FinalizeUploadInput,

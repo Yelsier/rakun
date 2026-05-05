@@ -1,7 +1,7 @@
 import type { RefAttributes } from 'react'
 import type z from 'zod'
-import type { FieldUIType } from '@rakun-kit/core/lib/fields/Field'
-import type { EncodedContentReferenceField } from '@rakun-kit/core/lib/fields/ContentReference'
+import type { FieldUIType } from '@rakun-kit/core'
+import type { EncodedContentReferenceField } from '@rakun-kit/core'
 import { useQuery } from '@tanstack/react-query'
 
 import type { FieldRef } from '../../ContentTypeEdit'

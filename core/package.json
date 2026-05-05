@@ -89,24 +89,6 @@
       "require": "./dist/cjs/internal-content-types/*.js",
       "default": "./dist/esm/internal-content-types/*.js"
     },
-    "./lib/*": {
-      "types": "./dist/esm/lib/*.d.ts",
-      "import": "./dist/esm/lib/*.js",
-      "require": "./dist/cjs/lib/*.js",
-      "default": "./dist/esm/lib/*.js"
-    },
-    "./lib/fields/*": {
-      "types": "./dist/esm/lib/fields/*.d.ts",
-      "import": "./dist/esm/lib/fields/*.js",
-      "require": "./dist/cjs/lib/fields/*.js",
-      "default": "./dist/esm/lib/fields/*.js"
-    },
-    "./lib/utils/*": {
-      "types": "./dist/esm/lib/utils/*.d.ts",
-      "import": "./dist/esm/lib/utils/*.js",
-      "require": "./dist/cjs/lib/utils/*.js",
-      "default": "./dist/esm/lib/utils/*.js"
-    },
     "./types": {
       "types": "./dist/esm/lib/types/index.d.ts",
       "import": "./dist/esm/lib/types/index.js",
