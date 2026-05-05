@@ -1,6 +1,6 @@
 {
   "name": "@rakun-kit/next",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Next.js adapter for Rakun APIs, manager UI, and media endpoints.",
   "license": "MIT",
   "author": {
@@ -29,7 +29,7 @@
     "dist"
   ],
   "dependencies": {
-    "@rakun-kit/core": "^1.0.0"
+    "@rakun-kit/core": "^1.0.1"
   },
   "peerDependencies": {
     "@rakun-kit/manager-react": "^1.0.0",
@@ -76,6 +76,12 @@
       "import": "./dist/esm/manager.js",
       "require": "./dist/cjs/manager.js",
       "default": "./dist/esm/manager.js"
+    },
+    "./internal-content-types": {
+      "types": "./dist/esm/internal-content-types.d.ts",
+      "import": "./dist/esm/internal-content-types.js",
+      "require": "./dist/cjs/internal-content-types.js",
+      "default": "./dist/esm/internal-content-types.js"
     }
   }
 }

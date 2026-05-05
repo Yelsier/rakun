@@ -10,6 +10,9 @@
       "@rakun-kit/core/contracts": ["../core/dist/esm/contracts.d.ts"],
       "@rakun-kit/core/errors": ["../core/dist/esm/lib/errors/index.d.ts"],
       "@rakun-kit/core/logger": ["../core/dist/esm/lib/Logger.d.ts"],
+      "@rakun-kit/core/internal-content-types": [
+        "../core/dist/esm/internal-content-types/index.d.ts"
+      ],
       "@rakun-kit/manager-react": ["../manager-react/dist/esm/index.d.ts"],
       "@rakun-kit/manager-react/client/http": [
         "../manager-react/dist/esm/client/http.d.ts"
