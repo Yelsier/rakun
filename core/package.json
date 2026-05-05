@@ -1,0 +1,110 @@
+{
+  "name": "@rakun/core",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "scripts": {
+    "build": "rm -rf dist && npm run build:esm && npm run build:cjs",
+    "build:esm": "tsc -b --force tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
+    "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../scripts/write-cjs-package-json.mjs dist/cjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@simplewebauthn/server": "^13.3.0",
+    "bcrypt": "^6.0.0",
+    "otpauth": "^9.5.0",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.34.5",
+    "zod": "^4.3.6"
+  },
+  "peerDependencies": {
+    "mongodb": "^7.1.1"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./logger": {
+      "types": "./dist/esm/lib/Logger.d.ts",
+      "import": "./dist/esm/lib/Logger.js",
+      "require": "./dist/cjs/lib/Logger.js",
+      "default": "./dist/esm/lib/Logger.js"
+    },
+    "./errors": {
+      "types": "./dist/esm/lib/errors/index.d.ts",
+      "import": "./dist/esm/lib/errors/index.js",
+      "require": "./dist/cjs/lib/errors/index.js",
+      "default": "./dist/esm/lib/errors/index.js"
+    },
+    "./contracts": {
+      "types": "./dist/esm/contracts.d.ts",
+      "import": "./dist/esm/contracts.js",
+      "require": "./dist/cjs/contracts.js",
+      "default": "./dist/esm/contracts.js"
+    },
+    "./manager": {
+      "types": "./dist/esm/manager.d.ts",
+      "import": "./dist/esm/manager.js",
+      "require": "./dist/cjs/manager.js",
+      "default": "./dist/esm/manager.js"
+    },
+    "./client": {
+      "types": "./dist/esm/client.d.ts",
+      "import": "./dist/esm/client.js",
+      "require": "./dist/cjs/client.js",
+      "default": "./dist/esm/client.js"
+    },
+    "./internal-content-types": {
+      "types": "./dist/esm/internal-content-types/index.d.ts",
+      "import": "./dist/esm/internal-content-types/index.js",
+      "require": "./dist/cjs/internal-content-types/index.js",
+      "default": "./dist/esm/internal-content-types/index.js"
+    },
+    "./internal-content-types/*": {
+      "types": "./dist/esm/internal-content-types/*.d.ts",
+      "import": "./dist/esm/internal-content-types/*.js",
+      "require": "./dist/cjs/internal-content-types/*.js",
+      "default": "./dist/esm/internal-content-types/*.js"
+    },
+    "./lib/*": {
+      "types": "./dist/esm/lib/*.d.ts",
+      "import": "./dist/esm/lib/*.js",
+      "require": "./dist/cjs/lib/*.js",
+      "default": "./dist/esm/lib/*.js"
+    },
+    "./lib/fields/*": {
+      "types": "./dist/esm/lib/fields/*.d.ts",
+      "import": "./dist/esm/lib/fields/*.js",
+      "require": "./dist/cjs/lib/fields/*.js",
+      "default": "./dist/esm/lib/fields/*.js"
+    },
+    "./lib/utils/*": {
+      "types": "./dist/esm/lib/utils/*.d.ts",
+      "import": "./dist/esm/lib/utils/*.js",
+      "require": "./dist/cjs/lib/utils/*.js",
+      "default": "./dist/esm/lib/utils/*.js"
+    },
+    "./types": {
+      "types": "./dist/esm/lib/types/index.d.ts",
+      "import": "./dist/esm/lib/types/index.js",
+      "require": "./dist/cjs/lib/types/index.js",
+      "default": "./dist/esm/lib/types/index.js"
+    }
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/qrcode": "^1.5.6",
+    "mongodb": "^7.1.1"
+  }
+}

@@ -1,0 +1,76 @@
+import { RouteMap } from "../../../internal-content-types";
+import ContentType from "../../../lib/ContentType";
+import { DBOutput, DataFront } from "../../../lib/types";
+import { hasKeys } from "../../../lib/utils/hasKeys";
+import { getMongoService } from "../../../orm";
+import { getLanguages } from "../getLanguages";
+
+export const populateLinks = async <T extends ContentType>(
+  data: DBOutput<T>,
+): Promise<DataFront<T>> => {
+  const db = await getMongoService();
+
+  const languages = await getLanguages();
+
+  const populateValue = async (value: unknown): Promise<unknown> => {
+    // arrays: procesar en paralelo cada elemento
+    if (Array.isArray(value)) {
+      return Promise.all(value.map(populateValue));
+    }
+
+    if (
+      value &&
+      typeof value === "object" &&
+      "routeId" in value &&
+      "contentTypeId" in value
+    ) {
+      const routeId = value.routeId as string;
+      const contentTypeId = value.contentTypeId as string;
+
+      const items = (
+        await db.list(RouteMap, {
+          filter: {
+            routeId,
+            contentTypeId,
+          },
+          options: { limit: "all" },
+        })
+      ).items;
+
+      const populated = Object.fromEntries(
+        items
+          .map((item) => {
+            const lang = languages.find((l) => l._id === item.languageId);
+            return [
+              lang ? lang.code : languages.find((l) => l.default)?.code || "",
+              item.path,
+            ];
+          })
+          .concat([["_tag", "Translatable"]]),
+      );
+
+      if (!populated) return value;
+      return await populateLinks(populated as DBOutput<T>);
+    }
+
+    if (hasKeys(value)) {
+      const entries = Object.entries(value);
+      return Object.fromEntries(
+        await Promise.all(
+          entries.map(async ([k, v]) => [k, await populateValue(v)]),
+        ),
+      );
+    }
+
+    return value;
+  };
+
+  const entries = Object.entries(data);
+  const result = Object.fromEntries(
+    await Promise.all(
+      entries.map(async ([k, v]) => [k, await populateValue(v)]),
+    ),
+  );
+
+  return result as DataFront<T>;
+};

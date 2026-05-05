@@ -1,0 +1,2 @@
+export { useMedia } from '@/media'
+

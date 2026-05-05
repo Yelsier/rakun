@@ -1,0 +1,36 @@
+{
+  "name": "rakun-manual",
+  "private": true,
+  "workspaces": [
+    "core",
+    "trpc",
+    "express",
+    "next",
+    "s3",
+    "manager-react",
+    "preview"
+  ],
+  "scripts": {
+    "clean": "rm -rf core/dist trpc/dist express/dist next/dist s3/dist manager-react/dist",
+    "build": "npm run clean && npm run build --workspace @rakun/core && npm run build --workspace @rakun/trpc && npm run build --workspace @rakun/manager-react && npm run build --workspace @rakun/express && npm run build --workspace @rakun/next && npm run build --workspace @rakun/s3",
+    "build:esm": "npm run build:esm --workspace @rakun/core && npm run build:esm --workspace @rakun/trpc && npm run build:esm --workspace @rakun/express && npm run build:esm --workspace @rakun/manager-react && npm run build:esm --workspace @rakun/next && npm run build:esm --workspace @rakun/s3",
+    "build:cjs": "npm run build:cjs --workspace @rakun/core && npm run build:cjs --workspace @rakun/trpc && npm run build:cjs --workspace @rakun/express && npm run build:cjs --workspace @rakun/manager-react && npm run build:cjs --workspace @rakun/next && npm run build:cjs --workspace @rakun/s3",
+    "build:core": "npm run build --workspace @rakun/core",
+    "build:trpc": "npm run build --workspace @rakun/trpc",
+    "build:express": "npm run build --workspace @rakun/express",
+    "build:next": "npm run build --workspace @rakun/next",
+    "build:s3": "npm run build --workspace @rakun/s3",
+    "build:manager-react": "npm run build --workspace @rakun/manager-react",
+    "preview": "npm run dev --workspace @rakun/preview",
+    "preview:api": "npm run dev:api --workspace @rakun/preview",
+    "preview:web": "npm run dev:web --workspace @rakun/preview"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.0",
+    "@types/qrcode": "^1.5.6",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.4"
+  }
+}

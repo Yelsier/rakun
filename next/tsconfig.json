@@ -1,0 +1,42 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "ignoreDeprecations": "6.0",
+    "types": ["node"],
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "rootDir": "..",
+    "outDir": "dist",
+    "noEmit": true,
+    "paths": {
+      "@rakun/core": ["../core/src/index.ts"],
+      "@rakun/core/contracts": ["../core/src/contracts.ts"],
+      "@rakun/core/errors": ["../core/src/lib/errors/index.ts"],
+      "@rakun/core/logger": ["../core/src/lib/Logger.ts"],
+      "@rakun/manager-react": ["../manager-react/src/index.ts"],
+      "@rakun/manager-react/client/http": [
+        "../manager-react/src/client/http.ts"
+      ],
+      "@rakun/manager-react/client/request": [
+        "../manager-react/src/client/request.ts"
+      ],
+      "@rakun/manager-react/app/runtime-app": [
+        "../manager-react/src/app/runtime-app.tsx"
+      ],
+      "@rakun/manager-react/link": ["../manager-react/src/link.tsx"],
+      "@rakun/trpc": ["../trpc/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "ignoreDeprecations": "6.0",
+    "types": ["node"],
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "rootDir": "..",
+    "outDir": "dist",
+    "noEmit": true,
+    "paths": {
+      "@rakun/core": ["../core/src/index.ts"],
+      "@rakun/core/contracts": ["../core/src/contracts.ts"],
+      "@rakun/core/errors": ["../core/src/lib/errors/index.ts"],
+      "@rakun/core/logger": ["../core/src/lib/Logger.ts"],
+      "@rakun/trpc": ["../trpc/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

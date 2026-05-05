@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "lib": ["ES2021", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@rakun/core": ["../core/dist/esm/index.d.ts"],
+      "@rakun/core/contracts": ["../core/dist/esm/contracts.d.ts"],
+      "@rakun/core/client": ["../core/dist/esm/client.d.ts"],
+      "@rakun/core/manager": ["../core/dist/esm/manager.d.ts"],
+      "@rakun/core/internal-content-types": [
+        "../core/dist/esm/internal-content-types/index.d.ts"
+      ],
+      "@rakun/core/internal-content-types/*": [
+        "../core/dist/esm/internal-content-types/*.d.ts"
+      ],
+      "@rakun/core/lib/*": ["../core/dist/esm/lib/*.d.ts"],
+      "@rakun/core/lib/fields/*": ["../core/dist/esm/lib/fields/*.d.ts"],
+      "@rakun/core/lib/utils/*": ["../core/dist/esm/lib/utils/*.d.ts"],
+      "@rakun/core/types": ["../core/dist/esm/lib/types/index.d.ts"]
+    },
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "outDir": "dist",
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": []
+}

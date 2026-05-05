@@ -1,0 +1,33 @@
+import type { RefAttributes } from 'react'
+import type z from 'zod'
+import type { FieldUIType } from '@rakun/core/lib/fields/Field'
+import type { EncodedRelationField } from '@rakun/core/lib/fields/Relation'
+
+import type { FieldRef } from '../../ContentTypeEdit'
+import MissingUI from '../Missing'
+import ContentTypeUI from './ContentTypeUI'
+import { DefaultProps } from '../shared'
+
+export type RelationProps = EncodedRelationField &
+  DefaultProps & {
+    collapsible?: boolean
+  }
+
+export type RelationPropsRef = RelationProps & RefAttributes<FieldRef>
+
+const typeMap: {
+  [key in z.infer<typeof FieldUIType>]?: React.FC<RelationPropsRef>
+} = {
+  ContentType: ContentTypeUI,
+}
+
+const RelationField = (config: RelationPropsRef) => {
+  const FieldComponent = typeMap[config.config.ui]
+
+  if (!FieldComponent) {
+    return <MissingUI field={config.config} />
+  }
+
+  return <FieldComponent {...config} />
+}
+export default RelationField

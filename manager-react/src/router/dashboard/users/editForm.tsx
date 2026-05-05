@@ -1,0 +1,216 @@
+'use client'
+
+import type { ManagerRoleManager, ManagerUserInput } from '@rakun/core/internal-content-types'
+import { ManagerUser } from '@rakun/core/internal-content-types'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
+import { X } from 'lucide-react'
+
+import type { ManagerUserRecord } from './columns'
+
+import { useManagerMutation, useManagerQuery } from '@/client/react'
+import { Button } from '@/components/ui/button'
+import { DialogFooter } from '@/components/ui/dialog'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+type Props = {
+  defaultValues?: ManagerUserRecord
+  refetch: () => void
+  setOpen: (open: boolean) => void
+}
+
+export function EditUserForm({ defaultValues, refetch, setOpen }: Props) {
+  const rolesQuery = useManagerQuery({
+    name: 'manager.list',
+    input: {
+      contentType: 'ManagerRole',
+      query: { options: { limit: 'all' } },
+    },
+  })
+  const createMutation = useManagerMutation('manager.create')
+  const updateMutation = useManagerMutation('manager.update')
+
+  const form = useForm<ManagerUserInput>({
+    resolver: zodResolver(ManagerUser.getInputSchema()),
+    defaultValues: {
+      email: defaultValues?.email || '',
+      password: '',
+      user: defaultValues?.user || '',
+      role: defaultValues?.role
+        ? {
+            contentType: 'ManagerRole',
+            _id: defaultValues.role._id,
+            type: 'existing',
+          }
+        : undefined,
+      _type: 'ManagerUser',
+      twoFactorEnabled: false,
+    },
+  })
+
+  useEffect(() => {
+    form.reset({
+      email: defaultValues?.email || '',
+      password: '',
+      user: defaultValues?.user || '',
+      role: defaultValues?.role
+        ? {
+            contentType: 'ManagerRole',
+            _id: defaultValues.role._id,
+            type: 'existing',
+          }
+        : undefined,
+      _type: 'ManagerUser',
+      twoFactorEnabled: false,
+    })
+  }, [defaultValues, form])
+
+  const onSubmit = async (values: ManagerUserInput) => {
+    try {
+      if (defaultValues?._id) {
+        await updateMutation.mutateAsync({
+          contentType: 'ManagerUser',
+          id: defaultValues._id,
+          data: values,
+        })
+      } else {
+        await createMutation.mutateAsync({
+          contentType: 'ManagerUser',
+          data: values,
+        })
+      }
+
+      refetch()
+      setOpen(false)
+      toast.success(
+        defaultValues?._id
+          ? 'User updated successfully!'
+          : 'User created successfully!',
+      )
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error saving user')
+    }
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit((values) => void onSubmit(values))} className='space-y-8'>
+        <FormField
+          control={form.control}
+          name='email'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input autoComplete='off' placeholder='user@example.com' {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name='user'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Username</FormLabel>
+              <FormControl>
+                <Input autoComplete='off' placeholder='Username' {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name='password'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input
+                  autoComplete='off'
+                  type='password'
+                  placeholder='Secret password'
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name='role'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Role</FormLabel>
+              <FormControl>
+                <div className='flex items-center gap-2'>
+                  {field.value ? (
+                    <Button
+                      size='icon'
+                      variant='ghost'
+                      onClick={(event) => {
+                        event.preventDefault()
+                        field.onChange(null)
+                      }}
+                    >
+                      <X />
+                    </Button>
+                  ) : null}
+                  <Select
+                    onValueChange={(value) =>
+                      field.onChange({
+                        contentType: 'ManagerRole',
+                        _id: value,
+                        type: 'existing',
+                      })
+                    }
+                    value={field.value?._id || ''}
+                  >
+                    <SelectTrigger className='w-full'>
+                      <SelectValue placeholder='Select role' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(rolesQuery.data?.items as ManagerRoleManager[] | undefined)?.map(
+                        (role) => (
+                          <SelectItem key={role._id} value={role._id}>
+                            <span>{role.name}</span>
+                          </SelectItem>
+                        ),
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <DialogFooter>
+          <Button type='submit' loading={createMutation.isPending || updateMutation.isPending}>
+            Save
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  )
+}

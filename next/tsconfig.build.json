@@ -1,0 +1,38 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "rootDir": "src",
+    "outDir": "dist/esm",
+    "paths": {
+      "@rakun/core": ["../core/dist/esm/index.d.ts"],
+      "@rakun/core/contracts": ["../core/dist/esm/contracts.d.ts"],
+      "@rakun/core/errors": ["../core/dist/esm/lib/errors/index.d.ts"],
+      "@rakun/core/logger": ["../core/dist/esm/lib/Logger.d.ts"],
+      "@rakun/manager-react": ["../manager-react/dist/esm/index.d.ts"],
+      "@rakun/manager-react/client/http": [
+        "../manager-react/dist/esm/client/http.d.ts"
+      ],
+      "@rakun/manager-react/client/request": [
+        "../manager-react/dist/esm/client/request.d.ts"
+      ],
+      "@rakun/manager-react/app/runtime-app": [
+        "../manager-react/dist/esm/app/runtime-app.d.ts"
+      ],
+      "@rakun/manager-react/state/navigation": [
+        "../manager-react/dist/esm/state/navigation.d.ts"
+      ],
+      "@rakun/manager-react/link": ["../manager-react/dist/esm/link.d.ts"],
+      "@rakun/trpc": ["../trpc/dist/esm/index.d.ts"]
+    }
+  },
+  "references": [
+    {
+      "path": "../core/tsconfig.build.json"
+    },
+    {
+      "path": "../trpc/tsconfig.build.json"
+    }
+  ]
+}

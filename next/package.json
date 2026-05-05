@@ -1,0 +1,67 @@
+{
+  "name": "@rakun/next",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "scripts": {
+    "build": "rm -rf dist && npm run build:esm && npm run build:cjs",
+    "build:esm": "tsc -b --force tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
+    "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../scripts/write-cjs-package-json.mjs dist/cjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "peerDependencies": {
+    "@rakun/core": "^1.0.0",
+    "@rakun/manager-react": "^1.0.0",
+    "@rakun/trpc": "^1.0.0",
+    "@trpc/server": "^11.10.0",
+    "next": ">=13.0.0",
+    "react": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@rakun/manager-react": {
+      "optional": true
+    },
+    "@rakun/trpc": {
+      "optional": true
+    },
+    "@trpc/server": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./trpc": {
+      "types": "./dist/esm/trpc.d.ts",
+      "import": "./dist/esm/trpc.js",
+      "require": "./dist/cjs/trpc.js",
+      "default": "./dist/esm/trpc.js"
+    },
+    "./media": {
+      "types": "./dist/esm/media.d.ts",
+      "import": "./dist/esm/media.js",
+      "require": "./dist/cjs/media.js",
+      "default": "./dist/esm/media.js"
+    },
+    "./manager": {
+      "types": "./dist/esm/manager.d.ts",
+      "import": "./dist/esm/manager.js",
+      "require": "./dist/cjs/manager.js",
+      "default": "./dist/esm/manager.js"
+    }
+  }
+}

@@ -1,0 +1,109 @@
+import type { Db } from "mongodb";
+import { ZodError } from "zod";
+
+import {
+  checkFailureCase,
+  DbError,
+  DbErrorConflict,
+  DbErrorInvalidData,
+  DbErrorNotFound,
+  DbErrorUnknown,
+} from "../dbService";
+import { transformStringToObjectIds } from "../utils/transformStringToObjectIds";
+import { transformObjectIdsToStrings } from "../utils/transformObjectIdsToStrings";
+import { deepDeleteNulls } from "../utils/deepDeleteNulls";
+import ContentType from "../../lib/ContentType";
+import { DataInput, DBOutput } from "../../lib/types";
+
+export const createHandler =
+  (db: Db) =>
+  async <T extends ContentType>(
+    contentType: T,
+    data: DataInput<T>,
+  ): Promise<DBOutput<T>> => {
+    checkFailureCase("CreationError");
+
+    try {
+      contentType.validate(data);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new DbErrorInvalidData("Invalid data for creation", error.issues);
+      }
+      throw error;
+    }
+
+    if (contentType.uniques?.length) {
+      try {
+        const filter: Record<string, unknown> = {
+          $or: contentType.uniques!.map((fields) => {
+            const subFilter: Record<string, unknown> = {};
+            fields.forEach((field) => {
+              const fieldValue = (data as Record<string, unknown>)[field];
+              const fieldSchema = contentType.fields[field];
+
+              // Si el campo es translatable, necesitamos comparar cada idioma
+              if (
+                fieldSchema &&
+                fieldSchema.getIsTranslatable() &&
+                typeof fieldValue === "object" &&
+                fieldValue !== null
+              ) {
+                // Para campos translatables, creamos condiciones para cada idioma
+                Object.entries(fieldValue as Record<string, unknown>).forEach(
+                  ([lang, value]) => {
+                    if (value !== undefined && value !== null && value !== "") {
+                      subFilter[`${field}.${lang}`] = value;
+                    }
+                  },
+                );
+              } else {
+                // Para campos normales, comparación directa
+                subFilter[field] = fieldValue;
+              }
+            });
+            return subFilter;
+          }),
+        };
+        const checkUniques = await db
+          .collection(contentType.name)
+          .findOne(filter);
+
+        if (checkUniques) {
+          throw new DbErrorConflict(
+            `Unique constraint violation`,
+            `The combination of fields ${contentType.uniques
+              .map((fields) => fields.join(", "))
+              .join(" or ")} must be unique. CT: ${contentType.name}`,
+          );
+        }
+      } catch (error) {
+        if (error instanceof DbError) throw error;
+        throw new DbErrorUnknown(String(error));
+      }
+    }
+
+    const noNullData = deepDeleteNulls(data) as DataInput<T>;
+
+    const result = await db.collection(contentType.name).insertOne(
+      {
+        ...transformStringToObjectIds(noNullData),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        writeConcern: { w: "majority" },
+      },
+    );
+
+    const document = transformObjectIdsToStrings(
+      await db
+        .collection(contentType.name)
+        .findOne<DBOutput<T>>({ _id: result.insertedId }),
+    );
+
+    if (!document) {
+      throw new DbErrorNotFound("Document not found after creation");
+    }
+
+    return document;
+  };
