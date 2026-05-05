@@ -3,8 +3,8 @@
 import { cva } from "class-variance-authority";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { EncodedContentType } from "@rakun/core";
-import { Seo } from "@rakun/core/internal-content-types";
+import type { EncodedContentType } from "@rakun-kit/core";
+import { Seo } from "@rakun-kit/core/internal-content-types";
 import {
   GitBranch,
   Globe,
@@ -12,7 +12,7 @@ import {
   NotepadText,
   ScrollText,
 } from "lucide-react";
-import { EncodedField } from "@rakun/core/lib/fields/Field";
+import { EncodedField } from "@rakun-kit/core/lib/fields/Field";
 import { useQueries } from "@tanstack/react-query";
 
 import type { FieldRef } from "./ContentTypeEdit";

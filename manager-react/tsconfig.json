@@ -8,20 +8,20 @@
     "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["./src/*"],
-      "@rakun/core": ["../core/dist/esm/index.d.ts"],
-      "@rakun/core/contracts": ["../core/dist/esm/contracts.d.ts"],
-      "@rakun/core/client": ["../core/dist/esm/client.d.ts"],
-      "@rakun/core/manager": ["../core/dist/esm/manager.d.ts"],
-      "@rakun/core/internal-content-types": [
+      "@rakun-kit/core": ["../core/dist/esm/index.d.ts"],
+      "@rakun-kit/core/contracts": ["../core/dist/esm/contracts.d.ts"],
+      "@rakun-kit/core/client": ["../core/dist/esm/client.d.ts"],
+      "@rakun-kit/core/manager": ["../core/dist/esm/manager.d.ts"],
+      "@rakun-kit/core/internal-content-types": [
         "../core/dist/esm/internal-content-types/index.d.ts"
       ],
-      "@rakun/core/internal-content-types/*": [
+      "@rakun-kit/core/internal-content-types/*": [
         "../core/dist/esm/internal-content-types/*.d.ts"
       ],
-      "@rakun/core/lib/*": ["../core/dist/esm/lib/*.d.ts"],
-      "@rakun/core/lib/fields/*": ["../core/dist/esm/lib/fields/*.d.ts"],
-      "@rakun/core/lib/utils/*": ["../core/dist/esm/lib/utils/*.d.ts"],
-      "@rakun/core/types": ["../core/dist/esm/lib/types/index.d.ts"]
+      "@rakun-kit/core/lib/*": ["../core/dist/esm/lib/*.d.ts"],
+      "@rakun-kit/core/lib/fields/*": ["../core/dist/esm/lib/fields/*.d.ts"],
+      "@rakun-kit/core/lib/utils/*": ["../core/dist/esm/lib/utils/*.d.ts"],
+      "@rakun-kit/core/types": ["../core/dist/esm/lib/types/index.d.ts"]
     },
     "declaration": true,
     "declarationMap": true,

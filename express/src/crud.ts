@@ -6,12 +6,12 @@ import {
   createRequestContext,
   parseCookieHeader,
   RakunOperationHttpMethod,
-} from "@rakun/core";
+} from "@rakun-kit/core";
 import {
   getAppErrorShape,
   getAppErrorStatusCode,
   isAppError,
-} from "@rakun/core/errors";
+} from "@rakun-kit/core/errors";
 
 import type { RakunExpressIntegration } from "./index";
 

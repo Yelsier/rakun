@@ -1,7 +1,7 @@
 'use client'
 
-import type { EncodedContentType, Permission } from '@rakun/core/client'
-import { hasPermissions } from '@rakun/core/client'
+import type { EncodedContentType, Permission } from '@rakun-kit/core/client'
+import { hasPermissions } from '@rakun-kit/core/client'
 
 import EditPage from './edit'
 import type { FieldValue } from './_fields/shared'

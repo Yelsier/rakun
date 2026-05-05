@@ -1,8 +1,8 @@
 import bcrypt from "bcrypt";
 import { MongoClient } from "mongodb";
 
-import { ensureRakunInitialized } from "@rakun/core";
-import { PermissionsList } from "@rakun/core/lib/Permissions";
+import { ensureRakunInitialized } from "@rakun-kit/core";
+import { PermissionsList } from "@rakun-kit/core/lib/Permissions";
 
 import {
   Article,

@@ -12,12 +12,12 @@ import {
   createWebOperationDefinitions,
   type RakunOperationDefinition,
   type RakunRequestContext,
-} from "@rakun/core";
+} from "@rakun-kit/core";
 import {
   ErrorCatalog,
   getAppErrorShape,
   throwAppError,
-} from "@rakun/core/errors";
+} from "@rakun-kit/core/errors";
 import superjson from "superjson";
 import { z, ZodError } from "zod";
 

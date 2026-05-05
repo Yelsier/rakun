@@ -20,22 +20,25 @@
     "outDir": "dist",
     "noEmit": true,
     "paths": {
-      "@rakun/core": ["../core/src/index.ts"],
-      "@rakun/core/contracts": ["../core/src/contracts.ts"],
-      "@rakun/core/errors": ["../core/src/lib/errors/index.ts"],
-      "@rakun/core/logger": ["../core/src/lib/Logger.ts"],
-      "@rakun/manager-react": ["../manager-react/src/index.ts"],
-      "@rakun/manager-react/client/http": [
+      "@rakun-kit/core": ["../core/src/index.ts"],
+      "@rakun-kit/core/contracts": ["../core/src/contracts.ts"],
+      "@rakun-kit/core/errors": ["../core/src/lib/errors/index.ts"],
+      "@rakun-kit/core/logger": ["../core/src/lib/Logger.ts"],
+      "@rakun-kit/manager-react": ["../manager-react/src/index.ts"],
+      "@rakun-kit/manager-react/client/http": [
         "../manager-react/src/client/http.ts"
       ],
-      "@rakun/manager-react/client/request": [
+      "@rakun-kit/manager-react/client/request": [
         "../manager-react/src/client/request.ts"
       ],
-      "@rakun/manager-react/app/runtime-app": [
+      "@rakun-kit/manager-react/app/runtime-app": [
         "../manager-react/src/app/runtime-app.tsx"
       ],
-      "@rakun/manager-react/link": ["../manager-react/src/link.tsx"],
-      "@rakun/trpc": ["../trpc/src/index.ts"]
+      "@rakun-kit/manager-react/styles.css": [
+        "../manager-react/styles.css.d.ts"
+      ],
+      "@rakun-kit/manager-react/link": ["../manager-react/src/link.tsx"],
+      "@rakun-kit/trpc": ["../trpc/src/index.ts"]
     }
   },
   "include": ["src"]

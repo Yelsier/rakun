@@ -1,4 +1,4 @@
-# @rakun/s3
+# @rakun-kit/s3
 
 S3 storage adapter for Rakun media.
 
@@ -7,8 +7,8 @@ S3 storage adapter for Rakun media.
 Use `createS3MediaServiceConfig` in `rakunBootstrap`:
 
 ```ts
-import { rakunBootstrap } from "@rakun/core";
-import { createS3MediaServiceConfig } from "@rakun/s3";
+import { rakunBootstrap } from "@rakun-kit/core";
+import { createS3MediaServiceConfig } from "@rakun-kit/s3";
 
 rakunBootstrap({
   // ...
@@ -68,5 +68,5 @@ Behavior:
 ## Build
 
 ```sh
-npm run build --workspace @rakun/s3
+npm run build --workspace @rakun-kit/s3
 ```

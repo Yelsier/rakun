@@ -1,4 +1,4 @@
-import type { LanguageSchema, ManagerUserSchema } from "@rakun/core/client";
+import type { LanguageSchema, ManagerUserSchema } from "@rakun-kit/core/client";
 
 import type { ManagerClient } from "@/client/request";
 import { fallbackLanguage } from "@/helpers/fallbackLanguage";

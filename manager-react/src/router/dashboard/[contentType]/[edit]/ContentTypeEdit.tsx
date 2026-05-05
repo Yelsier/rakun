@@ -2,9 +2,9 @@
 
 import { ChevronsUpDown, Languages, Shield } from 'lucide-react'
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react'
-import type { EncodedContentType } from '@rakun/core'
-import { EncodedFieldUnknown, FieldType } from '@rakun/core/lib/fields/Field'
-import { EncodedRelationField } from '@rakun/core/lib/fields/Relation'
+import type { EncodedContentType } from '@rakun-kit/core'
+import { EncodedFieldUnknown, FieldType } from '@rakun-kit/core/lib/fields/Field'
+import { EncodedRelationField } from '@rakun-kit/core/lib/fields/Relation'
 
 import BooleanField from './_fields/BooleanField'
 import ContentReferenceField from './_fields/ContentReferenceField'

@@ -8,7 +8,7 @@ import type {
   MediaAccess,
   MediaServiceConfig,
   StorageAdapter,
-} from "@rakun/core";
+} from "@rakun-kit/core";
 
 export type LocalMediaServiceConfig = {
   rootDir: string;

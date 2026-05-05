@@ -19,10 +19,10 @@
     "outDir": "dist",
     "noEmit": true,
     "paths": {
-      "@rakun/core": ["../core/src/index.ts"],
-      "@rakun/core/contracts": ["../core/src/contracts.ts"],
-      "@rakun/core/errors": ["../core/src/lib/errors/index.ts"],
-      "@rakun/core/logger": ["../core/src/lib/Logger.ts"]
+      "@rakun-kit/core": ["../core/src/index.ts"],
+      "@rakun-kit/core/contracts": ["../core/src/contracts.ts"],
+      "@rakun-kit/core/errors": ["../core/src/lib/errors/index.ts"],
+      "@rakun-kit/core/logger": ["../core/src/lib/Logger.ts"]
     }
   },
   "include": ["src"]

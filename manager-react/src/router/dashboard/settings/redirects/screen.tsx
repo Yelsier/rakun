@@ -1,6 +1,6 @@
 "use client";
 
-import type { Permission } from "@rakun/core/client";
+import type { Permission } from "@rakun-kit/core/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { HelpCircle, Plus, Waypoints } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";

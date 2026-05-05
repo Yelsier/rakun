@@ -1,4 +1,4 @@
-# @rakun/express
+# @rakun-kit/express
 
 Express adapter for Rakun. It mounts Rakun API operations, health checks, media
 upload routes, optional local media, and optional tRPC.
@@ -9,8 +9,8 @@ Call `rakunBootstrap` once in your app, then mount `rakunExpress()`:
 
 ```ts
 import express from "express";
-import { rakunBootstrap } from "@rakun/core";
-import { rakunExpress } from "@rakun/express";
+import { rakunBootstrap } from "@rakun-kit/core";
+import { rakunExpress } from "@rakun-kit/express";
 
 rakunBootstrap({
   literals,
@@ -62,11 +62,11 @@ app.use(
 
 ## tRPC
 
-Mount tRPC with `@rakun/express/trpc`:
+Mount tRPC with `@rakun-kit/express/trpc`:
 
 ```ts
-import { rakunExpress, rakunExpressCrud } from "@rakun/express";
-import { rakunExpressTrpc } from "@rakun/express/trpc";
+import { rakunExpress, rakunExpressCrud } from "@rakun-kit/express";
+import { rakunExpressTrpc } from "@rakun-kit/express/trpc";
 import { appRouter } from "@/server/trpc";
 
 app.use(
@@ -88,12 +88,12 @@ cookies, and response.
 
 ## Local Media
 
-Use `createLocalMediaServiceConfig` from `@rakun/express/media` in bootstrap
+Use `createLocalMediaServiceConfig` from `@rakun-kit/express/media` in bootstrap
 media config:
 
 ```ts
 import path from "node:path";
-import { createLocalMediaServiceConfig } from "@rakun/express/media";
+import { createLocalMediaServiceConfig } from "@rakun-kit/express/media";
 
 rakunBootstrap({
   // ...
@@ -115,12 +115,12 @@ When this config is detected, `rakunExpress` serves:
 
 ## Exports
 
-- `@rakun/express`: `rakunExpress`, `rakunExpressCrud`, `rakunExpressLocalService`, local media helpers.
-- `@rakun/express/trpc`: `rakunExpressTrpc`.
-- `@rakun/express/media`: `LocalAdapter`, local media config, and local HTTP handlers.
+- `@rakun-kit/express`: `rakunExpress`, `rakunExpressCrud`, `rakunExpressLocalService`, local media helpers.
+- `@rakun-kit/express/trpc`: `rakunExpressTrpc`.
+- `@rakun-kit/express/media`: `LocalAdapter`, local media config, and local HTTP handlers.
 
 ## Build
 
 ```sh
-npm run build --workspace @rakun/express
+npm run build --workspace @rakun-kit/express
 ```

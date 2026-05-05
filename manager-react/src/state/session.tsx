@@ -4,7 +4,7 @@ import {
   hasPermissions,
   type ManagerUserSchema,
   type Permission,
-} from "@rakun/core/client";
+} from "@rakun-kit/core/client";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import type { StoreApi } from "zustand";
 import { useStore } from "zustand";

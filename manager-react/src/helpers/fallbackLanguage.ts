@@ -1,4 +1,4 @@
-import { LanguageSchema } from "@rakun/core";
+import { LanguageSchema } from "@rakun-kit/core";
 
 export const fallbackLanguage = {
   _id: "000000000000000000000000",

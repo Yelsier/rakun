@@ -1,8 +1,8 @@
 import {
   createRequestContext,
   parseCookieHeader,
-} from "@rakun/core";
-import { Logger } from "@rakun/core/logger";
+} from "@rakun-kit/core";
+import { Logger } from "@rakun-kit/core/logger";
 
 import { mergeRouters } from "./router";
 import { createManagerRouter } from "./routers/manager";

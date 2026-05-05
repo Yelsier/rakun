@@ -1,6 +1,6 @@
 "use client";
 
-import { Permission } from "@rakun/core/client";
+import { Permission } from "@rakun-kit/core/client";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { decodeCamelCase } from "@/helpers/decode-camel-case";
 

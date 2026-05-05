@@ -5,7 +5,7 @@
     "rootDir": "src",
     "outDir": "dist/esm",
     "paths": {
-      "@rakun/core": ["../core/dist/esm/index.d.ts"]
+      "@rakun-kit/core": ["../core/dist/esm/index.d.ts"]
     }
   }
 }

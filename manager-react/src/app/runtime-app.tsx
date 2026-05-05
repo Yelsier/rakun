@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import type { EncodedContentType } from "@rakun/core/client";
+import type { EncodedContentType } from "@rakun-kit/core/client";
 import {
   useCallback,
   useEffect,

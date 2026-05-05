@@ -1,6 +1,6 @@
 'use client'
 
-import type { AccountInfoOutput } from '@rakun/core/contracts'
+import type { AccountInfoOutput } from '@rakun-kit/core/contracts'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Check, MoreHorizontal, Trash, X } from 'lucide-react'
 

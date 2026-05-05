@@ -1,4 +1,4 @@
-# @rakun/trpc
+# @rakun-kit/trpc
 
 tRPC router package for Rakun manager and web operations.
 
@@ -7,7 +7,7 @@ tRPC router package for Rakun manager and web operations.
 Create a router from Rakun's current operation definitions:
 
 ```ts
-import { createRakunTrpcRouter } from "@rakun/trpc";
+import { createRakunTrpcRouter } from "@rakun-kit/trpc";
 
 export const appRouter = createRakunTrpcRouter();
 export type AppRouter = typeof appRouter;
@@ -16,7 +16,7 @@ export type AppRouter = typeof appRouter;
 The package also exports a ready-made router:
 
 ```ts
-import { appRouter, type AppRouter } from "@rakun/trpc";
+import { appRouter, type AppRouter } from "@rakun-kit/trpc";
 ```
 
 `createRakunTrpcRouter()` combines manager and web operation routers. Operation
@@ -28,7 +28,7 @@ names become nested tRPC paths, so `manager.auth.login` becomes
 `createTrpcContext` is Rakun's `createRequestContext`:
 
 ```ts
-import { createTrpcContext, parseCookieHeader } from "@rakun/trpc";
+import { createTrpcContext, parseCookieHeader } from "@rakun-kit/trpc";
 
 const ctx = await createTrpcContext({
   headers,
@@ -37,7 +37,7 @@ const ctx = await createTrpcContext({
 });
 ```
 
-Adapters in `@rakun/express/trpc` and `@rakun/next/trpc` already create this
+Adapters in `@rakun-kit/express/trpc` and `@rakun-kit/next/trpc` already create this
 context for you.
 
 ## Errors
@@ -59,5 +59,5 @@ and internal server errors consistently.
 ## Build
 
 ```sh
-npm run build --workspace @rakun/trpc
+npm run build --workspace @rakun-kit/trpc
 ```

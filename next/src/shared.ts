@@ -1,4 +1,4 @@
-import type { CookieOptions } from "@rakun/core";
+import type { CookieOptions } from "@rakun-kit/core";
 
 export type RakunNextRouteParams = Record<
   string,

@@ -1,11 +1,11 @@
 "use client";
 
-import { ManagerBrowserApp } from "@rakun/manager-react/app/runtime-app";
-import { createHttpManagerClient } from "@rakun/manager-react/client/http";
-import type { ManagerClient } from "@rakun/manager-react/client/request";
-import type { ManagerLinkProps } from "@rakun/manager-react/link";
-import { createPathManagerNavigation } from "@rakun/manager-react/state/navigation";
-import "@rakun/manager-react/styles.css";
+import { ManagerBrowserApp } from "@rakun-kit/manager-react/app/runtime-app";
+import { createHttpManagerClient } from "@rakun-kit/manager-react/client/http";
+import type { ManagerClient } from "@rakun-kit/manager-react/client/request";
+import type { ManagerLinkProps } from "@rakun-kit/manager-react/link";
+import { createPathManagerNavigation } from "@rakun-kit/manager-react/state/navigation";
+import "@rakun-kit/manager-react/styles.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useMemo, type ReactNode } from "react";

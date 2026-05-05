@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { ManagerClient } from "@rakun/manager-react/client/request";
+import type { ManagerClient } from "@rakun-kit/manager-react/client/request";
 
 import { RakunManagerClientPage } from "./manager-client";
 

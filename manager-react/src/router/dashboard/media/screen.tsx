@@ -1,6 +1,6 @@
 'use client'
 
-import type { Permission } from '@rakun/core/client'
+import type { Permission } from '@rakun-kit/core/client'
 
 import MediaLibrary from '@/components/media/MediaLibrary'
 import { ManagerMediaProvider } from '@/media'

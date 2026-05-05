@@ -8,22 +8,22 @@
     "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["../manager-react/src/*"],
-      "@rakun/core": ["../core/src/index.ts"],
-      "@rakun/core/client": ["../core/src/client.ts"],
-      "@rakun/core/contracts": ["../core/src/contracts.ts"],
-      "@rakun/core/manager": ["../core/src/manager.ts"],
-      "@rakun/core/internal-content-types": [
+      "@rakun-kit/core": ["../core/src/index.ts"],
+      "@rakun-kit/core/client": ["../core/src/client.ts"],
+      "@rakun-kit/core/contracts": ["../core/src/contracts.ts"],
+      "@rakun-kit/core/manager": ["../core/src/manager.ts"],
+      "@rakun-kit/core/internal-content-types": [
         "../core/src/internal-content-types/index.ts"
       ],
-      "@rakun/core/internal-content-types/*": [
+      "@rakun-kit/core/internal-content-types/*": [
         "../core/src/internal-content-types/*.ts"
       ],
-      "@rakun/core/lib/*": ["../core/src/lib/*.ts"],
-      "@rakun/core/lib/fields/*": ["../core/src/lib/fields/*.ts"],
-      "@rakun/core/lib/utils/*": ["../core/src/lib/utils/*.ts"],
-      "@rakun/core/types": ["../core/src/lib/types/index.ts"],
-      "@rakun/manager-react": ["../manager-react/src/index.ts"],
-      "@rakun/manager-react/*": ["../manager-react/src/*"]
+      "@rakun-kit/core/lib/*": ["../core/src/lib/*.ts"],
+      "@rakun-kit/core/lib/fields/*": ["../core/src/lib/fields/*.ts"],
+      "@rakun-kit/core/lib/utils/*": ["../core/src/lib/utils/*.ts"],
+      "@rakun-kit/core/types": ["../core/src/lib/types/index.ts"],
+      "@rakun-kit/manager-react": ["../manager-react/src/index.ts"],
+      "@rakun-kit/manager-react/*": ["../manager-react/src/*"]
     },
     "jsx": "react-jsx",
     "strict": true,

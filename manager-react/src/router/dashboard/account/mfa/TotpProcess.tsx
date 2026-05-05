@@ -1,6 +1,6 @@
 'use client'
 
-import { confirmTotpInput, type ConfirmTotpInput } from '@rakun/core/contracts'
+import { confirmTotpInput, type ConfirmTotpInput } from '@rakun-kit/core/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { REGEXP_ONLY_DIGITS } from 'input-otp'
 import { Controller, useForm } from 'react-hook-form'

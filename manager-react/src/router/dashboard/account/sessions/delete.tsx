@@ -1,6 +1,6 @@
 'use client'
 
-import type { AccountInfoOutput } from '@rakun/core/contracts'
+import type { AccountInfoOutput } from '@rakun-kit/core/contracts'
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
 import { toast } from 'sonner'
 

@@ -6,7 +6,7 @@ import {
   getRakunBootstrapOptions,
   handleMediaBinaryUpload,
   runWithRakunRequestTrace,
-} from "@rakun/core";
+} from "@rakun-kit/core";
 import {
   createLocalMediaHttpHandlers,
   getLocalMediaServiceConfig,

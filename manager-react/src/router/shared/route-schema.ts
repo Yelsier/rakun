@@ -1,4 +1,4 @@
-import type { EncodedContentType } from '@rakun/core/client'
+import type { EncodedContentType } from '@rakun-kit/core/client'
 import type { ReactNode } from 'react'
 
 import type {

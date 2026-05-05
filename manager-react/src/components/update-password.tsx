@@ -1,6 +1,6 @@
 "use client";
 import { useManagerMutation } from "@/client/react";
-import { UpdatePasswordInput, updatePasswordInput } from "@rakun/core/contracts";
+import { UpdatePasswordInput, updatePasswordInput } from "@rakun-kit/core/contracts";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import z from "zod";

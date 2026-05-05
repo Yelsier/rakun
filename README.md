@@ -29,21 +29,21 @@ with Express and Next.js integrations available.
 
 | Package | Purpose |
 | --- | --- |
-| `@rakun/core` | Content types, fields, schemas, runtime bootstrap, operations, auth, media, routes, redirects and shared contracts. |
-| `@rakun/manager-react` | React manager application, manager clients, navigation helpers and styles. |
-| `@rakun/express` | Express adapter for Rakun APIs, media routes and optional tRPC support. |
-| `@rakun/next` | Next.js adapter for APIs, media routes and mounting the manager. |
-| `@rakun/trpc` | tRPC router adapter for Rakun operations. |
-| `@rakun/s3` | S3 media storage adapter. |
-| `@rakun/preview` | Local development app, not intended for publication. |
+| `@rakun-kit/core` | Content types, fields, schemas, runtime bootstrap, operations, auth, media, routes, redirects and shared contracts. |
+| `@rakun-kit/manager-react` | React manager application, manager clients, navigation helpers and styles. |
+| `@rakun-kit/express` | Express adapter for Rakun APIs, media routes and optional tRPC support. |
+| `@rakun-kit/next` | Next.js adapter for APIs, media routes and mounting the manager. |
+| `@rakun-kit/trpc` | tRPC router adapter for Rakun operations. |
+| `@rakun-kit/s3` | S3 media storage adapter. |
+| `@rakun-kit/preview` | Local development app, not intended for publication. |
 
 ## Basic Shape
 
 Define content types in application code:
 
 ```ts
-import ContentType from "@rakun/core/lib/ContentType";
-import { Fields } from "@rakun/core/lib/fields/index";
+import ContentType from "@rakun-kit/core/lib/ContentType";
+import { Fields } from "@rakun-kit/core/lib/fields/index";
 
 export const Post = new ContentType({
   name: "Post",
@@ -66,7 +66,7 @@ export const Post = new ContentType({
 Bootstrap Rakun once in your server/runtime:
 
 ```ts
-import { rakunBootstrap } from "@rakun/core";
+import { rakunBootstrap } from "@rakun-kit/core";
 
 rakunBootstrap({
   literals: {},
@@ -82,7 +82,7 @@ Then expose the runtime through an adapter. With Express:
 
 ```ts
 import express from "express";
-import { rakunExpress } from "@rakun/express";
+import { rakunExpress } from "@rakun-kit/express";
 
 const app = express();
 
@@ -99,17 +99,17 @@ return a framework response.
 
 That means a new adapter can be created by reusing:
 
-- `@rakun/core` for bootstrap and operation handling
-- `@rakun/manager-react` for the manager UI
-- `@rakun/manager-react/client/request` for custom manager clients
-- `@rakun/trpc` if the target platform already uses tRPC
+- `@rakun-kit/core` for bootstrap and operation handling
+- `@rakun-kit/manager-react` for the manager UI
+- `@rakun-kit/manager-react/client/request` for custom manager clients
+- `@rakun-kit/trpc` if the target platform already uses tRPC
 
 Current integrations cover Express and Next.js. The preview app uses Vite for
 local manager development, but Vite is not a required runtime target.
 
 ## Manager UI
 
-`@rakun/manager-react` provides the manager as a React app. Framework adapters can
+`@rakun-kit/manager-react` provides the manager as a React app. Framework adapters can
 mount it directly, or a custom integration can provide:
 
 - a manager client
@@ -121,8 +121,8 @@ mount it directly, or a custom integration can provide:
 import {
   ManagerBrowserApp,
   createHttpManagerClient,
-} from "@rakun/manager-react";
-import "@rakun/manager-react/styles.css";
+} from "@rakun-kit/manager-react";
+import "@rakun-kit/manager-react/styles.css";
 
 const client = createHttpManagerClient({
   baseUrl: "/api/rakun",

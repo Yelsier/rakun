@@ -6,25 +6,28 @@
     "rootDir": "src",
     "outDir": "dist/esm",
     "paths": {
-      "@rakun/core": ["../core/dist/esm/index.d.ts"],
-      "@rakun/core/contracts": ["../core/dist/esm/contracts.d.ts"],
-      "@rakun/core/errors": ["../core/dist/esm/lib/errors/index.d.ts"],
-      "@rakun/core/logger": ["../core/dist/esm/lib/Logger.d.ts"],
-      "@rakun/manager-react": ["../manager-react/dist/esm/index.d.ts"],
-      "@rakun/manager-react/client/http": [
+      "@rakun-kit/core": ["../core/dist/esm/index.d.ts"],
+      "@rakun-kit/core/contracts": ["../core/dist/esm/contracts.d.ts"],
+      "@rakun-kit/core/errors": ["../core/dist/esm/lib/errors/index.d.ts"],
+      "@rakun-kit/core/logger": ["../core/dist/esm/lib/Logger.d.ts"],
+      "@rakun-kit/manager-react": ["../manager-react/dist/esm/index.d.ts"],
+      "@rakun-kit/manager-react/client/http": [
         "../manager-react/dist/esm/client/http.d.ts"
       ],
-      "@rakun/manager-react/client/request": [
+      "@rakun-kit/manager-react/client/request": [
         "../manager-react/dist/esm/client/request.d.ts"
       ],
-      "@rakun/manager-react/app/runtime-app": [
+      "@rakun-kit/manager-react/app/runtime-app": [
         "../manager-react/dist/esm/app/runtime-app.d.ts"
       ],
-      "@rakun/manager-react/state/navigation": [
+      "@rakun-kit/manager-react/state/navigation": [
         "../manager-react/dist/esm/state/navigation.d.ts"
       ],
-      "@rakun/manager-react/link": ["../manager-react/dist/esm/link.d.ts"],
-      "@rakun/trpc": ["../trpc/dist/esm/index.d.ts"]
+      "@rakun-kit/manager-react/styles.css": [
+        "../manager-react/dist/styles.css.d.ts"
+      ],
+      "@rakun-kit/manager-react/link": ["../manager-react/dist/esm/link.d.ts"],
+      "@rakun-kit/trpc": ["../trpc/dist/esm/index.d.ts"]
     }
   },
   "references": [

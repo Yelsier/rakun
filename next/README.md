@@ -1,4 +1,4 @@
-# @rakun/next
+# @rakun-kit/next
 
 Next.js App Router adapter for Rakun. It provides a catch-all route handler,
 optional tRPC mounting, local media handlers, and a manager page component.
@@ -10,7 +10,7 @@ Create a catch-all App Router route and export the methods returned by
 
 ```ts
 // app/api/rakun/[...slug]/route.ts
-import { rakunNext } from "@rakun/next";
+import { rakunNext } from "@rakun-kit/next";
 
 export const { GET, POST, PUT } = rakunNext({
   bootstrap: {
@@ -47,12 +47,12 @@ integration that returns a `Response` wins.
 
 ## tRPC
 
-Mount a tRPC router in the same catch-all route with `@rakun/next/trpc`:
+Mount a tRPC router in the same catch-all route with `@rakun-kit/next/trpc`:
 
 ```ts
 // app/api/rakun/[...slug]/route.ts
-import { rakunNext, rakunNextCrud } from "@rakun/next";
-import { rakunNextTrpc } from "@rakun/next/trpc";
+import { rakunNext, rakunNextCrud } from "@rakun-kit/next";
+import { rakunNextTrpc } from "@rakun-kit/next/trpc";
 import { appRouter } from "@/server/trpc";
 
 export const { GET, POST, PUT } = rakunNext({
@@ -72,14 +72,14 @@ cookies, and response headers.
 
 ## Manager Page
 
-Render the manager from a Next App Router page with `@rakun/next/manager`:
+Render the manager from a Next App Router page with `@rakun-kit/next/manager`:
 
 ```tsx
 // app/backend/[[...slug]]/page.tsx
 import {
   RakunManagerPage,
   type RakunManagerPageProps,
-} from "@rakun/next/manager";
+} from "@rakun-kit/next/manager";
 
 export default function Page(props: RakunManagerPageProps) {
   return (
@@ -105,14 +105,14 @@ Options:
 
 ## Local Media
 
-Use `createLocalMediaServiceConfig` from `@rakun/next/media` in bootstrap media
+Use `createLocalMediaServiceConfig` from `@rakun-kit/next/media` in bootstrap media
 config:
 
 ```ts
 // app/api/rakun/[...slug]/route.ts
 import path from "node:path";
-import { rakunNext } from "@rakun/next";
-import { createLocalMediaServiceConfig } from "@rakun/next/media";
+import { rakunNext } from "@rakun-kit/next";
+import { createLocalMediaServiceConfig } from "@rakun-kit/next/media";
 
 export const { GET, POST, PUT } = rakunNext({
   bootstrap: {
@@ -136,13 +136,13 @@ When this config is detected, `rakunNext` serves:
 
 ## Exports
 
-- `@rakun/next`: `rakunNext`, `rakunNextCrud`, local media helpers, and shared route utilities.
-- `@rakun/next/trpc`: `rakunNextTrpc`.
-- `@rakun/next/media`: `LocalAdapter`, local media config, and local HTTP handlers.
-- `@rakun/next/manager`: `RakunManagerPage` and manager page types.
+- `@rakun-kit/next`: `rakunNext`, `rakunNextCrud`, local media helpers, and shared route utilities.
+- `@rakun-kit/next/trpc`: `rakunNextTrpc`.
+- `@rakun-kit/next/media`: `LocalAdapter`, local media config, and local HTTP handlers.
+- `@rakun-kit/next/manager`: `RakunManagerPage` and manager page types.
 
 ## Build
 
 ```sh
-npm run build --workspace @rakun/next
+npm run build --workspace @rakun-kit/next
 ```

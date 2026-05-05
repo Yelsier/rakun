@@ -5,7 +5,7 @@ import {
   createTrpcContext,
   logRakunTrpcError,
   parseCookieHeader,
-} from "@rakun/trpc";
+} from "@rakun-kit/trpc";
 
 import type { RakunNextIntegration } from "./shared";
 import {

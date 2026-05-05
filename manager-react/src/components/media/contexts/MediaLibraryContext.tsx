@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext } from 'react'
-import type { FileOptimizeOptions } from '@rakun/core/client'
+import type { FileOptimizeOptions } from '@rakun-kit/core/client'
 
 import { FileUploadProps } from '../../ui/file-upload'
 

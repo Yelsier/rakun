@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useMemo, type ReactNode } from 'react'
-import type { LanguageSchema, ManagerUserSchema } from '@rakun/core/client'
+import type { LanguageSchema, ManagerUserSchema } from '@rakun-kit/core/client'
 
 import { ManagerLinkProvider, type ManagerLinkComponent } from '@/link'
 import { LanguageProvider } from '@/state/language'

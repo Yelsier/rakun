@@ -1,5 +1,5 @@
 {
-  "name": "@rakun/express",
+  "name": "@rakun-kit/express",
   "version": "1.0.0",
   "description": "Express adapter for serving Rakun APIs and media endpoints.",
   "license": "MIT",
@@ -29,13 +29,13 @@
     "dist"
   ],
   "peerDependencies": {
-    "@rakun/core": "^1.0.0",
-    "@rakun/trpc": "^1.0.0",
+    "@rakun-kit/core": "^1.0.0",
+    "@rakun-kit/trpc": "^1.0.0",
     "@trpc/server": "^11.10.0",
     "express": "^5.2.1"
   },
   "peerDependenciesMeta": {
-    "@rakun/trpc": {
+    "@rakun-kit/trpc": {
       "optional": true
     },
     "@trpc/server": {

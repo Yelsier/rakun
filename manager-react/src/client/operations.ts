@@ -11,4 +11,4 @@ export {
   type ManagerOperationName,
   type ManagerOperationOutput,
   type ManagerQueryOperationName,
-} from '@rakun/core/manager'
+} from '@rakun-kit/core/manager'

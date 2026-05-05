@@ -1,6 +1,6 @@
 'use client'
 
-import type { MaybeTranslatableValue } from '@rakun/core/client'
+import type { MaybeTranslatableValue } from '@rakun-kit/core/client'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'

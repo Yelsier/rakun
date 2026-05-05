@@ -1,6 +1,6 @@
 'use client'
 
-import { webauthnRegisterVerifyInput, type WebauthnRegisterVerifyInput } from '@rakun/core/contracts'
+import { webauthnRegisterVerifyInput, type WebauthnRegisterVerifyInput } from '@rakun-kit/core/contracts'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { startRegistration } from '@simplewebauthn/browser'
 import { useState } from 'react'

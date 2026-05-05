@@ -4,7 +4,7 @@ import {
   getTranslation,
   type LanguageSchema,
   type MaybeTranslatableValue,
-} from "@rakun/core/client";
+} from "@rakun-kit/core/client";
 import {
   createContext,
   useContext,

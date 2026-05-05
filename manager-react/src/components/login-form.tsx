@@ -4,7 +4,7 @@ import {
   instanceofAppErrorShape,
   loginInput,
   type LoginInput,
-} from "@rakun/core/client";
+} from "@rakun-kit/core/client";
 import { GalleryVerticalEnd } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 

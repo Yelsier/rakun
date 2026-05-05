@@ -6,7 +6,7 @@ import type {
   GetMediaUrlOutput,
   PrepareUploadInput,
   PrepareUploadOutput,
-} from "@rakun/core/client";
+} from "@rakun-kit/core/client";
 
 import type { ManagerClient } from "@/client/request";
 

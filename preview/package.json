@@ -1,5 +1,5 @@
 {
-  "name": "@rakun/preview",
+  "name": "@rakun-kit/preview",
   "version": "1.0.0",
   "private": true,
   "license": "MIT",
@@ -12,9 +12,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@rakun/core": "^1.0.0",
-    "@rakun/express": "^1.0.0",
-    "@rakun/manager-react": "^1.0.0",
+    "@rakun-kit/core": "^1.0.0",
+    "@rakun-kit/express": "^1.0.0",
+    "@rakun-kit/manager-react": "^1.0.0",
     "bcrypt": "^6.0.0",
     "express": "^5.2.1",
     "mongodb": "^7.1.1",

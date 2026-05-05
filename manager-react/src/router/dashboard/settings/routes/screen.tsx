@@ -1,6 +1,6 @@
 "use client";
 
-import type { MaybeTranslatableValue } from "@rakun/core/client";
+import type { MaybeTranslatableValue } from "@rakun-kit/core/client";
 import { useQueries } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";

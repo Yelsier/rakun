@@ -1,6 +1,6 @@
 'use client'
 
-import type { Permission } from '@rakun/core/client'
+import type { Permission } from '@rakun-kit/core/client'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Edit, MoreHorizontal, Trash } from 'lucide-react'
 

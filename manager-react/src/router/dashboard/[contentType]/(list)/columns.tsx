@@ -2,7 +2,7 @@
 
 import type { ColumnDef } from '@tanstack/react-table'
 import { Check, Edit, MoreHorizontal, Trash, X } from 'lucide-react'
-import type { MaybeTranslatableValue, Permission } from '@rakun/core/client'
+import type { MaybeTranslatableValue, Permission } from '@rakun-kit/core/client'
 
 import IDColumn from '../../../../components/IDColumnt'
 

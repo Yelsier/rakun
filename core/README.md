@@ -1,6 +1,6 @@
-# @rakun/core
+# @rakun-kit/core
 
-`@rakun/core` contains Rakun's shared domain model and runtime. It defines content types, fields, Zod schemas, manager/web operations, request context, MongoDB connection handling, media service, permissions, translations, and typed contracts used by adapters (`@rakun/next`, `@rakun/express`, `@rakun/trpc`) and the manager client.
+`@rakun-kit/core` contains Rakun's shared domain model and runtime. It defines content types, fields, Zod schemas, manager/web operations, request context, MongoDB connection handling, media service, permissions, translations, and typed contracts used by adapters (`@rakun-kit/next`, `@rakun-kit/express`, `@rakun-kit/trpc`) and the manager client.
 
 ## Main Entry
 
@@ -10,9 +10,9 @@ Typical imports:
 import {
   rakunBootstrap,
   ensureRakunInitialized,
-} from "@rakun/core";
-import ContentType from "@rakun/core/lib/ContentType";
-import { Fields } from "@rakun/core/lib/fields/index";
+} from "@rakun-kit/core";
+import ContentType from "@rakun-kit/core/lib/ContentType";
+import { Fields } from "@rakun-kit/core/lib/fields/index";
 ```
 
 The main entrypoint exports:
@@ -26,15 +26,15 @@ The main entrypoint exports:
 
 Relevant subpaths:
 
-- `@rakun/core/manager`: manager operation metadata and types.
-- `@rakun/core/contracts`: shared manager/web payload schemas.
-- `@rakun/core/client`: client-facing types and utilities.
-- `@rakun/core/logger`: logger.
-- `@rakun/core/errors`: application errors.
-- `@rakun/core/lib/ContentType`: `ContentType` class.
-- `@rakun/core/lib/fields/index`: `Fields` factory.
-- `@rakun/core/lib/*`, `@rakun/core/lib/fields/*`, `@rakun/core/lib/utils/*`: internal APIs published by the package.
-- `@rakun/core/types`: types derived from content types.
+- `@rakun-kit/core/manager`: manager operation metadata and types.
+- `@rakun-kit/core/contracts`: shared manager/web payload schemas.
+- `@rakun-kit/core/client`: client-facing types and utilities.
+- `@rakun-kit/core/logger`: logger.
+- `@rakun-kit/core/errors`: application errors.
+- `@rakun-kit/core/lib/ContentType`: `ContentType` class.
+- `@rakun-kit/core/lib/fields/index`: `Fields` factory.
+- `@rakun-kit/core/lib/*`, `@rakun-kit/core/lib/fields/*`, `@rakun-kit/core/lib/utils/*`: internal APIs published by the package.
+- `@rakun-kit/core/types`: types derived from content types.
 
 ## Bootstrap
 
@@ -195,7 +195,7 @@ Notable fields:
 
 ## Derived Types
 
-`@rakun/core/types` and `lib/types` derive types from `ContentType`:
+`@rakun-kit/core/types` and `lib/types` derive types from `ContentType`:
 
 - `DataInput<T>`: accepted shape for create/update.
 - `DBOutput<T>`: persisted shape with metadata (`_id`, `_type`, timestamps, authorship).
@@ -268,7 +268,7 @@ Main helpers:
 - `createOperationPath`: HTTP path from operation name.
 - `mergeOperationContracts`: combines maps.
 
-`@rakun/core/manager` exposes the manifest and name-based types:
+`@rakun-kit/core/manager` exposes the manifest and name-based types:
 
 ```ts
 import {
@@ -276,7 +276,7 @@ import {
   getManagerOperationMeta,
   type ManagerOperationInput,
   type ManagerOperationOutput,
-} from "@rakun/core/manager";
+} from "@rakun-kit/core/manager";
 ```
 
 ### Custom Operations
@@ -284,7 +284,7 @@ import {
 Applications can add operations through bootstrap:
 
 ```ts
-import { defineOperation } from "@rakun/core";
+import { defineOperation } from "@rakun-kit/core";
 import { z } from "zod";
 
 rakunBootstrap({
@@ -426,7 +426,7 @@ The package includes targeted tests next to modules (`*.test.ts`), for example O
 Package build:
 
 ```sh
-npm run build --workspace @rakun/core
+npm run build --workspace @rakun-kit/core
 ```
 
 The script generates ESM and CJS in `dist/`, adjusting imports and the CJS `package.json` through repo scripts.

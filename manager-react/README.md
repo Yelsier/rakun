@@ -1,9 +1,9 @@
-# @rakun/manager-react
+# @rakun-kit/manager-react
 
 React manager UI and client utilities for Rakun.
 
 Most apps use this package through framework adapters such as
-`@rakun/next/manager`, but the runtime components and clients are also
+`@rakun-kit/next/manager`, but the runtime components and clients are also
 published for custom integrations.
 
 ## Browser App
@@ -14,8 +14,8 @@ Render the manager with a manager client and navigation implementation:
 import {
   ManagerBrowserApp,
   createHttpManagerClient,
-} from "@rakun/manager-react";
-import "@rakun/manager-react/styles.css";
+} from "@rakun-kit/manager-react";
+import "@rakun-kit/manager-react/styles.css";
 
 const client = createHttpManagerClient({
   baseUrl: "/api/rakun",
@@ -40,7 +40,7 @@ export function ManagerPage() {
 HTTP client:
 
 ```ts
-import { createHttpManagerClient } from "@rakun/manager-react/client/http";
+import { createHttpManagerClient } from "@rakun-kit/manager-react/client/http";
 
 const client = createHttpManagerClient({
   baseUrl: "/api/rakun",
@@ -52,7 +52,7 @@ const contentTypes = await client.request("manager.contentTypes");
 tRPC client adapter:
 
 ```ts
-import { createTrpcManagerClient } from "@rakun/manager-react/client/trpc";
+import { createTrpcManagerClient } from "@rakun-kit/manager-react/client/trpc";
 
 const managerClient = createTrpcManagerClient(trpcProxyClient);
 ```
@@ -60,7 +60,7 @@ const managerClient = createTrpcManagerClient(trpcProxyClient);
 Custom client:
 
 ```ts
-import { createManagerClient } from "@rakun/manager-react/client/request";
+import { createManagerClient } from "@rakun-kit/manager-react/client/request";
 
 const client = createManagerClient(async (name, input, options) => {
   // call your transport here
@@ -72,7 +72,7 @@ const client = createManagerClient(async (name, input, options) => {
 Use `createPathManagerNavigation` for router integrations:
 
 ```ts
-import { createPathManagerNavigation } from "@rakun/manager-react/state/navigation";
+import { createPathManagerNavigation } from "@rakun-kit/manager-react/state/navigation";
 
 const navigation = createPathManagerNavigation({
   basePath: "/backend",
@@ -86,22 +86,22 @@ const navigation = createPathManagerNavigation({
 Import the package stylesheet once:
 
 ```ts
-import "@rakun/manager-react/styles.css";
+import "@rakun-kit/manager-react/styles.css";
 ```
 
 ## Exports
 
-- `@rakun/manager-react`: manager app, providers, clients, navigation, router, layout, media, and state helpers.
-- `@rakun/manager-react/client/http`: HTTP manager client.
-- `@rakun/manager-react/client/request`: transport-agnostic manager client.
-- `@rakun/manager-react/client/trpc`: tRPC proxy client adapter.
-- `@rakun/manager-react/app/runtime-app`: `ManagerRuntimeApp`, `ManagerBrowserApp`.
-- `@rakun/manager-react/state/navigation`: navigation helpers and provider.
-- `@rakun/manager-react/link`: link component provider.
-- `@rakun/manager-react/styles.css`: bundled manager styles.
+- `@rakun-kit/manager-react`: manager app, providers, clients, navigation, router, layout, media, and state helpers.
+- `@rakun-kit/manager-react/client/http`: HTTP manager client.
+- `@rakun-kit/manager-react/client/request`: transport-agnostic manager client.
+- `@rakun-kit/manager-react/client/trpc`: tRPC proxy client adapter.
+- `@rakun-kit/manager-react/app/runtime-app`: `ManagerRuntimeApp`, `ManagerBrowserApp`.
+- `@rakun-kit/manager-react/state/navigation`: navigation helpers and provider.
+- `@rakun-kit/manager-react/link`: link component provider.
+- `@rakun-kit/manager-react/styles.css`: bundled manager styles.
 
 ## Build
 
 ```sh
-npm run build --workspace @rakun/manager-react
+npm run build --workspace @rakun-kit/manager-react
 ```

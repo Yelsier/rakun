@@ -1,7 +1,7 @@
 import React, { type RefAttributes } from 'react'
 import type z from 'zod'
-import type { FieldUIType } from '@rakun/core/lib/fields/Field'
-import type { EncodedSelectField } from '@rakun/core/lib/fields/Select'
+import type { FieldUIType } from '@rakun-kit/core/lib/fields/Field'
+import type { EncodedSelectField } from '@rakun-kit/core/lib/fields/Select'
 
 import type { FieldRef } from '../../ContentTypeEdit'
 import MissingUI from '../Missing'

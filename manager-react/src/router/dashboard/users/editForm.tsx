@@ -1,7 +1,7 @@
 'use client'
 
-import type { ManagerRoleManager, ManagerUserInput } from '@rakun/core/internal-content-types'
-import { ManagerUser } from '@rakun/core/internal-content-types'
+import type { ManagerRoleManager, ManagerUserInput } from '@rakun-kit/core/internal-content-types'
+import { ManagerUser } from '@rakun-kit/core/internal-content-types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'

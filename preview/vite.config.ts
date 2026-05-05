@@ -42,27 +42,27 @@ export default ({ mode }: { mode: string }) => {
       alias: [
         { find: "@", replacement: managerSrc },
         { find: /^@rakun\/manager-react\/(.+)$/, replacement: `${managerSrc}/$1` },
-        { find: "@rakun/manager-react", replacement: path.resolve(managerSrc, "index.ts") },
-        { find: "@rakun/core/client", replacement: path.resolve(coreSrc, "client.ts") },
-        { find: "@rakun/core/contracts", replacement: path.resolve(coreSrc, "contracts.ts") },
-        { find: "@rakun/core/manager", replacement: path.resolve(coreSrc, "manager.ts") },
+        { find: "@rakun-kit/manager-react", replacement: path.resolve(managerSrc, "index.ts") },
+        { find: "@rakun-kit/core/client", replacement: path.resolve(coreSrc, "client.ts") },
+        { find: "@rakun-kit/core/contracts", replacement: path.resolve(coreSrc, "contracts.ts") },
+        { find: "@rakun-kit/core/manager", replacement: path.resolve(coreSrc, "manager.ts") },
         {
-          find: "@rakun/core/internal-content-types",
+          find: "@rakun-kit/core/internal-content-types",
           replacement: path.resolve(coreSrc, "internal-content-types/index.ts"),
         },
         {
           find: /^@rakun\/core\/internal-content-types\/(.+)$/,
           replacement: `${coreSrc}/internal-content-types/$1.ts`,
         },
-        { find: "@rakun/core/types", replacement: path.resolve(coreSrc, "lib/types/index.ts") },
+        { find: "@rakun-kit/core/types", replacement: path.resolve(coreSrc, "lib/types/index.ts") },
         { find: /^@rakun\/core\/lib\/fields\/(.+)$/, replacement: `${coreSrc}/lib/fields/$1.ts` },
         { find: /^@rakun\/core\/lib\/utils\/(.+)$/, replacement: `${coreSrc}/lib/utils/$1.ts` },
         { find: /^@rakun\/core\/lib\/(.+)$/, replacement: `${coreSrc}/lib/$1.ts` },
-        { find: "@rakun/core", replacement: path.resolve(coreSrc, "index.ts") },
+        { find: "@rakun-kit/core", replacement: path.resolve(coreSrc, "index.ts") },
       ],
     },
     optimizeDeps: {
-      exclude: ["@rakun/manager-react", "@rakun/core"],
+      exclude: ["@rakun-kit/manager-react", "@rakun-kit/core"],
     },
   };
 };

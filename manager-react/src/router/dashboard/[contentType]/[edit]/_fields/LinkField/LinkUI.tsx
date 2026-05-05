@@ -1,12 +1,12 @@
 'use client'
 
-import type { RouteSchema } from '@rakun/core/internal-content-types'
+import type { RouteSchema } from '@rakun-kit/core/internal-content-types'
 import { useQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import { getListField } from '@rakun/core/lib/utils/getListField'
-import { isTranslatableObject } from '@rakun/core/lib/utils/isTranslatableObject'
-import { LinkfieldValue } from '@rakun/core/lib/fields/Link'
+import { getListField } from '@rakun-kit/core/lib/utils/getListField'
+import { isTranslatableObject } from '@rakun-kit/core/lib/utils/isTranslatableObject'
+import { LinkfieldValue } from '@rakun-kit/core/lib/fields/Link'
 
 import type { LinkPropsRef } from '.'
 import { errorStyle } from '../../edit'

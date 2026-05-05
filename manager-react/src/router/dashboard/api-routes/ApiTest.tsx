@@ -16,7 +16,7 @@ import {
   getManagerOperationMeta,
   managerOperationContracts,
   type ManagerOperationName,
-} from '@rakun/core/manager'
+} from '@rakun-kit/core/manager'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {

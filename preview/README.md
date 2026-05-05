@@ -1,6 +1,6 @@
-# @rakun/preview
+# @rakun-kit/preview
 
-Local preview app for developing `@rakun/manager-react`.
+Local preview app for developing `@rakun-kit/manager-react`.
 
 It runs:
 
@@ -9,7 +9,7 @@ It runs:
 - aliases that point Vite directly at `../manager-react/src` and `../core/src`.
 
 That means UI edits in `manager-react/src/**/*.tsx` hot reload without building
-`@rakun/manager-react`.
+`@rakun-kit/manager-react`.
 
 ## Setup
 

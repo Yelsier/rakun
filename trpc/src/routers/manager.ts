@@ -1,6 +1,6 @@
 import {
   createManagerOperationDefinitions,
-} from "@rakun/core";
+} from "@rakun-kit/core";
 
 import { createRouterFromOperations } from "../router";
 

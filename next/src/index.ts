@@ -7,7 +7,7 @@ import {
   type MediaBinaryUploadRequest,
   type MediaBinaryUploadResponse,
   runWithRakunRequestTrace,
-} from "@rakun/core";
+} from "@rakun-kit/core";
 import { Readable } from "stream";
 
 import { rakunNextCrud } from "./crud";

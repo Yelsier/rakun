@@ -1,6 +1,6 @@
 'use client'
 
-import type { MaybeTranslatableValue, Permission } from '@rakun/core/client'
+import type { MaybeTranslatableValue, Permission } from '@rakun-kit/core/client'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Check, Edit, MoreHorizontal, Settings, X } from 'lucide-react'
 

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useManagerClient } from '@/client/react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { FileOptimizeOptions } from '@rakun/core/client'
+import type { FileOptimizeOptions } from '@rakun-kit/core/client'
 
 import { FileUploadProps } from '../ui/file-upload'
 import {

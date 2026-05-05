@@ -5,7 +5,7 @@ import { createRoot } from "react-dom/client";
 import {
   ManagerBrowserApp,
   createHttpManagerClient,
-} from "@rakun/manager-react";
+} from "@rakun-kit/manager-react";
 import "../../manager-react/src/styles/globals.css";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "/api/rakun";

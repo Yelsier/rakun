@@ -1,7 +1,7 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Permission } from '@rakun/core/client'
+import { Permission } from '@rakun-kit/core/client'
 
 import { columns } from './columns'
 import DeleteCT from './delete'

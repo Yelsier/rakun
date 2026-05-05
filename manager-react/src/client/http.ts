@@ -14,7 +14,7 @@ import {
 import {
   instanceofAppErrorShape,
   type AppErrorShape,
-} from "@rakun/core/client";
+} from "@rakun-kit/core/client";
 
 const getAppErrorShape = (error: unknown): AppErrorShape | null => {
   if (instanceofAppErrorShape(error)) {

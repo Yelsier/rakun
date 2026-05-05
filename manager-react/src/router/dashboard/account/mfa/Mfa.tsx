@@ -1,6 +1,6 @@
 'use client'
 
-import type { AccountInfoOutput } from '@rakun/core/contracts'
+import type { AccountInfoOutput } from '@rakun-kit/core/contracts'
 
 import { Button } from '@/components/ui/button'
 import { MfaEnroller } from './MfaEnroller'

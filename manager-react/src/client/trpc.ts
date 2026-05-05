@@ -12,7 +12,7 @@ import {
 import {
   instanceofAppErrorShape,
   type AppErrorShape,
-} from "@rakun/core/client";
+} from "@rakun-kit/core/client";
 
 type TrpcProcedure = {
   query?: (input?: unknown) => Promise<unknown>;

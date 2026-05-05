@@ -1,8 +1,8 @@
 import express from "express";
 
-import { rakunBootstrap } from "@rakun/core";
-import { rakunExpress } from "@rakun/express";
-import { createLocalMediaServiceConfig } from "@rakun/express/media";
+import { rakunBootstrap } from "@rakun-kit/core";
+import { rakunExpress } from "@rakun-kit/express";
+import { createLocalMediaServiceConfig } from "@rakun-kit/express/media";
 
 import { Footer, Header, Page, previewContentTypes } from "./content-types";
 import { env } from "./env";

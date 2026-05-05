@@ -1,5 +1,5 @@
 {
-  "name": "@rakun/manager-react",
+  "name": "@rakun-kit/manager-react",
   "version": "1.0.0",
   "description": "React manager UI and client utilities for Rakun.",
   "license": "MIT",
@@ -46,7 +46,7 @@
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
-    "@rakun/core": "^1.0.0",
+    "@rakun-kit/core": "^1.0.0",
     "@tanstack/react-query": "^5.0.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
