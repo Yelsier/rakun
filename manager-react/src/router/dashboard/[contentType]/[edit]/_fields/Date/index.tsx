@@ -1,7 +1,7 @@
 import React, { type RefAttributes } from 'react'
-import type { FieldUIType } from '@rakun-kit/core'
+import type { FieldUIType } from '@rakun-kit/core/client'
 import type z from 'zod'
-import type { EncodedDateField } from '@rakun-kit/core'
+import type { EncodedDateField } from '@rakun-kit/core/client'
 
 import type { FieldRef } from '../../ContentTypeEdit'
 import DateTimeUI from './DateTimeUI'

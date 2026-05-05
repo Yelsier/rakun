@@ -1,6 +1,6 @@
 import { Plus, Trash } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { RelationFieldValue } from '@rakun-kit/core'
+import { RelationFieldValue } from '@rakun-kit/core/client'
 
 import type { RelationPropsRef } from '.'
 import type { FieldRef } from '../../ContentTypeEdit'

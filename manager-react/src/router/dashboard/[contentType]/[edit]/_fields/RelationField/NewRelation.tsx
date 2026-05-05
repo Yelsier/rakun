@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { RelationNewDefaultData } from '@rakun-kit/core'
+import { RelationNewDefaultData } from '@rakun-kit/core/client'
 
 import type { RelationPropsRef } from '.'
 import type { FieldRef } from '../../ContentTypeEdit'

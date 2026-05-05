@@ -1,11 +1,11 @@
 import type { MaybeTranslatableValue } from '@rakun-kit/core/types'
-import type { Id } from '@rakun-kit/core'
+import type { Id } from '@rakun-kit/core/client'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import {
   RelationExistingDefaltData,
   RelationFieldValue,
-} from '@rakun-kit/core'
+} from '@rakun-kit/core/client'
 
 import type { RelationPropsRef } from '.'
 import Loading from '../../../../../../components/loading'

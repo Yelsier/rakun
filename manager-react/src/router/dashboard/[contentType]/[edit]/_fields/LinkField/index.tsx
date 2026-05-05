@@ -1,6 +1,6 @@
 import type { RefAttributes } from 'react'
-import type { EncodedLinkField } from '@rakun-kit/core'
-import type { FieldUIType } from '@rakun-kit/core'
+import type { EncodedLinkField } from '@rakun-kit/core/client'
+import type { FieldUIType } from '@rakun-kit/core/client'
 import type z from 'zod'
 
 import type { FieldRef } from '../../ContentTypeEdit'

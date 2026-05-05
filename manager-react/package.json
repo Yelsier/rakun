@@ -1,6 +1,6 @@
 {
   "name": "@rakun-kit/manager-react",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "React manager UI and client utilities for Rakun.",
   "license": "MIT",
   "author": {
@@ -30,8 +30,15 @@
     "dist"
   ],
   "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "dependencies": {
+    "@diceui/tags-input": "^0.7.2",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.0.0",
     "@lexical/code": "^0.34.0",
     "@lexical/html": "^0.34.0",
@@ -43,17 +50,24 @@
     "@lexical/table": "^0.34.0",
     "@lexical/text": "^0.34.0",
     "@lexical/utils": "^0.34.0",
+    "@radix-ui/react-direction": "^1.1.1",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
-    "@rakun-kit/core": "^1.0.0",
+    "@radix-ui/react-use-controllable-state": "^1.2.2",
+    "@rakun-kit/core": "^1.0.3",
+    "@simplewebauthn/browser": "^13.3.0",
     "@tanstack/react-query": "^5.0.0",
+    "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
-    "lucide-react": "^0.500.0",
+    "cmdk": "^1.1.1",
+    "input-otp": "^1.4.2",
+    "lexical": "^0.34.0",
+    "lucide-react": "^0.564.0",
     "next-themes": "^0.4.6",
     "radix-ui": "^1.4.3",
-    "react": ">=18.0.0",
+    "react-resizable-panels": "^4.10.0",
     "react-hook-form": "^7.0.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.0.0",
@@ -144,14 +158,12 @@
       "default": "./dist/styles.css"
     }
   },
-  "dependencies": {
-    "@diceui/tags-input": "^0.7.2",
-    "@dnd-kit/sortable": "^10.0.0",
-    "@simplewebauthn/browser": "^13.3.0",
-    "@tanstack/react-table": "^8.21.3",
-    "cmdk": "^1.1.1",
-    "input-otp": "^1.4.2",
-    "lexical": "^0.34.0",
-    "react-resizable-panels": "^4.10.0"
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   }
 }

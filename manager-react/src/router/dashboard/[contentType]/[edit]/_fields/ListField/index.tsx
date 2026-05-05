@@ -1,6 +1,6 @@
 import type { RefAttributes } from 'react'
-import type { EncodedListField } from '@rakun-kit/core'
-import type { EncodedSimpleListField } from '@rakun-kit/core'
+import type { EncodedListField } from '@rakun-kit/core/client'
+import type { EncodedSimpleListField } from '@rakun-kit/core/client'
 
 import type { FieldRef } from '../../ContentTypeEdit'
 import MissingUI from '../Missing'

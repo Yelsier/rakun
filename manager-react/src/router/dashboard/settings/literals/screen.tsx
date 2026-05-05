@@ -1,6 +1,6 @@
 'use client'
 
-import type { ListLiteralsOutput } from '@rakun-kit/core'
+import type { ListLiteralsOutput } from '@rakun-kit/core/client'
 import { AlertTriangle, Info, Save } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'

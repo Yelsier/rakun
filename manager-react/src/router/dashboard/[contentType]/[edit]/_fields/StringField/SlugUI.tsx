@@ -1,6 +1,6 @@
 'use client'
 
-import { slugify } from '@rakun-kit/core'
+import { slugify } from '@rakun-kit/core/client'
 import z from 'zod'
 
 import type { StringPropsRef } from '.'

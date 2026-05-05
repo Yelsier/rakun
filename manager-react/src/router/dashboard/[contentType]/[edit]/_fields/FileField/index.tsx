@@ -4,7 +4,7 @@ import { ImagePlus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { EncodedFileField } from '@rakun-kit/core'
+import type { EncodedFileField } from '@rakun-kit/core/client'
 import type { TranslatableValue } from '@rakun-kit/core/types'
 
 import { FieldRef } from '../../ContentTypeEdit'
