@@ -1,9 +1,21 @@
 {
   "name": "@rakun/core",
   "version": "1.0.0",
-  "description": "",
+  "description": "Core Rakun content, routing, media, auth, and manager APIs.",
   "license": "MIT",
-  "author": "",
+  "author": {
+    "name": "Yago Claros",
+    "url": "https://github.com/Yelsier"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yelsier/rakun.git",
+    "directory": "core"
+  },
+  "bugs": {
+    "url": "https://github.com/Yelsier/rakun/issues"
+  },
+  "homepage": "https://github.com/Yelsier/rakun/tree/main/core#readme",
   "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",

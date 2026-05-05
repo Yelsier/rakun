@@ -1,9 +1,21 @@
 {
   "name": "@rakun/s3",
   "version": "1.0.0",
-  "description": "",
+  "description": "S3 media storage adapter for Rakun.",
   "license": "MIT",
-  "author": "",
+  "author": {
+    "name": "Yago Claros",
+    "url": "https://github.com/Yelsier"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yelsier/rakun.git",
+    "directory": "s3"
+  },
+  "bugs": {
+    "url": "https://github.com/Yelsier/rakun/issues"
+  },
+  "homepage": "https://github.com/Yelsier/rakun/tree/main/s3#readme",
   "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",

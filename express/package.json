@@ -1,9 +1,21 @@
 {
   "name": "@rakun/express",
   "version": "1.0.0",
-  "description": "",
+  "description": "Express adapter for serving Rakun APIs and media endpoints.",
   "license": "MIT",
-  "author": "",
+  "author": {
+    "name": "Yago Claros",
+    "url": "https://github.com/Yelsier"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yelsier/rakun.git",
+    "directory": "express"
+  },
+  "bugs": {
+    "url": "https://github.com/Yelsier/rakun/issues"
+  },
+  "homepage": "https://github.com/Yelsier/rakun/tree/main/express#readme",
   "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",

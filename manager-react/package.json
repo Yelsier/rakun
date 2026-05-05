@@ -1,9 +1,21 @@
 {
   "name": "@rakun/manager-react",
   "version": "1.0.0",
-  "description": "",
+  "description": "React manager UI and client utilities for Rakun.",
   "license": "MIT",
-  "author": "",
+  "author": {
+    "name": "Yago Claros",
+    "url": "https://github.com/Yelsier"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yelsier/rakun.git",
+    "directory": "manager-react"
+  },
+  "bugs": {
+    "url": "https://github.com/Yelsier/rakun/issues"
+  },
+  "homepage": "https://github.com/Yelsier/rakun/tree/main/manager-react#readme",
   "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",

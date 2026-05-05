@@ -1,7 +1,20 @@
 {
   "name": "rakun-manual",
   "private": true,
+  "description": "Monorepo for Rakun, a TypeScript toolkit for content, routing, manager UI, and web integrations.",
   "license": "MIT",
+  "author": {
+    "name": "Yago Claros",
+    "url": "https://github.com/Yelsier"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yelsier/rakun.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Yelsier/rakun/issues"
+  },
+  "homepage": "https://github.com/Yelsier/rakun#readme",
   "workspaces": [
     "core",
     "trpc",
