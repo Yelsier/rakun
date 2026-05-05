@@ -1,6 +1,7 @@
 {
   "name": "rakun-manual",
   "private": true,
+  "license": "MIT",
   "workspaces": [
     "core",
     "trpc",
