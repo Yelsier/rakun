@@ -1,8 +1,8 @@
-import type { Db } from 'mongodb'
-import { MongoClient } from 'mongodb'
+import type { Db, MongoClient } from 'mongodb'
 
 import { checkFailureCase, DbErrorUnknown } from './dbService'
 import { createIndexes } from './createIndexes'
+import { getMongoDB } from './mongodbPeer'
 
 type Environment = 'local' | 'development' | 'test' | 'production'
 
@@ -35,6 +35,7 @@ export async function connectDatabase(
 
   _connectPromise = (async () => {
     try {
+      const { MongoClient } = getMongoDB()
       const client = await MongoClient.connect(config.MONGO_URI)
       const db = client.db(config.MONGO_URI.split('/').pop()?.split('?')[0])
 

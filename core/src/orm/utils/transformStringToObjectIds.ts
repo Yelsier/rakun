@@ -1,6 +1,8 @@
-import { ObjectId } from 'mongodb'
+import { getMongoDB } from '../mongodbPeer'
 
 export function transformStringToObjectIds<T>(obj: T): T {
+  const { ObjectId } = getMongoDB()
+
   if (typeof obj === 'string' && ObjectId.isValid(obj)) {
     return new ObjectId(obj) as unknown as T
   }

@@ -1,4 +1,3 @@
-import { ObjectId } from "mongodb";
 import { Media } from "../../../internal-content-types";
 import ContentType from "../../../lib/ContentType";
 import { getContentTypeByName } from "../../../lib/Registry";
@@ -6,6 +5,7 @@ import { DBOutput, DataPopulated } from "../../../lib/types";
 import { hasKeys } from "../../../lib/utils/hasKeys";
 import { getMediaService } from "../../../media";
 import { getMongoService } from "../../../orm";
+import { getMongoDB } from "../../../orm/mongodbPeer";
 
 /**
  *
@@ -38,6 +38,7 @@ export async function populateRelations<T extends ContentType>(
   data: DBOutput<T> | DBOutput<T>[],
 ): Promise<DataPopulated<T> | DataPopulated<T>[]> {
   const db = await getMongoService();
+  const { ObjectId } = getMongoDB();
 
   if (Array.isArray(data)) {
     return Promise.all(data.map((item) => populateRelations(item)));

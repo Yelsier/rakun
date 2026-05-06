@@ -1,6 +1,8 @@
-import { ObjectId } from 'mongodb'
+import { getMongoDB } from '../mongodbPeer'
 
 export function transformObjectIdsToStrings<T>(obj: T): T {
+  const { ObjectId } = getMongoDB()
+
   if (obj instanceof ObjectId) {
     return obj.toString() as unknown as T
   }

@@ -1,10 +1,22 @@
 import path from "path";
 
-import sharp from "sharp";
 import {
   FileOptimizeOptions,
   FileOptimizeOptionsSchema,
 } from "../lib/fields/File";
+import { requirePeerDependency } from "../lib/utils/peerDependencies";
+
+type Sharp = typeof import("sharp");
+type SharpFactory = Sharp;
+
+const getSharp = (): SharpFactory => {
+  const sharp = requirePeerDependency<Sharp & { default?: SharpFactory }>(
+    "sharp",
+    "npm install sharp",
+    "Rakun uses sharp to read image dimensions and optimize media uploads.",
+  );
+  return sharp.default ?? (sharp as unknown as SharpFactory);
+};
 
 type UploadOptimizationInput = {
   buffer: Buffer;
@@ -83,6 +95,7 @@ const resolveDimensions = async (
   if (!isImageMime(mime)) return {};
 
   try {
+    const sharp = getSharp();
     const metadata = await sharp(content, { failOn: "none" }).metadata();
     const width = metadata.width;
     const height = metadata.height;
@@ -137,6 +150,7 @@ export async function optimizeImageUpload(
   const targetExt = formatToExt[targetFormat];
   const targetMime = formatToMime[targetFormat];
   const quality = options.quality;
+  const sharp = getSharp();
 
   let optimized = sharp(input.buffer, { failOn: "none" }).rotate();
   if (targetFormat === "webp") optimized = optimized.webp({ quality });

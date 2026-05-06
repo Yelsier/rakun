@@ -1,7 +1,8 @@
-import { ObjectId, type Db } from "mongodb";
+import type { Db } from "mongodb";
 
 import { checkFailureCase, DbErrorUnknown } from "../dbService";
 import { parseId } from "../utils/parseId";
+import { getMongoDB } from "../mongodbPeer";
 import { Field } from "../../lib/fields/Field";
 import ContentType from "../../lib/ContentType";
 import { RelationField } from "../../lib/fields/Relation";
@@ -47,6 +48,7 @@ export const findDependenciesHandler =
     id: Id,
   ): Promise<Array<{ contentType: string; _id: Id }>> => {
     checkFailureCase("FoundError");
+    const { ObjectId } = getMongoDB();
     const parsedId = parseId(id);
     const parsedIdString = parsedId.toString();
     const hasTargetId = (value: unknown): boolean => {

@@ -1,9 +1,11 @@
-import { ObjectId } from 'mongodb'
+import { getMongoDB } from '../../orm/mongodbPeer'
 
 /**
  * Transform MongoDB ObjectIds to strings recursively in an object
  */
 export function transformObjectIdsToStrings<T>(obj: T): T {
+  const { ObjectId } = getMongoDB()
+
   if (obj === null || obj === undefined) {
     return obj
   }
