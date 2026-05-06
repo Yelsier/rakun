@@ -17,3 +17,4 @@ export * from "./WebAuthnCredential";
 export * from "./WebAuthnRegChallenge";
 export * from "./Redirect";
 export * from "./Page";
+export * from "./HelloWorld";
