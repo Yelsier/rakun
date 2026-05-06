@@ -89,9 +89,52 @@ export const runWithRakunRequestTrace = <T>(
     return run();
   }
 
+  const printTrace = (startedAt: number, status: "ok" | "error") => {
+    const bootstrapOptions = getRakunBootstrapOptions();
+
+    if (!bootstrapOptions?.logger?.verbose && !Logger.isVerbose()) {
+      return;
+    }
+
+    Logger.info("Rakun request trace", {
+      method,
+      url,
+      status,
+      durationMs: Date.now() - startedAt,
+      steps: Logger.getTrace(),
+    });
+  };
+
   return Logger.withTraceScope(() => {
+    const startedAt = Date.now();
     Logger.addTrace(`${method} ${url}`);
-    return run();
+    try {
+      const result = run();
+
+      if (
+        result &&
+        typeof result === "object" &&
+        "then" in result &&
+        typeof result.then === "function"
+      ) {
+        return result.then(
+          (value: Awaited<T>) => {
+            printTrace(startedAt, "ok");
+            return value;
+          },
+          (error: unknown) => {
+            printTrace(startedAt, "error");
+            throw error;
+          },
+        ) as T;
+      }
+
+      printTrace(startedAt, "ok");
+      return result;
+    } catch (error) {
+      printTrace(startedAt, "error");
+      throw error;
+    }
   });
 };
 

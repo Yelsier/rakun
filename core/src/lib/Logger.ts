@@ -46,6 +46,7 @@ export function createLogger({
   flushIntervalMs = 0,
   prettify = false,
   maxTraceEntries = 200,
+  verbose = false,
 }: {
   level?: LEVEL_KEY;
   file?: string | null;
@@ -54,6 +55,7 @@ export function createLogger({
   flushIntervalMs?: number;
   prettify?: boolean;
   maxTraceEntries?: number;
+  verbose?: boolean;
 } = {}) {
   const minLevel = LEVELS[level] ?? LEVELS.info;
   const traceStorage = new AsyncLocalStorage<{ steps: TraceStep[] }>();
@@ -239,6 +241,7 @@ export function createLogger({
       globalTraceSteps = [];
     },
     getTrace: () => [...getCurrentTraceSteps()],
+    isVerbose: () => verbose,
     trace: (a: string, b?: string | object) => log("trace", a, b),
     debug: (a: string, b?: string | object) => log("debug", a, b),
     info: (a: string, b?: string | object) => log("info", a, b),
