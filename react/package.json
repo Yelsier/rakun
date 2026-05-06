@@ -1,0 +1,56 @@
+{
+  "name": "@rakun-kit/react",
+  "version": "1.0.0",
+  "description": "React rendering helpers for Rakun web modules.",
+  "license": "MIT",
+  "author": {
+    "name": "Yago Claros",
+    "url": "https://github.com/Yelsier"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yelsier/rakun.git",
+    "directory": "react"
+  },
+  "bugs": {
+    "url": "https://github.com/Yelsier/rakun/issues"
+  },
+  "homepage": "https://github.com/Yelsier/rakun/tree/main/react#readme",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "scripts": {
+    "build": "rm -rf dist && npm run build:esm && npm run build:cjs",
+    "build:esm": "tsc -b --force tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
+    "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../scripts/fix-dist-imports.mjs dist/cjs && node ../scripts/write-cjs-package-json.mjs dist/cjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@rakun-kit/core": "^1.0.5"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    }
+  }
+}

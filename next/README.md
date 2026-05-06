@@ -70,6 +70,66 @@ export const { GET, POST, PUT } = rakunNext({
 The tRPC integration creates a Rakun request context from Fetch API headers,
 cookies, and response headers.
 
+## Web Pages
+
+Fetch Rakun page data from a Next Server Component with `@rakun-kit/next/web`:
+
+```tsx
+// app/[[...slug]]/page.tsx
+import {
+  getRakunPage,
+  getRakunPathFromParams,
+  type RakunNextPageParams,
+  type RakunNextPageSearchParams,
+} from "@rakun-kit/next/web";
+import { RakunPageClient } from "./RakunPageClient";
+
+type Props = {
+  params: Promise<RakunNextPageParams>;
+  searchParams: Promise<RakunNextPageSearchParams>;
+};
+
+export default async function Page({ params, searchParams }: Props) {
+  const page = await getRakunPage({
+    path: getRakunPathFromParams({ params: await params }),
+    search: await searchParams,
+    apiBaseUrl: "/api/rakun",
+  });
+
+  return <RakunPageClient page={page} />;
+}
+```
+
+```tsx
+// app/[[...slug]]/RakunPageClient.tsx
+"use client";
+
+import type { PageOutput } from "@rakun-kit/core/contracts";
+import { PageLayoutRenderer } from "@rakun-kit/react";
+
+export function RakunPageClient({ page }: { page: PageOutput }) {
+  return (
+    <PageLayoutRenderer
+      page={page}
+      loadModule={(name) => import(`@/modules/${name}`)}
+    />
+  );
+}
+```
+
+`getRakunPage` forwards request headers by default, including cookies, so
+redirects, preview state, locale, and auth-aware logic can use request context.
+It defaults to `cache: "no-store"`. Pass `fetchOptions` for ISR/cache control:
+
+```ts
+await getRakunPage({
+  path: "/",
+  fetchOptions: {
+    next: { revalidate: 86400, tags: ["rakun-page:/"] },
+  },
+});
+```
+
 ## Manager Page
 
 Render the manager from a Next App Router page with `@rakun-kit/next/manager`:
@@ -140,6 +200,7 @@ When this config is detected, `rakunNext` serves:
 - `@rakun-kit/next/trpc`: `rakunNextTrpc`.
 - `@rakun-kit/next/media`: `LocalAdapter`, local media config, and local HTTP handlers.
 - `@rakun-kit/next/manager`: `RakunManagerPage` and manager page types.
+- `@rakun-kit/next/web`: `getRakunPage` and page path helpers.
 
 ## Build
 

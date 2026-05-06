@@ -222,3 +222,4 @@ export type {
 } from "./schemas/manager/media/prepareUpload";
 export * from "./media";
 export * from "./contracts";
+export * from "./web";
