@@ -182,4 +182,3 @@ export { rakunNextCrud } from "./crud";
 export { rakunNextLocalService } from "./media";
 export * from "./media";
 export * from "./shared";
-export * from "./web";

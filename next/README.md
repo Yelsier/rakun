@@ -105,7 +105,7 @@ export default async function Page({ params, searchParams }: Props) {
 "use client";
 
 import type { PageOutput } from "@rakun-kit/core/contracts";
-import { PageLayoutRenderer } from "@rakun-kit/react";
+import { PageLayoutRenderer } from "@rakun-kit/next/web/client";
 
 export function RakunPageClient({ page }: { page: PageOutput }) {
   return (
@@ -201,6 +201,7 @@ When this config is detected, `rakunNext` serves:
 - `@rakun-kit/next/media`: `LocalAdapter`, local media config, and local HTTP handlers.
 - `@rakun-kit/next/manager`: `RakunManagerPage` and manager page types.
 - `@rakun-kit/next/web`: `getRakunPage` and page path helpers.
+- `@rakun-kit/next/web/client`: Rakun React renderers for client components.
 
 ## Build
 

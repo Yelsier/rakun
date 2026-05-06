@@ -30,6 +30,7 @@
         "../manager-react/dist/styles.css.d.ts"
       ],
       "@rakun-kit/manager-react/link": ["../manager-react/dist/esm/link.d.ts"],
+      "@rakun-kit/react": ["../react/dist/esm/index.d.ts"],
       "@rakun-kit/trpc": ["../trpc/dist/esm/index.d.ts"]
     }
   },
@@ -39,6 +40,9 @@
     },
     {
       "path": "../trpc/tsconfig.build.json"
+    },
+    {
+      "path": "../react/tsconfig.build.json"
     }
   ]
 }

@@ -41,6 +41,7 @@
         "../manager-react/styles.css.d.ts"
       ],
       "@rakun-kit/manager-react/link": ["../manager-react/src/link.tsx"],
+      "@rakun-kit/react": ["../react/src/index.ts"],
       "@rakun-kit/trpc": ["../trpc/src/index.ts"]
     }
   },
