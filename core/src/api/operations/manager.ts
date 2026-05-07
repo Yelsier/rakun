@@ -2,12 +2,10 @@
 import type { RakunOperationImplementationMap } from "./types";
 import { mergeOperationContracts } from "./types";
 import { createManagerOperationContracts } from "./manager-contract";
-import {
-  getCustomApiOperationDefinitions,
-  mergeOperationMaps,
-} from "./custom";
+import { getCustomApiOperationDefinitions, mergeOperationMaps } from "./custom";
 import { setSessionCookie } from "../sessionCookie";
 import { throwAppError } from "../../lib/errors";
+import { Logger } from "../../lib/Logger";
 import { getPermissionList } from "../../lib/Permissions";
 import { getContentTypesForManager } from "../../lib/Registry";
 import { getLanguages } from "../utils/getLanguages";
@@ -30,11 +28,11 @@ import { webauthnAuthOptionsHandler } from "../routes/manager/auth/webauthn/weba
 import { webauthnAuthVerifyHandler } from "../routes/manager/auth/webauthn/webauthnAuthVerify";
 import { accountInfoHandler } from "../routes/manager/auth/accountInfo";
 import { deleteSessionHandler } from "../routes/manager/auth/deleteSession";
-import { prepareUploadHandler } from "../routes/manager/auth/media/prepareUpload";
-import { finalizeUploadHandler } from "../routes/manager/auth/media/finalizeUpload";
-import { getMediaUrlHandler } from "../routes/manager/auth/media/getMediaUrl";
-import { createFolderHandler } from "../routes/manager/auth/media/createFolder";
-import { listFoldersHandler } from "../routes/manager/auth/media/listFolders";
+import { prepareUploadHandler } from "../routes/manager/media/prepareUpload";
+import { finalizeUploadHandler } from "../routes/manager/media/finalizeUpload";
+import { getMediaUrlHandler } from "../routes/manager/media/getMediaUrl";
+import { createFolderHandler } from "../routes/manager/media/createFolder";
+import { listFoldersHandler } from "../routes/manager/media/listFolders";
 import { listLiteralsHandler } from "../routes/manager/literals/list";
 import { upsertLiteralHandler } from "../routes/manager/literals/upsert";
 
@@ -49,7 +47,9 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.regenerateRoutes": {
       resolve: async () => {
+        Logger.addTrace("manager.regenerateRoutes: handler start");
         await regenerateAllRoutesMap();
+        Logger.addTrace("manager.regenerateRoutes: handler success");
         return { ok: true };
       },
     },
@@ -84,14 +84,16 @@ export const createManagerOperationDefinitions = () => {
         await finalizeUploadHandler({ input, ctx }),
     },
     "manager.media.getUrl": {
-      resolve: async ({ input, ctx }) => await getMediaUrlHandler({ input, ctx }),
+      resolve: async ({ input, ctx }) =>
+        await getMediaUrlHandler({ input, ctx }),
     },
     "manager.media.createFolder": {
       resolve: async ({ input, ctx }) =>
         await createFolderHandler({ input, ctx }),
     },
     "manager.media.listFolders": {
-      resolve: async ({ input, ctx }) => await listFoldersHandler({ input, ctx }),
+      resolve: async ({ input, ctx }) =>
+        await listFoldersHandler({ input, ctx }),
     },
     "manager.literals.list": {
       resolve: async ({ input, ctx }) =>

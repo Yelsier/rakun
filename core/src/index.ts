@@ -96,7 +96,7 @@ export const runWithRakunRequestTrace = <T>(
       return;
     }
 
-    Logger.info("Rakun request trace", {
+    Logger.debug("Rakun request trace", {
       method,
       url,
       status,
@@ -170,11 +170,7 @@ export type {
   RouteKey,
   RouteKeys,
 } from "./api/utils/routes/routeDefinitions";
-export type {
-  ApiProxies,
-  InputProxy,
-  OutputProxy,
-} from "./api/proxies";
+export type { ApiProxies, InputProxy, OutputProxy } from "./api/proxies";
 export { getRakunBootstrapOptions } from "./bootstrapState";
 export { default as ContentType } from "./lib/ContentType";
 export * from "./lib/fields";
@@ -231,7 +227,7 @@ export {
   handleMediaBinaryUpload,
   type MediaBinaryUploadRequest,
   type MediaBinaryUploadResponse,
-} from "./api/routes/manager/auth/media/uploadBinary";
+} from "./api/routes/manager/media/uploadBinary";
 export { parseCookieHeader } from "./lib/utils/parseCookieHeader";
 export {
   getPermissionList,

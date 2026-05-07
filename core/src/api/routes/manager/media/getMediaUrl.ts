@@ -1,13 +1,13 @@
-import { throwAppError } from "../../../../../lib/errors";
+import { throwAppError } from "../../../../lib/errors";
 import {
   MediaErrorInvalidData,
   MediaErrorNotFound,
-  PrepareUploadInput,
-  PrepareUploadOutput,
+  GetMediaUrlInput,
+  GetMediaUrlOutput,
   getMediaService,
-} from "../../../../../media";
-import { RakunRequestContext } from "../../../../context";
-import { checkPermissions } from "../../../../utils/checkPermissions";
+} from "../../../../media";
+import { RakunRequestContext } from "../../../context";
+import { checkAnyPermissions } from "../../../utils/checkPermissions";
 
 const mapMediaError = (error: unknown): never => {
   if (error instanceof MediaErrorInvalidData) {
@@ -27,20 +27,20 @@ const mapMediaError = (error: unknown): never => {
   });
 };
 
-export const prepareUploadHandler = async ({
+export const getMediaUrlHandler = async ({
   input,
   ctx,
 }: {
-  input: PrepareUploadInput;
+  input: GetMediaUrlInput;
   ctx: RakunRequestContext;
-}): Promise<PrepareUploadOutput> => {
+}): Promise<GetMediaUrlOutput> => {
   const user = ctx.getUser();
 
-  checkPermissions(user, ["content.Media.own"]);
+  checkAnyPermissions(user, ["content.Media.readAny", "content.Media.own"]);
 
   try {
     const media = getMediaService();
-    return await media.prepareUpload(input);
+    return await media.getMediaUrl(input);
   } catch (error) {
     return mapMediaError(error);
   }

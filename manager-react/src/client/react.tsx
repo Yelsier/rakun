@@ -7,66 +7,68 @@ import {
   type UseQueryResult,
   useMutation,
   useQuery,
-} from '@tanstack/react-query'
-import { createContext, useContext, type ReactNode } from 'react'
+} from "@tanstack/react-query";
+import { createContext, useContext, type ReactNode } from "react";
 
 import type {
   ManagerMutationOperationName,
   ManagerOperationInput,
   ManagerOperationOutput,
   ManagerQueryOperationName,
-} from './operations'
-import type { ManagerClient } from './request'
+} from "./operations";
+import type { ManagerClient } from "./request";
 
-const MANAGER_QUERY_PREFIX = 'rakun-manager'
+const MANAGER_QUERY_PREFIX = "rakun-manager";
 
-const ManagerClientContext = createContext<ManagerClient | null>(null)
+const ManagerClientContext = createContext<ManagerClient | null>(null);
 
 export type ManagerProviderProps = {
-  client: ManagerClient
-  children: ReactNode
-}
+  client: ManagerClient;
+  children: ReactNode;
+};
 
-export const ManagerProvider = ({
-  client,
-  children,
-}: ManagerProviderProps) => {
+export const ManagerProvider = ({ client, children }: ManagerProviderProps) => {
   return (
     <ManagerClientContext.Provider value={client}>
       {children}
     </ManagerClientContext.Provider>
-  )
-}
+  );
+};
 
 export const useManagerClient = () => {
-  const client = useContext(ManagerClientContext)
+  const client = useContext(ManagerClientContext);
 
   if (!client) {
-    throw new Error('useManagerClient must be used inside <ManagerProvider>.')
+    throw new Error("useManagerClient must be used inside <ManagerProvider>.");
   }
 
-  return client
-}
+  return client;
+};
 
-export type ManagerQueryKey<TName extends ManagerQueryOperationName> = readonly [
-  typeof MANAGER_QUERY_PREFIX,
-  TName,
-  ManagerOperationInput<TName> | null,
-]
+export type ManagerQueryKey<TName extends ManagerQueryOperationName> =
+  readonly [
+    typeof MANAGER_QUERY_PREFIX,
+    TName,
+    ManagerOperationInput<TName> | null,
+  ];
 
 export type ManagerQueryOptionsResult<TName extends ManagerQueryOperationName> =
   {
-    queryKey: ManagerQueryKey<TName>
+    queryKey: ManagerQueryKey<TName>;
     queryFn: (context: {
-      signal: AbortSignal
-    }) => Promise<ManagerOperationOutput<TName>>
-  }
+      signal: AbortSignal;
+    }) => Promise<ManagerOperationOutput<TName>>;
+  };
+
+export type ManagerQueryOptionsConfig = {
+  consumeSignal?: boolean;
+};
 
 export const createManagerQueryKey = <TName extends ManagerQueryOperationName>(
   name: TName,
   input: ManagerOperationInput<TName>,
 ): ManagerQueryKey<TName> =>
-  [MANAGER_QUERY_PREFIX, name, (input ?? null) as never] as const
+  [MANAGER_QUERY_PREFIX, name, input ?? null] as const;
 
 export const createManagerQueryOptions = <
   TName extends ManagerQueryOperationName,
@@ -74,41 +76,45 @@ export const createManagerQueryOptions = <
   client: ManagerClient,
   name: TName,
   input: ManagerOperationInput<TName>,
+  config: ManagerQueryOptionsConfig = {},
 ): ManagerQueryOptionsResult<TName> => ({
   queryKey: createManagerQueryKey(name, input),
   queryFn: ({ signal }: { signal: AbortSignal }) =>
-    client.request(name, input as never, { signal }),
-})
+    client.request(name, input, {
+      signal: config.consumeSignal ? signal : undefined,
+    }),
+});
 
-export type UseManagerQueryArgs<TName extends ManagerQueryOperationName> =
-  Omit<
-    UseQueryOptions<
-      ManagerOperationOutput<TName>,
-      DefaultError,
-      ManagerOperationOutput<TName>,
-      ManagerQueryKey<TName>
-    >,
-    'queryKey' | 'queryFn'
-  > & {
-    name: TName
-    input: ManagerOperationInput<TName>
-  }
+export type UseManagerQueryArgs<TName extends ManagerQueryOperationName> = Omit<
+  UseQueryOptions<
+    ManagerOperationOutput<TName>,
+    DefaultError,
+    ManagerOperationOutput<TName>,
+    ManagerQueryKey<TName>
+  >,
+  "queryKey" | "queryFn"
+> & {
+  name: TName;
+  input: ManagerOperationInput<TName>;
+  consumeSignal?: boolean;
+};
 
 export const useManagerQuery = <TName extends ManagerQueryOperationName>({
   name,
   input,
+  consumeSignal = false,
   ...options
 }: UseManagerQueryArgs<TName>): UseQueryResult<
   ManagerOperationOutput<TName>,
   DefaultError
 > => {
-  const client = useManagerClient()
+  const client = useManagerClient();
 
   return useQuery({
     ...options,
-    ...createManagerQueryOptions(client, name, input),
-  })
-}
+    ...createManagerQueryOptions(client, name, input, { consumeSignal }),
+  });
+};
 
 export type UseManagerMutationOptions<
   TName extends ManagerMutationOperationName,
@@ -120,10 +126,10 @@ export type UseManagerMutationOptions<
     ManagerOperationInput<TName>,
     TContext
   >,
-  'mutationFn'
+  "mutationFn"
 > & {
-  mutationKey?: QueryKey
-}
+  mutationKey?: QueryKey;
+};
 
 export const useManagerMutation = <
   TName extends ManagerMutationOperationName,
@@ -137,12 +143,12 @@ export const useManagerMutation = <
   ManagerOperationInput<TName>,
   TContext
 > => {
-  const client = useManagerClient()
+  const client = useManagerClient();
 
   return useMutation({
     mutationKey: options.mutationKey ?? [MANAGER_QUERY_PREFIX, name],
     ...options,
     mutationFn: async (input: ManagerOperationInput<TName>) =>
-      await client.request(name, input as never),
-  })
-}
+      await client.request(name, input),
+  });
+};

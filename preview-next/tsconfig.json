@@ -1,0 +1,51 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["../manager-react/src/*"],
+      "@rakun-kit/core": ["../core/src/index.ts"],
+      "@rakun-kit/core/client": ["../core/src/client.ts"],
+      "@rakun-kit/core/contracts": ["../core/src/contracts.ts"],
+      "@rakun-kit/core/manager": ["../core/src/manager.ts"],
+      "@rakun-kit/core/internal-content-types": [
+        "../core/src/internal-content-types/index.ts"
+      ],
+      "@rakun-kit/core/internal-content-types/*": [
+        "../core/src/internal-content-types/*.ts"
+      ],
+      "@rakun-kit/core/types": ["../core/src/lib/types/index.ts"],
+      "@rakun-kit/manager-react": ["../manager-react/src/index.ts"],
+      "@rakun-kit/manager-react/*": ["../manager-react/src/*"],
+      "@rakun-kit/next": ["../next/src/index.ts"],
+      "@rakun-kit/next/*": ["../next/src/*"],
+      "@rakun-kit/react": ["../react/src/index.ts"],
+      "@rakun-kit/trpc": ["../trpc/src/index.ts"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}

@@ -1,4 +1,5 @@
 import { RouteMap, Language, Route } from "../../../internal-content-types";
+import { Logger } from "../../../lib/Logger";
 import { getContentTypeByName } from "../../../lib/Registry";
 import { DBOutput } from "../../../lib/types";
 import {
@@ -13,9 +14,18 @@ import {
 } from "./routeMapHelpers";
 
 export const regenerateAllRoutesMap = async (): Promise<void> => {
+  Logger.addTrace("routes.regenerateAll: start");
   const { routes, languages, routeSettings, db } = await loadRouteData();
+  Logger.addTrace("routes.regenerateAll: data loaded", {
+    routes: routes.length,
+    languages: languages.length,
+    hasRouteSettings: !!routeSettings,
+  });
 
   const prevRoutesMap = await db.getAll(RouteMap);
+  Logger.addTrace("routes.regenerateAll: previous map loaded", {
+    items: prevRoutesMap.length,
+  });
 
   const routesMap: RouteMapItemInput[] = (
     await Promise.all(
@@ -42,9 +52,15 @@ export const regenerateAllRoutesMap = async (): Promise<void> => {
     .flat()
     .filter((r) => r !== null);
 
+  Logger.addTrace("routes.regenerateAll: map generated", {
+    items: routesMap.length,
+  });
   await db.clear(RouteMap);
+  Logger.addTrace("routes.regenerateAll: previous map cleared");
   await updateRouteMapEntries(routesMap);
+  Logger.addTrace("routes.regenerateAll: entries updated");
   await revalidateRoutePaths(routesMap, prevRoutesMap);
+  Logger.addTrace("routes.regenerateAll: revalidation done");
 };
 
 export async function updateSingleRouteMap({
@@ -54,11 +70,24 @@ export async function updateSingleRouteMap({
   contentType: string;
   contentTypeId: string;
 }): Promise<void> {
+  Logger.addTrace("routes.updateSingle: start", {
+    contentType,
+    contentTypeId,
+  });
   const { routes, languages, routeSettings, db } = await loadRouteData();
+  Logger.addTrace("routes.updateSingle: data loaded", {
+    routes: routes.length,
+    languages: languages.length,
+    hasRouteSettings: !!routeSettings,
+  });
 
   const item = await db.get(getContentTypeByName(contentType)!, contentTypeId);
 
   if (!item) {
+    Logger.addTrace("routes.updateSingle: item not found", {
+      contentType,
+      contentTypeId,
+    });
     return;
   }
 
@@ -71,6 +100,9 @@ export async function updateSingleRouteMap({
       options: { limit: "all" },
     })
   ).items;
+  Logger.addTrace("routes.updateSingle: previous map loaded", {
+    items: prevRoutesMap.length,
+  });
 
   const routesMap: RouteMapItemInput[] = (
     await Promise.all(
@@ -105,14 +137,27 @@ export async function updateSingleRouteMap({
     )
   ).filter((r) => r !== null);
 
+  Logger.addTrace("routes.updateSingle: map generated", {
+    items: routesMap.length,
+  });
   await updateRouteMapEntries(routesMap);
+  Logger.addTrace("routes.updateSingle: entries updated");
   await revalidateRoutePaths(routesMap, prevRoutesMap);
+  Logger.addTrace("routes.updateSingle: revalidation done");
 }
 
 export async function updateLanguageRoutesMap(
   language: DBOutput<Language>,
 ): Promise<void> {
+  Logger.addTrace("routes.updateLanguage: start", {
+    languageId: language._id,
+    languageCode: language.code,
+  });
   const { routes, routeSettings, db } = await loadRouteData();
+  Logger.addTrace("routes.updateLanguage: data loaded", {
+    routes: routes.length,
+    hasRouteSettings: !!routeSettings,
+  });
 
   const prevRoutesMap = (
     await db.list(RouteMap, {
@@ -120,6 +165,9 @@ export async function updateLanguageRoutesMap(
       options: { limit: "all" },
     })
   ).items;
+  Logger.addTrace("routes.updateLanguage: previous map loaded", {
+    items: prevRoutesMap.length,
+  });
 
   const routesMap: RouteMapItemInput[] = (
     await Promise.all(
@@ -146,14 +194,29 @@ export async function updateLanguageRoutesMap(
     .flat()
     .filter((r) => r !== null);
 
+  Logger.addTrace("routes.updateLanguage: map generated", {
+    items: routesMap.length,
+  });
   await updateRouteMapEntries(routesMap);
+  Logger.addTrace("routes.updateLanguage: entries updated");
   await revalidateRoutePaths(routesMap, prevRoutesMap);
+  Logger.addTrace("routes.updateLanguage: revalidation done");
 }
 
 export async function updateRouteRouteMap(
   route: DBOutput<Route>,
 ): Promise<void> {
+  Logger.addTrace("routes.updateRoute: start", {
+    routeId: route._id,
+    contentType: route.contentType,
+    hasPage: route.hasPage,
+  });
   const { routes, db, languages, routeSettings } = await loadRouteData();
+  Logger.addTrace("routes.updateRoute: data loaded", {
+    routes: routes.length,
+    languages: languages.length,
+    hasRouteSettings: !!routeSettings,
+  });
 
   // UpdateSubRoutes
   const subRoutes = (
@@ -163,10 +226,16 @@ export async function updateRouteRouteMap(
       },
     })
   ).items;
+  Logger.addTrace("routes.updateRoute: subroutes loaded", {
+    items: subRoutes.length,
+  });
 
   await Promise.all(subRoutes.map(updateRouteRouteMap));
 
   if (!route.hasPage) {
+    Logger.addTrace("routes.updateRoute: skipped route without page", {
+      routeId: route._id,
+    });
     return;
   }
 
@@ -176,6 +245,9 @@ export async function updateRouteRouteMap(
       filter: { routeId: route._id },
     })
   ).items;
+  Logger.addTrace("routes.updateRoute: previous map loaded", {
+    items: prevRoutesMap.length,
+  });
 
   const routesMap: RouteMapItemInput[] = (
     await (async () => {
@@ -196,6 +268,11 @@ export async function updateRouteRouteMap(
     })()
   ).filter((r): r is RouteMapItemInput => r !== null);
 
+  Logger.addTrace("routes.updateRoute: map generated", {
+    items: routesMap.length,
+  });
   await updateRouteMapEntries(routesMap);
+  Logger.addTrace("routes.updateRoute: entries updated");
   await revalidateRoutePaths(routesMap, prevRoutesMap);
+  Logger.addTrace("routes.updateRoute: revalidation done");
 }

@@ -1,24 +1,24 @@
-import { MediaFolder, Media } from "../../../../../internal-content-types";
-import { isAppError, throwAppError } from "../../../../../lib/errors";
-import { hasPermissions } from "../../../../../lib/Permissions";
+import { MediaFolder, Media } from "../../../../internal-content-types";
+import { isAppError, throwAppError } from "../../../../lib/errors";
+import { hasPermissions } from "../../../../lib/Permissions";
 import {
   MediaError,
   MediaErrorInvalidData,
   MediaErrorNotFound,
   getMediaService,
-} from "../../../../../media";
-import { getMongoService } from "../../../../../orm";
+} from "../../../../media";
+import { getMongoService } from "../../../../orm";
 import {
   DbErrorConflict,
   DbErrorInvalidData,
-} from "../../../../../orm/dbService";
-import { RakunRequestContext } from "../../../../context";
-import { checkPermissions } from "../../../../utils/checkPermissions";
-import { slugify } from "../../../../../lib/utils/slugify";
+} from "../../../../orm/dbService";
+import { RakunRequestContext } from "../../../context";
+import { checkPermissions } from "../../../utils/checkPermissions";
+import { slugify } from "../../../../lib/utils/slugify";
 import {
   FinalizeUploadInput,
   FinalizeUploadOutput,
-} from "../../../../../schemas/manager/media/finalizeUpload";
+} from "../../../../schemas/manager/media/finalizeUpload";
 
 const normalizePath = (value: string): string =>
   value

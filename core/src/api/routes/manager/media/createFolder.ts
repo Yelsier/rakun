@@ -1,18 +1,18 @@
-import { MediaFolder } from "../../../../../internal-content-types";
-import { throwAppError } from "../../../../../lib/errors";
-import { hasPermissions } from "../../../../../lib/Permissions";
-import { slugify } from "../../../../../lib/utils/slugify";
-import { getMongoService } from "../../../../../orm";
+import { MediaFolder } from "../../../../internal-content-types";
+import { throwAppError } from "../../../../lib/errors";
+import { hasPermissions } from "../../../../lib/Permissions";
+import { slugify } from "../../../../lib/utils/slugify";
+import { getMongoService } from "../../../../orm";
 import {
   DbErrorInvalidData,
   DbErrorConflict,
-} from "../../../../../orm/dbService";
-import { RakunRequestContext } from "../../../../context";
+} from "../../../../orm/dbService";
+import { RakunRequestContext } from "../../../context";
 import {
   CreateFolderInput,
   CreateFolderOutput,
-} from "../../../../../schemas/manager/media/createFolder";
-import { checkPermissions } from "../../../../utils/checkPermissions";
+} from "../../../../schemas/manager/media/createFolder";
+import { checkPermissions } from "../../../utils/checkPermissions";
 
 const normalizePath = (value: string): string =>
   value

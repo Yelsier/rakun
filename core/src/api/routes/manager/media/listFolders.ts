@@ -1,12 +1,12 @@
-import { MediaFolder } from "../../../../../internal-content-types";
-import { hasPermissions } from "../../../../../lib/Permissions";
-import { getMongoService } from "../../../../../orm";
-import { RakunRequestContext } from "../../../../context";
+import { MediaFolder } from "../../../../internal-content-types";
+import { hasPermissions } from "../../../../lib/Permissions";
+import { getMongoService } from "../../../../orm";
+import { RakunRequestContext } from "../../../context";
 import {
   ListFoldersInput,
   ListFoldersOutput,
-} from "../../../../../schemas/manager/media/listFolders";
-import { checkAnyPermissions } from "../../../../utils/checkPermissions";
+} from "../../../../schemas/manager/media/listFolders";
+import { checkAnyPermissions } from "../../../utils/checkPermissions";
 
 export const listFoldersHandler = async ({
   input,

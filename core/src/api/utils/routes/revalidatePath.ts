@@ -1,5 +1,5 @@
 import { Route, Language, RouteMap } from "../../../internal-content-types";
-import { loadApiEnv } from "../../../lib/Env";
+import { getRakunBootstrapOptions } from "../../../bootstrapState";
 import { Logger } from "../../../lib/Logger";
 import { getMongoService } from "../../../orm";
 import {
@@ -17,11 +17,11 @@ const normalizePath = (value: string): string => {
 };
 
 export async function revalidatePath(path: string): Promise<void> {
-  const env = loadApiEnv();
+  const revalidate = getRakunBootstrapOptions()?.revalidate;
 
-  if (!env.webRevalidateUrl || !env.webRevalidateToken) {
+  if (!revalidate) {
     Logger.warn(
-      "Skipping path revalidation because WEB_REVALIDATE_URL or WEB_REVALIDATE_TOKEN is missing",
+      "Skipping path revalidation because `revalidate` is not configured in rakunBootstrap",
       {
         path,
       },
@@ -30,16 +30,16 @@ export async function revalidatePath(path: string): Promise<void> {
   }
 
   const normalizedPath = normalizePath(path);
-  const response = await fetch(env.webRevalidateUrl, {
+  const response = await fetch(revalidate.url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${env.webRevalidateToken}`,
+      Authorization: `Bearer ${revalidate.token}`,
     },
     body: JSON.stringify({
       path: normalizedPath,
     }),
-    signal: AbortSignal.timeout(5000),
+    signal: AbortSignal.timeout(revalidate.timeoutMs ?? 5000),
   });
 
   if (!response.ok) {

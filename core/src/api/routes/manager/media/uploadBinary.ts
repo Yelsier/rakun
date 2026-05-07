@@ -1,10 +1,10 @@
 import z from "zod";
-import { getAppErrorStatusCode, isAppError } from "../../../../../lib/errors";
-import { getMediaService } from "../../../../../media";
-import { optimizeImageUpload } from "../../../../../media/imageOptimization";
-import { createRequestContext } from "../../../../context";
-import { checkPermissions } from "../../../../utils/checkPermissions";
-import type { CookieOptions } from "../../../../context";
+import { getAppErrorStatusCode, isAppError } from "../../../../lib/errors";
+import { getMediaService } from "../../../../media";
+import { optimizeImageUpload } from "../../../../media/imageOptimization";
+import { createRequestContext } from "../../../context";
+import { checkPermissions } from "../../../utils/checkPermissions";
+import type { CookieOptions } from "../../../context";
 
 const uploadHeadersSchema = z.object({
   key: z.string().min(1),

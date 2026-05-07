@@ -23,7 +23,8 @@
     "s3",
     "react",
     "manager-react",
-    "preview"
+    "preview",
+    "preview-next"
   ],
   "scripts": {
     "clean": "rm -rf core/dist trpc/dist express/dist next/dist s3/dist react/dist manager-react/dist",
@@ -39,7 +40,8 @@
     "build:manager-react": "npm run build --workspace @rakun-kit/manager-react",
     "preview": "npm run dev --workspace @rakun-kit/preview",
     "preview:api": "npm run dev:api --workspace @rakun-kit/preview",
-    "preview:web": "npm run dev:web --workspace @rakun-kit/preview"
+    "preview:web": "npm run dev:web --workspace @rakun-kit/preview",
+    "preview:next": "npm run dev --workspace @rakun-kit/preview-next"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

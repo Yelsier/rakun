@@ -19,6 +19,13 @@ export interface RakunBootstrapOptions {
   mongo?: MongoConfig;
   media?: MediaServiceConfig;
   logger?: Parameters<typeof createLogger>[0];
+  revalidate?:
+    | {
+        url: string;
+        token: string;
+        timeoutMs?: number;
+      }
+    | false;
   syncRoutes?: boolean;
 }
 
