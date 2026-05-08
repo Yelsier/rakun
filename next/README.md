@@ -79,10 +79,10 @@ Fetch Rakun page data from a Next Server Component with `@rakun-kit/next/web`:
 import {
   getRakunPage,
   getRakunPathFromParams,
+  RakunPageRenderer,
   type RakunNextPageParams,
   type RakunNextPageSearchParams,
 } from "@rakun-kit/next/web";
-import { RakunPageClient } from "./RakunPageClient";
 
 type Props = {
   params: Promise<RakunNextPageParams>;
@@ -96,24 +96,26 @@ export default async function Page({ params, searchParams }: Props) {
     apiBaseUrl: "/api/rakun",
   });
 
-  return <RakunPageClient page={page} />;
-}
-```
-
-```tsx
-// app/[[...slug]]/RakunPageClient.tsx
-"use client";
-
-import type { PageOutput } from "@rakun-kit/core/contracts";
-import { PageLayoutRenderer } from "@rakun-kit/next/web/client";
-
-export function RakunPageClient({ page }: { page: PageOutput }) {
   return (
-    <PageLayoutRenderer
+    <RakunPageRenderer
       page={page}
       loadModule={(name) => import(`@/modules/${name}`)}
     />
   );
+}
+```
+
+`RakunPageRenderer` is a server component renderer. Modules are server modules
+by default, so they can fetch data and render without client JavaScript. If a
+module needs hooks or browser events, add `"use client"` at the top of that
+module file; Next.js will make only that module a client component.
+
+Module files should export either `default` or `component`:
+
+```tsx
+// modules/Hero.tsx
+export default function Hero({ title }: { title: string }) {
+  return <section>{title}</section>;
 }
 ```
 
@@ -200,7 +202,7 @@ When this config is detected, `rakunNext` serves:
 - `@rakun-kit/next/trpc`: `rakunNextTrpc`.
 - `@rakun-kit/next/media`: `LocalAdapter`, local media config, and local HTTP handlers.
 - `@rakun-kit/next/manager`: `RakunManagerPage` and manager page types.
-- `@rakun-kit/next/web`: `getRakunPage` and page path helpers.
+- `@rakun-kit/next/web`: `getRakunPage`, `RakunPageRenderer`, and page path helpers.
 - `@rakun-kit/next/web/client`: Rakun React renderers for client components.
 
 ## Build

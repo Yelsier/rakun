@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Rakun Next Preview
 
-## Getting Started
+Next.js App Router preview for `@rakun-kit/next`.
 
-First, run the development server:
+## Setup
+
+Create `preview-next/.env.local` from `.env.example`:
+
+```bash
+MONGO_URI=mongodb+srv://USER:PASSWORD@HOST/DATABASE
+SEED_PREVIEW=true
+PREVIEW_ADMIN_EMAIL=admin@rakun.local
+PREVIEW_ADMIN_NAME=Preview Admin
+PREVIEW_ADMIN_PASSWORD=admin1234
+```
+
+Run the app:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `http://localhost:3000/en` for seeded home page
+- `http://localhost:3000/backend` for manager
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Default seeded login:
 
-## Learn More
+```text
+admin@rakun.local / admin1234
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Seed
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The API route seeds preview data on first request when `SEED_PREVIEW` is not
+`false`. Seeded data matches the Vite preview shape:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `Language`
+- preview admin role and user
+- `Header` and `Footer` layout modules
+- home `Page`
+- inline `HelloWorld` module in the home iterator
+- `Author` and `Article`
+- route settings and route map for `/en`
 
-## Deploy on Vercel
+The seed is idempotent and also repairs the seeded home iterator so
+`HelloWorld` stays present after local database reuse.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Rendering
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The page route uses `RakunPageRenderer` from `@rakun-kit/next/web`:
+
+```tsx
+<RakunPageRenderer
+  page={page}
+  loadModule={(name) => import(`../../modules/${name}`)}
+/>
+```
+
+Modules in `preview-next/modules` are server modules by default. Add
+`"use client"` only to modules that need hooks or browser events.
+
+## Build
+
+```bash
+npm run build
+```
