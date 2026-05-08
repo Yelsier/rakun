@@ -1,10 +1,10 @@
 import {
   getRakunPage,
   getRakunPathFromParams,
+  RakunPageRenderer,
   type RakunNextPageParams,
   type RakunNextPageSearchParams,
 } from "@rakun-kit/next/web";
-import { RakunPageClient } from "./RakunPageClient";
 
 type Props = {
   params: Promise<RakunNextPageParams>;
@@ -18,5 +18,10 @@ export default async function Page({ params, searchParams }: Props) {
     apiBaseUrl: "/api",
   });
 
-  return <RakunPageClient page={page} />;
+  return (
+    <RakunPageRenderer
+      page={page}
+      loadModule={(name) => import(`../../modules/${name}`)}
+    />
+  );
 }

@@ -1,6 +1,13 @@
 import { headers as nextHeaders } from "next/headers";
 import type { PageOutput } from "@rakun-kit/core/contracts";
 
+export {
+  RakunPageRenderer,
+  type RakunPageModuleImport,
+  type RakunPageModuleLoader,
+  type RakunPageRendererProps,
+} from "./web-renderer";
+
 export type RakunNextPageSearchParams = Record<
   string,
   string | string[] | undefined

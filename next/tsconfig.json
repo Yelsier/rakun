@@ -22,6 +22,7 @@
     "paths": {
       "@rakun-kit/core": ["../core/src/index.ts"],
       "@rakun-kit/core/contracts": ["../core/src/contracts.ts"],
+      "@rakun-kit/core/web": ["../core/src/web/index.ts"],
       "@rakun-kit/core/errors": ["../core/src/lib/errors/index.ts"],
       "@rakun-kit/core/logger": ["../core/src/lib/Logger.ts"],
       "@rakun-kit/core/internal-content-types": [

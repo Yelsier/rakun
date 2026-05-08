@@ -94,13 +94,15 @@ export const seedPreviewData = async ({
     const header = await db.collection(Header.name).findOneAndUpdate(
       { brand: "Rakun Preview" },
       {
+        $set: {
+          primaryLinkLabel: "Backend",
+          primaryLinkHref: "http://localhost:3000/backend",
+          updatedAt: now(),
+        },
         $setOnInsert: {
           brand: "Rakun Preview",
-          primaryLinkLabel: "Backend",
-          primaryLinkHref: "/backend",
           _type: Header.name,
           createdAt: now(),
-          updatedAt: now(),
         },
       },
       { upsert: true, returnDocument: "after" },
@@ -113,14 +115,16 @@ export const seedPreviewData = async ({
     const footer = await db.collection(Footer.name).findOneAndUpdate(
       { brand: "Rakun Preview" },
       {
-        $setOnInsert: {
-          brand: "Rakun Preview",
+        $set: {
           copyright: "2026 Rakun Preview",
           primaryLinkLabel: "Docs",
-          primaryLinkHref: "/backend/settings/routes",
+          primaryLinkHref: "http://localhost:3000/backend/settings/routes",
+          updatedAt: now(),
+        },
+        $setOnInsert: {
+          brand: "Rakun Preview",
           _type: Footer.name,
           createdAt: now(),
-          updatedAt: now(),
         },
       },
       { upsert: true, returnDocument: "after" },

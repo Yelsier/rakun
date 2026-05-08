@@ -16,7 +16,8 @@ import { seedPreviewData } from "../../../server/seed";
 
 export const dynamic = "force-dynamic";
 
-const mongoUri = process.env.MONGO_URI ?? "mongodb://127.0.0.1:27017/rakun_preview";
+const mongoUri =
+  process.env.MONGO_URI ?? "mongodb://127.0.0.1:27017/rakun_preview";
 
 const bootstrap = {
   literals: {},
@@ -33,8 +34,8 @@ const bootstrap = {
       infoSchema: Page.getPopulatedSchema(),
       layout: [
         { type: "module", key: "header", contentType: Header.name },
-        { type: "module", key: "footer", contentType: Footer.name },
         { type: "content" },
+        { type: "module", key: "footer", contentType: Footer.name },
       ],
     },
   ],
@@ -57,7 +58,9 @@ let seedPromise: Promise<void> | null = null;
 
 const ensurePreviewSeeded = async () => {
   if (!process.env.MONGO_URI) {
-    throw new Error("MONGO_URI is required. Add it to preview-next/.env.local.");
+    throw new Error(
+      "MONGO_URI is required. Add it to preview-next/.env.local.",
+    );
   }
 
   ensureRakunBootstrap(bootstrap);
@@ -81,7 +84,10 @@ const handler = rakunNext({ bootstrap });
 
 const withSeed =
   (
-    run: (request: Request, context: RakunNextRouteContext) => Promise<Response>,
+    run: (
+      request: Request,
+      context: RakunNextRouteContext,
+    ) => Promise<Response>,
   ) =>
   async (request: Request, context: RakunNextRouteContext) => {
     await ensurePreviewSeeded();
