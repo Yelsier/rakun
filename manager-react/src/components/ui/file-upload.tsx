@@ -478,6 +478,13 @@ function FileUpload(props: FileUploadProps) {
         const errorMessage =
           error instanceof Error ? error.message : 'Upload failed'
         for (const file of files) {
+          const fileState = store.getState().files.get(file)
+          if (
+            fileState?.status === 'error' ||
+            fileState?.status === 'success'
+          ) {
+            continue
+          }
           store.dispatch({
             type: 'SET_ERROR',
             file,

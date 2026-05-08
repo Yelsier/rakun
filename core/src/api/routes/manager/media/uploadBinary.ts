@@ -1,5 +1,6 @@
 import z from "zod";
 import { getAppErrorStatusCode, isAppError } from "../../../../lib/errors";
+import { Logger } from "../../../../lib/Logger";
 import { getMediaService } from "../../../../media";
 import { optimizeImageUpload } from "../../../../media/imageOptimization";
 import { createRequestContext } from "../../../context";
@@ -89,13 +90,18 @@ export async function handleMediaBinaryUpload(
   res: MediaBinaryUploadResponse,
 ) {
   try {
+    Logger.addTrace("manager.media.uploadBinary: handler start");
     const ctx = await createRequestContext({
       headers: req.headers,
       cookies: parseCookieHeader(getHeader(req, "cookie")),
       res,
     });
     const user = ctx.getUser();
+    Logger.addTrace("manager.media.uploadBinary: user resolved", {
+      userId: user._id,
+    });
     checkPermissions(user, ["content.Media.own"]);
+    Logger.addTrace("manager.media.uploadBinary: permissions checked");
 
     const parsedHeaders = uploadHeadersSchema.parse({
       key: getHeader(req, "x-cms-upload-key"),
@@ -104,8 +110,18 @@ export async function handleMediaBinaryUpload(
       mime: getHeader(req, "x-cms-upload-mime") || undefined,
       optimizeRaw: getHeader(req, "x-cms-upload-optimize") || undefined,
     });
+    Logger.addTrace("manager.media.uploadBinary: headers parsed", {
+      key: parsedHeaders.key,
+      access: parsedHeaders.access,
+      fileName: parsedHeaders.fileName,
+      mime: parsedHeaders.mime,
+      optimize: Boolean(parsedHeaders.optimizeRaw),
+    });
 
     const rawBody = await readBodyBuffer(req);
+    Logger.addTrace("manager.media.uploadBinary: body read", {
+      size: rawBody.length,
+    });
     if (rawBody.length === 0) {
       sendJson(res, 400, {
         message: "Empty upload body",
@@ -139,13 +155,26 @@ export async function handleMediaBinaryUpload(
       key: parsedHeaders.key,
       optimizeOptions,
     });
+    Logger.addTrace("manager.media.uploadBinary: image optimization resolved", {
+      key: optimized.key,
+      mime: optimized.mime,
+      size: optimized.size,
+      optimized: optimized.optimized,
+      hasPreview: Boolean(optimized.preview),
+    });
 
     const media = getMediaService();
+    Logger.addTrace("manager.media.uploadBinary: media service ready");
     await media.rawAdapter.putObject({
       key: optimized.key,
       access: parsedHeaders.access,
       mime: optimized.mime,
       content: optimized.content,
+    });
+    Logger.addTrace("manager.media.uploadBinary: object stored", {
+      key: optimized.key,
+      access: parsedHeaders.access,
+      size: optimized.content.length,
     });
 
     if (optimized.preview) {
@@ -155,8 +184,14 @@ export async function handleMediaBinaryUpload(
         mime: optimized.preview.mime,
         content: optimized.preview.content,
       });
+      Logger.addTrace("manager.media.uploadBinary: preview stored", {
+        key: optimized.preview.key,
+        access: parsedHeaders.access,
+        size: optimized.preview.content.length,
+      });
     }
 
+    Logger.addTrace("manager.media.uploadBinary: response ready");
     sendJson(res, 200, {
       key: optimized.key,
       access: parsedHeaders.access,
@@ -174,6 +209,12 @@ export async function handleMediaBinaryUpload(
       originalSize: optimized.originalSize,
     });
   } catch (error) {
+    Logger.addTrace("manager.media.uploadBinary: handler failed");
+    Logger.error("manager.media.uploadBinary failed", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
     if (isAppError(error)) {
       sendJson(res, getAppErrorStatusCode(error) ?? 500, {
         message: error.message,

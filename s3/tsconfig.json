@@ -17,7 +17,8 @@
     "outDir": "dist",
     "noEmit": true,
     "paths": {
-      "@rakun-kit/core": ["../core/src/index.ts"]
+      "@rakun-kit/core": ["../core/src/index.ts"],
+      "@rakun-kit/core/logger": ["../core/src/lib/Logger.ts"]
     }
   },
   "include": ["src"]

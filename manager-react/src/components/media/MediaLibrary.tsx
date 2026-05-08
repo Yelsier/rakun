@@ -151,7 +151,7 @@ export default function MediaLibrary({
         ? libraryOptimizeOptions
         : undefined
 
-    await Promise.all(
+    const results = await Promise.allSettled(
       files.map(async (file) => {
         try {
           onProgress(file, 10)
@@ -164,13 +164,28 @@ export default function MediaLibrary({
           onProgress(file, 100)
           onSuccess(file)
         } catch (error) {
+          const uploadError =
+            error instanceof Error ? error : new Error('Upload failed')
           onError(
             file,
-            error instanceof Error ? error : new Error('Upload failed'),
+            uploadError,
           )
+          throw uploadError
         }
       }),
     )
+
+    const failedCount = results.filter(
+      (result) => result.status === 'rejected',
+    ).length
+
+    if (failedCount > 0) {
+      throw new Error(
+        failedCount === 1
+          ? '1 file failed to upload'
+          : `${failedCount} files failed to upload`,
+      )
+    }
   }
 
   const mediaLibraryContext = {

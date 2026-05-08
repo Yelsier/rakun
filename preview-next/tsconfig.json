@@ -36,7 +36,8 @@
       "@rakun-kit/next": ["../next/src/index.ts"],
       "@rakun-kit/next/*": ["../next/src/*"],
       "@rakun-kit/react": ["../react/src/index.ts"],
-      "@rakun-kit/trpc": ["../trpc/src/index.ts"]
+      "@rakun-kit/trpc": ["../trpc/src/index.ts"],
+      "@rakun-kit/s3": ["../s3/src/index.ts"]
     }
   },
   "include": [

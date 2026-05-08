@@ -7,7 +7,12 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-import type { MediaAccess, MediaServiceConfig, StorageAdapter } from "@rakun-kit/core";
+import type {
+  MediaAccess,
+  MediaServiceConfig,
+  StorageAdapter,
+} from "@rakun-kit/core";
+import { Logger } from "@rakun-kit/core/logger";
 
 export type S3MediaServiceConfig = {
   region: string;
@@ -73,6 +78,13 @@ export class S3Adapter implements StorageAdapter {
     access: MediaAccess;
   }) {
     const Bucket = this.bucket(input.access);
+    Logger.addTrace("s3.media.createPresignedPut: start", {
+      bucket: Bucket,
+      key: input.key,
+      access: input.access,
+      mime: input.mime,
+      size: input.size,
+    });
 
     const cmd = new PutObjectCommand({
       Bucket,
@@ -82,18 +94,32 @@ export class S3Adapter implements StorageAdapter {
       CacheControl: this.cacheControl(input.access),
     });
 
-    const url = await this.signUrl(cmd, this.cfg.putExpiresInSeconds ?? 900);
+    try {
+      const url = await this.signUrl(cmd, this.cfg.putExpiresInSeconds ?? 900);
+      Logger.addTrace("s3.media.createPresignedPut: signed", {
+        bucket: Bucket,
+        key: input.key,
+      });
 
-    return {
-      url,
-      key: input.key,
-      headers: {
-        "Content-Type": input.mime,
-        ...(this.cacheControl(input.access)
-          ? { "Cache-Control": this.cacheControl(input.access)! }
-          : {}),
-      },
-    };
+      return {
+        url,
+        key: input.key,
+        headers: {
+          "Content-Type": input.mime,
+          ...(this.cacheControl(input.access)
+            ? { "Cache-Control": this.cacheControl(input.access)! }
+            : {}),
+        },
+      };
+    } catch (error) {
+      Logger.error("s3.media.createPresignedPut failed", {
+        bucket: Bucket,
+        key: input.key,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error;
+    }
   }
 
   async putObject(input: {
@@ -103,28 +129,70 @@ export class S3Adapter implements StorageAdapter {
     access: MediaAccess;
   }) {
     const Bucket = this.bucket(input.access);
-    await this.s3.send(
-      new PutObjectCommand({
-        Bucket,
-        Key: input.key,
-        Body: input.content,
-        ContentType: input.mime,
-        ContentLength: input.content.length,
-        CacheControl: this.cacheControl(input.access),
-      }),
-    );
+    Logger.addTrace("s3.media.putObject: start", {
+      bucket: Bucket,
+      key: input.key,
+      access: input.access,
+      mime: input.mime,
+      size: input.content.length,
+    });
+    try {
+      await this.s3.send(
+        new PutObjectCommand({
+          Bucket,
+          Key: input.key,
+          Body: input.content,
+          ContentType: input.mime,
+          ContentLength: input.content.length,
+          CacheControl: this.cacheControl(input.access),
+        }),
+      );
+      Logger.addTrace("s3.media.putObject: success", {
+        bucket: Bucket,
+        key: input.key,
+      });
+    } catch (error) {
+      Logger.error("s3.media.putObject failed", {
+        bucket: Bucket,
+        key: input.key,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error;
+    }
   }
 
   async headObject(input: { key: string; access: MediaAccess }) {
     const Bucket = this.bucket(input.access);
-    const out = await this.s3.send(
-      new HeadObjectCommand({ Bucket, Key: input.key }),
-    );
-    return {
-      size: out.ContentLength ?? 0,
-      mime: out.ContentType,
-      etag: out.ETag,
-    };
+    Logger.addTrace("s3.media.headObject: start", {
+      bucket: Bucket,
+      key: input.key,
+      access: input.access,
+    });
+    try {
+      const out = await this.s3.send(
+        new HeadObjectCommand({ Bucket, Key: input.key }),
+      );
+      Logger.addTrace("s3.media.headObject: success", {
+        bucket: Bucket,
+        key: input.key,
+        size: out.ContentLength ?? 0,
+        mime: out.ContentType,
+      });
+      return {
+        size: out.ContentLength ?? 0,
+        mime: out.ContentType,
+        etag: out.ETag,
+      };
+    } catch (error) {
+      Logger.error("s3.media.headObject failed", {
+        bucket: Bucket,
+        key: input.key,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error;
+    }
   }
 
   async createPresignedGet(input: {
@@ -133,15 +201,55 @@ export class S3Adapter implements StorageAdapter {
     expiresInSeconds: number;
   }) {
     const Bucket = this.bucket(input.access);
+    Logger.addTrace("s3.media.createPresignedGet: start", {
+      bucket: Bucket,
+      key: input.key,
+      access: input.access,
+      expiresInSeconds: input.expiresInSeconds,
+    });
     const cmd = new GetObjectCommand({ Bucket, Key: input.key });
-    const url = await this.signUrl(cmd, input.expiresInSeconds);
-    const expiresAt = new Date(Date.now() + input.expiresInSeconds * 1000);
-    return { url, expiresAt };
+    try {
+      const url = await this.signUrl(cmd, input.expiresInSeconds);
+      const expiresAt = new Date(Date.now() + input.expiresInSeconds * 1000);
+      Logger.addTrace("s3.media.createPresignedGet: signed", {
+        bucket: Bucket,
+        key: input.key,
+        expiresAt,
+      });
+      return { url, expiresAt };
+    } catch (error) {
+      Logger.error("s3.media.createPresignedGet failed", {
+        bucket: Bucket,
+        key: input.key,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error;
+    }
   }
 
   async deleteObject(input: { key: string; access: MediaAccess }) {
     const Bucket = this.bucket(input.access);
-    await this.s3.send(new DeleteObjectCommand({ Bucket, Key: input.key }));
+    Logger.addTrace("s3.media.deleteObject: start", {
+      bucket: Bucket,
+      key: input.key,
+      access: input.access,
+    });
+    try {
+      await this.s3.send(new DeleteObjectCommand({ Bucket, Key: input.key }));
+      Logger.addTrace("s3.media.deleteObject: success", {
+        bucket: Bucket,
+        key: input.key,
+      });
+    } catch (error) {
+      Logger.error("s3.media.deleteObject failed", {
+        bucket: Bucket,
+        key: input.key,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error;
+    }
   }
 
   publicUrl(input: { key: string; access: MediaAccess }) {

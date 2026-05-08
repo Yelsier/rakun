@@ -1,6 +1,6 @@
 {
   "name": "@rakun-kit/s3",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "S3 media storage adapter for Rakun.",
   "license": "MIT",
   "author": {
@@ -33,7 +33,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1030.0"
   },
   "peerDependencies": {
-    "@rakun-kit/core": "^1.0.0"
+    "@rakun-kit/core": "^1.1.0"
   },
   "exports": {
     ".": {

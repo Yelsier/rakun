@@ -24,7 +24,14 @@ export function useMediaUpload({ onUpload, refetchMedia }: UseMediaUploadInput) 
       await refetchMedia()
       setFiles([])
     } catch (error) {
-      toast.error('An unexpected error occurred during upload. Please try again.')
+      await refetchMedia().catch(() => undefined)
+      toast.error('Upload failed', {
+        description:
+          error instanceof Error
+            ? error.message
+            : 'An unexpected error occurred during upload. Please try again.',
+        duration: 10000,
+      })
       console.error('Unexpected error during upload:', error)
     } finally {
       setIsUploading(false)
