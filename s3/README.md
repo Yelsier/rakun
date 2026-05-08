@@ -16,6 +16,7 @@ rakunBootstrap({
     region: process.env.AWS_REGION!,
     publicBucket: process.env.RAKUN_PUBLIC_BUCKET!,
     privateBucket: process.env.RAKUN_PRIVATE_BUCKET!,
+    baseUrl: "/api/rakun",
     publicBaseUrl: process.env.RAKUN_PUBLIC_MEDIA_URL,
     defaultAccess: "private",
   }),
@@ -43,6 +44,8 @@ type S3MediaServiceConfig = {
   forcePathStyle?: boolean;
   publicBucket: string;
   privateBucket: string;
+  baseUrl?: string;
+  uploadUrl?: string;
   publicBaseUrl?: string;
   publicCacheControl?: string;
   putExpiresInSeconds?: number;
@@ -55,7 +58,8 @@ Behavior:
 
 - public media uses `publicBucket`.
 - private media uses `privateBucket`.
-- uploads use presigned `PutObject` URLs.
+- uploads use Rakun's `/media/upload` endpoint, prefixed by `baseUrl` when provided.
+- pass `uploadUrl` to override the upload endpoint completely.
 - private reads use presigned `GetObject` URLs.
 - public reads return `publicBaseUrl/key` when `publicBaseUrl` is configured.
 

@@ -15,6 +15,8 @@ export type S3MediaServiceConfig = {
   forcePathStyle?: boolean;
   publicBucket: string;
   privateBucket: string;
+  baseUrl?: string;
+  uploadUrl?: string;
   publicBaseUrl?: string;
   publicCacheControl?: string;
   putExpiresInSeconds?: number;
@@ -149,20 +151,30 @@ export class S3Adapter implements StorageAdapter {
   }
 }
 
+const joinUrlPath = (baseUrl: string, pathname: string): string =>
+  `${baseUrl.replace(/\/$/, "")}/${pathname.replace(/^\/+/, "")}`;
+
 export const createS3MediaServiceConfig = (
   config: S3MediaServiceConfig,
-): MediaServiceConfig => ({
-  adapter: new S3Adapter({
-    region: config.region,
-    endpoint: config.endpoint,
-    forcePathStyle: config.forcePathStyle,
-    publicBucket: config.publicBucket,
-    privateBucket: config.privateBucket,
-    publicBaseUrl: config.publicBaseUrl,
-    publicCacheControl: config.publicCacheControl,
-    putExpiresInSeconds: config.putExpiresInSeconds,
-    getExpiresInSeconds: config.getExpiresInSeconds,
-  }),
-  defaultAccess: config.defaultAccess,
-  defaultGetExpiresInSeconds: config.getExpiresInSeconds,
-});
+): MediaServiceConfig => {
+  const uploadUrl =
+    config.uploadUrl ??
+    (config.baseUrl ? joinUrlPath(config.baseUrl, "/media/upload") : undefined);
+
+  return {
+    adapter: new S3Adapter({
+      region: config.region,
+      endpoint: config.endpoint,
+      forcePathStyle: config.forcePathStyle,
+      publicBucket: config.publicBucket,
+      privateBucket: config.privateBucket,
+      publicBaseUrl: config.publicBaseUrl,
+      publicCacheControl: config.publicCacheControl,
+      putExpiresInSeconds: config.putExpiresInSeconds,
+      getExpiresInSeconds: config.getExpiresInSeconds,
+    }),
+    defaultAccess: config.defaultAccess,
+    defaultGetExpiresInSeconds: config.getExpiresInSeconds,
+    uploadUrl,
+  };
+};
