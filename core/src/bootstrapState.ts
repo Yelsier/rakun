@@ -9,9 +9,9 @@ import type { RakunOperationMap } from "./api/operations/types";
 
 export interface RakunBootstrapOptions {
   literals: LiteralCatalogInput;
-  contentTypes: ContentType[];
+  contentTypes: RakunContentType[];
   internalContentTypes?: {
-    Page?: ContentType;
+    Page?: RakunContentType;
   };
   routes?: readonly RouteDefinition[];
   proxies?: ApiProxies;
@@ -28,6 +28,8 @@ export interface RakunBootstrapOptions {
     | false;
   syncRoutes?: boolean;
 }
+
+export type RakunContentType = ContentType;
 
 let bootstrapOptions: RakunBootstrapOptions | null = null;
 let bootstrapped = false;

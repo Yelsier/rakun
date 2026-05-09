@@ -135,11 +135,20 @@ export type TranslatableValue<T> = {
 export type MaybeTranslatableValue<T> = TranslatableValue<T> | T;
 
 export type Simplify<T> = {
-  [K in keyof T as T[K] extends undefined ? never : K]: Exclude<
-    T[K],
-    undefined
-  >;
-} & {};
+  [K in keyof T as T[K] extends undefined
+    ? never
+    : undefined extends T[K]
+      ? never
+      : K]: T[K];
+} & {
+  [K in keyof T as T[K] extends undefined
+    ? never
+    : undefined extends T[K]
+      ? K
+      : never]?: Exclude<T[K], undefined>;
+} extends infer O
+  ? { [K in keyof O]: O[K] }
+  : never;
 
 export type Prettify<T> = {
   [K in keyof T]: T[K];

@@ -1,9 +1,13 @@
 import type ContentType from "./ContentType";
-import { ContentReferenceField } from "./fields/ContentReference";
-import type { Field } from "./fields/Field";
-import { ListField } from "./fields/List";
-import { RelationField } from "./fields/Relation";
-import { SimpleListField } from "./fields/SimpleList";
+import type { AnyField } from "./fields/Field";
+
+type EncodedField = {
+  schema: undefined;
+  config: ReturnType<AnyField["getConfig"]>;
+  isRequired: ReturnType<AnyField["getIsRequired"]>;
+  isTranslatable: ReturnType<AnyField["getIsTranslatable"]>;
+  visibility: ReturnType<AnyField["getVisibility"]>;
+} & Record<string, unknown>;
 
 const registry: Record<string, ContentType> = {};
 const internalRegistry: Record<string, ContentType> = {};
@@ -29,7 +33,7 @@ export function getContentTypes() {
   return Object.values(registry).concat(Object.values(internalRegistry));
 }
 
-const removeSchemaFromCT = <T extends ContentType>(ct: T): T => {
+const removeSchemaFromCT = <T extends ContentType>(ct: T) => {
   return {
     ...ct,
     fields: Object.fromEntries(
@@ -41,44 +45,75 @@ const removeSchemaFromCT = <T extends ContentType>(ct: T): T => {
   };
 };
 
-const removeSchemaFromField = <T extends Field>(field: T): T => {
-  if (field instanceof RelationField) {
+const removeSchemaFromField = (field: AnyField): EncodedField => {
+  const base = {
+    ...(field.meta as Record<string, unknown>),
+    schema: undefined,
+    config: field.getConfig(),
+    isRequired: field.getIsRequired(),
+    isTranslatable: field.getIsTranslatable(),
+    visibility: field.getVisibility(),
+  } satisfies EncodedField;
+
+  if (field.meta.ui === "ContentType" && "contentType" in field) {
     return {
-      ...field,
-      schema: undefined,
-      contentType: removeSchemaFromCT(field.contentType),
+      ...base,
+      contentType: removeSchemaFromCT(field.contentType as ContentType),
     };
   }
-  if (field instanceof ContentReferenceField) {
-    const target = getContentTypeByName(field.contentType);
+
+  if (
+    (field.meta.ui === "ContentTypeSelect" ||
+      field.meta.ui === "ContentTypeMultiSelect") &&
+    "contentType" in field.meta &&
+    typeof field.meta.contentType === "string"
+  ) {
+    const target = getContentTypeByName(field.meta.contentType);
     return {
-      ...field,
-      schema: undefined,
+      ...base,
       contentType: {
-        name: target?.name || field.contentType,
+        name: target?.name || field.meta.contentType,
         listFields: target?.listFields,
       },
     };
   }
-  if (field instanceof ListField) {
+
+  if (
+    (field.meta.ui === "List" || field.meta.ui === "Iterator") &&
+    "fields" in field &&
+    Array.isArray(field.fields)
+  ) {
     return {
-      ...field,
-      schema: undefined,
-      fields: field.fields.map((f: { name: string; field: Field }) => ({
-        name: f.name,
-        field: removeSchemaFromField(f.field),
+      ...base,
+      fields: field.fields.map((entry: { name: string; field: AnyField }) => ({
+        name: entry.name,
+        field: removeSchemaFromField(entry.field),
       })),
     };
   }
-  if (field instanceof SimpleListField) {
+
+  if (
+    field.meta.ui === "SimpleList" &&
+    "field" in field &&
+    isField(field.field)
+  ) {
     return {
-      ...field,
-      schema: undefined,
+      ...base,
       field: removeSchemaFromField(field.field),
     };
   }
-  return { ...field, schema: undefined };
+
+  return base;
 };
+
+function isField(value: unknown): value is AnyField {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    "kind" in value &&
+    value.kind === "field"
+  );
+}
 
 export function getContentTypesForManager() {
   return getContentTypes()

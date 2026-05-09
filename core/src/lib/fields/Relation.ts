@@ -1,198 +1,273 @@
 import z from "zod";
 
-import type { EncodedField } from "./Field";
-import { Field } from "./Field";
-import { SimpleListField } from "./SimpleList";
-import type ContentType from "../ContentType";
-import type {
-  FieldHKT,
-  If,
-  getInputTypeWithModifiers,
-  getTypeWithModifiers,
-  getOutputTypeWithModifiers,
-} from "../types";
-import { SelfRelationField } from "./SelfRelation";
 import {
-  getDefaultInputSchema,
-  getDefaultOutputSchema,
-  getDefaultSchema,
-} from "../utils/getSchemas";
-import { Id } from "../utils/id";
+  createField,
+  defaultFieldState,
+  type EncodedField,
+  type DefaultFieldState,
+  type FieldLike,
+  type FieldOutput,
+  type FieldState,
+  type FieldStateOf,
+  type FieldWithModifiers,
+  type PopulatableFieldLike,
+  type SetRequired,
+  type WithFieldState,
+  withFieldModifiers,
+} from "./Field";
 import type { EncodedContentType } from "../ContentType";
+import { simpleListField, type SimpleListField } from "./SimpleList";
+import { Id } from "../utils/id";
 
 export type OnlyType = "existing" | "new" | undefined;
 
-type isNew<X extends OnlyType> = X extends "new" ? true : false;
+export type ContentTypeLike<Name extends string = string> = {
+  name: Name;
+  getInputSchema: () => z.ZodTypeAny;
+  getOutputSchema: () => z.ZodTypeAny;
+  getOutputSchemaWithoutIterators?: () => z.ZodTypeAny;
+  getPopulatedSchema?: () => z.ZodTypeAny;
+};
 
-interface RelationFieldHKT<
-  CT extends ContentType,
-  X extends OnlyType,
-  S extends ReturnType<CT["getInputSchema"]>,
-  Sout extends ReturnType<CT["getOutputSchema"]>,
-> extends FieldHKT {
-  type: RelationField<
-    CT,
-    X,
-    S,
-    Sout,
-    this["args"][1],
-    this["args"][2],
-    this["args"][3]
-  >;
+type ContentTypeInput<CT extends ContentTypeLike> = z.infer<
+  ReturnType<CT["getInputSchema"]>
+>;
+
+type ContentTypeOutputSchema<CT extends ContentTypeLike> = CT extends {
+  getOutputSchemaWithoutIterators: () => infer Schema extends z.ZodTypeAny;
 }
+  ? Schema
+  : ReturnType<CT["getOutputSchema"]>;
 
-type NewType<S extends z.ZodTypeAny> = z.ZodObject<
-  {
-    type: z.ZodLiteral<"new">;
-    data: S;
-  },
-  z.core.$strip
->;
-
-type ExistingType = z.ZodObject<
-  {
-    type: z.ZodLiteral<"existing">;
-    _id: z.ZodString;
-    contentType: z.ZodLiteral<string>;
-  },
-  z.core.$strip
->;
-
-type SchemaType<X extends OnlyType, S extends z.ZodTypeAny> = If<
-  isNew<X>,
-  NewType<S>,
-  ExistingType
->;
-
-export class RelationField<
-  CT extends ContentType = ContentType,
-  X extends OnlyType = OnlyType,
-  S extends ReturnType<CT["getInputSchema"]> = ReturnType<CT["getInputSchema"]>,
-  Sout extends ReturnType<CT["getOutputSchemaWithoutIterators"]> = ReturnType<
-    CT["getOutputSchemaWithoutIterators"]
-  >,
-  TRequired extends boolean = false,
-  TTranslatable extends boolean = false,
-  TVisibility extends "api" | "manager" | "all" = "all",
-> extends Field<
-  RelationFieldHKT<CT, X, S, Sout>,
-  SchemaType<X, S>,
-  Sout,
-  TRequired,
-  TTranslatable,
-  TVisibility
-> {
-  contentType: CT;
-  private only?: X;
-
-  constructor(contentType: CT, only?: X) {
-    super({
-      config: { ui: "ContentType", type: "Relation" },
-      schema: contentType.getInputSchema() as unknown as SchemaType<X, S>,
-    });
-    this.contentType = contentType;
-    this.only = only;
-  }
-
-  setSelfRelateds() {
-    Object.values(this.contentType.fields).forEach((field) => {
-      if (field instanceof SelfRelationField) {
-        field.setContentType(this.contentType);
-      }
-    });
-  }
-
-  private getSchemaType() {
-    const newSchema = z.object({
-      type: z.literal("new"),
-      data: this.schema,
-    });
-
-    const existingSchema = z.object({
-      type: z.literal("existing"),
-      _id: Id,
-      contentType: z.literal(this.contentType.name),
-    });
-
-    const bothSchema = z.discriminatedUnion("type", [
-      newSchema,
-      existingSchema,
-    ]);
-
-    return (
-      this.only === "new"
-        ? newSchema
-        : this.only === "existing"
-          ? existingSchema
-          : bothSchema
-    ) as SchemaType<X, S>;
-  }
-
-  protected override getBaseInputSchema() {
-    return getDefaultInputSchema(
-      this.getSchemaType(),
-      this.isRequired,
-      this.isTranslatable,
-    ) as getInputTypeWithModifiers<SchemaType<X, S>, TRequired, TTranslatable>;
-  }
-
-  protected override getBaseSchema() {
-    return getDefaultSchema(
-      this.getSchemaType(),
-      this.isRequired,
-      this.isTranslatable,
-    ) as getTypeWithModifiers<SchemaType<X, S>, TRequired, TTranslatable>;
-  }
-
-  protected override getBaseOutputSchema() {
-    return getDefaultOutputSchema(
-      this.contentType.getOutputSchemaWithoutIterators() as Sout,
-      this.isRequired,
-    ) as getOutputTypeWithModifiers<Sout, TRequired>;
-  }
-
-  getPopulatedSchema() {
-    return getDefaultOutputSchema(
-      this.schema as Sout,
-      this.isRequired,
-    ) as getOutputTypeWithModifiers<Sout, TRequired>;
-  }
-
-  multiple() {
-    const relation = new RelationField<CT, X>(
-      this.contentType,
-      this.only,
-    ).required();
-    const list = new SimpleListField(relation);
-
-    if (this.isRequired) {
-      list.required();
-    }
-
-    if (this.isTranslatable) {
-      list.translatable();
-    }
-
-    if (this.visibility === "api") {
-      list.apiOnly();
-    }
-
-    if (this.visibility === "manager") {
-      list.managerOnly();
-    }
-
-    return list;
-  }
+type ContentTypePopulatedSchema<CT extends ContentTypeLike> = CT extends {
+  getPopulatedSchema: () => infer Schema extends z.ZodTypeAny;
 }
+  ? Schema
+  : ContentTypeOutputSchema<CT>;
+
+type ContentTypeOutput<CT extends ContentTypeLike> = z.infer<
+  ContentTypeOutputSchema<CT>
+>;
+
+type ContentTypePopulated<CT extends ContentTypeLike> = z.infer<
+  ContentTypePopulatedSchema<CT>
+>;
+
+export type RelationExisting<Name extends string = string> = {
+  type: "existing";
+  _id: string;
+  contentType: Name;
+};
+
+export type RelationNew<Data = unknown> = {
+  type: "new";
+  data: Data;
+};
+
+export type RelationFieldValue = RelationExisting | RelationNew<unknown>;
+export type RelationExistingDefaltData = RelationExisting;
+export type RelationNewDefaultData<S> = RelationNew<S>;
+
+type RelationValue<
+  CT extends ContentTypeLike,
+  Only extends OnlyType,
+> = Only extends "new"
+  ? RelationNew<ContentTypeInput<CT>>
+  : RelationExisting<CT["name"]>;
+
+export type RelationMeta<
+  Name extends string = string,
+  Only extends OnlyType = OnlyType,
+> = {
+  type: "Relation";
+  ui: "ContentType";
+  contentType: Name;
+  only?: Only;
+};
 
 export type EncodedRelationField = EncodedField & {
   contentType: EncodedContentType;
   only?: OnlyType;
 };
 
-export type RelationFieldValue = z.infer<ExistingType | NewType<z.ZodTypeAny>>;
-export type RelationExistingDefaltData = z.infer<ExistingType>;
-export type RelationNewDefaultData<S> = {
-  type: "new";
-  data: S;
+type RelationOptions<CT extends ContentTypeLike, Only extends OnlyType> = {
+  contentType: CT;
+  only?: Only;
 };
+
+export type RelationField<
+  CT extends ContentTypeLike = ContentTypeLike,
+  Only extends OnlyType = undefined,
+  State extends FieldState = DefaultFieldState,
+> = FieldWithModifiers<RelationFieldCore<CT, Only, State>>;
+
+type RelationFieldCore<
+  CT extends ContentTypeLike,
+  Only extends OnlyType,
+  State extends FieldState,
+> = RelationFieldBase<CT, Only, State> &
+  PopulatableFieldLike<ContentTypePopulated<CT>, State> & {
+    contentType: CT;
+    only?: Only;
+    multiple: <
+      TThis extends RelationFieldBase<CT, Only, FieldState>,
+    >(
+      this: TThis,
+    ) => SimpleListField<
+      RelationField<CT, Only, SetRequired<DefaultFieldState>>,
+      FieldStateOf<TThis>
+    >;
+  };
+
+type RelationFieldBase<
+  CT extends ContentTypeLike,
+  Only extends OnlyType,
+  State extends FieldState,
+> = FieldLike<
+  RelationValue<CT, Only>,
+  RelationValue<CT, Only>,
+  ContentTypeOutput<CT>,
+  RelationMeta<CT["name"], Only>,
+  State
+>;
+
+export function relationField<
+  CT extends ContentTypeLike,
+  const Only extends OnlyType = undefined,
+>(contentType: CT, only?: Only): RelationField<CT, Only> {
+  return makeRelationField({ contentType, only }, defaultFieldState);
+}
+
+function makeRelationField<
+  CT extends ContentTypeLike,
+  Only extends OnlyType,
+  State extends FieldState,
+>(
+  options: RelationOptions<CT, Only>,
+  state: State,
+): RelationField<CT, Only, State> {
+  const field: RelationFieldCore<CT, Only, State> = {
+    ...createField<
+      RelationValue<CT, Only>,
+      RelationValue<CT, Only>,
+      ContentTypeOutput<CT>,
+      RelationMeta<CT["name"], Only>,
+      State
+    >({
+      meta: {
+        type: "Relation",
+        ui: "ContentType",
+        contentType: options.contentType.name,
+        only: options.only,
+      },
+      state,
+      schemas: {
+        input: () => buildRelationSchema(options),
+        db: () => buildRelationSchema(options),
+        output: () =>
+          getContentTypeOutputSchema(options.contentType) as z.ZodType<
+            ContentTypeOutput<CT>
+          >,
+      },
+    }),
+    getPopulatedSchema: () =>
+      applyRelationOutputPresence(
+        getContentTypePopulatedSchema(options.contentType),
+        state,
+      ) as z.ZodType<FieldOutput<ContentTypePopulated<CT>, State>>,
+    contentType: options.contentType,
+    only: options.only,
+    multiple: function <
+      TThis extends RelationFieldBase<CT, Only, FieldState>,
+    >(this: TThis) {
+      const relation = makeRelationField(
+        options,
+        defaultFieldState,
+      ).required();
+      let list: unknown = simpleListField(relation);
+
+      if (this.state.required) {
+        list = (list as SimpleListField).required();
+      }
+
+      if (this.state.translatable) {
+        list = (list as SimpleListField).translatable();
+      }
+
+      if (this.state.visibility === "api") {
+        list = (list as SimpleListField).apiOnly();
+      }
+
+      if (this.state.visibility === "manager") {
+        list = (list as SimpleListField).managerOnly();
+      }
+
+      return list as SimpleListField<
+        RelationField<CT, Only, SetRequired<DefaultFieldState>>,
+        FieldStateOf<TThis>
+      >;
+    },
+  };
+
+  return withFieldModifiers({
+    field,
+    rebuild: <NextState extends FieldState>(nextState: NextState) =>
+      makeRelationField(options, nextState) as WithFieldState<
+        RelationFieldCore<CT, Only, State>,
+        NextState
+      >,
+  });
+}
+
+function buildRelationSchema<
+  CT extends ContentTypeLike,
+  Only extends OnlyType,
+>(options: RelationOptions<CT, Only>) {
+  const newSchema = z.object({
+    type: z.literal("new"),
+    data: options.contentType.getInputSchema(),
+  });
+
+  const existingSchema = z.object({
+    type: z.literal("existing"),
+    _id: Id,
+    contentType: z.literal(options.contentType.name),
+  });
+
+  if (options.only === "new") {
+    return newSchema as unknown as z.ZodType<RelationValue<CT, Only>>;
+  }
+
+  if (options.only === "existing") {
+    return existingSchema as unknown as z.ZodType<RelationValue<CT, Only>>;
+  }
+
+  return z.discriminatedUnion("type", [
+    newSchema,
+    existingSchema,
+  ]) as unknown as z.ZodType<RelationValue<CT, Only>>;
+}
+
+function getContentTypeOutputSchema<CT extends ContentTypeLike>(
+  contentType: CT,
+) {
+  return (
+    contentType.getOutputSchemaWithoutIterators?.() ??
+    contentType.getOutputSchema()
+  ) as ContentTypeOutputSchema<CT>;
+}
+
+function getContentTypePopulatedSchema<CT extends ContentTypeLike>(
+  contentType: CT,
+) {
+  return (
+    contentType.getPopulatedSchema?.() ?? getContentTypeOutputSchema(contentType)
+  ) as ContentTypePopulatedSchema<CT>;
+}
+
+function applyRelationOutputPresence<Value, State extends FieldState>(
+  schema: z.ZodType<Value>,
+  state: State,
+) {
+  return state.required ? schema : schema.optional();
+}

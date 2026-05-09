@@ -7,9 +7,9 @@ import {
 } from "../../lib/types";
 import { getRakunBootstrapOptions } from "../../bootstrapState";
 
-export type InputProxy<T extends ContentType> = (
-  data: Partial<DataInput<T>>,
-) => Partial<DataInput<T>> | Promise<Partial<DataInput<T>>>;
+export type InputProxy<T extends ContentType> = <D extends Partial<DataInput<T>>>(
+  data: D,
+) => D | Promise<D>;
 
 export type OutputProxy<T extends ContentType> = (
   data: DataPopulatedWithoutApiOnly<T>,
