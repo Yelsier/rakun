@@ -18,6 +18,8 @@ const COLORS = {
   warn: "\x1b[33m", // amarillo
   error: "\x1b[31m", // rojo
   fatal: "\x1b[35m", // magenta
+  label: "\x1b[34m",
+  value: "\x1b[36m",
   reset: "\x1b[0m",
   dim: "\x1b[2m",
   bright: "\x1b[1m",
@@ -102,6 +104,68 @@ export function createLogger({
       .join("\n");
   }
 
+  function isTraceStep(value: unknown): value is TraceStep {
+    if (!value || typeof value !== "object") return false;
+    const step = value as Record<string, unknown>;
+    return typeof step.t === "number" && typeof step.msg === "string";
+  }
+
+  function isTraceSteps(value: unknown): value is TraceStep[] {
+    return Array.isArray(value) && value.every(isTraceStep);
+  }
+
+  function formatTraceStepTimestamp(t: number): string {
+    return new Date(t)
+      .toISOString()
+      .replace("T", " ")
+      .replace("Z", "");
+  }
+
+  function formatTraceStepsPretty(steps: TraceStep[], color: string): string[] {
+    if (steps.length === 0) {
+      return [
+        `${color}│${COLORS.reset}     ${COLORS.dim}(sin pasos)${COLORS.reset}`,
+      ];
+    }
+
+    return steps.flatMap((step, index) => {
+      const last = index === steps.length - 1;
+      const branch = last ? "└─" : "├─";
+      const child = last ? "  " : "│ ";
+      const previous = steps[index - 1];
+      const delta = previous ? `+${step.t - previous.t}ms` : "+0ms";
+      const header =
+        `${COLORS.dim}${branch}${COLORS.reset} ` +
+        `${COLORS.bright}#${index + 1}${COLORS.reset} ` +
+        `${COLORS.value}${delta}${COLORS.reset} ` +
+        `${COLORS.bright}${step.msg}${COLORS.reset} ` +
+        `${COLORS.dim}${formatTraceStepTimestamp(step.t)}${COLORS.reset}`;
+      const lines = [`${color}│${COLORS.reset}     ${header}`];
+
+      if (step.data !== undefined) {
+        lines.push(
+          `${color}│${COLORS.reset}     ${COLORS.dim}${child}${COLORS.reset}${COLORS.label}data${COLORS.reset}:`,
+        );
+
+        const rendered = inspect(step.data, {
+          depth: 8,
+          colors: true,
+          compact: false,
+          breakLength: 100,
+          sorted: true,
+        });
+
+        for (const line of rendered.split("\n")) {
+          lines.push(
+            `${color}│${COLORS.reset}     ${COLORS.dim}${child}  ${COLORS.reset}${line}`,
+          );
+        }
+      }
+
+      return lines;
+    });
+  }
+
   function formatPretty(entry: LogEntry): string {
     const color = COLORS[entry.lvl as LEVEL_KEY] || COLORS.reset;
     const timestamp = new Date(entry.t)
@@ -117,6 +181,12 @@ export function createLogger({
 
     for (const [key, value] of Object.entries(entry)) {
       if (key === "t" || key === "lvl" || key === "pid") continue;
+
+      if (key === "steps" && isTraceSteps(value)) {
+        lines.push(`${color}│${COLORS.reset}   ${color}${key}${COLORS.reset}:`);
+        lines.push(...formatTraceStepsPretty(value, color));
+        continue;
+      }
 
       if (key === "stack" && typeof value === "string") {
         lines.push(`${color}│${COLORS.reset}   ${color}${key}${COLORS.reset}:`);
