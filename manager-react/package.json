@@ -21,7 +21,7 @@
   "module": "./dist/esm/index.js",
   "types": "./dist/esm/index.d.ts",
   "scripts": {
-    "build": "rm -rf dist && npm run build:esm && npm run build:cjs && npm run build:css",
+    "build": "rm -rf dist && bun run build:esm && bun run build:cjs && bun run build:css",
     "build:css": "node ./scripts/build-css.mjs",
     "build:esm": "tsc -b --force tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
     "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../scripts/fix-dist-imports.mjs dist/cjs && node ../scripts/write-cjs-package-json.mjs dist/cjs"
@@ -94,6 +94,7 @@
     "@tailwindcss/postcss": "^4.2.2",
     "@tanstack/react-query": "^5.90.5",
     "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "jiti": "^2.4.2",

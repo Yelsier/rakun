@@ -143,19 +143,19 @@ export function ManagerPage() {
 Install dependencies:
 
 ```sh
-npm install
+bun install
 ```
 
 Build all published packages:
 
 ```sh
-npm run build
+bun run build
 ```
 
 Run the local preview app:
 
 ```sh
-npm run preview
+bun run preview
 ```
 
 ## License

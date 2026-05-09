@@ -72,5 +72,5 @@ Behavior:
 ## Build
 
 ```sh
-npm run build --workspace @rakun-kit/s3
+bun run build --workspace @rakun-kit/s3
 ```

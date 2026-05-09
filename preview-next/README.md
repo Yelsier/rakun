@@ -17,7 +17,7 @@ PREVIEW_ADMIN_PASSWORD=admin1234
 Run the app:
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 Open:
@@ -64,5 +64,5 @@ Modules in `preview-next/modules` are server modules by default. Add
 ## Build
 
 ```bash
-npm run build
+bun run build
 ```

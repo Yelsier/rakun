@@ -21,7 +21,7 @@
   "module": "./dist/esm/index.js",
   "types": "./dist/esm/index.d.ts",
   "scripts": {
-    "build": "rm -rf dist && npm run build:esm && npm run build:cjs",
+    "build": "rm -rf dist && bun run build:esm && bun run build:cjs",
     "build:esm": "tsc -p tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
     "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../scripts/write-cjs-package-json.mjs dist/cjs"
   },

@@ -122,5 +122,5 @@ When this config is detected, `rakunExpress` serves:
 ## Build
 
 ```sh
-npm run build --workspace @rakun-kit/express
+bun run build --workspace @rakun-kit/express
 ```

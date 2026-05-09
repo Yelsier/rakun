@@ -59,5 +59,5 @@ and internal server errors consistently.
 ## Build
 
 ```sh
-npm run build --workspace @rakun-kit/trpc
+bun run build --workspace @rakun-kit/trpc
 ```

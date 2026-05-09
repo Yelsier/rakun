@@ -208,5 +208,5 @@ When this config is detected, `rakunNext` serves:
 ## Build
 
 ```sh
-npm run build --workspace @rakun-kit/next
+bun run build --workspace @rakun-kit/next
 ```

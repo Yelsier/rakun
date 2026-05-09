@@ -103,5 +103,5 @@ import "@rakun-kit/manager-react/styles.css";
 ## Build
 
 ```sh
-npm run build --workspace @rakun-kit/manager-react
+bun run build --workspace @rakun-kit/manager-react
 ```

@@ -15,8 +15,8 @@ That means UI edits in `manager-react/src/**/*.tsx` hot reload without building
 
 ```sh
 cp preview/.env.example preview/.env
-npm install
-npm run preview
+bun install
+bun run preview
 ```
 
 Open:
@@ -53,15 +53,15 @@ PREVIEW_ADMIN_NAME=Preview Admin
 ## Scripts
 
 ```sh
-npm run preview
-npm run preview:api
-npm run preview:web
+bun run preview
+bun run preview:api
+bun run preview:web
 ```
 
 From inside `preview`:
 
 ```sh
-npm run dev
-npm run dev:api
-npm run dev:web
+bun run dev
+bun run dev:api
+bun run dev:web
 ```

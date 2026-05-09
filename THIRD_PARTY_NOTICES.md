@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-This project includes third-party open source packages installed through npm. This notice is generated from `package-lock.json` and is intended to help downstream users review dependency licenses.
+This project includes third-party open source packages installed through Bun. This notice is generated from `bun.lock` and is intended to help downstream users review dependency licenses.
 
 Your project code is licensed under MIT. Third-party packages remain under their own licenses.
 

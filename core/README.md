@@ -423,7 +423,7 @@ The package includes targeted tests next to modules (`*.test.ts`), for example O
 Package build:
 
 ```sh
-npm run build --workspace @rakun-kit/core
+bun run build --workspace @rakun-kit/core
 ```
 
 The script generates ESM and CJS in `dist/`, adjusting imports and the CJS `package.json` through repo scripts.
