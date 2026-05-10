@@ -10,12 +10,12 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@rakun-kit/core": "^1.0.8",
-    "@rakun-kit/manager-react": "^1.0.3",
-    "@rakun-kit/next": "^1.0.10",
-    "@rakun-kit/react": "^1.0.0",
-    "@rakun-kit/trpc": "^1.0.0",
-    "@rakun-kit/s3": "^1.0.0",
+    "@rakun-kit/core": "^1.2.0",
+    "@rakun-kit/manager-react": "^1.2.0",
+    "@rakun-kit/next": "^1.2.0",
+    "@rakun-kit/react": "^1.2.0",
+    "@rakun-kit/trpc": "^1.2.0",
+    "@rakun-kit/s3": "^1.2.0",
     "@trpc/server": "^11.10.0",
     "bcrypt": "^6.0.0",
     "mongodb": "^7.1.1",
