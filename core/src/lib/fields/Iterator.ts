@@ -1,80 +1,49 @@
-import z from "zod";
+import { defaultFieldState } from "./Field";
+import {
+  makeListField,
+  type Entry,
+  type ListField,
+} from "./List";
+import {
+  relationField,
+  type ContentTypeLike,
+  type OnlyType,
+  type RelationField,
+} from "./Relation";
 
-import ContentType from "../ContentType";
-import { ListField } from "./List";
-import { OnlyType, RelationField } from "./Relation";
-import type { FieldHKT } from "../types";
-import type { Entry } from "./List";
-
-export type EntryContentType = { contentType: ContentType; type?: OnlyType };
-
-type IteratorEntry<CT extends EntryContentType[]> = {
-  name: CT[number]["contentType"]["name"];
-  field: RelationField<CT[number]["contentType"], CT[number]["type"]>;
+export type EntryContentType<
+  CT extends ContentTypeLike = ContentTypeLike,
+  Only extends OnlyType = OnlyType,
+> = {
+  contentType: CT;
+  type?: Only;
 };
 
-type IteratorSchema<CT extends EntryContentType[]> = z.ZodArray<
-  z.ZodObject<
-    {
-      name: z.ZodString;
-      value: z.ZodUnion<
-        readonly [ReturnType<IteratorEntry<CT>["field"]["getSchema"]>]
-      >;
-    },
-    z.core.$strip
-  >
->;
-
-type IteratorOutputSchema<CT extends EntryContentType[]> = z.ZodArray<
-  z.ZodObject<
-    {
-      name: z.ZodString;
-      value: z.ZodUnion<
-        readonly [ReturnType<IteratorEntry<CT>["field"]["getOutputSchema"]>]
-      >;
-    },
-    z.core.$strip
-  >
->;
-
-interface IteratorFieldHKT<
-  CT extends EntryContentType[],
-  S extends IteratorSchema<CT>,
-  Sout extends IteratorOutputSchema<CT>,
-> extends FieldHKT {
-  type: IteratorField<
-    CT,
-    S,
-    Sout,
-    this["args"][1],
-    this["args"][2],
-    this["args"][3]
-  >;
+type IteratorEntry<Item> = Item extends {
+  contentType: infer CT extends ContentTypeLike;
+  type?: infer Only extends OnlyType;
 }
+  ? Entry<CT["name"], RelationField<CT, Only>>
+  : never;
 
-export class IteratorField<
-  CT extends EntryContentType[],
-  S extends IteratorSchema<CT> = IteratorSchema<CT>,
-  Sout extends IteratorOutputSchema<CT> = IteratorOutputSchema<CT>,
-  TRequired extends boolean = false,
-  TTranslatable extends boolean = false,
-  TVisibility extends "api" | "manager" | "all" = "all",
-> extends ListField<
-  IteratorEntry<CT>[],
-  S,
-  Sout,
-  TRequired,
-  TTranslatable,
-  TVisibility,
-  IteratorFieldHKT<CT, S, Sout>
-> {
-  constructor(fields: CT) {
-    super(
-      fields.map((f) => ({
-        name: f.contentType.name,
-        field: new RelationField(f.contentType, f.type),
-      })) as IteratorEntry<CT>[] & Entry[],
-    );
-    this.config = { ui: "Iterator", type: "List" };
-  }
+type IteratorEntries<Items extends readonly EntryContentType[]> = {
+  [K in keyof Items]: IteratorEntry<Items[K]>;
+};
+
+export type IteratorField<
+  Items extends readonly EntryContentType[] = readonly EntryContentType[],
+> = ListField<IteratorEntries<Items>>;
+
+export function iteratorField<const Items extends readonly EntryContentType[]>(
+  fields: Items,
+): IteratorField<Items> {
+  const entries = fields.map((entry) => ({
+    name: entry.contentType.name,
+    field: relationField(entry.contentType, entry.type),
+  })) as IteratorEntries<Items>;
+
+  return makeListField(
+    { fields: entries, ui: "Iterator" },
+    defaultFieldState,
+  ) as IteratorField<Items>;
 }

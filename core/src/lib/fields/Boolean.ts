@@ -1,31 +1,56 @@
 import z from "zod";
 
-import type { EncodedField } from "./Field";
-import { Field } from "./Field";
-import type { FieldHKT } from "../types";
+import {
+  createField,
+  defaultFieldState,
+  type EncodedField,
+  sameSchemas,
+  type DefaultFieldState,
+  type FieldLike,
+  type FieldState,
+  type FieldWithModifiers,
+  type WithFieldState,
+  withFieldModifiers,
+} from "./Field";
 
-interface BooleanFieldHKT extends FieldHKT {
-  type: BooleanField<this["args"][1], this["args"][2], this["args"][3]>;
-}
+export type BooleanMeta = {
+  type: "Boolean";
+  ui: "Boolean";
+};
 
-export class BooleanField<
-  TRequired extends boolean = false,
-  TTranslatable extends boolean = false,
-  TVisibility extends "api" | "manager" | "all" = "all",
-> extends Field<
-  BooleanFieldHKT,
-  z.ZodBoolean,
-  z.ZodBoolean,
-  TRequired,
-  TTranslatable,
-  TVisibility
-> {
-  constructor() {
-    super({
-      config: { ui: "Boolean", type: "Boolean" },
-      schema: z.boolean(),
-    });
-  }
+export type BooleanField<
+  State extends FieldState = DefaultFieldState,
+> = FieldWithModifiers<BooleanFieldCore<State>>;
+
+type BooleanFieldCore<State extends FieldState> = FieldLike<
+  boolean,
+  boolean,
+  boolean,
+  BooleanMeta,
+  State
+>;
+
+export function booleanField(): BooleanField {
+  return makeBooleanField(defaultFieldState);
 }
 
 export type EncodedBooleanField = EncodedField;
+
+function makeBooleanField<State extends FieldState>(
+  state: State,
+): BooleanField<State> {
+  const field: BooleanFieldCore<State> = createField({
+    meta: { type: "Boolean", ui: "Boolean" },
+    state,
+    schemas: sameSchemas(() => z.boolean()),
+  });
+
+  return withFieldModifiers({
+    field,
+    rebuild: <NextState extends FieldState>(nextState: NextState) =>
+      makeBooleanField(nextState) as WithFieldState<
+        BooleanFieldCore<State>,
+        NextState
+      >,
+  });
+}

@@ -1,12 +1,22 @@
 import z from "zod";
 
-import type { EncodedField } from "./Field";
-import { Field } from "./Field";
-import type { FieldHKT, Visibility } from "../types";
+import {
+  createField,
+  defaultFieldState,
+  type EncodedField,
+  sameSchemas,
+  type DefaultFieldState,
+  type FieldStateOf,
+  type FieldLike,
+  type FieldState,
+  type FieldWithModifiers,
+  type WithFieldState,
+  withFieldModifiers,
+} from "./Field";
 import { Id } from "../utils/id";
 import { slugify } from "../utils/slugify";
 
-export const StringUI = z.enum([
+export const stringUis = [
   "Text",
   "Textarea",
   "RichText",
@@ -15,88 +25,158 @@ export const StringUI = z.enum([
   "Password",
   "Id",
   "Url",
-]);
+] as const;
 
-export type StringUI = z.infer<typeof StringUI>;
+export type StringUI = (typeof stringUis)[number];
 
-interface StringFieldHKT<T extends StringUI> extends FieldHKT {
-  type: StringField<T, this["args"][1], this["args"][2], this["args"][3]>;
-}
+type StringValue<Ui extends StringUI> = Ui extends "RichText"
+  ? Record<string, unknown>
+  : string;
 
-type SchemaType<T extends StringUI> = T extends "RichText"
-  ? z.ZodRecord<z.ZodString, z.ZodAny>
-  : z.ZodString;
+export type StringMeta<Ui extends StringUI = StringUI> = {
+  type: "String";
+  ui: Ui;
+  minLength?: number;
+  maxLength?: number;
+};
 
-export class StringField<
-  TType extends StringUI = "Text",
-  TRequired extends boolean = false,
-  TTranslatable extends boolean = false,
-  TVisibility extends Visibility = "all",
-> extends Field<
-  StringFieldHKT<TType>,
-  SchemaType<TType>,
-  SchemaType<TType>,
-  TRequired,
-  TTranslatable,
-  TVisibility
-> {
-  constructor() {
-    super({
-      config: { ui: "Text", type: "String" },
-      schema: z.string() as SchemaType<TType>,
-    });
-  }
+type StringOptions<Ui extends StringUI> = {
+  ui: Ui;
+  minLength?: number;
+  maxLength?: number;
+};
 
-  type<T extends StringUI>(ui: T) {
-    type schema = TType extends "RichText"
-      ? z.ZodRecord<z.ZodString, z.ZodAny>
-      : z.ZodString;
-    this.config.ui = ui;
+export type StringField<
+  Ui extends StringUI = "Text",
+  State extends FieldState = DefaultFieldState,
+> = FieldWithModifiers<StringFieldCore<Ui, State>>;
 
-    if (ui === "Email") {
-      this.schema = z.email() as unknown as schema;
-    }
+type StringFieldCore<
+  Ui extends StringUI,
+  State extends FieldState,
+> = StringFieldBase<Ui, State> & {
+  type: <
+    TThis extends StringFieldBase<Ui, FieldState>,
+    NextUi extends StringUI,
+  >(
+    this: TThis,
+    ui: NextUi,
+  ) => StringField<NextUi, FieldStateOf<TThis>>;
+  min: <TThis extends StringFieldBase<Ui, FieldState>>(
+    this: TThis,
+    length: number,
+  ) => StringField<Ui, FieldStateOf<TThis>>;
+  max: <TThis extends StringFieldBase<Ui, FieldState>>(
+    this: TThis,
+    length: number,
+  ) => StringField<Ui, FieldStateOf<TThis>>;
+};
 
-    if (ui === "Url") {
-      this.schema = z.url() as unknown as schema;
-    }
+type StringFieldBase<
+  Ui extends StringUI,
+  State extends FieldState,
+> = FieldLike<
+  StringValue<Ui>,
+  StringValue<Ui>,
+  StringValue<Ui>,
+  StringMeta<Ui>,
+  State
+>;
 
-    if (ui === "Id") {
-      this.schema = Id as schema;
-    }
-
-    if (ui === "Slug") {
-      this.schema = z.string().transform(slugify) as unknown as schema;
-    }
-
-    if (ui === "RichText") {
-      this.schema = z.record(z.string(), z.any()) as schema;
-    }
-
-    return this as unknown as StringField<
-      T,
-      TRequired,
-      TTranslatable,
-      TVisibility
-    >;
-  }
-
-  min(length: number) {
-    if (this.config.ui === "RichText") {
-      return this;
-    }
-    this.schema = (this.schema as z.ZodString).min(length) as SchemaType<TType>;
-    return this;
-  }
-
-  max(length: number) {
-    if (this.config.ui === "RichText") {
-      return this;
-    }
-
-    this.schema = (this.schema as z.ZodString).max(length) as SchemaType<TType>;
-    return this;
-  }
+export function stringField(): StringField {
+  return makeStringField({ ui: "Text" }, defaultFieldState);
 }
 
 export type EncodedStringField = EncodedField;
+
+function makeStringField<Ui extends StringUI, State extends FieldState>(
+  options: StringOptions<Ui>,
+  state: State,
+): StringField<Ui, State> {
+  const meta = {
+    type: "String",
+    ui: options.ui,
+    minLength: options.minLength,
+    maxLength: options.maxLength,
+  } as const satisfies StringMeta<Ui>;
+
+  const field: StringFieldCore<Ui, State> = {
+    ...createField({
+      meta,
+      state,
+      schemas: sameSchemas(() => buildStringSchema(options)),
+    }),
+    type: function <
+      TThis extends StringFieldBase<Ui, FieldState>,
+      NextUi extends StringUI,
+    >(this: TThis, ui: NextUi) {
+      return makeStringField(
+        { ...options, ui },
+        this.state as FieldStateOf<TThis>,
+      );
+    },
+    min: function <TThis extends StringFieldBase<Ui, FieldState>>(
+      this: TThis,
+      length: number,
+    ) {
+      return makeStringField(
+        { ...options, minLength: length },
+        this.state as FieldStateOf<TThis>,
+      );
+    },
+    max: function <TThis extends StringFieldBase<Ui, FieldState>>(
+      this: TThis,
+      length: number,
+    ) {
+      return makeStringField(
+        { ...options, maxLength: length },
+        this.state as FieldStateOf<TThis>,
+      );
+    },
+  };
+
+  return withFieldModifiers({
+    field,
+    rebuild: <NextState extends FieldState>(nextState: NextState) =>
+      makeStringField(options, nextState) as WithFieldState<
+        StringFieldCore<Ui, State>,
+        NextState
+      >,
+  });
+}
+
+function buildStringSchema<Ui extends StringUI>(
+  options: StringOptions<Ui>,
+): z.ZodType<StringValue<Ui>> {
+  if (options.ui === "RichText") {
+    return z
+      .record(z.string(), z.unknown()) as unknown as z.ZodType<
+      StringValue<Ui>
+    >;
+  }
+
+  let schema =
+    options.ui === "Email"
+      ? z.email()
+      : options.ui === "Url"
+        ? z.url()
+        : z.string();
+
+  if (options.ui === "Id") {
+    schema = Id;
+  }
+
+  if (options.minLength !== undefined) {
+    schema = schema.min(options.minLength);
+  }
+
+  if (options.maxLength !== undefined) {
+    schema = schema.max(options.maxLength);
+  }
+
+  if (options.ui === "Slug") {
+    return schema.transform(slugify) as unknown as z.ZodType<StringValue<Ui>>;
+  }
+
+  return schema as unknown as z.ZodType<StringValue<Ui>>;
+}

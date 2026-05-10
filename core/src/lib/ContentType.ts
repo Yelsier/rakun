@@ -1,11 +1,14 @@
-import { z } from "zod";
+import z from "zod";
 
-import type { EncodedFieldUnknown, Field } from "./fields/Field";
-import { SelfRelationField } from "./fields/SelfRelation";
-import { RelationField } from "./fields/Relation";
-import { DataPopulated, NestedPaths } from "./types";
+import type {
+  AnyField,
+  EncodedFieldUnknown,
+  InferDb,
+  InferInput,
+  InferOutput,
+  InferPopulated,
+} from "./fields/Field";
 import { isNeverOptional } from "./utils/isNeverOptional";
-import { IteratorField } from "./fields/Iterator";
 
 export const Menu = z
   .object({
@@ -17,23 +20,143 @@ export const Menu = z
 
 export type Menu = z.infer<typeof Menu>;
 
-type ApiOnlyFields<
-  F extends Record<string, Field<any, any, any, any, any, any>>,
-> = {
+type Primitive =
+  | string
+  | number
+  | boolean
+  | bigint
+  | symbol
+  | null
+  | undefined
+  | Date
+  | Function;
+
+type IsPlainObject<T> = T extends Primitive
+  ? false
+  : T extends readonly unknown[]
+    ? false
+    : T extends Record<string, unknown>
+      ? true
+      : false;
+
+export type NestedPaths<T, Seen = never> = T extends Seen
+  ? never
+  : {
+      [K in Extract<keyof T, string>]: IsPlainObject<
+        NonNullable<T[K]>
+      > extends true
+        ? `${K}` | `${K}.${NestedPaths<NonNullable<T[K]>, Seen | T>}`
+        : `${K}`;
+    }[Extract<keyof T, string>];
+
+type Simplify<T> = {
+  [K in keyof T as T[K] extends undefined
+    ? never
+    : undefined extends T[K]
+      ? never
+      : K]: T[K];
+} & {
+  [K in keyof T as T[K] extends undefined
+    ? never
+    : undefined extends T[K]
+      ? K
+      : never]?: Exclude<T[K], undefined>;
+} extends infer O
+  ? { [K in keyof O]: O[K] }
+  : never;
+
+type FieldRecord = Record<string, AnyField>;
+
+type InputFields<F extends FieldRecord> = Simplify<{
+  [K in keyof F]: InferInput<F[K]>;
+}>;
+
+type DbFields<F extends FieldRecord> = Simplify<{
+  [K in keyof F]: InferDb<F[K]>;
+}>;
+
+type OutputFields<F extends FieldRecord> = Simplify<{
+  [K in keyof F]: InferOutput<F[K]>;
+}>;
+
+type PopulatedFields<F extends FieldRecord> = Simplify<{
+  [K in keyof F]: InferPopulated<F[K]>;
+}>;
+
+type ApiOnlyFields<F extends FieldRecord> = {
   [K in keyof F]: ReturnType<F[K]["apiOnly"]>;
 };
 
-type ManagerOnlyFields<
-  F extends Record<string, Field<any, any, any, any, any, any>>,
-> = {
+type ManagerOnlyFields<F extends FieldRecord> = {
   [K in keyof F]: ReturnType<F[K]["managerOnly"]>;
 };
 
+type NonIteratorFields<F extends FieldRecord> = {
+  [K in keyof F as F[K]["meta"] extends { ui: "Iterator" }
+    ? never
+    : K]: F[K];
+};
+
+type ContentTypeInputShape<F extends FieldRecord, N extends string> = Simplify<
+  InputFields<F> & {
+    _type: N;
+    createdBy?: string;
+    updatedBy?: string;
+  }
+>;
+
+type ContentTypeDbShape<F extends FieldRecord, N extends string> = Simplify<
+  DbFields<F> & {
+    _id: string;
+    _type: N;
+    createdAt?: Date;
+    updatedAt?: Date;
+    createdBy?: string;
+    updatedBy?: string;
+  }
+>;
+
+type ContentTypeOutputShape<F extends FieldRecord, N extends string> = Simplify<
+  OutputFields<F> & {
+    _type: N;
+    _id: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+  }
+>;
+
+type ContentTypePopulatedShape<
+  F extends FieldRecord,
+  N extends string,
+> = Simplify<
+  PopulatedFields<F> & {
+    _type: N;
+    _id: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+    createdBy?: string;
+    updatedBy?: string;
+  }
+>;
+
+export type ContentTypeInput<CT> = CT extends ContentType<infer F, infer N>
+  ? ContentTypeInputShape<F, N>
+  : never;
+
+export type ContentTypeDb<CT> = CT extends ContentType<infer F, infer N>
+  ? ContentTypeDbShape<F, N>
+  : never;
+
+export type ContentTypeOutput<CT> = CT extends ContentType<infer F, infer N>
+  ? ContentTypeOutputShape<F, N>
+  : never;
+
+export type ContentTypePopulated<CT> = CT extends ContentType<infer F, infer N>
+  ? ContentTypePopulatedShape<F, N>
+  : never;
+
 export default class ContentType<
-  F extends Record<string, Field<any, any, any, any, any, any>> = Record<
-    string,
-    Field<any, any, any, any, any, any>
-  >,
+  F extends FieldRecord = FieldRecord,
   N extends string = string,
 > {
   name: N;
@@ -49,127 +172,76 @@ export default class ContentType<
     fields: F;
     menu?: Menu;
     uniques?: Array<Array<keyof F>>;
-    listFields?: NestedPaths<DataPopulated<ContentType<F, N>>>[];
+    listFields?: NestedPaths<ContentTypePopulatedShape<F, N>>[];
   }) {
     this.name = params.name;
-    this.fields = params.fields;
+    this.fields = this.bindSelfRelations(params.fields) as F;
     this.menu = params.menu;
     this.listFields = params.listFields as string[];
     this.uniques = (params.uniques as Array<Array<string>>) || [];
-
-    this.setSelfRelateds();
-  }
-
-  setSelfRelateds() {
-    Object.values(this.fields).forEach((field) => {
-      if (field instanceof SelfRelationField) {
-        field.setContentType(this);
-      }
-      if (field instanceof RelationField) {
-        field.setSelfRelateds();
-      }
-    });
   }
 
   getInputSchema() {
-    return z.object(
-      Object.fromEntries([
-        ...Object.entries(this.fields).map(([key, field]) => [
-          key,
-          field.getInputSchema(),
-        ]),
-        ["_type", z.literal(this.name)],
-        ["createdBy", z.string().optional()],
-        ["updatedBy", z.string().optional()],
-      ]) as {
-        [K in keyof F]: ReturnType<F[K]["getInputSchema"]>;
-      } & {
-        _type: z.ZodLiteral<N>;
-        createdBy: z.ZodOptional<z.ZodString>;
-        updatedBy: z.ZodOptional<z.ZodString>;
-      },
-    );
+    return z.object({
+      ...this.fieldSchemas("input"),
+      _type: z.literal(this.name),
+      createdBy: z.string().optional(),
+      updatedBy: z.string().optional(),
+    }) as unknown as z.ZodType<
+      ContentTypeInputShape<F, N>,
+      ContentTypeInputShape<F, N>
+    >;
   }
 
   getSchema() {
-    return z.object(
-      Object.fromEntries([
-        ...Object.entries(this.fields).map(([key, field]) => [
-          key,
-          field.getSchema(),
-        ]),
-        ["_type", z.literal(this.name)],
-      ]) as {
-        [K in keyof F]: ReturnType<F[K]["getSchema"]>;
-      } & {
-        _type: z.ZodLiteral<N>;
-      },
-    );
+    return z.object({
+      ...this.fieldSchemas("db"),
+      _type: z.literal(this.name),
+    }) as unknown as z.ZodType<
+      ContentTypeDbShape<F, N>,
+      ContentTypeDbShape<F, N>
+    >;
   }
 
   getPopulatedSchema() {
-    return z.object(
-      Object.fromEntries([
-        ...Object.entries(this.fields).map(([key, field]) => [
-          key,
-          field instanceof RelationField
-            ? field.getPopulatedSchema()
-            : field.getSchema(),
-        ]),
-        ["_type", z.literal(this.name)],
-        ["_id", z.string()],
-        ["createdBy", z.string().optional()],
-        ["updatedBy", z.string().optional()],
-      ]) as {
-        [K in keyof F]: F[K] extends {
-          getPopulatedSchema: () => z.ZodTypeAny;
-        }
-          ? ReturnType<F[K]["getPopulatedSchema"]>
-          : ReturnType<F[K]["getSchema"]>;
-      } & {
-        _type: z.ZodLiteral<N>;
-        _id: z.ZodString;
-        createdBy: z.ZodOptional<z.ZodString>;
-        updatedBy: z.ZodOptional<z.ZodString>;
-      },
-    );
+    return z.object({
+      ...this.fieldSchemas("populated"),
+      _type: z.literal(this.name),
+      _id: z.string(),
+      createdBy: z.string().optional(),
+      updatedBy: z.string().optional(),
+    }) as unknown as z.ZodType<
+      ContentTypePopulatedShape<F, N>,
+      ContentTypePopulatedShape<F, N>
+    >;
   }
 
   getOutputSchema() {
-    return z.object(
-      Object.fromEntries([
-        ...Object.entries(this.fields)
-          .map(([key, field]) => [key, field.getOutputSchema()])
-          .filter(([, schema]) => !isNeverOptional(schema)),
-        ["_type", z.literal(this.name)],
-        ["_id", z.string()],
-      ]) as {
-        [K in keyof F]: ReturnType<F[K]["getOutputSchema"]>;
-      } & {
-        _type: z.ZodLiteral<N>;
-        _id: z.ZodString;
-      },
-    );
+    return z.object({
+      ...this.outputFieldSchemas(this.fields),
+      _type: z.literal(this.name),
+      _id: z.string(),
+    }) as unknown as z.ZodType<
+      ContentTypeOutputShape<F, N>,
+      ContentTypeOutputShape<F, N>
+    >;
   }
 
   getOutputSchemaWithoutIterators() {
-    return z.object(
-      Object.fromEntries([
-        ...Object.entries(this.fields)
-          .filter(([, field]) => !(field instanceof IteratorField))
-          .map(([key, field]) => [key, field.getOutputSchema()])
-          .filter(([, schema]) => !isNeverOptional(schema)),
-        ["_type", z.literal(this.name)],
-        ["_id", z.string()],
-      ]) as {
-        [K in keyof F]: F[K] extends IteratorField<any, any, any, any, any, any>
-          ? never
-          : ReturnType<F[K]["getOutputSchema"]>;
-      } & {
-        _type: z.ZodLiteral<N>;
-        _id: z.ZodString;
-      },
-    );
+    return z.object({
+      ...this.outputFieldSchemas(
+        Object.fromEntries(
+          Object.entries(this.fields).filter(
+            ([, field]) => field.meta.ui !== "Iterator",
+          ),
+        ) as NonIteratorFields<F>,
+      ),
+      _type: z.literal(this.name),
+      _id: z.string(),
+    }) as unknown as z.ZodType<
+      ContentTypeOutputShape<NonIteratorFields<F>, N>,
+      ContentTypeOutputShape<NonIteratorFields<F>, N>
+    >;
   }
 
   validate(data: unknown) {
@@ -177,7 +249,9 @@ export default class ContentType<
   }
 
   partialValidate(data: unknown) {
-    return this.getInputSchema().partial().parse(data);
+    return (this.getInputSchema() as unknown as z.ZodObject<any>)
+      .partial()
+      .parse(data);
   }
 
   validateOutput(data: unknown) {
@@ -190,14 +264,103 @@ export default class ContentType<
   }
 
   apiOnly() {
-    Object.values(this.fields).forEach((field) => field.apiOnly());
-    return this as unknown as ContentType<ApiOnlyFields<F>, N>;
+    const fields = mapFields(
+      this.fields,
+      (field) => field.apiOnly(),
+    ) as unknown as ApiOnlyFields<F>;
+
+    const contentType = new ContentType<ApiOnlyFields<F>, N>({
+      name: this.name,
+      fields,
+      menu: this.menu,
+      uniques: this.uniques as Array<Array<keyof ApiOnlyFields<F>>>,
+      listFields: this.listFields as NestedPaths<
+        ContentTypePopulatedShape<ApiOnlyFields<F>, N>
+      >[],
+    });
+    contentType.isHiddenFromManager = this.isHiddenFromManager;
+    contentType.collapseFields = this.collapseFields;
+    return contentType;
   }
 
   managerOnly() {
-    Object.values(this.fields).forEach((field) => field.managerOnly());
-    return this as unknown as ContentType<ManagerOnlyFields<F>, N>;
+    const fields = mapFields(
+      this.fields,
+      (field) => field.managerOnly(),
+    ) as unknown as ManagerOnlyFields<F>;
+
+    const contentType = new ContentType<ManagerOnlyFields<F>, N>({
+      name: this.name,
+      fields,
+      menu: this.menu,
+      uniques: this.uniques as Array<Array<keyof ManagerOnlyFields<F>>>,
+      listFields: this.listFields as NestedPaths<
+        ContentTypePopulatedShape<ManagerOnlyFields<F>, N>
+      >[],
+    });
+    contentType.isHiddenFromManager = this.isHiddenFromManager;
+    contentType.collapseFields = this.collapseFields;
+    return contentType;
   }
+
+  private fieldSchemas(mode: "input" | "db" | "output" | "populated") {
+    return Object.fromEntries(
+      Object.entries(this.fields).map(([key, field]) => [
+        key,
+        getFieldSchema(field, mode),
+      ]),
+    );
+  }
+
+  private outputFieldSchemas<Fields extends FieldRecord>(fields: Fields) {
+    return Object.fromEntries(
+      Object.entries(fields)
+        .map(([key, field]) => [key, field.getOutputSchema()] as const)
+        .filter(([, schema]) => !isNeverOptional(schema)),
+    );
+  }
+
+  private bindSelfRelations(fields: F): F {
+    return mapFields(fields, (field) => {
+      if (
+        field.meta.ui === "SelfRelation" &&
+        "setContentType" in field &&
+        typeof field.setContentType === "function"
+      ) {
+        return field.setContentType(this);
+      }
+
+      return field;
+    }) as F;
+  }
+}
+
+function getFieldSchema(
+  field: AnyField,
+  mode: "input" | "db" | "output" | "populated",
+) {
+  if (mode === "input") return field.getInputSchema();
+  if (mode === "db") return field.getSchema();
+  if (mode === "output") return field.getOutputSchema();
+
+  return "getPopulatedSchema" in field &&
+    typeof field.getPopulatedSchema === "function"
+    ? field.getPopulatedSchema()
+    : field.getSchema();
+}
+
+function mapFields<F extends FieldRecord>(
+  fields: F,
+  map: (field: F[keyof F], key: keyof F) => AnyField,
+) {
+  return Object.fromEntries(
+    Object.entries(fields).map(([key, field]) => [
+      key,
+      map(field as F[keyof F], key),
+    ]),
+  ) as {
+    [K in keyof F]: ReturnType<typeof map>;
+  };
 }
 
 export const EncodedContentTypeSchema = z.object({

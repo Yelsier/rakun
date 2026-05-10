@@ -5,7 +5,7 @@ export {
   type Permission,
 } from "./lib/Permissions";
 export type { MaybeTranslatableValue, TranslatableValue } from "./lib/types";
-export * from "./lib/fields";
+export { Fields } from "./lib/fields";
 export * from "./lib/fields/Boolean";
 export * from "./lib/fields/ContentReference";
 export * from "./lib/fields/Date";

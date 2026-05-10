@@ -1,49 +1,109 @@
 import z from "zod";
 
-import type { EncodedField } from "./Field";
-import { Field } from "./Field";
-import type ContentType from "../ContentType";
+import {
+  createField,
+  defaultFieldState,
+  type EncodedField,
+  sameSchemas,
+  type DefaultFieldState,
+  type FieldLike,
+  type FieldState,
+  type FieldStateOf,
+  type FieldWithModifiers,
+  type WithFieldState,
+  withFieldModifiers,
+} from "./Field";
 import { Id } from "../utils/id";
-import type { FieldHKT, Visibility } from "../types";
 
-const SelfRelationSchema = z.object({
-  type: z.literal("self"),
-  _id: Id,
-  contentType: z.string(),
-});
+export type SelfRelationValue<Name extends string = string> = {
+  type: "self";
+  _id: string;
+  contentType: Name;
+};
 
-type SelfRelationSchema = typeof SelfRelationSchema;
+export type SelfRelationMeta<Name extends string = string> = {
+  type: "Relation";
+  ui: "SelfRelation";
+  contentType?: Name;
+};
 
-interface SelfRelationFieldHKT extends FieldHKT {
-  type: SelfRelationField<this["args"][1], this["args"][2], this["args"][3]>;
-}
+export type SelfRelationField<
+  Name extends string = string,
+  State extends FieldState = DefaultFieldState,
+> = FieldWithModifiers<SelfRelationFieldCore<Name, State>>;
 
-export class SelfRelationField<
-  TRequired extends boolean = false,
-  TTranslatable extends boolean = false,
-  TVisibility extends Visibility = "all",
-> extends Field<
-  SelfRelationFieldHKT,
-  SelfRelationSchema,
-  SelfRelationSchema,
-  TRequired,
-  TTranslatable,
-  TVisibility
-> {
-  constructor() {
-    super({
-      config: { ui: "SelfRelation", type: "Relation" },
-      schema: SelfRelationSchema,
-    });
-  }
+type SelfRelationFieldCore<
+  Name extends string,
+  State extends FieldState,
+> = SelfRelationFieldBase<Name, State> & {
+  setContentType: <
+    TThis extends SelfRelationFieldBase<Name, FieldState>,
+    NextName extends string,
+  >(
+    this: TThis,
+    contentType: { name: NextName },
+  ) => SelfRelationField<NextName, FieldStateOf<TThis>>;
+};
 
-  setContentType(contentType: ContentType) {
-    this.schema = z.object({
-      type: z.literal("self"),
-      _id: Id,
-      contentType: z.literal(contentType.name),
-    }) as unknown as SelfRelationSchema;
-  }
+type SelfRelationFieldBase<
+  Name extends string,
+  State extends FieldState,
+> = FieldLike<
+  SelfRelationValue<Name>,
+  SelfRelationValue<Name>,
+  SelfRelationValue<Name>,
+  SelfRelationMeta<Name>,
+  State
+>;
+
+export function selfRelationField(): SelfRelationField {
+  return makeSelfRelationField({}, defaultFieldState);
 }
 
 export type EncodedSelfRelationField = EncodedField;
+
+function makeSelfRelationField<
+  Name extends string,
+  State extends FieldState,
+>(
+  options: { contentType?: Name },
+  state: State,
+): SelfRelationField<Name, State> {
+  const field: SelfRelationFieldCore<Name, State> = {
+    ...createField({
+      meta: {
+        type: "Relation",
+        ui: "SelfRelation",
+        contentType: options.contentType,
+      },
+      state,
+      schemas: sameSchemas(() => buildSelfRelationSchema(options.contentType)),
+    }),
+    setContentType: function <
+      TThis extends SelfRelationFieldBase<Name, FieldState>,
+      NextName extends string,
+    >(this: TThis, contentType: { name: NextName }) {
+      return makeSelfRelationField(
+        { contentType: contentType.name },
+        this.state as FieldStateOf<TThis>,
+      );
+    },
+  };
+
+  return withFieldModifiers({
+    field,
+    rebuild: <NextState extends FieldState>(nextState: NextState) =>
+      makeSelfRelationField(options, nextState) as WithFieldState<
+        SelfRelationFieldCore<Name, State>,
+        NextState
+      >,
+  });
+}
+
+function buildSelfRelationSchema<Name extends string>(contentType?: Name) {
+  return z.object({
+    type: z.literal("self"),
+    _id: Id,
+    contentType: contentType ? z.literal(contentType) : z.string(),
+  }) as z.ZodType<SelfRelationValue<Name>>;
+}

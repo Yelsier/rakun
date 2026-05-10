@@ -1,53 +1,70 @@
 import z from "zod";
 
-import type { EncodedField } from "./Field";
-import { Field } from "./Field";
+import {
+  createField,
+  defaultFieldState,
+  type EncodedField,
+  type DefaultFieldState,
+  type FieldLike,
+  type FieldState,
+  type FieldWithModifiers,
+  type WithFieldState,
+  withFieldModifiers,
+} from "./Field";
 import { Id } from "../utils/id";
-import type { FieldHKT } from "../types";
-import { getDefaultOutputSchema } from "../utils/getSchemas";
 
-const LinkSchema = z.object({
+const linkInputSchema = z.object({
   routeId: Id,
   contentTypeId: Id,
 });
 
-const LinkOutputSchema = z.string();
+const linkOutputSchema = z.string();
 
-type LinkSchema = typeof LinkSchema;
+type LinkInput = z.infer<typeof linkInputSchema>;
+type LinkOutput = z.infer<typeof linkOutputSchema>;
 
-type LinkOutputSchema = typeof LinkOutputSchema;
+export type LinkfieldValue = LinkInput;
 
-interface LinkFieldHKT extends FieldHKT {
-  type: LinkField<this["args"][1], this["args"][2], this["args"][3]>;
-}
+export type LinkMeta = {
+  type: "Link";
+  ui: "Link";
+};
 
-export class LinkField<
-  TRequired extends boolean = false,
-  TTranslatable extends boolean = false,
-  TVisibility extends "api" | "manager" | "all" = "all",
-> extends Field<
-  LinkFieldHKT,
-  LinkSchema,
-  LinkOutputSchema,
-  TRequired,
-  TTranslatable,
-  TVisibility
-> {
-  constructor() {
-    super({
-      config: { ui: "Link", type: "Link" },
-      schema: LinkSchema,
-    });
-  }
+export type LinkField<
+  State extends FieldState = DefaultFieldState,
+> = FieldWithModifiers<LinkFieldCore<State>>;
 
-  protected override getBaseOutputSchema() {
-    return getDefaultOutputSchema<LinkOutputSchema, TRequired>(
-      LinkOutputSchema,
-      this.isRequired,
-    );
-  }
+type LinkFieldCore<State extends FieldState> = FieldLike<
+  LinkInput,
+  LinkInput,
+  LinkOutput,
+  LinkMeta,
+  State
+>;
+
+export function linkField(): LinkField {
+  return makeLinkField(defaultFieldState);
 }
 
 export type EncodedLinkField = EncodedField;
 
-export type LinkfieldValue = z.infer<LinkSchema>;
+function makeLinkField<State extends FieldState>(state: State): LinkField<State> {
+  const field: LinkFieldCore<State> = createField({
+    meta: { type: "Link", ui: "Link" },
+    state,
+    schemas: {
+      input: () => linkInputSchema,
+      db: () => linkInputSchema,
+      output: () => linkOutputSchema,
+    },
+  });
+
+  return withFieldModifiers({
+    field,
+    rebuild: <NextState extends FieldState>(nextState: NextState) =>
+      makeLinkField(nextState) as WithFieldState<
+        LinkFieldCore<State>,
+        NextState
+      >,
+  });
+}

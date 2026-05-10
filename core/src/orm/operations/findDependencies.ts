@@ -3,21 +3,25 @@ import type { Db } from "mongodb";
 import { checkFailureCase, DbErrorUnknown } from "../dbService";
 import { parseId } from "../utils/parseId";
 import { getMongoDB } from "../mongodbPeer";
-import { Field } from "../../lib/fields/Field";
 import ContentType from "../../lib/ContentType";
-import { RelationField } from "../../lib/fields/Relation";
 import { Id } from "../../lib/utils/id";
 import { getContentTypes } from "../../lib/Registry";
 
-const isRelationFieldAndTarget = (field: Field, contentType: string) =>
-  field.getConfig().ui === "ContentType" &&
-  (field as RelationField<ContentType>).contentType.name === contentType;
+type DependencyField = ContentType["fields"][string];
 
-const isFileFieldAndTarget = (field: Field, contentType: string) =>
+const isRelationFieldAndTarget = (
+  field: DependencyField,
+  contentType: string,
+) => {
+  const config = field.getConfig() as { ui?: string; contentType?: string };
+  return config.ui === "ContentType" && config.contentType === contentType;
+};
+
+const isFileFieldAndTarget = (field: DependencyField, contentType: string) =>
   field.getConfig().type === "File" && contentType === "Media";
 
 const isSelfRelationFieldAndSameTarget = (
-  field: Field,
+  field: DependencyField,
   thisContentType: string,
   targetContentType: string,
 ) =>

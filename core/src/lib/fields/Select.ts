@@ -1,68 +1,134 @@
 import z from "zod";
 
-import type { EncodedField } from "./Field";
-import { Field } from "./Field";
-import type { FieldHKT, If, Visibility } from "../types";
+import {
+  createField,
+  defaultFieldState,
+  type EncodedField,
+  sameSchemas,
+  type DefaultFieldState,
+  type FieldLike,
+  type FieldState,
+  type FieldStateOf,
+  type FieldWithModifiers,
+  type WithFieldState,
+  withFieldModifiers,
+} from "./Field";
 
-interface SelectFieldHKT<
-  L extends string[],
-  M extends boolean,
-> extends FieldHKT {
-  type: SelectField<
-    L,
-    M,
-    If<M, z.ZodArray<z.ZodLiteral<L[number]>>, z.ZodLiteral<L[number]>>,
-    this["args"][1],
-    this["args"][2],
-    this["args"][3]
-  >;
-}
+type SelectValue<
+  Options extends readonly string[],
+  Multiple extends boolean,
+> = Multiple extends true ? Options[number][] : Options[number];
 
-export class SelectField<
-  const L extends string[] = string[],
-  M extends boolean = false,
-  S extends If<
-    M,
-    z.ZodArray<z.ZodLiteral<L[number]>>,
-    z.ZodLiteral<L[number]>
-  > = If<M, z.ZodArray<z.ZodLiteral<L[number]>>, z.ZodLiteral<L[number]>>,
-  TRequired extends boolean = false,
-  TTranslatable extends boolean = false,
-  TVisibility extends Visibility = "all",
-> extends Field<
-  SelectFieldHKT<L, M>,
-  S,
-  S,
-  TRequired,
-  TTranslatable,
-  TVisibility
-> {
-  options: L;
-  isMultiple: M = false as M;
-  constructor(options: L) {
-    super({
-      config: { ui: "Select", type: "Select" },
-      schema: z.literal(options.length ? options : [""]) as S,
-    });
-    this.options = options;
-  }
-
-  multiple() {
-    this.schema = z.array(z.literal(this.options)) as S;
-    this.config.ui = "MultiSelect";
-    this.isMultiple = true as M;
-    return this as SelectField<
-      L,
-      true,
-      z.ZodArray<z.ZodLiteral<L[number]>>,
-      TRequired,
-      TTranslatable,
-      TVisibility
-    >;
-  }
-}
+export type SelectMeta<
+  Options extends readonly string[] = readonly string[],
+  Multiple extends boolean = boolean,
+> = {
+  type: "Select";
+  ui: Multiple extends true ? "MultiSelect" : "Select";
+  options: Options;
+  isMultiple: Multiple;
+};
 
 export type EncodedSelectField = EncodedField & {
   options: string[];
   isMultiple: boolean;
 };
+
+type SelectOptions<
+  Options extends readonly string[],
+  Multiple extends boolean,
+> = {
+  options: Options;
+  multiple: Multiple;
+};
+
+export type SelectField<
+  Options extends readonly string[] = readonly string[],
+  Multiple extends boolean = false,
+  State extends FieldState = DefaultFieldState,
+> = FieldWithModifiers<SelectFieldCore<Options, Multiple, State>>;
+
+type SelectFieldCore<
+  Options extends readonly string[],
+  Multiple extends boolean,
+  State extends FieldState,
+> = SelectFieldBase<Options, Multiple, State> & {
+  multiple: <
+    TThis extends SelectFieldBase<Options, Multiple, FieldState>,
+  >(
+    this: TThis,
+  ) => SelectField<Options, true, FieldStateOf<TThis>>;
+};
+
+type SelectFieldBase<
+  Options extends readonly string[],
+  Multiple extends boolean,
+  State extends FieldState,
+> = FieldLike<
+  SelectValue<Options, Multiple>,
+  SelectValue<Options, Multiple>,
+  SelectValue<Options, Multiple>,
+  SelectMeta<Options, Multiple>,
+  State
+>;
+
+export function selectField<const Options extends readonly string[]>(
+  options: Options,
+): SelectField<Options> {
+  return makeSelectField({ options, multiple: false }, defaultFieldState);
+}
+
+function makeSelectField<
+  Options extends readonly string[],
+  Multiple extends boolean,
+  State extends FieldState,
+>(
+  options: SelectOptions<Options, Multiple>,
+  state: State,
+): SelectField<Options, Multiple, State> {
+  const field: SelectFieldCore<Options, Multiple, State> = {
+    ...createField({
+      meta: {
+        type: "Select",
+        ui: (options.multiple ? "MultiSelect" : "Select") as SelectMeta<
+          Options,
+          Multiple
+        >["ui"],
+        options: options.options,
+        isMultiple: options.multiple,
+      },
+      state,
+      schemas: sameSchemas(() => buildSelectSchema(options)),
+    }),
+    multiple: function <
+      TThis extends SelectFieldBase<Options, Multiple, FieldState>,
+    >(this: TThis) {
+      return makeSelectField(
+        { ...options, multiple: true },
+        this.state as FieldStateOf<TThis>,
+      );
+    },
+  };
+
+  return withFieldModifiers({
+    field,
+    rebuild: <NextState extends FieldState>(nextState: NextState) =>
+      makeSelectField(options, nextState) as WithFieldState<
+        SelectFieldCore<Options, Multiple, State>,
+        NextState
+      >,
+  });
+}
+
+function buildSelectSchema<
+  Options extends readonly string[],
+  Multiple extends boolean,
+>(options: SelectOptions<Options, Multiple>) {
+  const literal = z.literal(
+    options.options.length ? options.options : [""],
+  ) as z.ZodType<Options[number]>;
+
+  return (
+    options.multiple ? z.array(literal) : literal
+  ) as z.ZodType<SelectValue<Options, Multiple>>;
+}

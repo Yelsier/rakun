@@ -1,130 +1,32 @@
 import z from "zod";
 
-import type { EncodedField } from "./Field";
-import { Field } from "./Field";
-import type { FieldHKT, getRequiredType } from "../types";
+import {
+  createField,
+  defaultFieldState,
+  type AnyFieldLike,
+  type DefaultFieldState,
+  type EncodedField,
+  type EncodedFieldUnknown,
+  type FieldLike,
+  type FieldState,
+  type FieldWithModifiers,
+  type InferDb,
+  type InferOutput,
+  type WithFieldState,
+  withFieldModifiers,
+} from "./Field";
 
-export type Entry = {
-  name: string;
-  field: Field<any, any, any, any, any, any>;
+export type Entry<
+  Name extends string = string,
+  F extends AnyFieldLike = AnyFieldLike,
+> = {
+  name: Name;
+  field: F;
 };
-
-export interface ListFieldHKT<
-  F extends Entry[],
-  S extends z.ZodArray<
-    z.ZodObject<
-      {
-        name: z.ZodString;
-        value: z.ZodUnion<
-          readonly [ReturnType<F[number]["field"]["getSchema"]>]
-        >;
-      },
-      z.core.$strip
-    >
-  >,
-  Sout extends z.ZodArray<
-    z.ZodObject<
-      {
-        name: z.ZodString;
-        value: z.ZodUnion<
-          readonly [ReturnType<F[number]["field"]["getOutputSchema"]>]
-        >;
-      },
-      z.core.$strip
-    >
-  >,
-> extends FieldHKT {
-  type: ListField<
-    F,
-    S,
-    Sout,
-    this["args"][1],
-    this["args"][2],
-    this["args"][3]
-  >;
-}
-
-export class ListField<
-  F extends Entry[] = [],
-  S extends z.ZodArray<
-    z.ZodObject<
-      {
-        name: z.ZodString;
-        value: z.ZodUnion<
-          readonly [ReturnType<F[number]["field"]["getSchema"]>]
-        >;
-      },
-      z.core.$strip
-    >
-  > = z.ZodArray<
-    z.ZodObject<
-      {
-        name: z.ZodString;
-        value: z.ZodUnion<
-          readonly [ReturnType<F[number]["field"]["getSchema"]>]
-        >;
-      },
-      z.core.$strip
-    >
-  >,
-  Sout extends z.ZodArray<
-    z.ZodObject<
-      {
-        name: z.ZodString;
-        value: z.ZodUnion<
-          readonly [ReturnType<F[number]["field"]["getOutputSchema"]>]
-        >;
-      },
-      z.core.$strip
-    >
-  > = z.ZodArray<
-    z.ZodObject<
-      {
-        name: z.ZodString;
-        value: z.ZodUnion<
-          readonly [ReturnType<F[number]["field"]["getOutputSchema"]>]
-        >;
-      },
-      z.core.$strip
-    >
-  >,
-  TRequired extends boolean = false,
-  TTranslatable extends boolean = false,
-  TVisibility extends "api" | "manager" | "all" = "all",
-  THKT extends FieldHKT = ListFieldHKT<F, S, Sout>,
-> extends Field<THKT, S, Sout, TRequired, TTranslatable, TVisibility> {
-  fields: F;
-
-  constructor(fields: F) {
-    super({
-      config: { ui: "List", type: "List" },
-      schema: z.array(
-        z.object({
-          name: z.string(),
-          value: z.union(fields.map((f) => f.field.getSchema())),
-        }),
-      ) as unknown as S,
-    });
-    this.fields = fields;
-  }
-
-  protected override getBaseOutputSchema() {
-    return z.array(
-      z.object({
-        name: z.string(),
-        value: z.union(
-          this.fields.map((f) => f.field.getOutputSchema()) as unknown as [
-            ReturnType<F[number]["field"]["getOutputSchema"]>,
-          ],
-        ),
-      }),
-    ) as unknown as getRequiredType<Sout, TRequired>;
-  }
-}
 
 export type EncodedListFieldItem = {
   name: string;
-  field: EncodedField;
+  field: EncodedFieldUnknown;
 };
 
 export type EncodedListField = EncodedField & {
@@ -135,3 +37,123 @@ export type ListFieldValueItem<S> = {
   name: string;
   value: S;
 };
+
+type ListInputValue<Entries extends readonly Entry[]> = Array<{
+  name: Entries[number]["name"];
+  value: InferDb<Entries[number]["field"]>;
+}>;
+
+type ListOutputValue<Entries extends readonly Entry[]> = Array<{
+  name: Entries[number]["name"];
+  value: InferOutput<Entries[number]["field"]>;
+}>;
+
+export type ListMeta<Entries extends readonly Entry[] = readonly Entry[]> = {
+  type: "List";
+  ui: "List" | "Iterator";
+  fields: {
+    [K in keyof Entries]: Entries[K] extends Entry<infer Name, infer F>
+      ? { name: Name; field: F["meta"] }
+      : never;
+  };
+};
+
+type ListOptions<Entries extends readonly Entry[]> = {
+  fields: Entries;
+  ui: "List" | "Iterator";
+};
+
+export type ListField<
+  Entries extends readonly Entry[] = readonly Entry[],
+  State extends FieldState = DefaultFieldState,
+> = FieldWithModifiers<ListFieldCore<Entries, State>>;
+
+type ListFieldCore<
+  Entries extends readonly Entry[],
+  State extends FieldState,
+> = FieldLike<
+  ListInputValue<Entries>,
+  ListInputValue<Entries>,
+  ListOutputValue<Entries>,
+  ListMeta<Entries>,
+  State
+> & {
+  fields: Entries;
+};
+
+export function listField<const Entries extends readonly Entry[]>(
+  fields: Entries,
+): ListField<Entries> {
+  return makeListField({ fields, ui: "List" }, defaultFieldState);
+}
+
+export function makeListField<
+  Entries extends readonly Entry[],
+  State extends FieldState,
+>(options: ListOptions<Entries>, state: State): ListField<Entries, State> {
+  const field: ListFieldCore<Entries, State> = createField({
+    meta: {
+      type: "List",
+      ui: options.ui,
+      fields: options.fields.map((entry) => ({
+        name: entry.name,
+        field: entry.field.meta,
+      })) as ListMeta<Entries>["fields"],
+    },
+    state,
+    schemas: {
+      input: () => buildListDbSchema(options.fields),
+      db: () => buildListDbSchema(options.fields),
+      output: () => buildListOutputSchema(options.fields),
+    },
+  }) as ListFieldCore<Entries, State>;
+
+  field.fields = options.fields;
+
+  return withFieldModifiers({
+    field,
+    rebuild: <NextState extends FieldState>(nextState: NextState) =>
+      makeListField(options, nextState) as WithFieldState<
+        ListFieldCore<Entries, State>,
+        NextState
+      >,
+  });
+}
+
+function buildListDbSchema<Entries extends readonly Entry[]>(fields: Entries) {
+  const valueSchemas = fields.map((entry) =>
+    entry.field.getSchema(),
+  );
+
+  return z.array(
+    z.object({
+      name: z.string(),
+      value: unionSchemas(valueSchemas),
+    }),
+  ) as z.ZodType<ListInputValue<Entries>>;
+}
+
+function buildListOutputSchema<Entries extends readonly Entry[]>(
+  fields: Entries,
+) {
+  const valueSchemas = fields.map((entry) => entry.field.getOutputSchema());
+
+  return z.array(
+    z.object({
+      name: z.string(),
+      value: unionSchemas(valueSchemas),
+    }),
+  ) as z.ZodType<ListOutputValue<Entries>>;
+}
+
+function unionSchemas(schemas: z.ZodTypeAny[]) {
+  if (schemas.length === 0) {
+    return z.never();
+  }
+
+  if (schemas.length === 1) {
+    return schemas[0];
+  }
+
+  return z.union(schemas as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]]);
+}
