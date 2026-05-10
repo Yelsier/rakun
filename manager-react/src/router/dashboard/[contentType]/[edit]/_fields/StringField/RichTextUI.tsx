@@ -32,6 +32,41 @@ const EmptyValue = {
   },
 } as unknown as SerializedEditorState
 
+const isSerializedEditorState = (
+  value: unknown,
+): value is SerializedEditorState => {
+  if (!value || typeof value !== 'object') return false
+
+  const root = (value as { root?: unknown }).root
+  if (!root || typeof root !== 'object') return false
+
+  const children = (root as { children?: unknown }).children
+  const type = (root as { type?: unknown }).type
+
+  return (
+    type === 'root' &&
+    Array.isArray(children) &&
+    children.length > 0 &&
+    children.every(isSerializedLexicalNode)
+  )
+}
+
+const isSerializedLexicalNode = (value: unknown): boolean => {
+  if (!value || typeof value !== 'object') return false
+
+  const type = (value as { type?: unknown }).type
+  const children = (value as { children?: unknown }).children
+
+  if (typeof type !== 'string') return false
+  if (children === undefined) return true
+
+  return Array.isArray(children) && children.every(isSerializedLexicalNode)
+}
+
+const normalizeEditorState = (value: unknown): SerializedEditorState => {
+  return isSerializedEditorState(value) ? value : EmptyValue
+}
+
 const RichTextUI: React.FC<StringPropsRef> = ({
   id,
   isTranslatable,
@@ -57,18 +92,15 @@ const RichTextUI: React.FC<StringPropsRef> = ({
 
   const { language } = useLanguage()
   const editorRef = useRef<LexicalEditor>(null)
+  const editorValue = normalizeEditorState(value)
 
   useEffect(() => {
     if (!isTranslatable) return
 
     editorRef.current?.update(() => {
       // get from store serialized state of the current language and set it to the editor
-      const state = translatesStore[language.code] || EmptyValue
-      if (state) {
-        editorRef.current?.setEditorState(
-          editorRef.current?.parseEditorState(state),
-        )
-      }
+      const state = normalizeEditorState(translatesStore[language.code])
+      editorRef.current?.setEditorState(editorRef.current.parseEditorState(state))
     })
   }, [isTranslatable, language.code])
 
@@ -82,7 +114,7 @@ const RichTextUI: React.FC<StringPropsRef> = ({
     >
       <Editor
         editorRef={editorRef}
-        editorSerializedState={value}
+        editorSerializedState={editorValue}
         onSerializedChange={(value) => {
           onValueChange(value)
           cleanErrors()

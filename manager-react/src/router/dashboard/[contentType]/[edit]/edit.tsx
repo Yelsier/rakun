@@ -113,6 +113,8 @@ const RouteLayoutModuleTabContent = ({
   ) => {
     if (!contentTypeId) return;
 
+    setIsSaving(true);
+
     const existing = overridesByKey.get(
       `${layoutModule.routeId}:${layoutModule.key}`,
     );
@@ -127,6 +129,7 @@ const RouteLayoutModuleTabContent = ({
       }
 
       toast.success("Layout override updated successfully");
+      setIsSaving(false);
       return;
     }
 
@@ -155,6 +158,7 @@ const RouteLayoutModuleTabContent = ({
 
     toast.success("Layout override updated successfully");
     await routeLayoutOverridesQuery.refetch();
+    setIsSaving(false);
   };
 
   const defaultOption = layoutModule.moduleId
@@ -171,7 +175,7 @@ const RouteLayoutModuleTabContent = ({
     >
       <div className="mx-auto flex w-full flex-col gap-4">
         <div>
-          <h2 className="text-lg font-semibold">{layoutModule.key}</h2>
+          <h2 className="text-lg font-semibold">{layoutModule.contentType}</h2>
           <p className="text-muted-foreground text-sm">
             Default from route: {defaultOption}. Override only for this entry.
           </p>

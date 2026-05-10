@@ -80,4 +80,10 @@ export const Article = new ContentType({
   listFields: ["title", "slug", "published", "author.name"],
 });
 
-export const previewContentTypes = [Header, Footer, PageSection, Author, Article];
+export const previewContentTypes = [
+  Header,
+  Footer,
+  PageSection,
+  Author,
+  Article,
+];

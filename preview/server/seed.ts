@@ -16,6 +16,37 @@ import { env } from "./env";
 
 const now = () => new Date();
 const translatable = (value: string) => ({ _tag: "Translatable", en: value });
+const richText = (text: string) => ({
+  root: {
+    children: [
+      {
+        children: [
+          {
+            detail: 0,
+            format: 0,
+            mode: "normal",
+            style: "",
+            text,
+            type: "text",
+            version: 1,
+          },
+        ],
+        direction: null,
+        format: "",
+        indent: 0,
+        textFormat: 0,
+        textStyle: "",
+        type: "paragraph",
+        version: 1,
+      },
+    ],
+    direction: null,
+    format: "",
+    indent: 0,
+    type: "root",
+    version: 1,
+  },
+});
 
 export const seedPreviewData = async () => {
   if (!env.seedPreview) {
@@ -264,6 +295,19 @@ export const seedPreviewData = async () => {
     }
 
     await db.collection(Article.name).updateOne(
+      {
+        slug: "hello-preview",
+        body: "<p>Edit manager-react and Vite will update this UI.</p>",
+      },
+      {
+        $set: {
+          body: richText("Edit manager-react and Vite will update this UI."),
+          updatedAt: now(),
+        },
+      },
+    );
+
+    await db.collection(Article.name).updateOne(
       { slug: "hello-preview" },
       {
         $setOnInsert: {
@@ -276,7 +320,7 @@ export const seedPreviewData = async () => {
             contentType: Author.name,
             _id: author._id,
           },
-          body: "<p>Edit manager-react and Vite will update this UI.</p>",
+          body: richText("Edit manager-react and Vite will update this UI."),
           tags: ["preview", "manager-react"],
           _type: Article.name,
           createdAt: now(),
