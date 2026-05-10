@@ -56,10 +56,9 @@ export const getParentPath = (
   language: DBOutput<Language>,
   routes: readonly DBOutput<Route>[],
   languages: readonly DBOutput<Language>[],
+  translationLanguages: readonly DBOutput<Language>[] = languages,
 ): Promise<string> =>
   (async () => {
-    const db = await getMongoService();
-
     const parentRelation = route.parent as DBOutput<Route> | undefined;
     const parentRelationField = route.parentRelationField as string | undefined;
     if (!parentRelation || !parentRelationField) return "";
@@ -67,6 +66,7 @@ export const getParentPath = (
     const parent = routes.find((r) => r._id === parentRelation._id);
     if (!parent) return "";
 
+    const db = await getMongoService();
     const parentItem = await db.get(
       getContentTypeByName(parent.contentType as string)!,
       (item[parentRelationField] as { _id: string })._id,
@@ -81,13 +81,14 @@ export const getParentPath = (
       language,
       routes,
       languages,
+      translationLanguages,
     );
 
     return `/${parentPath}/${translate(
       parent.basePath as TranslatableValue<string>,
       language,
-      [...languages],
-    )}/${translate(parentSlug, language, [...languages])}`.replace(
+      [...translationLanguages],
+    )}/${translate(parentSlug, language, [...translationLanguages])}`.replace(
       /\/\/+/g,
       "/",
     );
@@ -139,6 +140,7 @@ export const generateRouteMapItems = (
   languages: readonly DBOutput<Language>[],
   routes: readonly DBOutput<Route>[],
   routeSettings: DBOutput<RouteSettings> | null,
+  translationLanguages: readonly DBOutput<Language>[] = languages,
 ) =>
   (async () => {
     const result: RouteMapItemInput[] = [];
@@ -151,6 +153,7 @@ export const generateRouteMapItems = (
           language,
           routes,
           languages,
+          translationLanguages,
         );
         result.push({
           contentTypeId: item._id,
@@ -160,7 +163,7 @@ export const generateRouteMapItems = (
             route,
             language,
             parentPath,
-            languages,
+            translationLanguages,
             routeSettings,
           ),
           routeId: route._id as string,
@@ -213,12 +216,20 @@ export async function revalidateRoutePaths(
 function translate(
   value: TranslatableValue<string> | string,
   language: DBOutput<Language>,
-  _languages: readonly DBOutput<Language>[],
+  languages: readonly DBOutput<Language>[],
 ): string {
   if (typeof value === "string") return value;
   const code = language.code as string;
   const fromLang = value[code as keyof typeof value];
   if (fromLang) return fromLang;
+  const parent = languages.find((candidate) => candidate._id === language.parent?._id);
+  if (parent) {
+    return translate(value, parent, languages);
+  }
+  const defaultLanguage = languages.find((candidate) => candidate.default);
+  if (defaultLanguage && defaultLanguage._id !== language._id) {
+    return translate(value, defaultLanguage, languages);
+  }
   // fallback to first available key (excluding _tag)
   const keys = Object.keys(value).filter((k) => k !== "_tag");
   const firstKey = keys[0];

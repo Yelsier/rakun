@@ -45,6 +45,10 @@ export async function syncConfiguredRoutes(): Promise<DBOutput<typeof Route>[]> 
   const existingRoutes = (await db.list(Route, { options: { limit: "all" } }))
     .items;
 
+  if (routeDefinitions.length === 0) {
+    return existingRoutes;
+  }
+
   const existingBySignature = new Map(
     existingRoutes.map((route) => [routeSignature(route), route]),
   );

@@ -417,13 +417,6 @@ Your project code is licensed under MIT. Third-party packages remain under their
 | @types/webidl-conversions | 7.0.3 | MIT |
 | @types/whatwg-url | 13.0.0 | MIT |
 | @vitejs/plugin-react | 5.2.0 | MIT |
-| @vitest/expect | 4.1.4 | MIT |
-| @vitest/mocker | 4.1.4 | MIT |
-| @vitest/pretty-format | 4.1.4 | MIT |
-| @vitest/runner | 4.1.4 | MIT |
-| @vitest/snapshot | 4.1.4 | MIT |
-| @vitest/spy | 4.1.4 | MIT |
-| @vitest/utils | 4.1.4 | MIT |
 | accepts | 2.0.0 | MIT |
 | ansi-regex | 5.0.1 | MIT |
 | ansi-styles | 4.3.0 | MIT |
@@ -648,7 +641,6 @@ Your project code is licensed under MIT. Third-party packages remain under their
 | use-sync-external-store | 1.6.0 | MIT |
 | vary | 1.1.2 | MIT |
 | vite | 8.0.10 | MIT |
-| vitest | 4.1.4 | MIT |
 | webidl-conversions | 7.0.0 | BSD-2-Clause |
 | whatwg-url | 14.2.0 | MIT |
 | which-module | 2.0.1 | ISC |

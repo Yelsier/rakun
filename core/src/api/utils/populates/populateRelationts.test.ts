@@ -1,5 +1,5 @@
 import { Db } from "mongodb";
-import { beforeAll, afterAll, it, expect, describe } from "vitest";
+import { beforeAll, afterAll, it, expect, describe } from "bun:test";
 import { Language } from "../../../internal-content-types";
 import ContentType from "../../../lib/ContentType";
 import { Fields } from "../../../lib/fields";
@@ -12,7 +12,12 @@ import {
 } from "../../../orm";
 import { populateRelations } from "./populateRelations";
 
-describe("populate", async () => {
+const mongoConfig = {
+  MONGO_URI: "mongodb://localhost:27017/cms_test_populates",
+  ENVIRONMENT: "test" as const,
+};
+
+describe.serial("populate", () => {
   const TestCT = new ContentType({
     name: "Test",
     fields: {
@@ -44,32 +49,29 @@ describe("populate", async () => {
 
   beforeAll(async () => {
     createLogger({
-      level: "info",
+      level: "error",
       batchSize: 1000,
       maxQueue: 50000,
       prettify: true,
     });
 
     process.env.ENVIRONMENT = "test";
-    process.env.MONGODB_URI = "mongodb://localhost:27017/cms_test_populates";
-    process.env.LOG_LEVEL = "info";
+    process.env.MONGODB_URI = mongoConfig.MONGO_URI;
+    process.env.LOG_LEVEL = "error";
     process.env.BASE_DOMAIN = "localhost";
     process.env.MANAGER_PREFIX = "manager";
 
-    await createMongoService({
-      MONGO_URI: process.env.MONGODB_URI!,
-      ENVIRONMENT: "test",
-    });
+    await createMongoService(mongoConfig);
   });
 
   afterAll(async () => {
-    const dbService = await getMongoService();
+    const dbService = await getMongoService(mongoConfig);
     await (dbService.rawDB as Db).dropDatabase();
-    await closeDatabase();
+    await closeDatabase(mongoConfig);
   });
 
   it("populates", async () => {
-    const db = await getMongoService();
+    const db = await getMongoService(mongoConfig);
 
     await db.create(Language, {
       code: "en",
@@ -107,7 +109,7 @@ describe("populate", async () => {
   });
 
   it("populates translatable relations", async () => {
-    const db = await getMongoService();
+    const db = await getMongoService(mongoConfig);
 
     const test = await db.create(TestCT, {
       _type: "Test",

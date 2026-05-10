@@ -29,6 +29,7 @@
   ],
   "scripts": {
     "clean": "rm -rf core/dist trpc/dist express/dist next/dist s3/dist react/dist manager-react/dist",
+    "test": "bun run --filter @rakun-kit/core test",
     "build": "bun run clean && bun run --filter @rakun-kit/core build && bun run --filter @rakun-kit/trpc build && bun run --filter @rakun-kit/react build && bun run --filter @rakun-kit/manager-react build && bun run --filter @rakun-kit/express build && bun run --filter @rakun-kit/next build && bun run --filter @rakun-kit/s3 build",
     "build:esm": "bun run --filter @rakun-kit/core build:esm && bun run --filter @rakun-kit/trpc build:esm && bun run --filter @rakun-kit/express build:esm && bun run --filter @rakun-kit/react build:esm && bun run --filter @rakun-kit/manager-react build:esm && bun run --filter @rakun-kit/next build:esm && bun run --filter @rakun-kit/s3 build:esm",
     "build:cjs": "bun run --filter @rakun-kit/core build:cjs && bun run --filter @rakun-kit/trpc build:cjs && bun run --filter @rakun-kit/express build:cjs && bun run --filter @rakun-kit/react build:cjs && bun run --filter @rakun-kit/manager-react build:cjs && bun run --filter @rakun-kit/next build:cjs && bun run --filter @rakun-kit/s3 build:cjs",
@@ -50,7 +51,6 @@
     "@types/express": "^5.0.6",
     "@types/node": "^25.6.0",
     "@types/qrcode": "^1.5.6",
-    "typescript": "^6.0.2",
-    "vitest": "^4.1.4"
+    "typescript": "^6.0.2"
   }
 }

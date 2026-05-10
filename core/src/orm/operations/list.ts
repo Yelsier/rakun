@@ -29,7 +29,9 @@ export const listhandler =
 
     if (options?.fields) {
       Object.assign(optionsQuery, {
-        projection: options.fields.map((f) => f.split(".").shift()),
+        projection: Object.fromEntries(
+          options.fields.map((f) => [f.split(".").shift(), 1]),
+        ),
       });
     }
 

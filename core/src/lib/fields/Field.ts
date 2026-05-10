@@ -132,6 +132,13 @@ export type FieldLike<
   State extends FieldState = DefaultFieldState,
 > = {
   kind: "field";
+  readonly __fieldTypes?: {
+    input: InputValue;
+    db: DbValue;
+    output: OutputValue;
+    meta: Meta;
+    state: State;
+  };
   meta: Meta;
   state: State;
   toZod: () => z.ZodType<DbValue>;
@@ -152,27 +159,27 @@ type FieldModifierKeys =
   | "getPopulatedSchema";
 
 export type FieldValueOf<F> =
-  F extends FieldLike<infer Value, any, any, unknown, FieldState>
+  F extends { readonly __fieldTypes?: { input: infer Value } }
     ? Value
     : never;
 
 export type FieldDbValueOf<F> =
-  F extends FieldLike<any, infer Value, any, unknown, FieldState>
+  F extends { readonly __fieldTypes?: { db: infer Value } }
     ? Value
     : never;
 
 export type FieldOutputValueOf<F> =
-  F extends FieldLike<any, any, infer Value, unknown, FieldState>
+  F extends { readonly __fieldTypes?: { output: infer Value } }
     ? Value
     : never;
 
 export type FieldMetaOf<F> =
-  F extends FieldLike<unknown, unknown, unknown, infer Meta, FieldState>
+  F extends { readonly __fieldTypes?: { meta: infer Meta } }
     ? Meta
     : never;
 
 export type FieldStateOf<F> =
-  F extends FieldLike<unknown, unknown, unknown, unknown, infer State>
+  F extends { readonly __fieldTypes?: { state: infer State } }
     ? State
     : never;
 

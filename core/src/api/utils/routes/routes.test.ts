@@ -1,5 +1,12 @@
 import { Db } from "mongodb";
-import { beforeAll, afterAll, beforeEach, it, expect, describe } from "vitest";
+import {
+  beforeAll,
+  afterAll,
+  beforeEach,
+  it,
+  expect,
+  describe,
+} from "bun:test";
 import {
   RouteSettings,
   RouteMap,
@@ -7,6 +14,7 @@ import {
   Language,
 } from "../../../internal-content-types";
 import { Page } from "../../../internal-content-types/Page";
+import { HelloWorld } from "../../../internal-content-types/HelloWorld";
 import ContentType from "../../../lib/ContentType";
 import { Fields } from "../../../lib/fields";
 import { createLogger } from "../../../lib/Logger";
@@ -24,35 +32,37 @@ import {
   closeDatabase,
 } from "../../../orm";
 
-describe("routes", async () => {
+const mongoConfig = {
+  MONGO_URI: "mongodb://localhost:27017/cms_test_routes",
+  ENVIRONMENT: "test" as const,
+};
+
+describe.serial("routes", () => {
   beforeAll(async () => {
     createLogger({
-      level: "info",
+      level: "error",
       batchSize: 1000,
       maxQueue: 50000,
       prettify: true,
     });
 
     process.env.ENVIRONMENT = "test";
-    process.env.MONGODB_URI = "mongodb://localhost:27017/cms_test_routes";
-    process.env.LOG_LEVEL = "info";
+    process.env.MONGODB_URI = mongoConfig.MONGO_URI;
+    process.env.LOG_LEVEL = "error";
     process.env.BASE_DOMAIN = "localhost";
     process.env.MANAGER_PREFIX = "manager";
 
-    await createMongoService({
-      MONGO_URI: process.env.MONGODB_URI!,
-      ENVIRONMENT: "test",
-    });
+    await createMongoService(mongoConfig);
   });
 
   afterAll(async () => {
-    const dbService = await getMongoService();
+    const dbService = await getMongoService(mongoConfig);
     await (dbService.rawDB as Db).dropDatabase();
-    await closeDatabase();
+    await closeDatabase(mongoConfig);
   });
 
   beforeEach(async () => {
-    const db = await getMongoService();
+    const db = await getMongoService(mongoConfig);
     await db.clear(RouteSettings);
     await db.clear(RouteMap);
     await db.clear(Route);
@@ -60,7 +70,7 @@ describe("routes", async () => {
     await db.clear(Page);
   });
 
-  it("generates and updates route maps without Effect", async () => {
+  it("generates and updates route maps", async () => {
     const TestCT = new ContentType({
       name: "TestRoute",
       fields: {
@@ -98,7 +108,7 @@ describe("routes", async () => {
       Test2CT.name,
     ]).required();
 
-    const db = await getMongoService();
+    const db = await getMongoService(mongoConfig);
 
     const english = await db.create(Language, {
       code: "en",
@@ -115,6 +125,7 @@ describe("routes", async () => {
       dynamic: false,
       _type: "Route",
       iterator: "items",
+      layoutContentOrder: 0,
     });
 
     const created1 = await db.create(TestCT, {
@@ -155,9 +166,7 @@ describe("routes", async () => {
       _type: "Language",
     });
 
-    await updateLanguageRoutesMap(
-      spanish as unknown as DBOutput<typeof Language>,
-    );
+    await updateLanguageRoutesMap(spanish);
     routeMaps = (await db.list(RouteMap, { options: { limit: "all" } })).items;
     expect(routeMaps.length).toBe(4);
     expect(routeMaps.find((r) => r.path === "/es/test/")).toBeDefined();
@@ -171,6 +180,7 @@ describe("routes", async () => {
       dynamic: false,
       _type: "Route",
       iterator: "items",
+      layoutContentOrder: 0,
     });
 
     const createdBlog = await db.create(Test2CT, {
@@ -211,7 +221,10 @@ describe("routes", async () => {
     //@ts-expect-error reasign type
     RouteMap.fields.contentType = Fields.select([Page.name]).required();
 
-    const db = await getMongoService();
+    registerContentType(HelloWorld);
+    registerContentType(Page);
+
+    const db = await getMongoService(mongoConfig);
 
     await db.create(Language, {
       code: "en",
@@ -228,19 +241,20 @@ describe("routes", async () => {
       dynamic: false,
       _type: "Route",
       iterator: "iterator",
+      layoutContentOrder: 0,
     });
 
     const homePage = await db.create(Page, {
       title: { en: "Home", _tag: "Translatable" },
       slug: { en: "home", _tag: "Translatable" },
-      //iterator: [],
+      iterator: [],
       _type: "Page",
     });
 
     const regularPage = await db.create(Page, {
       title: { en: "About", _tag: "Translatable" },
       slug: { en: "about", _tag: "Translatable" },
-      //iterator: [],
+      iterator: [],
       _type: "Page",
     });
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import type { Db } from "mongodb";
 
 import type { DBService } from "./dbService";
@@ -12,6 +12,10 @@ import { Media } from "../internal-content-types";
 import { DataInput } from "../lib/types";
 
 let dbService: DBService;
+const mongoConfig = {
+  MONGO_URI: "mongodb://localhost:27017/cms_test",
+  ENVIRONMENT: "test" as const,
+};
 
 const RelationCT = new ContentType({
   name: "RelationCT",
@@ -45,49 +49,43 @@ const DependencyByFileCT = new ContentType({
   },
 });
 
-beforeAll(async () => {
-  registerContentType(RelationCT);
-  registerContentType(TestCT);
-  registerContentType(DependencyByRelationCT);
-  registerContentType(DependencyByFileCT);
+describe.serial("MongoDB Service", () => {
+  beforeAll(async () => {
+    registerContentType(RelationCT);
+    registerContentType(TestCT);
+    registerContentType(DependencyByRelationCT);
+    registerContentType(DependencyByFileCT);
 
-  createLogger({
-    level: "info",
-    batchSize: 1000,
-    maxQueue: 50000,
-    prettify: true,
+    createLogger({
+      level: "error",
+      batchSize: 1000,
+      maxQueue: 50000,
+      prettify: true,
+    });
+    dbService = await createMongoService(mongoConfig);
   });
-  dbService = await createMongoService({
-    MONGO_URI: "mongodb://localhost:27017/cms_test",
-    ENVIRONMENT: "test",
+
+  afterAll(async () => {
+    try {
+      await (dbService?.rawDB as Db | undefined)?.dropDatabase();
+    } catch (error) {
+      console.error("Error dropping database:", error);
+    }
+    await closeDatabase(mongoConfig);
   });
-});
 
-afterAll(async () => {
-  try {
-    await (dbService.rawDB as Db).dropDatabase();
-  } catch (error) {
-    console.error("Error dropping database:", error);
-  }
-  await closeDatabase();
-});
-
-describe("MongoDB Service", () => {
   it("should connect to the database", () => {
     expect(dbService.rawDB).toBeDefined();
   });
 
   it("should fail on connect to the database error", async () => {
+    await closeDatabase(mongoConfig);
     setSimulatedFailureCase("ConnectionFailed");
 
-    await expect(
-      createMongoService({
-        MONGO_URI: "mongodb://localhost:27017/cms_test",
-        ENVIRONMENT: "test",
-      }),
-    ).rejects.toThrow();
+    await expect(createMongoService(mongoConfig)).rejects.toThrow();
 
     setSimulatedFailureCase(null);
+    dbService = await createMongoService(mongoConfig);
   });
 
   it("should create document", async () => {

@@ -11,29 +11,50 @@ export interface MongoConfig {
   ENVIRONMENT?: Environment
 }
 
-let _client: MongoClient | null = null
-let _db: Db | null = null
-let _connectPromise: Promise<{ client: MongoClient; db: Db }> | null = null
-let _closePromise: Promise<void> | null = null
+type DatabaseConnection = {
+  client: MongoClient | null
+  db: Db | null
+  connectPromise: Promise<{ client: MongoClient; db: Db }> | null
+  closePromise: Promise<void> | null
+}
+
+const connections = new Map<string, DatabaseConnection>()
+let currentUri: string | null = null
+
+const getConnection = (uri: string): DatabaseConnection => {
+  const existing = connections.get(uri)
+  if (existing) return existing
+
+  const connection: DatabaseConnection = {
+    client: null,
+    db: null,
+    connectPromise: null,
+    closePromise: null,
+  }
+  connections.set(uri, connection)
+  return connection
+}
 
 export async function connectDatabase(
   config: MongoConfig,
 ): Promise<{ client: MongoClient; db: Db }> {
   checkFailureCase('ConnectionFailed')
+  currentUri = config.MONGO_URI
+  const connection = getConnection(config.MONGO_URI)
 
-  if (_closePromise) {
-    await _closePromise
+  if (connection.closePromise) {
+    await connection.closePromise
   }
 
-  if (_client && _db) {
-    return { client: _client, db: _db }
+  if (connection.client && connection.db) {
+    return { client: connection.client, db: connection.db }
   }
 
-  if (_connectPromise) {
-    return await _connectPromise
+  if (connection.connectPromise) {
+    return await connection.connectPromise
   }
 
-  _connectPromise = (async () => {
+  connection.connectPromise = (async () => {
     try {
       const { MongoClient } = getMongoDB()
       const client = await MongoClient.connect(config.MONGO_URI)
@@ -43,61 +64,73 @@ export async function connectDatabase(
         await createIndexes(db)
       }
 
-      _client = client
-      _db = db
+      connection.client = client
+      connection.db = db
 
       return { client, db }
     } catch (error) {
       throw new DbErrorUnknown('Failed to connect to database: ' + String(error))
     } finally {
-      _connectPromise = null
+      connection.connectPromise = null
     }
   })()
 
-  return await _connectPromise
+  return await connection.connectPromise
 }
 
-export async function closeDatabase(): Promise<void> {
-  if (_closePromise) {
-    await _closePromise
+export async function closeDatabase(config?: MongoConfig): Promise<void> {
+  const uri = config?.MONGO_URI ?? currentUri
+  if (!uri) return
+
+  const connection = connections.get(uri)
+  if (!connection) return
+
+  if (connection.closePromise) {
+    await connection.closePromise
     return
   }
 
-  if (_connectPromise) {
+  if (connection.connectPromise) {
     try {
-      await _connectPromise
+      await connection.connectPromise
     } catch {
       // If connect failed there is nothing left to close.
     }
   }
 
-  if (!_client) {
-    _db = null
+  if (!connection.client) {
+    connection.db = null
+    connections.delete(uri)
     return
   }
 
-  const client = _client
-  _client = null
-  _db = null
+  const client = connection.client
+  connection.client = null
+  connection.db = null
 
-  _closePromise = (async () => {
+  connection.closePromise = (async () => {
     try {
       await client.close()
     } catch (error) {
       console.error('Error closing database connection:', error)
     } finally {
-      _closePromise = null
+      connection.closePromise = null
+      connections.delete(uri)
+      if (currentUri === uri) {
+        currentUri = null
+      }
     }
   })()
 
-  await _closePromise
+  await connection.closePromise
 }
 
 export function getDatabase(): Db {
-  if (!_db) {
+  const db = currentUri ? connections.get(currentUri)?.db : null
+  if (!db) {
     throw new DbErrorUnknown(
       'Database not initialized. Call connectDatabase first.',
     )
   }
-  return _db
+  return db
 }

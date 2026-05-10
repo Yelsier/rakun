@@ -24,7 +24,7 @@
     "build": "rm -rf dist && bun run build:esm && bun run build:cjs",
     "build:esm": "tsc -b --force tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
     "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../scripts/write-cjs-package-json.mjs dist/cjs",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "bun test --max-concurrency=1 --timeout=30000"
   },
   "files": [
     "dist"

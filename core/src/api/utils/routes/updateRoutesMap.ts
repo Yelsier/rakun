@@ -1,4 +1,5 @@
 import { RouteMap, Language, Route } from "../../../internal-content-types";
+import ContentType from "../../../lib/ContentType";
 import { Logger } from "../../../lib/Logger";
 import { getContentTypeByName } from "../../../lib/Registry";
 import { DBOutput } from "../../../lib/types";
@@ -34,7 +35,7 @@ export const regenerateAllRoutesMap = async (): Promise<void> => {
         .map(async (route) => {
           const routFields = getRouteFields(route);
           const routesItems = (
-            await db.list(getContentTypeByName(route.contentType)!, {
+            await db.list(getContentTypeByName(route.contentType), {
               options: { limit: "all", fields: routFields },
             })
           ).items;
@@ -153,9 +154,10 @@ export async function updateLanguageRoutesMap(
     languageId: language._id,
     languageCode: language.code,
   });
-  const { routes, routeSettings, db } = await loadRouteData();
+  const { routes, languages, routeSettings, db } = await loadRouteData();
   Logger.addTrace("routes.updateLanguage: data loaded", {
     routes: routes.length,
+    languages: languages.length,
     hasRouteSettings: !!routeSettings,
   });
 
@@ -187,6 +189,7 @@ export async function updateLanguageRoutesMap(
             [language],
             routes,
             routeSettings,
+            languages,
           );
         }),
     )

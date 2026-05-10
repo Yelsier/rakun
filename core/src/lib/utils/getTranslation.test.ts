@@ -1,4 +1,4 @@
-import { expect, it } from "vitest";
+import { expect, it } from "bun:test";
 
 import { getTranslation } from "./getTranslation";
 import { LanguageSchema } from "../../internal-content-types";
@@ -57,7 +57,11 @@ it("returns exact language match from translatable object", () => {
     fr: "Bonjour",
   };
 
-  const result = getTranslation(translatableObject, currentLanguage, languages);
+  const result = getTranslation<string>(
+    translatableObject,
+    currentLanguage,
+    languages,
+  );
 
   expect(result).toBe("Hola");
 });
@@ -76,7 +80,11 @@ it("falls back to parent language when current language not found", () => {
     // es-MX is missing, should fall back to es
   };
 
-  const result = getTranslation(translatableObject, currentLanguage, languages);
+  const result = getTranslation<string>(
+    translatableObject,
+    currentLanguage,
+    languages,
+  );
 
   expect(result).toBe("Hola");
 });
@@ -168,7 +176,11 @@ it("handles empty translatable object gracefully", () => {
     _tag: "Translatable" as const,
   };
 
-  const result = getTranslation(translatableObject, currentLanguage, languages);
+  const result = getTranslation<string>(
+    translatableObject,
+    currentLanguage,
+    languages,
+  );
 
   expect(result).toBe("");
 });

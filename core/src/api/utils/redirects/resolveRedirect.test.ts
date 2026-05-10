@@ -1,16 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
 
-const { mockGetMongoService } = vi.hoisted(() => ({
-  mockGetMongoService: vi.fn(),
-}));
+const mockGetMongoService = mock();
 
-vi.mock("../../mongo", () => ({
+mock.module("../../../orm", () => ({
   getMongoService: mockGetMongoService,
 }));
 
-import { resolveRedirect } from "./resolveRedirect";
 import { Redirect } from "../../../internal-content-types";
 import { DBOutput } from "../../../lib/types";
+const { resolveRedirect } = await import("./resolveRedirect");
 
 type RedirectRow = DBOutput<typeof Redirect>;
 
@@ -35,7 +33,7 @@ const makeRedirect = (overrides: Partial<RedirectRow> = {}): RedirectRow => {
 };
 
 const setRedirects = (redirects: RedirectRow[]) => {
-  const list = vi.fn().mockResolvedValue({ items: redirects });
+  const list = mock().mockResolvedValue({ items: redirects });
   mockGetMongoService.mockResolvedValue({ list });
 };
 
