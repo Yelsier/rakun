@@ -6,12 +6,17 @@ import {
   Network,
   Settings,
   User,
+  icons,
 } from 'lucide-react'
 import type { EncodedContentType } from '@rakun-kit/core/client'
 import * as React from 'react'
 
 import { ManagerLink } from '@/link'
-import { getManagerPathHref, getManagerRouteHref } from '@/state/navigation'
+import {
+  getManagerPathHref,
+  getManagerRelativePathname,
+  getManagerRouteHref,
+} from '@/state/navigation'
 import { NavMain } from './nav-main'
 import { NavSecondary } from './nav-secondary'
 import { NavUser } from './nav-user'
@@ -29,6 +34,56 @@ export type ManagerSidebarItem = {
   title: string
   url: string
   icon?: LucideIcon
+  isActive?: boolean
+  items?: ManagerSidebarItem[]
+}
+
+const lucideIconByName = icons as Record<string, LucideIcon | undefined>
+
+const toPascalCase = (value: string) =>
+  value
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')
+
+const resolveLucideIcon = (name?: string): LucideIcon | undefined => {
+  if (!name) return undefined
+
+  const candidates = [
+    name,
+    `${name}Icon`,
+    toPascalCase(name),
+    `${toPascalCase(name)}Icon`,
+  ]
+
+  for (const candidate of candidates) {
+    const icon = lucideIconByName[candidate]
+    if (icon) return icon
+  }
+}
+
+const cleanPathname = (path: string) => {
+  const [pathname = ''] = path.split(/[?#]/)
+  return pathname.replace(/\/+$/, '') || '/'
+}
+
+const isActiveHref = (
+  href: string,
+  pathname: string | undefined,
+  basePath: string,
+) => {
+  if (!pathname || !href) return false
+
+  const currentPath = cleanPathname(pathname)
+  const itemPath = cleanPathname(getManagerRelativePathname(href, { basePath }))
+
+  if (itemPath === '/') {
+    return currentPath === '/'
+  }
+
+  return currentPath === itemPath || currentPath.startsWith(`${itemPath}/`)
 }
 
 const getDefaultSecondaryNavItems = (basePath: string): ManagerSidebarItem[] => [
@@ -59,13 +114,65 @@ const getDefaultSecondaryNavItems = (basePath: string): ManagerSidebarItem[] => 
   },
 ]
 
+const getContentTypeNavItems = (
+  contentTypes: EncodedContentType[],
+  basePath: string,
+  pathname?: string,
+): ManagerSidebarItem[] => {
+  const items: ManagerSidebarItem[] = []
+  const categories = new Map<string, ManagerSidebarItem>()
+
+  for (const type of contentTypes) {
+    if (!type.menu) continue
+
+    const item = {
+      title: type.menu.title,
+      url: getManagerRouteHref(
+        {
+          name: 'content.list',
+          contentType: type.name,
+        },
+        { basePath },
+      ),
+      icon: resolveLucideIcon(type.menu.icon),
+      isActive: false,
+    }
+
+    item.isActive = isActiveHref(item.url, pathname, basePath)
+
+    if (!type.menu.category) {
+      items.push(item)
+      continue
+    }
+
+    let category = categories.get(type.menu.category)
+
+    if (!category) {
+      category = {
+        title: type.menu.category,
+        url: '',
+        items: [],
+      }
+      categories.set(type.menu.category, category)
+      items.push(category)
+    }
+
+    category.items?.push(item)
+    category.isActive ||= item.isActive
+  }
+
+  return items
+}
+
 export function AppSidebar({
   contentTypes,
+  pathname,
   basePath = '',
   secondaryItems = getDefaultSecondaryNavItems(basePath),
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   contentTypes: EncodedContentType[]
+  pathname?: string
   basePath?: string
   secondaryItems?: ManagerSidebarItem[]
 }) {
@@ -91,20 +198,15 @@ export function AppSidebar({
 
       <SidebarContent>
         <NavMain
-          items={contentTypes
-            .filter((type) => type.menu)
-            .map((type) => ({
-              title: type.menu?.title || '',
-              url: getManagerRouteHref(
-                {
-                  name: 'content.list',
-                  contentType: type.name,
-                },
-                { basePath },
-              ),
-            }))}
+          items={getContentTypeNavItems(contentTypes, basePath, pathname)}
         />
-        <NavSecondary items={secondaryItems} className='mt-auto' />
+        <NavSecondary
+          items={secondaryItems.map((item) => ({
+            ...item,
+            isActive: isActiveHref(item.url, pathname, basePath),
+          }))}
+          className='mt-auto'
+        />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

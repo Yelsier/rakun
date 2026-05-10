@@ -4,8 +4,8 @@ export const Header = new ContentType({
   name: "Header",
   menu: {
     title: "Headers",
-    icon: "panel-top",
-    category: "Preview",
+    icon: "PanelTop",
+    category: "Layout",
   },
   fields: {
     brand: Fields.string().required(),
@@ -20,7 +20,7 @@ export const Footer = new ContentType({
   menu: {
     title: "Footers",
     icon: "panel-bottom",
-    category: "Preview",
+    category: "Layout",
   },
   fields: {
     brand: Fields.string().required(),
@@ -35,8 +35,8 @@ export const PageSection = new ContentType({
   name: "PageSection",
   menu: {
     title: "Page sections",
-    icon: "layout-template",
-    category: "Preview",
+    icon: "LayoutTemplate",
+    category: "Blocks",
   },
   fields: {
     title: Fields.string().required().translatable(),
@@ -56,8 +56,8 @@ export const Page = new ContentType({
   },
   menu: {
     title: "Pages",
-    icon: "file-text",
-    category: "Preview",
+    icon: "FileText",
+    category: "Content",
   },
   listFields: ["title", "slug"],
   uniques: [["slug"]],
@@ -67,8 +67,8 @@ export const Author = new ContentType({
   name: "Author",
   menu: {
     title: "Authors",
-    icon: "user",
-    category: "Preview",
+    icon: "user-round",
+    category: "Editorial",
   },
   fields: {
     name: Fields.string().required(),
@@ -83,7 +83,7 @@ export const Article = new ContentType({
   menu: {
     title: "Articles",
     icon: "newspaper",
-    category: "Preview",
+    category: "Editorial",
   },
   fields: {
     title: Fields.string().required(),

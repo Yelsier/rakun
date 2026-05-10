@@ -62,6 +62,7 @@ export const ManagerDashboardLayout = ({
     {sidebar ?? (
       <AppSidebar
         contentTypes={contentTypes}
+        pathname={pathname}
         basePath={basePath}
         secondaryItems={secondaryItems}
       />

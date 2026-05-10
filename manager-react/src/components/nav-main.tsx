@@ -11,13 +11,18 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from './ui/sidebar'
+
+const activeMenuClass =
+  'data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-sm data-[active=true]:hover:bg-primary/90 data-[active=true]:hover:text-primary-foreground data-[active=true]:[&>svg]:text-primary-foreground'
+
+const closedCategoryActiveMenuClass =
+  'data-[state=closed]:data-[active=true]:bg-primary data-[state=closed]:data-[active=true]:text-primary-foreground data-[state=closed]:data-[active=true]:shadow-sm data-[state=closed]:data-[active=true]:hover:bg-primary/90 data-[state=closed]:data-[active=true]:hover:text-primary-foreground data-[state=closed]:data-[active=true]:[&>svg]:text-primary-foreground'
 
 export function NavMain({
   items,
@@ -30,36 +35,65 @@ export function NavMain({
     items?: {
       title: string
       url: string
-      }[]
+      icon?: LucideIcon
+      isActive?: boolean
+    }[]
   }[]
 }) {
+  const totalItems = items.reduce(
+    (total, item) => total + (item.items?.length ?? 1),
+    0,
+  )
+
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Content types ({items.length})</SidebarGroupLabel>
+      <SidebarGroupLabel>Content types ({totalItems})</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
-          <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip={item.title}>
-                <ManagerLink href={item.url}>
-                  {item.icon && <item.icon />}
-                  <span>{item.title}</span>
-                </ManagerLink>
-              </SidebarMenuButton>
+          <Collapsible
+            key={item.title}
+            asChild
+            defaultOpen={item.isActive ?? Boolean(item.items?.length)}
+          >
+            <SidebarMenuItem className='group/collapsible'>
+              {item.items?.length ? (
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton
+                    tooltip={item.title}
+                    isActive={item.isActive}
+                    className={closedCategoryActiveMenuClass}
+                  >
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                    <ChevronRight className='ms-auto transition-transform group-data-[state=open]/collapsible:rotate-90' />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+              ) : (
+                <SidebarMenuButton
+                  asChild
+                  tooltip={item.title}
+                  isActive={item.isActive}
+                  className={activeMenuClass}
+                >
+                  <ManagerLink href={item.url}>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </ManagerLink>
+                </SidebarMenuButton>
+              )}
               {item.items?.length ? (
                 <>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuAction className='data-[state=open]:rotate-90'>
-                      <ChevronRight />
-                      <span className='sr-only'>Toggle</span>
-                    </SidebarMenuAction>
-                  </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {item.items?.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={subItem.isActive}
+                            className={activeMenuClass}
+                          >
                             <ManagerLink href={subItem.url}>
+                              {subItem.icon && <subItem.icon />}
                               {subItem.title}
                             </ManagerLink>
                           </SidebarMenuSubButton>

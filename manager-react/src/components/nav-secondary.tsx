@@ -10,6 +10,9 @@ import {
   SidebarMenuItem,
 } from './ui/sidebar'
 
+const activeMenuClass =
+  'data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-sm data-[active=true]:hover:bg-primary/90 data-[active=true]:hover:text-primary-foreground data-[active=true]:[&>svg]:text-primary-foreground'
+
 export function NavSecondary({
   items,
   ...props
@@ -18,6 +21,7 @@ export function NavSecondary({
     title: string
     url: string
     icon?: LucideIcon
+    isActive?: boolean
   }[]
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   return (
@@ -26,7 +30,12 @@ export function NavSecondary({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild size="sm">
+              <SidebarMenuButton
+                asChild
+                size="sm"
+                isActive={item.isActive}
+                className={activeMenuClass}
+              >
                 <ManagerLink href={item.url}>
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
