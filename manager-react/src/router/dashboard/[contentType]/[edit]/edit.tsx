@@ -1,7 +1,7 @@
 "use client";
 
 import { cva } from "class-variance-authority";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { EncodedContentType } from "@rakun-kit/core/client";
 import { Seo } from "@rakun-kit/core/internal-content-types";
@@ -64,6 +64,144 @@ type ManagerContentTypeRecord = {
   listFields?: string[];
 };
 
+type LayoutModuleOption = {
+  value: string;
+  label: string;
+};
+
+const getLayoutOverrideValue = (override?: RouteLayoutModuleOverrideRecord) => {
+  if (!override) return "__default__";
+  return override.moduleId && override.moduleId.length > 0
+    ? override.moduleId
+    : "__none__";
+};
+
+const RouteLayoutModuleTabContent = ({
+  layoutModule,
+  override,
+  options,
+  activeTab,
+  contentTypeId,
+  overridesByKey,
+  routeLayoutOverridesQuery,
+}: {
+  layoutModule: RouteLayoutModuleRecord;
+  override?: RouteLayoutModuleOverrideRecord;
+  options: LayoutModuleOption[];
+  activeTab: string;
+  contentTypeId?: string;
+  overridesByKey: Map<string, RouteLayoutModuleOverrideRecord>;
+  routeLayoutOverridesQuery: ReturnType<typeof useManagerQuery<"manager.list">>;
+}) => {
+  const [selected, setSelected] = useState(() =>
+    getLayoutOverrideValue(override),
+  );
+
+  useEffect(() => {
+    setSelected(getLayoutOverrideValue(override));
+  }, [override]);
+
+  const createOverrideMutation = useManagerMutation("manager.create");
+  const updateOverrideMutation = useManagerMutation("manager.update");
+  const deleteOverrideMutation = useManagerMutation("manager.delete");
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  const saveLayoutOverride = async (
+    layoutModule: RouteLayoutModuleRecord,
+    selected: string,
+  ) => {
+    if (!contentTypeId) return;
+
+    const existing = overridesByKey.get(
+      `${layoutModule.routeId}:${layoutModule.key}`,
+    );
+
+    if (selected === "__default__") {
+      if (existing) {
+        await deleteOverrideMutation.mutateAsync({
+          contentType: "RouteLayoutModuleOverride",
+          id: existing._id,
+        });
+        await routeLayoutOverridesQuery.refetch();
+      }
+
+      toast.success("Layout override updated successfully");
+      return;
+    }
+
+    const payload = {
+      _type: "RouteLayoutModuleOverride" as const,
+      routeId: layoutModule.routeId,
+      routeKey: layoutModule.routeKey,
+      contentTypeId,
+      key: layoutModule.key,
+      contentType: layoutModule.contentType,
+      moduleId: selected === "__none__" ? "" : selected,
+    };
+
+    if (existing) {
+      await updateOverrideMutation.mutateAsync({
+        contentType: "RouteLayoutModuleOverride",
+        id: existing._id,
+        data: payload,
+      });
+    } else {
+      await createOverrideMutation.mutateAsync({
+        contentType: "RouteLayoutModuleOverride",
+        data: payload,
+      });
+    }
+
+    toast.success("Layout override updated successfully");
+    await routeLayoutOverridesQuery.refetch();
+  };
+
+  const defaultOption = layoutModule.moduleId
+    ? (options.find((option) => option.value === layoutModule.moduleId)
+        ?.label ?? layoutModule.moduleId)
+    : "No module";
+
+  return (
+    <TabsContent
+      value={`layout:${layoutModule._id}`}
+      forceMount
+      hidden={activeTab !== `layout:${layoutModule._id}`}
+      className="w-full"
+    >
+      <div className="mx-auto flex w-full flex-col gap-4">
+        <div>
+          <h2 className="text-lg font-semibold">{layoutModule.key}</h2>
+          <p className="text-muted-foreground text-sm">
+            Default from route: {defaultOption}. Override only for this entry.
+          </p>
+        </div>
+        <Select value={selected} onValueChange={setSelected}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select module" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__default__">Use route default</SelectItem>
+            <SelectItem value="__none__">No module</SelectItem>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          className="w-fit"
+          loading={isSaving}
+          onClick={() => saveLayoutOverride(layoutModule, selected)}
+        >
+          Save override
+        </Button>
+      </div>
+    </TabsContent>
+  );
+};
+
 export const errorStyle = cva("", {
   variants: {
     error: {
@@ -84,9 +222,6 @@ const EditPage: React.FC<{
   const managerClient = useManagerClient();
   const createMutation = useManagerMutation("manager.create");
   const updateMutation = useManagerMutation("manager.update");
-  const createOverrideMutation = useManagerMutation("manager.create");
-  const updateOverrideMutation = useManagerMutation("manager.update");
-  const deleteOverrideMutation = useManagerMutation("manager.delete");
   const { getTranslation } = useLanguage();
   const contentTypeId = (defaultData as { _id?: string } | undefined)?._id;
   const routeLayoutModulesQuery = useManagerQuery({
@@ -294,30 +429,6 @@ const EditPage: React.FC<{
       ] as const;
     }),
   );
-  const [selectedLayoutOverrides, setSelectedLayoutOverrides] = useState<
-    Record<string, string>
-  >({});
-
-  useEffect(() => {
-    setSelectedLayoutOverrides(
-      Object.fromEntries(
-        routeLayoutModules.map((layoutModule) => {
-          const override = overridesByKey.get(
-            `${layoutModule.routeId}:${layoutModule.key}`,
-          );
-          return [
-            layoutModule._id,
-            override
-              ? override.moduleId && override.moduleId.length > 0
-                ? override.moduleId
-                : "__none__"
-              : "__default__",
-          ];
-        }),
-      ),
-    );
-  }, [routeLayoutModulesQuery.data, routeLayoutOverridesQuery.data]);
-
   const [activeTab, setActiveTab] = useState<
     "content" | "info" | "seo" | "versions" | `layout:${string}`
   >(
@@ -329,54 +440,6 @@ const EditPage: React.FC<{
           ? "seo"
           : "versions",
   );
-
-  const saveLayoutOverride = async (layoutModule: RouteLayoutModuleRecord) => {
-    if (!contentTypeId) return;
-
-    const selected = selectedLayoutOverrides[layoutModule._id] ?? "__default__";
-    const existing = overridesByKey.get(
-      `${layoutModule.routeId}:${layoutModule.key}`,
-    );
-
-    if (selected === "__default__") {
-      if (existing) {
-        await deleteOverrideMutation.mutateAsync({
-          contentType: "RouteLayoutModuleOverride",
-          id: existing._id,
-        });
-        await routeLayoutOverridesQuery.refetch();
-      }
-
-      toast.success("Layout override updated successfully");
-      return;
-    }
-
-    const payload = {
-      _type: "RouteLayoutModuleOverride" as const,
-      routeId: layoutModule.routeId,
-      routeKey: layoutModule.routeKey,
-      contentTypeId,
-      key: layoutModule.key,
-      contentType: layoutModule.contentType,
-      moduleId: selected === "__none__" ? "" : selected,
-    };
-
-    if (existing) {
-      await updateOverrideMutation.mutateAsync({
-        contentType: "RouteLayoutModuleOverride",
-        id: existing._id,
-        data: payload,
-      });
-    } else {
-      await createOverrideMutation.mutateAsync({
-        contentType: "RouteLayoutModuleOverride",
-        data: payload,
-      });
-    }
-
-    toast.success("Layout override updated successfully");
-    await routeLayoutOverridesQuery.refetch();
-  };
 
   return (
     <>
@@ -420,7 +483,7 @@ const EditPage: React.FC<{
                       value={`layout:${layoutModule._id}`}
                     >
                       <LayoutPanelTop />
-                      {layoutModule.routeKey} / {layoutModule.key}
+                      {layoutModule.contentType}
                     </TabsTrigger>
                   ))}
                 {hasIterables ? (
@@ -493,79 +556,22 @@ const EditPage: React.FC<{
           ) : null}
           {[...routeLayoutModules]
             .sort((a, b) => a.order - b.order)
-            .map((layoutModule) => {
-              const defaultOption = layoutModule.moduleId
-                ? ((
-                    layoutOptionsByContentType.get(layoutModule.contentType) ??
-                    []
-                  ).find((option) => option.value === layoutModule.moduleId)
-                    ?.label ?? layoutModule.moduleId)
-                : "No module";
-
-              return (
-                <TabsContent
-                  key={layoutModule._id}
-                  value={`layout:${layoutModule._id}`}
-                  forceMount
-                  hidden={activeTab !== `layout:${layoutModule._id}`}
-                  className="w-full"
-                >
-                  <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-                    <div>
-                      <h2 className="text-lg font-semibold">
-                        {layoutModule.key}
-                      </h2>
-                      <p className="text-muted-foreground text-sm">
-                        Default from route: {defaultOption}. Override only for
-                        this entry.
-                      </p>
-                    </div>
-                    <Select
-                      value={
-                        selectedLayoutOverrides[layoutModule._id] ??
-                        "__default__"
-                      }
-                      onValueChange={(value) =>
-                        setSelectedLayoutOverrides((current) => ({
-                          ...current,
-                          [layoutModule._id]: value,
-                        }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select module" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__default__">
-                          Use route default
-                        </SelectItem>
-                        <SelectItem value="__none__">No module</SelectItem>
-                        {(
-                          layoutOptionsByContentType.get(
-                            layoutModule.contentType,
-                          ) ?? []
-                        ).map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      className="w-fit"
-                      loading={
-                        createOverrideMutation.isPending ||
-                        updateOverrideMutation.isPending ||
-                        deleteOverrideMutation.isPending
-                      }
-                      onClick={() => void saveLayoutOverride(layoutModule)}
-                    >
-                      Save override
-                    </Button>
-                  </div>
-                </TabsContent>
-              );
-            })}
+            .map((layoutModule) => (
+              <RouteLayoutModuleTabContent
+                routeLayoutOverridesQuery={routeLayoutOverridesQuery}
+                key={layoutModule._id}
+                layoutModule={layoutModule}
+                override={overridesByKey.get(
+                  `${layoutModule.routeId}:${layoutModule.key}`,
+                )}
+                options={
+                  layoutOptionsByContentType.get(layoutModule.contentType) ?? []
+                }
+                activeTab={activeTab}
+                contentTypeId={contentTypeId}
+                overridesByKey={overridesByKey}
+              />
+            ))}
           {hasIterables ? (
             <TabsContent value="versions">Comming soon</TabsContent>
           ) : null}
