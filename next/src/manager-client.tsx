@@ -3,12 +3,8 @@
 import { ManagerBrowserApp } from "@rakun-kit/manager-react/app/runtime-app";
 import { createHttpManagerClient } from "@rakun-kit/manager-react/client/http";
 import type { ManagerClient } from "@rakun-kit/manager-react/client/request";
-import type { ManagerLinkProps } from "@rakun-kit/manager-react/link";
-import { createPathManagerNavigation } from "@rakun-kit/manager-react/state/navigation";
 import "@rakun-kit/manager-react/styles.css";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { use, useMemo, type ReactNode } from "react";
+import { useMemo, useSyncExternalStore, type ReactNode } from "react";
 
 import type {
   RakunManagerPageParams,
@@ -16,8 +12,10 @@ import type {
 } from "./manager";
 
 export type RakunManagerClientPageProps = {
-  params: Promise<RakunManagerPageParams>;
-  searchParams: Promise<RakunManagerPageSearchParams>;
+  params?: Promise<RakunManagerPageParams>;
+  searchParams?: Promise<RakunManagerPageSearchParams>;
+  initialPathname?: string;
+  initialSearchParams?: string;
   apiBaseUrl?: string;
   managerClient?: ManagerClient;
   basePath: string;
@@ -26,63 +24,37 @@ export type RakunManagerClientPageProps = {
   unauthenticatedFallback?: ReactNode;
 };
 
-function ManagerNextLink({ href, children, ...props }: ManagerLinkProps) {
-  return (
-    <Link href={href} {...props}>
-      {children}
-    </Link>
-  );
-}
+const subscribeToLocation = (onStoreChange: () => void) => {
+  window.addEventListener("popstate", onStoreChange);
 
-const createSearchParams = (values: RakunManagerPageSearchParams) => {
-  const searchParams = new URLSearchParams();
-
-  for (const [key, value] of Object.entries(values)) {
-    if (typeof value === "undefined") {
-      continue;
-    }
-
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        searchParams.append(key, item);
-      }
-      continue;
-    }
-
-    searchParams.set(key, value);
-  }
-
-  return searchParams;
+  return () => {
+    window.removeEventListener("popstate", onStoreChange);
+  };
 };
 
-const getPathSegments = (
-  params: RakunManagerPageParams,
-  paramKey: string,
-): string[] => {
-  const value = params[paramKey] ?? Object.values(params).find(Boolean);
+const getBrowserLocationKey = () =>
+  `${window.location.pathname}${window.location.search}`;
 
-  if (Array.isArray(value)) {
-    return value.filter(Boolean);
-  }
-
-  if (typeof value === "string" && value.length > 0) {
-    return [value];
-  }
-
-  return [];
-};
+const createServerLocationKey = (pathname: string, searchParams: string) =>
+  `${pathname}${searchParams ? `?${searchParams}` : ""}`;
 
 export function RakunManagerClientPage({
-  params: paramsPromise,
-  searchParams: searchParamsPromise,
+  params: _paramsPromise,
+  searchParams: _searchParamsPromise,
+  initialPathname = "/",
+  initialSearchParams = "",
   apiBaseUrl = "/api",
   managerClient,
   basePath,
-  paramKey,
+  paramKey: _paramKey,
   loadingFallback,
   unauthenticatedFallback,
 }: RakunManagerClientPageProps) {
-  const router = useRouter();
+  const locationKey = useSyncExternalStore(
+    subscribeToLocation,
+    getBrowserLocationKey,
+    () => createServerLocationKey(initialPathname, initialSearchParams),
+  );
   const client = useMemo(
     () =>
       managerClient ??
@@ -91,29 +63,21 @@ export function RakunManagerClientPage({
       }),
     [apiBaseUrl, managerClient],
   );
-  const params = use(paramsPromise);
-  const nextSearchParams = use(searchParamsPromise);
-
-  const pathname = `/${getPathSegments(params, paramKey).join("/")}`;
+  const pathname =
+    typeof window === "undefined" ? initialPathname : window.location.pathname;
   const searchParams = useMemo(
-    () => createSearchParams(nextSearchParams),
-    [nextSearchParams],
-  );
-  const navigation = useMemo(
     () =>
-      createPathManagerNavigation({
-        basePath,
-        push: (href) => router.push(href),
-        replace: (href) => router.replace(href),
-      }),
-    [basePath, router],
+      new URLSearchParams(
+        typeof window === "undefined"
+          ? initialSearchParams
+          : window.location.search,
+      ),
+    [initialSearchParams, locationKey],
   );
 
   return (
     <ManagerBrowserApp
       client={client}
-      navigation={navigation}
-      linkComponent={ManagerNextLink}
       pathname={pathname}
       searchParams={searchParams}
       basePath={basePath}

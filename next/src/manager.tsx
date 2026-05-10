@@ -35,7 +35,45 @@ const defaultParamKey = "slug";
 export type RakunManagerPageComponentProps = RakunManagerPageProps &
   RakunManagerPageOptions;
 
-export function RakunManagerPage({
+const createSearchParams = (values: RakunManagerPageSearchParams) => {
+  const searchParams = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(values)) {
+    if (typeof value === "undefined") {
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        searchParams.append(key, item);
+      }
+      continue;
+    }
+
+    searchParams.set(key, value);
+  }
+
+  return searchParams;
+};
+
+const getPathSegments = (
+  params: RakunManagerPageParams,
+  paramKey: string,
+): string[] => {
+  const value = params[paramKey] ?? Object.values(params).find(Boolean);
+
+  if (Array.isArray(value)) {
+    return value.filter(Boolean);
+  }
+
+  if (typeof value === "string" && value.length > 0) {
+    return [value];
+  }
+
+  return [];
+};
+
+export async function RakunManagerPage({
   params,
   searchParams,
   apiBaseUrl = "/api",
@@ -45,14 +83,26 @@ export function RakunManagerPage({
   loadingFallback,
   unauthenticatedFallback,
 }: RakunManagerPageComponentProps) {
+  const [resolvedParams, resolvedSearchParams] = await Promise.all([
+    params,
+    searchParams,
+  ]);
+  const initialPathname = `/${getPathSegments(
+    resolvedParams,
+    paramKey,
+  ).join("/")}`;
+  const initialSearchParams = createSearchParams(
+    resolvedSearchParams,
+  ).toString();
+
   return (
     <RakunManagerClientPage
-      params={params}
-      searchParams={searchParams}
       apiBaseUrl={apiBaseUrl}
       managerClient={managerClient}
       basePath={basePath}
       paramKey={paramKey}
+      initialPathname={initialPathname}
+      initialSearchParams={initialSearchParams}
       loadingFallback={loadingFallback}
       unauthenticatedFallback={unauthenticatedFallback}
     />
