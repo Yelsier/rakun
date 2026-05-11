@@ -106,7 +106,9 @@ const Row = ({
 }) => (
   <div className="flex min-w-0 items-start justify-between gap-3 rounded-sm px-1.5 py-1.5 hover:bg-muted/40">
     <div className="min-w-0">
-      <div className="break-words font-mono text-sm font-medium">{name}</div>
+      <div className="wrap-break-word font-mono text-sm font-medium">
+        {name}
+      </div>
       <SchemaMeta schema={schema} />
     </div>
     <SchemaBadges schema={schema} required={required} />
@@ -137,7 +139,9 @@ const SchemaChildren = ({ schema }: { schema: JsonSchema }) => {
   );
   const children = [
     ...propertyEntries,
-    ...(itemSchema ? [{ name: "items", schema: itemSchema, required: false }] : []),
+    ...(itemSchema
+      ? [{ name: "items", schema: itemSchema, required: false }]
+      : []),
     ...variantEntries,
   ];
 
