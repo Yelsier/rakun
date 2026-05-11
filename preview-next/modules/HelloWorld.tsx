@@ -37,7 +37,7 @@ export default function HelloWorld({
   };
 
   return (
-    <section className="mx-auto flex min-h-80 max-w-5xl flex-col items-start justify-center gap-5 px-6 py-16">
+    <section className="mx-auto flex h-[calc(100vh-130px)] max-w-5xl flex-col items-start justify-center gap-5 px-6 py-16">
       <h1 className="text-5xl font-semibold tracking-normal text-zinc-950">
         {text}
       </h1>
