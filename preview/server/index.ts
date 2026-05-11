@@ -48,9 +48,9 @@ rakunBootstrap({
       { message: string },
       "query",
       "get",
-      "auth"
+      "public"
     >({
-      access: "auth",
+      access: "public",
       kind: "query",
       method: "get",
       description: "Return a hello world message with the provided text",

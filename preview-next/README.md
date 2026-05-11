@@ -47,6 +47,30 @@ The API route seeds preview data on first request when `SEED_PREVIEW` is not
 The seed is idempotent and also repairs the seeded home iterator so
 `HelloWorld` stays present after local database reuse.
 
+## Custom API Operation
+
+The preview defines `apiOperations` in `server/api-operations.ts` and passes it
+to the Rakun bootstrap in `app/api/[[...rakun]]/route.ts`.
+
+The seeded `HelloWorld` module is a client component with a button that calls
+the public `demo.helloWorld` operation through the typed client:
+
+```tsx
+import {
+  createRakunApiClient,
+  type GetClient,
+} from "@rakun-kit/next/web/client";
+import type { apiOperations } from "../server/api-operations";
+
+type PreviewApiClient = GetClient<typeof apiOperations>;
+
+const apiClient: PreviewApiClient = createRakunApiClient<typeof apiOperations>({
+  baseUrl: "/api",
+});
+
+const result = await apiClient.query("demo.helloWorld", { text });
+```
+
 ## Rendering
 
 The page route uses `RakunPageRenderer` from `@rakun-kit/next/web`:

@@ -132,6 +132,79 @@ await getRakunPage({
 });
 ```
 
+## Web API Client
+
+Use `@rakun-kit/next/web/client` from client components that need to call
+custom Rakun operations. Keep the operation map in a separate server file, pass
+it to bootstrap, and import its type in the client:
+
+```ts
+// server/api-operations.ts
+import { defineOperation } from "@rakun-kit/next";
+import { z } from "zod";
+
+export const apiOperations = {
+  "demo.helloWorld": defineOperation<
+    { text: string },
+    { message: string },
+    "query",
+    "get",
+    "public"
+  >({
+    access: "public",
+    kind: "query",
+    method: "get",
+    input: z.object({
+      text: z.string().default("world"),
+    }),
+    output: z.object({
+      message: z.string(),
+    }),
+    resolve: ({ input }) => ({
+      message: `Hello ${input.text}`,
+    }),
+  }),
+};
+```
+
+```ts
+// app/api/rakun/[...slug]/route.ts
+import { rakunNext } from "@rakun-kit/next";
+import { apiOperations } from "@/server/api-operations";
+
+export const { GET, POST, PUT } = rakunNext({
+  bootstrap: {
+    // ...
+    apiOperations,
+  },
+});
+```
+
+```tsx
+// modules/HelloWorld.tsx
+"use client";
+
+import {
+  createRakunApiClient,
+  type GetClient,
+} from "@rakun-kit/next/web/client";
+import type { apiOperations } from "@/server/api-operations";
+
+type ApiClient = GetClient<typeof apiOperations>;
+
+const apiClient: ApiClient = createRakunApiClient<typeof apiOperations>({
+  baseUrl: "/api/rakun",
+});
+
+const result = await apiClient.query("demo.helloWorld", {
+  text: "Rakun",
+});
+```
+
+`query` only accepts operations declared with `kind: "query"`. `mutation` only
+accepts operations declared with `kind: "mutation"`. Input and output types are
+derived from each operation's Zod schemas.
+
 ## Manager Page
 
 Render the manager from a Next App Router page with `@rakun-kit/next/manager`:
@@ -203,7 +276,7 @@ When this config is detected, `rakunNext` serves:
 - `@rakun-kit/next/media`: `LocalAdapter`, local media config, and local HTTP handlers.
 - `@rakun-kit/next/manager`: `RakunManagerPage` and manager page types.
 - `@rakun-kit/next/web`: `getRakunPage`, `RakunPageRenderer`, and page path helpers.
-- `@rakun-kit/next/web/client`: Rakun React renderers for client components.
+- `@rakun-kit/next/web/client`: Rakun React renderers and typed API client helpers for client components.
 
 ## Build
 

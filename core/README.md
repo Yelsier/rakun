@@ -258,6 +258,8 @@ Main helpers:
 
 - `defineOperationContract`: declares a contract with Zod input/output, method, path, and metadata.
 - `defineOperation`: combines a contract with its implementation.
+- `createRakunApiClient`: creates a browser/server HTTP client for custom operations.
+- `GetClient`: derives a typed client from an operation map.
 - `createManagerOperationContracts`, `createWebOperationContracts`.
 - `createManagerOperationDefinitions`, `createWebOperationDefinitions`.
 - `createRakunOperationDefinitions`: combines manager + web.
@@ -278,33 +280,51 @@ import {
 
 ### Custom Operations
 
-Applications can add operations through bootstrap:
+Applications can define operations in a separate object, pass that object to
+bootstrap, and reuse its type on the frontend:
 
 ```ts
+// server/api-operations.ts
 import { defineOperation } from "@rakun-kit/core";
 import { z } from "zod";
 
+export const apiOperations = {
+  "demo.helloWorld": defineOperation<
+    { text: string },
+    { message: string },
+    "query",
+    "get",
+    "public"
+  >({
+    access: "public",
+    kind: "query",
+    method: "get",
+    description: "Return a hello world message with the provided text",
+    input: z.object({
+      text: z.string().default("world"),
+    }),
+    output: z.object({
+      message: z.string(),
+    }),
+    resolve: ({ input }) => ({
+      message: `Hello ${input.text}`,
+    }),
+  }),
+};
+```
+
+```ts
+// bootstrap
+import { apiOperations } from "./server/api-operations";
+
 rakunBootstrap({
   // ...
-  apiOperations: {
-    "manager.reports.summary": defineOperation({
-      access: "auth",
-      kind: "query",
-      method: "get",
-      output: z.object({
-        total: z.number(),
-      }),
-      resolve: async ({ ctx }) => {
-        ctx.getUser();
-
-        return { total: 0 };
-      },
-    }),
-  },
+  apiOperations,
 });
 ```
 
-Operation names define their HTTP path: `manager.reports.summary` becomes `/manager/reports/summary`.
+Operation names define their HTTP path: `demo.helloWorld` becomes
+`/demo/helloWorld`.
 
 Rules:
 
@@ -312,6 +332,44 @@ Rules:
 - Operations prefixed with `manager.` are included in manager operation routers.
 - Operations prefixed with `web.` are included in web operation routers.
 - Operations with any other prefix are included when using the combined operation registry.
+- Use `access: "public"` for operations called from public web pages.
+- Use `access: "auth"` for operations that require a manager session.
+
+The manager route `manager.apiOperations` returns a JSON-serializable operation
+catalog for manager API docs/playgrounds. Input and output Zod schemas are
+converted to JSON Schema for display.
+
+### Typed API Client
+
+`@rakun-kit/core/web` exposes a small typed HTTP client for operation maps:
+
+```ts
+import {
+  createRakunApiClient,
+  type GetClient,
+} from "@rakun-kit/core/web";
+import type { apiOperations } from "./server/api-operations";
+
+type ApiClient = GetClient<typeof apiOperations>;
+
+const client: ApiClient = createRakunApiClient<typeof apiOperations>({
+  baseUrl: "/api",
+});
+
+const result = await client.query("demo.helloWorld", {
+  text: "Rakun",
+});
+
+result.message;
+```
+
+The client exposes:
+
+- `query(name, input?, options?)`: only accepts operations with `kind: "query"`.
+- `mutation(name, input?, options?)`: only accepts operations with `kind: "mutation"`.
+
+The client derives input and output types from the Zod schemas in
+`apiOperations`.
 
 ## Request Context and Auth
 

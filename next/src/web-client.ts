@@ -1,6 +1,13 @@
 "use client";
 
 export {
+  createRakunApiClient,
+  type CreateRakunApiClientOptions,
+  type GetClient,
+  type RakunApiRequestOptions,
+} from "@rakun-kit/core/web";
+
+export {
   createModuleRegistry,
   createModuleRegistryFromGlob,
   LazyViewport,
