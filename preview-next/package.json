@@ -10,7 +10,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@rakun-kit/core": "^1.2.0",
+    "@rakun-kit/core": "^1.2.1",
     "@rakun-kit/manager-react": "^1.2.0",
     "@rakun-kit/next": "^1.2.0",
     "@rakun-kit/react": "^1.0.0",

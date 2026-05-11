@@ -33,7 +33,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1030.0"
   },
   "peerDependencies": {
-    "@rakun-kit/core": "^1.1.0"
+    "@rakun-kit/core": "^1.2.1"
   },
   "exports": {
     ".": {
