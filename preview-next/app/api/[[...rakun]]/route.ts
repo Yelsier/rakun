@@ -1,12 +1,14 @@
 import { Page } from "@rakun-kit/next/internal-content-types";
 import {
   createLocalMediaServiceConfig,
+  defineOperation,
   ensureRakunBootstrap,
   ensureRakunInitialized,
   rakunNext,
   type RakunBootstrapOptions,
   type RakunNextRouteContext,
 } from "@rakun-kit/next";
+import { z } from "zod";
 import {
   Footer,
   Header,
@@ -47,6 +49,29 @@ const bootstrap = {
     tokenSecret: "super-secret-token",
     baseUrl: "http://localhost:3000/api",
   }),
+  apiOperations: {
+    "demo.helloWorld": defineOperation<
+      { text: string },
+      { message: string },
+      "query",
+      "get",
+      "auth"
+    >({
+      access: "auth",
+      kind: "query",
+      method: "get",
+      description: "Return a hello world message with the provided text",
+      input: z.object({
+        text: z.string().default("world"),
+      }),
+      output: z.object({
+        message: z.string(),
+      }),
+      resolve: ({ input }) => ({
+        message: `Hello ${input.text}`,
+      }),
+    }),
+  },
   logger: {
     level: "debug",
     prettify: true,

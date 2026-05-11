@@ -9,6 +9,11 @@ export type ManagerRequestOptions = {
   headers?: HeadersInit;
 };
 
+export type ManagerGenericOperationMeta = {
+  path: string;
+  method: "get" | "post";
+};
+
 export type ManagerRequestArgs<TName extends ManagerOperationName> =
   undefined extends ManagerOperationInput<TName>
     ? [
@@ -26,14 +31,24 @@ export type ManagerRequestFn = <TName extends ManagerOperationName>(
   ...args: ManagerRequestArgs<TName>
 ) => Promise<ManagerOperationOutput<TName>>;
 
+export type ManagerGenericRequestFn = (
+  name: string,
+  input: unknown,
+  meta: ManagerGenericOperationMeta,
+  options?: ManagerRequestOptions,
+) => Promise<unknown>;
+
 export type ManagerClient = {
   request: ManagerRequestFn;
+  requestOperation?: ManagerGenericRequestFn;
 };
 
 export const createManagerClient = (
   request: ManagerRequestFn,
+  requestOperation?: ManagerGenericRequestFn,
 ): ManagerClient => ({
   request,
+  requestOperation,
 });
 
 export const normalizeManagerRequestArgs = <TName extends ManagerOperationName>(

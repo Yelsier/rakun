@@ -35,6 +35,7 @@ export {
 } from "./lib/ContentType";
 export type { FileOptimizeOptions } from "./lib/fields/File";
 export { loginInput, type LoginInput } from "./schemas/manager/auth/login";
+export type { ApiOperationsOutput } from "./schemas/manager/apiOperations";
 export type { ListOutput } from "./schemas/manager/list";
 export type { ListLiteralsOutput } from "./schemas/manager/literals/list";
 export type {

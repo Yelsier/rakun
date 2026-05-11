@@ -30,7 +30,7 @@
   ],
   "dependencies": {
     "@rakun-kit/core": "^1.2.0",
-    "@rakun-kit/react": "^1.2.0"
+    "@rakun-kit/react": "^1.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.2"

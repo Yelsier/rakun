@@ -9,6 +9,8 @@ import {
   createManagerClient,
   normalizeManagerRequestArgs,
   type ManagerClient,
+  type ManagerGenericOperationMeta,
+  type ManagerGenericRequestFn,
   type ManagerRequestFn,
 } from "./request";
 import {
@@ -177,9 +179,78 @@ export const createHttpManagerRequest = ({
   return request;
 };
 
+export const createHttpManagerOperationRequest = ({
+  baseUrl,
+  fetch: fetchImpl = globalThis.fetch,
+  headers,
+  credentials = "include",
+}: CreateHttpManagerRequestOptions): ManagerGenericRequestFn => {
+  if (!fetchImpl) {
+    throw new Error(
+      "A fetch implementation is required to create an HTTP manager request.",
+    );
+  }
+
+  return async (
+    _name: string,
+    input: unknown,
+    meta: ManagerGenericOperationMeta,
+    options,
+  ) => {
+    const url = createRequestUrl(baseUrl, meta.path);
+
+    if (meta.method === "get" && input !== undefined) {
+      appendSearchParams(url, input);
+    }
+
+    const response = await fetchImpl(url.toString(), {
+      method: meta.method.toUpperCase(),
+      credentials,
+      signal: options?.signal,
+      headers: {
+        ...(meta.method === "post"
+          ? { "Content-Type": "application/json; charset=utf-8" }
+          : {}),
+        ...headers,
+        ...options?.headers,
+      },
+      body:
+        meta.method === "post" && input !== undefined
+          ? JSON.stringify(input)
+          : undefined,
+    });
+
+    const body = await readResponseBody(response);
+
+    if (!response.ok) {
+      const appError = getAppErrorShape(body);
+
+      if (appError) {
+        throw appError;
+      }
+
+      const message =
+        typeof body === "object" &&
+        body !== null &&
+        "message" in body &&
+        typeof body.message === "string"
+          ? body.message
+          : `Manager request failed with status ${response.status}`;
+
+      throw new ManagerHttpError(message, response.status, body);
+    }
+
+    return body;
+  };
+};
+
 export const createHttpManagerClient = (
   options: CreateHttpManagerRequestOptions,
-): ManagerClient => createManagerClient(createHttpManagerRequest(options));
+): ManagerClient =>
+  createManagerClient(
+    createHttpManagerRequest(options),
+    createHttpManagerOperationRequest(options),
+  );
 
 export type {
   ManagerClient,

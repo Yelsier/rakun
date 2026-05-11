@@ -1,9 +1,5 @@
 'use client'
 
-import z from 'zod'
-
-import type { ManagerOperationName } from '@/client/operations'
-
 export const operationNameToTitle = (name: string) => {
   const parts = name.split('.')
   const last = parts[parts.length - 1] ?? name
@@ -13,7 +9,7 @@ export const operationNameToTitle = (name: string) => {
     .replace(/\b\w/g, (match: string) => match.toUpperCase())
 }
 
-const manualExamples: Partial<Record<ManagerOperationName, unknown>> = {
+const manualExamples: Record<string, unknown> = {
   'manager.get': {
     contentType: 'Post',
     id: 'replace-with-id',
@@ -51,11 +47,14 @@ const manualExamples: Partial<Record<ManagerOperationName, unknown>> = {
   'manager.auth.webauthn.auth.options': {
     challengeToken: 'replace-with-challenge-token',
   },
+  'demo.helloWorld': {
+    text: 'Rakun',
+  },
 }
 
 export const createDefaultInput = (
-  name: ManagerOperationName,
-  _schema?: z.ZodTypeAny,
+  name: string,
+  _schema?: unknown,
 ) => {
   const manual = manualExamples[name]
   if (manual !== undefined) {
@@ -65,7 +64,7 @@ export const createDefaultInput = (
   return '{}'
 }
 
-export const stringifySchema = (schema?: z.ZodTypeAny) => {
+export const stringifySchema = (schema?: unknown) => {
   if (!schema) return '{}'
-  return JSON.stringify(z.toJSONSchema(schema), null, 2)
+  return JSON.stringify(schema, null, 2)
 }

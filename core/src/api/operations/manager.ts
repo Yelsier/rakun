@@ -3,6 +3,8 @@ import type { RakunOperationImplementationMap } from "./types";
 import { mergeOperationContracts } from "./types";
 import { createManagerOperationContracts } from "./manager-contract";
 import { getCustomApiOperationDefinitions, mergeOperationMaps } from "./custom";
+import { createWebOperationDefinitions } from "./web";
+import { createApiOperationCatalog } from "./catalog";
 import { setSessionCookie } from "../sessionCookie";
 import { throwAppError } from "../../lib/errors";
 import { Logger } from "../../lib/Logger";
@@ -74,6 +76,24 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.permissions": {
       resolve: async () => getPermissionList(),
+    },
+    "manager.apiOperations": {
+      resolve: async () => {
+        const managerOperations = mergeOperationMaps(
+          mergeOperationContracts(contracts, implementations),
+          getCustomApiOperationDefinitions("manager"),
+        );
+        const coreOperations = {
+          ...managerOperations,
+          ...createWebOperationDefinitions(),
+        };
+        const operations = mergeOperationMaps(
+          coreOperations,
+          getCustomApiOperationDefinitions("unscoped"),
+        );
+
+        return createApiOperationCatalog(operations);
+      },
     },
     "manager.media.prepareUpload": {
       resolve: async ({ input, ctx }) =>

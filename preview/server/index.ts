@@ -1,8 +1,9 @@
 import express from "express";
 
-import { rakunBootstrap } from "@rakun-kit/core";
+import { defineOperation, rakunBootstrap } from "@rakun-kit/core";
 import { rakunExpress } from "@rakun-kit/express";
 import { createLocalMediaServiceConfig } from "@rakun-kit/express/media";
+import { z } from "zod";
 
 import { Footer, Header, Page, previewContentTypes } from "./content-types";
 import { env } from "./env";
@@ -41,6 +42,29 @@ rakunBootstrap({
     tokenSecret: env.mediaTokenSecret,
     defaultAccess: "private",
   }),
+  apiOperations: {
+    "demo.helloWorld": defineOperation<
+      { text: string },
+      { message: string },
+      "query",
+      "get",
+      "auth"
+    >({
+      access: "auth",
+      kind: "query",
+      method: "get",
+      description: "Return a hello world message with the provided text",
+      input: z.object({
+        text: z.string().default("world"),
+      }),
+      output: z.object({
+        message: z.string(),
+      }),
+      resolve: ({ input }) => ({
+        message: `Hello ${input.text}`,
+      }),
+    }),
+  },
   logger: {
     level: "debug",
     prettify: true,

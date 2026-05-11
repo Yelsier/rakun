@@ -3,6 +3,7 @@ export * from "./schemas/manager/update";
 export * from "./schemas/manager/delete";
 export * from "./schemas/manager/get";
 export * from "./schemas/manager/list";
+export * from "./schemas/manager/apiOperations";
 export * from "./schemas/manager/setDefaultLanguage";
 export * from "./schemas/manager/updatePassword";
 export * from "./schemas/manager/literals/list";

@@ -45,6 +45,7 @@ import {
   webauthnRegisterOptionsOutput,
   webauthnRegisterVerifyInput,
 } from "../../contracts";
+import { apiOperationsOutput } from "../../schemas/manager/apiOperations";
 
 const okOutput = z.object({ ok: z.boolean() });
 
@@ -125,6 +126,13 @@ export const createManagerOperationContracts = () =>
       kind: "query",
       description: "Get the list of all permissions",
       output: z.array(z.string()),
+      method: "get",
+    }),
+    "manager.apiOperations": defineOperationContract({
+      access: "auth",
+      kind: "query",
+      description: "Get the API operation catalog",
+      output: apiOperationsOutput,
       method: "get",
     }),
     "manager.media.prepareUpload": defineOperationContract({

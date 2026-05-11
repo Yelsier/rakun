@@ -2,21 +2,16 @@
 
 import { Folder, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import type z from 'zod'
+import type { ApiOperationsOutput } from '@rakun-kit/core/client'
 
 import { CodeBlock } from './CodeBlock'
 import ApiPlayground from './test'
 import {
   createDefaultInput,
   operationNameToTitle,
-  stringifySchema,
 } from './shared'
+import { SchemaViewer } from './SchemaViewer'
 
-import {
-  getManagerOperationMeta,
-  managerOperationContracts,
-  type ManagerOperationName,
-} from '@rakun-kit/core/manager'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -26,17 +21,10 @@ import {
 } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { useManagerQuery } from '@/client/react'
 
-type OperationDoc = {
-  name: ManagerOperationName
+type OperationDoc = ApiOperationsOutput[number] & {
   title: string
-  description?: string
-  path: string
-  kind: 'query' | 'mutation'
-  method: string
-  access: string
-  input?: z.ZodTypeAny
-  output?: z.ZodTypeAny
 }
 
 type GroupNode = Record<string, GroupNode[] | OperationDoc>
@@ -44,26 +32,11 @@ type GroupNode = Record<string, GroupNode[] | OperationDoc>
 const getKindBadgeVariant = (kind: OperationDoc['kind']) =>
   kind === 'query' ? 'secondary' : 'outline'
 
-const buildDocs = (): OperationDoc[] => {
-  return (Object.keys(managerOperationContracts) as ManagerOperationName[]).map(
-    (name) => {
-      const contract = managerOperationContracts[name]
-      const meta = getManagerOperationMeta(name)
-
-      return {
-        name,
-        title: operationNameToTitle(name),
-        description: contract.description,
-        path: meta.path,
-        kind: meta.kind,
-        method: meta.method.toUpperCase(),
-        access: contract.access,
-        input: 'input' in contract ? contract.input : undefined,
-        output: contract.output,
-      }
-    },
-  )
-}
+const buildDocs = (operations: ApiOperationsOutput): OperationDoc[] =>
+  operations.map((operation) => ({
+    ...operation,
+    title: operationNameToTitle(operation.name),
+  }))
 
 const addToTree = (items: GroupNode[], parts: string[], doc: OperationDoc) => {
   const [head, ...tail] = parts
@@ -194,12 +167,17 @@ const renderTree = ({
   })
 
 export default function ApiTest() {
-  const docs = useMemo(() => buildDocs(), [])
+  const operationsQuery = useManagerQuery({
+    name: 'manager.apiOperations',
+    input: undefined,
+  })
+  const docs = useMemo(
+    () => buildDocs(operationsQuery.data ?? []),
+    [operationsQuery.data],
+  )
   const tree = useMemo(() => buildTree(docs), [docs])
   const [search, setSearch] = useState('')
-  const [selectedName, setSelectedName] = useState<ManagerOperationName>(
-    docs[0]?.name ?? 'manager.contentTypes',
-  )
+  const [selectedName, setSelectedName] = useState<string>('manager.contentTypes')
 
   const filteredDocs = useMemo(
     () => docs.filter((doc) => itemMatches(doc, search)),
@@ -213,9 +191,31 @@ export default function ApiTest() {
     }
   }, [filteredDocs, selectedName])
 
-  const selectedDoc = docs.find((doc) => doc.name === selectedName)
+  const selectedDoc = docs.find((doc) => doc.name === selectedName) ?? docs[0]
 
-  if (!selectedDoc) return null
+  if (operationsQuery.isLoading) {
+    return (
+      <div className='rounded-xl border p-6 text-sm text-muted-foreground'>
+        Loading API operations...
+      </div>
+    )
+  }
+
+  if (operationsQuery.isError) {
+    return (
+      <div className='rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive'>
+        Failed to load API operations.
+      </div>
+    )
+  }
+
+  if (!selectedDoc) {
+    return (
+      <div className='rounded-xl border p-6 text-sm text-muted-foreground'>
+        No API operations found.
+      </div>
+    )
+  }
 
   return (
     <div className='grid w-full grid-cols-[20rem_minmax(0,1fr)] rounded-xl border'>
@@ -248,7 +248,7 @@ export default function ApiTest() {
                   items: value,
                   search,
                   selected: selectedName,
-                  onSelect: (name) => setSelectedName(name as ManagerOperationName),
+                  onSelect: setSelectedName,
                   depth: 1,
                 })}
               </CollapsibleContent>
@@ -264,7 +264,7 @@ export default function ApiTest() {
               <Badge variant={getKindBadgeVariant(selectedDoc.kind)}>
                 {selectedDoc.kind}
               </Badge>
-              <Badge variant='outline'>{selectedDoc.method}</Badge>
+              <Badge variant='outline'>{selectedDoc.method.toUpperCase()}</Badge>
               <Badge variant='outline'>{selectedDoc.access}</Badge>
             </div>
             <h2 className='mt-3 text-3xl font-semibold'>{selectedDoc.title}</h2>
@@ -292,7 +292,7 @@ export default function ApiTest() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <CodeBlock>{stringifySchema(selectedDoc.input)}</CodeBlock>
+                <SchemaViewer schema={selectedDoc.input} />
               </CardContent>
             </Card>
 
@@ -304,7 +304,7 @@ export default function ApiTest() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <CodeBlock>{stringifySchema(selectedDoc.output)}</CodeBlock>
+                <SchemaViewer schema={selectedDoc.output} />
               </CardContent>
             </Card>
           </div>
@@ -318,7 +318,11 @@ export default function ApiTest() {
             </CardHeader>
             <CardContent>
               <ApiPlayground
-                operationName={selectedDoc.name}
+                operation={{
+                  name: selectedDoc.name,
+                  path: selectedDoc.path,
+                  method: selectedDoc.method,
+                }}
                 defaultInput={createDefaultInput(
                   selectedDoc.name,
                   selectedDoc.input,

@@ -9,7 +9,6 @@ import {
 } from './EditableCodeBlock'
 
 import { useManagerClient } from '@/client/react'
-import type { ManagerOperationName } from '@/client/operations'
 import { Button } from '@/components/ui/button'
 import {
   ResizableHandle,
@@ -18,12 +17,16 @@ import {
 } from '@/components/ui/resizable'
 
 type Props = {
-  operationName: ManagerOperationName
+  operation: {
+    name: string
+    path: string
+    method: 'get' | 'post'
+  }
   defaultInput?: string
 }
 
 export default function ApiPlayground({
-  operationName,
+  operation,
   defaultInput,
 }: Props) {
   const client = useManagerClient()
@@ -49,10 +52,12 @@ export default function ApiPlayground({
     }
 
     try {
-      const result = await client.request(
-        operationName,
-        parsedInput as never,
-      )
+      const result = client.requestOperation
+        ? await client.requestOperation(operation.name, parsedInput, {
+            path: operation.path,
+            method: operation.method,
+          })
+        : await client.request(operation.name as never, parsedInput as never)
       setOut(JSON.stringify(result, null, 2))
     } catch (error) {
       if (error instanceof Error) {
