@@ -52,6 +52,8 @@ type DeleteTarget = {
   contentType: 'Media' | 'MediaFolder'
   id: string
   name: string
+  path?: string
+  parentId?: string
 }
 
 type MoveTarget = {
@@ -61,6 +63,9 @@ type MoveTarget = {
 }
 
 const ROOT_FOLDER_VALUE = '__root__'
+
+const isMediaRecord = (item: MediaRecord | FolderItem): item is MediaRecord =>
+  '_type' in item && item._type === 'Media'
 
 export default function Previews() {
   const managerClient = useManagerClient()
@@ -152,6 +157,7 @@ export default function Previews() {
   })
 
   const deleteMutation = useManagerMutation('manager.delete')
+  const deleteFolderMutation = useManagerMutation('manager.media.deleteFolder')
   const updateMutation = useManagerMutation('manager.update')
 
   const media = ((data as { items?: MediaRecord[] } | undefined)?.items ??
@@ -218,11 +224,47 @@ export default function Previews() {
       contentType: 'MediaFolder',
       id: externalDeleteFolderRequest.id,
       name: externalDeleteFolderRequest.name,
+      path: externalDeleteFolderRequest.path,
+      parentId: externalDeleteFolderRequest.parentId,
     })
   }, [externalDeleteFolderRequest])
 
   const handleConfirmDelete = () => {
     if (!deleteTarget) return
+
+    if (deleteTarget.contentType === 'MediaFolder') {
+      deleteFolderMutation.mutate(
+        {
+          id: deleteTarget.id,
+          recursive: true,
+        },
+        {
+          onSuccess: async () => {
+            await Promise.all([
+              refetch(),
+              refetchChildFolders(),
+              refetchFoldersTree(),
+            ])
+
+            const currentFolder = currentFolderId
+              ? folders?.find((folder) => folder._id === currentFolderId)
+              : null
+            const deletedPath = deleteTarget.path
+            if (
+              currentFolderId === deleteTarget.id ||
+              (deletedPath &&
+                currentFolder?.path.startsWith(`${deletedPath}/`))
+            ) {
+              setCurrentFolderId(deleteTarget.parentId ?? null)
+            }
+
+            setDeleteTarget(null)
+            toast.success('Folder deleted successfully')
+          },
+        },
+      )
+      return
+    }
 
     deleteMutation.mutate(
       {
@@ -355,13 +397,24 @@ export default function Previews() {
     )
   }
 
-  const onRequestDelete = (item: MediaRecord | FolderItem) =>
+  const onRequestDelete = (item: MediaRecord | FolderItem) => {
+    if (isMediaRecord(item)) {
+      setDeleteTarget({
+        contentType: 'Media',
+        id: item._id,
+        name: item.name,
+      })
+      return
+    }
+
     setDeleteTarget({
-      contentType:
-        '_type' in item && item._type === 'Media' ? 'Media' : 'MediaFolder',
+      contentType: 'MediaFolder',
       id: item._id,
       name: item.name,
+      path: item.path,
+      parentId: item.parentId,
     })
+  }
 
   const onRequestEdit = (item: MediaRecord | FolderItem) =>
     handleEdit({
@@ -529,7 +582,7 @@ export default function Previews() {
 
         <MediaDeleteDialog
           target={deleteTarget}
-          isLoading={deleteMutation.isPending}
+          isLoading={deleteMutation.isPending || deleteFolderMutation.isPending}
           onClose={() => setDeleteTarget(null)}
           onConfirm={handleConfirmDelete}
         />

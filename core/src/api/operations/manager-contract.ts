@@ -10,6 +10,8 @@ import {
   confirmTotpInput,
   createFolderInput,
   createFolderOutput,
+  deleteFolderInput,
+  deleteFolderOutput,
   createInput,
   deleteInput,
   deleteSessionInput,
@@ -173,6 +175,14 @@ export const createManagerOperationContracts = () =>
       description: "List media folders by parent folder",
       input: listFoldersInput,
       output: listFoldersOutput,
+      method: "post",
+    }),
+    "manager.media.deleteFolder": defineOperationContract({
+      access: "auth",
+      kind: "mutation",
+      description: "Recursively delete a media folder and its contents",
+      input: deleteFolderInput,
+      output: deleteFolderOutput,
       method: "post",
     }),
     "manager.literals.list": defineOperationContract({

@@ -21,6 +21,8 @@ export type FolderItem = {
 type FolderActionRequest = {
   id: string
   name: string
+  path: string
+  parentId?: string
   requestId: number
 }
 

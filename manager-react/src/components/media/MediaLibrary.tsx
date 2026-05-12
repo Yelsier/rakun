@@ -55,12 +55,16 @@ export default function MediaLibrary({
   const [externalEditFolderRequest, setExternalEditFolderRequest] = useState<{
     id: string
     name: string
+    path: string
+    parentId?: string
     requestId: number
   } | null>(null)
   const [externalDeleteFolderRequest, setExternalDeleteFolderRequest] =
     useState<{
       id: string
       name: string
+      path: string
+      parentId?: string
       requestId: number
     } | null>(null)
   const [, setFolderRequestSeq] = useState(0)
@@ -123,6 +127,8 @@ export default function MediaLibrary({
       setExternalEditFolderRequest({
         id: folder._id,
         name: folder.name,
+        path: folder.path,
+        parentId: folder.parentId,
         requestId: next,
       })
       return next
@@ -135,6 +141,8 @@ export default function MediaLibrary({
       setExternalDeleteFolderRequest({
         id: folder._id,
         name: folder.name,
+        path: folder.path,
+        parentId: folder.parentId,
         requestId: next,
       })
       return next

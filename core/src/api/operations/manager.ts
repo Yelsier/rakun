@@ -35,6 +35,7 @@ import { finalizeUploadHandler } from "../routes/manager/media/finalizeUpload";
 import { getMediaUrlHandler } from "../routes/manager/media/getMediaUrl";
 import { createFolderHandler } from "../routes/manager/media/createFolder";
 import { listFoldersHandler } from "../routes/manager/media/listFolders";
+import { deleteFolderHandler } from "../routes/manager/media/deleteFolder";
 import { listLiteralsHandler } from "../routes/manager/literals/list";
 import { upsertLiteralHandler } from "../routes/manager/literals/upsert";
 
@@ -114,6 +115,10 @@ export const createManagerOperationDefinitions = () => {
     "manager.media.listFolders": {
       resolve: async ({ input, ctx }) =>
         await listFoldersHandler({ input, ctx }),
+    },
+    "manager.media.deleteFolder": {
+      resolve: async ({ input, ctx }) =>
+        await deleteFolderHandler({ input, ctx }),
     },
     "manager.literals.list": {
       resolve: async ({ input, ctx }) =>
