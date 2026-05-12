@@ -18,45 +18,71 @@ type ThemeContextValue = {
   setTheme: (theme: ManagerTheme) => void;
 };
 
-const STORAGE_KEY = "rakun-manager-theme";
+export const MANAGER_THEME_STORAGE_KEY = "rakun-manager-theme";
+
+export const MANAGER_THEME_INIT_SCRIPT = `(() => {
+  try {
+    const storedTheme = window.localStorage.getItem("${MANAGER_THEME_STORAGE_KEY}");
+    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    const theme = storedTheme === "light" || storedTheme === "dark" ? storedTheme : systemTheme;
+    const root = document.documentElement;
+
+    root.classList.remove("light", "dark");
+    root.classList.add(theme);
+    root.style.colorScheme = theme;
+  } catch {
+  }
+})();`;
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const getSystemTheme = (): ResolvedManagerTheme =>
   window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 
+const isManagerTheme = (theme: string | null): theme is ManagerTheme =>
+  theme === "light" || theme === "dark" || theme === "system";
+
+const getInitialTheme = (): ManagerTheme => {
+  if (typeof window === "undefined") {
+    return "system";
+  }
+
+  const storedTheme = window.localStorage.getItem(MANAGER_THEME_STORAGE_KEY);
+
+  return isManagerTheme(storedTheme) ? storedTheme : "system";
+};
+
+const resolveTheme = (theme: ManagerTheme): ResolvedManagerTheme =>
+  theme === "system" ? getSystemTheme() : theme;
+
 const applyTheme = (theme: ResolvedManagerTheme) => {
   const root = document.documentElement;
   root.classList.remove("light", "dark");
   root.classList.add(theme);
+  root.style.colorScheme = theme;
 };
 
+export function ManagerThemeScript() {
+  return (
+    <script
+      suppressHydrationWarning
+      dangerouslySetInnerHTML={{ __html: MANAGER_THEME_INIT_SCRIPT }}
+    />
+  );
+}
+
 export function ManagerThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ManagerTheme>("system");
-  const [resolvedTheme, setResolvedTheme] =
-    useState<ResolvedManagerTheme>("light");
-
-  useEffect(() => {
-    const storedTheme = window.localStorage.getItem(
-      STORAGE_KEY,
-    ) as ManagerTheme | null;
-    if (
-      storedTheme === "light" ||
-      storedTheme === "dark" ||
-      storedTheme === "system"
-    ) {
-      setThemeState(storedTheme);
-      return;
-    }
-
-    setThemeState("system");
-  }, []);
+  const [theme, setThemeState] = useState<ManagerTheme>(getInitialTheme);
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedManagerTheme>(
+    () =>
+      typeof window === "undefined" ? "light" : resolveTheme(getInitialTheme()),
+  );
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
     const updateResolvedTheme = () => {
-      const nextResolvedTheme = theme === "system" ? getSystemTheme() : theme;
+      const nextResolvedTheme = resolveTheme(theme);
       setResolvedTheme(nextResolvedTheme);
       applyTheme(nextResolvedTheme);
     };
@@ -75,7 +101,7 @@ export function ManagerThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = (nextTheme: ManagerTheme) => {
     setThemeState(nextTheme);
-    window.localStorage.setItem(STORAGE_KEY, nextTheme);
+    window.localStorage.setItem(MANAGER_THEME_STORAGE_KEY, nextTheme);
   };
 
   const value = useMemo(
