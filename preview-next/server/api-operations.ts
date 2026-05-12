@@ -2,13 +2,7 @@ import { defineOperation } from "@rakun-kit/next";
 import { z } from "zod";
 
 export const apiOperations = {
-  "demo.helloWorld": defineOperation<
-    { text: string },
-    { message: string },
-    "query",
-    "get",
-    "public"
-  >({
+  "demo.helloWorld": defineOperation({
     access: "public",
     kind: "query",
     method: "get",

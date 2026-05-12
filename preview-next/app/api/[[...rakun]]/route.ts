@@ -21,7 +21,24 @@ const mongoUri =
   process.env.MONGO_URI ?? "mongodb://127.0.0.1:27017/rakun_preview";
 
 const bootstrap = {
-  literals: {},
+  literals: {
+    "test.hello": {
+        defaultMessage: "Hello, {name}!",
+        description: "A greeting message",
+        usedBy: ["HelloWorld"],
+        params: {
+          name: "string",
+        }
+    },
+    "test.goodbye": {
+        defaultMessage: "Goodbye, {name}!",
+        description: "A farewell message",
+        usedBy: ["HelloWorld"],
+        params: {
+          name: "string",
+        }
+    }
+  },
   contentTypes: previewContentTypes,
   routes: [
     {

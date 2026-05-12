@@ -13,6 +13,7 @@ import {
   setRakunBootstrapOptions,
   type RakunBootstrapOptions,
 } from "./bootstrapState";
+import { setLiteralCatalog } from "./literals/definitions";
 
 let initPromise: Promise<void> | null = null;
 
@@ -140,6 +141,7 @@ export const runWithRakunRequestTrace = <T>(
 
 export const rakunBootstrap = (options: RakunBootstrapOptions) => {
   setRakunBootstrapOptions(options);
+  setLiteralCatalog(options.literals);
   initPromise = null;
 
   const configuredInternalContentTypes = {

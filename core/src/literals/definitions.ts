@@ -1,5 +1,4 @@
 import { extractIcuVariables, type IcuVariable } from "./icu";
-const literalCatalogInput = {};
 
 export type LiteralDefinition = {
   key: string;
@@ -22,12 +21,10 @@ type LiteralInput = {
   params?: Record<string, LiteralParamSpecValue>;
 };
 
-const defineLiteralCatalog = <T extends Record<string, LiteralInput>>(
-  catalog: T,
-) => {
-  const keys = Object.keys(catalog) as Array<Extract<keyof T, string>>;
+const defineLiteralCatalog = (catalog: LiteralCatalogInput) => {
+  const keys = Object.keys(catalog);
   const definitions: LiteralDefinition[] = keys.map((key) => ({
-    key: String(key),
+    key,
     defaultMessage: catalog[key]?.defaultMessage ?? "",
     description: catalog[key]?.description ?? "",
     usedBy: catalog[key]?.usedBy ?? [],
@@ -38,15 +35,12 @@ const defineLiteralCatalog = <T extends Record<string, LiteralInput>>(
     definitions.map((definition) => [definition.key, definition]),
   );
 
-  return {
-    definitions,
-    byKey,
-  };
+  return { definitions, byKey };
 };
 
 export type LiteralCatalogInput = Record<string, LiteralInput>;
 
-export type LiteralKey = keyof typeof literalCatalogInput;
+export type LiteralKey = string;
 
 type ParamSpecToType<T extends LiteralParamSpecValue> = T extends "number"
   ? number
@@ -63,22 +57,17 @@ type ParamsFromSpec<
     ? { [P in keyof T]: ParamSpecToType<T[P]> }
     : undefined;
 
-export type LiteralValuesByKey = {
-  [K in LiteralKey]: (typeof literalCatalogInput)[K] extends {
-    params: infer P extends Record<string, LiteralParamSpecValue>;
-  }
-    ? ParamsFromSpec<P>
-    : undefined;
+export type LiteralValuesByKey = Record<string, ParamsFromSpec<Record<string, LiteralParamSpecValue>> | undefined>;
+
+let currentCatalog = defineLiteralCatalog({});
+
+export const setLiteralCatalog = (input: LiteralCatalogInput): void => {
+  currentCatalog = defineLiteralCatalog(input);
 };
 
-export const literalCatalog = defineLiteralCatalog(literalCatalogInput);
-
-export const literalDefinitions = literalCatalog.definitions;
-export const literalDefinitionsByKey = literalCatalog.byKey;
-
 export const getLiteralDefinitions = (): LiteralDefinition[] =>
-  literalDefinitions;
+  currentCatalog.definitions;
 
 export const getLiteralDefinition = (
   key: string,
-): LiteralDefinition | undefined => literalDefinitionsByKey.get(key);
+): LiteralDefinition | undefined => currentCatalog.byKey.get(key);
