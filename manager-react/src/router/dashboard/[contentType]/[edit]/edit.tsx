@@ -1,7 +1,14 @@
 "use client";
 
 import { cva } from "class-variance-authority";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { toast } from "sonner";
 import type { EncodedContentType } from "@rakun-kit/core/client";
 import { Seo } from "@rakun-kit/core/internal-content-types";
@@ -401,11 +408,325 @@ const DiffText = ({ before, after }: { before: unknown; after: unknown }) => {
   );
 };
 
+type ModuleDiffItem = {
+  name: string;
+  value?: unknown;
+};
+
+type ModuleChange = {
+  type: "added" | "removed" | "updated";
+  before?: ModuleDiffItem;
+  after?: ModuleDiffItem;
+};
+
+const isModuleDiffItem = (value: unknown): value is ModuleDiffItem =>
+  isDiffRecord(value) && typeof value.name === "string" && "value" in value;
+
+const isModuleList = (value: unknown): value is ModuleDiffItem[] =>
+  Array.isArray(value) && value.length > 0 && value.every(isModuleDiffItem);
+
+const stableValue = (value: unknown) => {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+};
+
+const getModuleChanges = (
+  beforeValue: unknown,
+  afterValue: unknown,
+): ModuleChange[] => {
+  const before = isModuleList(beforeValue) ? beforeValue : [];
+  const after = isModuleList(afterValue) ? afterValue : [];
+  const matchedBefore = new Set<number>();
+  const matchedAfter = new Set<number>();
+  const changes: ModuleChange[] = [];
+
+  after.forEach((afterItem, afterIndex) => {
+    const beforeIndex = before.findIndex(
+      (beforeItem, index) =>
+        !matchedBefore.has(index) &&
+        stableValue(beforeItem) === stableValue(afterItem),
+    );
+
+    if (beforeIndex >= 0) {
+      matchedBefore.add(beforeIndex);
+      matchedAfter.add(afterIndex);
+    }
+  });
+
+  after.forEach((afterItem, afterIndex) => {
+    if (matchedAfter.has(afterIndex)) return;
+
+    const beforeIndex = before.findIndex(
+      (beforeItem, index) =>
+        !matchedBefore.has(index) &&
+        beforeItem.name === afterItem.name &&
+        index === afterIndex,
+    );
+
+    if (beforeIndex >= 0) {
+      matchedBefore.add(beforeIndex);
+      matchedAfter.add(afterIndex);
+      changes.push({
+        type: "updated",
+        before: before[beforeIndex],
+        after: afterItem,
+      });
+    }
+  });
+
+  after.forEach((afterItem, index) => {
+    if (!matchedAfter.has(index)) {
+      changes.push({ type: "added", after: afterItem });
+    }
+  });
+
+  before.forEach((beforeItem, index) => {
+    if (!matchedBefore.has(index)) {
+      changes.push({ type: "removed", before: beforeItem });
+    }
+  });
+
+  return changes;
+};
+
+const humanizeFieldName = (value: string) =>
+  value
+    .replace(/^_+/, "")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[-_.]/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const extractLexicalText = (value: unknown): string | null => {
+  if (!isDiffRecord(value) && !Array.isArray(value)) return null;
+
+  const parts: string[] = [];
+  const visit = (node: unknown) => {
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+
+    if (!isDiffRecord(node)) return;
+
+    if (typeof node.text === "string") {
+      parts.push(node.text);
+    }
+
+    if (Array.isArray(node.children)) {
+      node.children.forEach(visit);
+    }
+  };
+
+  if (isDiffRecord(value) && isDiffRecord(value.root)) {
+    visit(value.root);
+  }
+
+  return parts.length > 0 ? parts.join(" ") : null;
+};
+
+const summarizeValue = (value: unknown): string => {
+  if (value === undefined || value === null || value === "") return "Empty";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+
+  const richText = extractLexicalText(value);
+  if (richText) return richText;
+
+  if (Array.isArray(value)) {
+    return `${value.length} item${value.length === 1 ? "" : "s"}`;
+  }
+
+  if (!isDiffRecord(value)) {
+    return String(value);
+  }
+
+  if (value._tag === "Translatable") {
+    return Object.entries(value)
+      .filter(([key]) => key !== "_tag")
+      .map(([key, item]) => `${key}: ${summarizeValue(item)}`)
+      .join(", ");
+  }
+
+  if (value.type === "existing") {
+    return `Existing ${String(value.contentType ?? "item")}`;
+  }
+
+  if (value.type === "new" && isDiffRecord(value.data)) {
+    return `New ${String(value.data._type ?? "item")}`;
+  }
+
+  return Object.entries(value)
+    .filter(([key]) => !isSystemDiffPath(key))
+    .slice(0, 3)
+    .map(([key, item]) => `${humanizeFieldName(key)}: ${summarizeValue(item)}`)
+    .join(", ");
+};
+
+const getModuleData = (module: ModuleDiffItem | undefined) => {
+  const value = module?.value;
+
+  if (!isDiffRecord(value)) return {};
+
+  if (value.type === "new" && isDiffRecord(value.data)) {
+    return value.data;
+  }
+
+  if (value.type === "existing") {
+    return {
+      contentType: value.contentType,
+      id: value._id,
+    };
+  }
+
+  return value;
+};
+
+const getModuleDetails = (module: ModuleDiffItem | undefined) =>
+  Object.entries(getModuleData(module))
+    .filter(([key]) => !isSystemDiffPath(key))
+    .slice(0, 6);
+
+const ActionShell = ({
+  type,
+  title,
+  children,
+}: {
+  type: ModuleChange["type"];
+  title: string;
+  children?: ReactNode;
+}) => {
+  const styles = {
+    added:
+      "border-emerald-500/25 bg-emerald-500/5 text-emerald-900 dark:text-emerald-100",
+    removed:
+      "border-red-500/25 bg-red-500/5 text-red-900 dark:text-red-100",
+    updated:
+      "border-amber-500/25 bg-amber-500/5 text-amber-900 dark:text-amber-100",
+  };
+
+  const labels = {
+    added: "Added",
+    removed: "Removed",
+    updated: "Updated",
+  };
+
+  return (
+    <div className={`rounded-md border p-3 ${styles[type]}`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="outline" className="bg-background/70">
+          {labels[type]}
+        </Badge>
+        <span className="text-sm font-medium">{title}</span>
+      </div>
+      {children ? <div className="mt-3">{children}</div> : null}
+    </div>
+  );
+};
+
+const ModuleDetails = ({ module }: { module: ModuleDiffItem | undefined }) => {
+  const details = getModuleDetails(module);
+
+  if (details.length === 0) return null;
+
+  return (
+    <dl className="grid gap-2 text-sm md:grid-cols-2">
+      {details.map(([key, value]) => (
+        <div key={key} className="min-w-0 rounded bg-background/60 px-2 py-1.5">
+          <dt className="text-muted-foreground text-xs">
+            {humanizeFieldName(key)}
+          </dt>
+          <dd className="mt-0.5 wrap-break-word">{summarizeValue(value)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+};
+
+const ModuleUpdateDetails = ({ change }: { change: ModuleChange }) => {
+  const before = getModuleData(change.before);
+  const after = getModuleData(change.after);
+  const keys = Array.from(
+    new Set([...Object.keys(before), ...Object.keys(after)]),
+  ).filter(
+    (key) =>
+      !isSystemDiffPath(key) &&
+      stableValue(before[key]) !== stableValue(after[key]),
+  );
+
+  if (keys.length === 0) return null;
+
+  return (
+    <div className="flex flex-col gap-2">
+      {keys.slice(0, 6).map((key) => (
+        <div key={key} className="rounded bg-background/60 px-2 py-1.5">
+          <div className="text-muted-foreground mb-1 text-xs">
+            {humanizeFieldName(key)}
+          </div>
+          <DiffText before={before[key]} after={after[key]} />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const ModuleListDiff = ({ entry }: { entry: VersionDiffEntry }) => {
+  if (!isModuleList(entry.before) && !isModuleList(entry.after)) {
+    return null;
+  }
+
+  const changes = getModuleChanges(entry.before, entry.after);
+  const fieldName = formatDiffPath(entry.path);
+
+  return (
+    <div className="rounded-md border bg-background">
+      <div className="flex items-center justify-between gap-3 border-b px-3 py-2">
+        <span className="min-w-0 truncate font-mono text-xs font-medium">
+          {fieldName}
+        </span>
+      </div>
+      <div className="flex flex-col gap-3 px-3 py-3">
+        {changes.length === 0 ? (
+          <div className="text-muted-foreground text-sm">
+            No visible module changes.
+          </div>
+        ) : null}
+        {changes.map((change, index) => {
+          const module = change.after ?? change.before;
+          const moduleName = module?.name ?? "Module";
+
+          return (
+            <ActionShell
+              key={`${change.type}:${moduleName}:${index}`}
+              type={change.type}
+              title={`${moduleName} module`}
+            >
+              {change.type === "updated" ? (
+                <ModuleUpdateDetails change={change} />
+              ) : (
+                <ModuleDetails module={module} />
+              )}
+            </ActionShell>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const DiffBlock = ({ entry }: { entry: VersionDiffEntry }) => {
   const beforeText = stringifyDiffValue(entry.before);
   const afterText = stringifyDiffValue(entry.after);
   const isSimpleText =
     typeof entry.before === "string" || typeof entry.after === "string";
+
+  if (isModuleList(entry.before) || isModuleList(entry.after)) {
+    return <ModuleListDiff entry={entry} />;
+  }
 
   return (
     <div className="rounded-md border bg-background">
