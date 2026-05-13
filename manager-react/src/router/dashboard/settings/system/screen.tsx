@@ -1,6 +1,7 @@
 "use client";
 
-import { DatabaseBackup, RotateCcw } from "lucide-react";
+import { AlertTriangle, DatabaseBackup, RotateCcw } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { useManagerMutation, useManagerQuery } from "@/client/react";
@@ -13,6 +14,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type BackupRecord = {
   _id: string;
@@ -55,6 +64,7 @@ const formatDateTime = (value: string | Date) =>
   }).format(new Date(value));
 
 export const ManagerSettingsSystemScreen = () => {
+  const [restoreTarget, setRestoreTarget] = useState<BackupRecord | null>(null);
   const backupsQuery = useManagerQuery({
     name: "manager.backups.list",
     input: undefined as never,
@@ -74,20 +84,15 @@ export const ManagerSettingsSystemScreen = () => {
     await backupsQuery.refetch();
   };
 
-  const restoreBackup = async (backupId: string) => {
-    if (
-      !window.confirm(
-        "Restore this backup? A safety backup will be created first.",
-      )
-    ) {
-      return;
-    }
+  const restoreBackup = async () => {
+    if (!restoreTarget) return;
 
     await restoreBackupMutation.mutateAsync({
-      backupId,
+      backupId: restoreTarget._id,
       reason: "manual restore",
     });
     toast.success("Backup restored successfully");
+    setRestoreTarget(null);
     await backupsQuery.refetch();
   };
 
@@ -157,7 +162,7 @@ export const ManagerSettingsSystemScreen = () => {
                     size="sm"
                     loading={restoreBackupMutation.isPending}
                     disabled={backup.status !== "completed"}
-                    onClick={() => void restoreBackup(backup._id)}
+                    onClick={() => setRestoreTarget(backup)}
                   >
                     <RotateCcw />
                     Restore
@@ -242,6 +247,76 @@ export const ManagerSettingsSystemScreen = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog
+        open={restoreTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !restoreBackupMutation.isPending) {
+            setRestoreTarget(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <div className="flex gap-3">
+              <div className="bg-destructive/10 text-destructive flex size-10 shrink-0 items-center justify-center rounded-md">
+                <AlertTriangle className="size-5" />
+              </div>
+              <div className="min-w-0">
+                <DialogTitle>Restore backup</DialogTitle>
+                <DialogDescription className="mt-2">
+                  This will replace the current database documents for the
+                  backed up content types. A safety backup will be created
+                  before restoring.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {restoreTarget ? (
+            <div className="space-y-3">
+              <div className="rounded-md border p-3 text-sm">
+                <div className="font-medium">
+                  {restoreTarget.reason ?? restoreTarget._id}
+                </div>
+                <div className="text-muted-foreground mt-1 text-xs">
+                  {formatDateTime(restoreTarget.createdAt)} ·{" "}
+                  {restoreTarget.documentCount} docs ·{" "}
+                  {restoreTarget.contentTypes.join(", ")}
+                </div>
+              </div>
+
+              <div className="rounded-md border border-amber-300 bg-amber-500/10 p-3 text-sm">
+                <div className="font-medium">Files are not restored</div>
+                <div className="text-muted-foreground mt-1">
+                  Backups only store database documents. Images and other
+                  uploaded files are not included, so deleted or changed assets
+                  will not be recovered by this restore.
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={restoreBackupMutation.isPending}
+              onClick={() => setRestoreTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              loading={restoreBackupMutation.isPending}
+              onClick={() => void restoreBackup()}
+            >
+              Restore backup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
