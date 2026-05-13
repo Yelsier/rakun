@@ -15,7 +15,7 @@ import {
   ScrollText,
 } from "lucide-react";
 import { EncodedField } from "@rakun-kit/core/client";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 
 import type { FieldRef } from "./ContentTypeEdit";
 import ContentTypeEdit from "./ContentTypeEdit";
@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LanguageSelector from "@/components/LanguageSelector";
 import {
   createManagerQueryOptions,
+  createManagerQueryKey,
   useManagerClient,
   useManagerMutation,
   useManagerQuery,
@@ -370,7 +371,7 @@ const DiffText = ({ before, after }: { before: unknown; after: unknown }) => {
   }
 
   return (
-    <div className="text-sm leading-7 whitespace-pre-wrap break-words">
+    <div className="text-sm leading-7 whitespace-pre-wrap wrap-break-word">
       {parts.map((part, index) => {
         if (part.type === "removed") {
           return (
@@ -422,7 +423,7 @@ const DiffBlock = ({ entry }: { entry: VersionDiffEntry }) => {
               <div className="mb-2 text-xs font-medium text-red-700 dark:text-red-300">
                 Removed
               </div>
-              <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words text-xs text-red-900 line-through dark:text-red-200">
+              <pre className="max-h-56 overflow-auto whitespace-pre-wrap wrap-break-word text-xs text-red-900 line-through dark:text-red-200">
                 {beforeText || "Empty"}
               </pre>
             </div>
@@ -430,7 +431,7 @@ const DiffBlock = ({ entry }: { entry: VersionDiffEntry }) => {
               <div className="mb-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
                 Added
               </div>
-              <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words text-xs text-emerald-900 dark:text-emerald-200">
+              <pre className="max-h-56 overflow-auto whitespace-pre-wrap wrap-break-word text-xs text-emerald-900 dark:text-emerald-200">
                 {afterText || "Empty"}
               </pre>
             </div>
@@ -555,6 +556,7 @@ const EditPage: React.FC<{
   const seoRef = useRef<FieldRef>(null);
   const navigation = useManagerNavigation();
   const draft = useRef(defaultData);
+  const queryClient = useQueryClient();
   const managerClient = useManagerClient();
   const createMutation = useManagerMutation("manager.create");
   const updateMutation = useManagerMutation("manager.update");
@@ -652,6 +654,15 @@ const EditPage: React.FC<{
         name: "content.edit",
         contentType: contentType.name,
         id: String(result._id),
+      });
+    }
+
+    if (hasVersioning && contentTypeId) {
+      await queryClient.invalidateQueries({
+        queryKey: createManagerQueryKey("manager.versions.list", {
+          contentType: contentType.name,
+          documentId: contentTypeId,
+        }),
       });
     }
 
