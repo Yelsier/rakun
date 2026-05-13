@@ -79,7 +79,9 @@ export const updateHandler = async ({
       Logger.addTrace("manager.update: input proxied");
     }
 
-    const updated = await db.update(contentType, id, proxied);
+    const updated = await db.update(contentType, id, proxied, {
+      actorId: user._id,
+    });
     Logger.addTrace("manager.update: db update success", { id: updated._id });
 
     await checkRevalidatePath({

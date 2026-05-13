@@ -12,6 +12,7 @@ export type ManagerResolvedRoute =
   | { kind: "api-routes" }
   | { kind: "users" }
   | { kind: "settings-home" }
+  | { kind: "settings-system" }
   | { kind: "settings-languages" }
   | { kind: "settings-routes" }
   | { kind: "settings-route-paths" }

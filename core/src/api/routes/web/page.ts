@@ -100,6 +100,8 @@ export const getPage = async (input: PageInput): Promise<PageOutput> => {
 
     if (!data) return NotFoundResponse;
 
+    if (data._visibility === "draft") return NotFoundResponse;
+
     const language = await db.get(Language, routeMapEntry.languageId);
     Logger.addTrace("web.page: language loaded", {
       found: !!language,

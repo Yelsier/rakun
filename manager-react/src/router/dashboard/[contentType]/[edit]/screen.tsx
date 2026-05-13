@@ -74,6 +74,11 @@ export const ManagerContentTypeEditScreen = ({
     )
   }
 
-  return <EditPage defaultData={defaultData} contentType={contentType} />
+  return (
+    <EditPage
+      defaultData={defaultData}
+      contentType={contentType}
+      onAfterRestore={() => itemQuery.refetch()}
+    />
+  )
 }
-

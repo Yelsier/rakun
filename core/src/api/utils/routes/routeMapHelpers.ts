@@ -10,7 +10,7 @@ import {
 import { getContentTypeByName } from "../../../lib/Registry";
 import { DataInput, DBOutput, TranslatableValue } from "../../../lib/types";
 import { getMongoService } from "../../../orm";
-import { DBService } from "../../../orm/dbService";
+import { DbErrorConflict, type DBService } from "../../../orm/dbService";
 
 export type UnknownItem = {
   [x: string]: unknown;
@@ -18,6 +18,9 @@ export type UnknownItem = {
 };
 
 export type RouteMapItemInput = DataInput<RouteMap>;
+
+export const isVisibleForRouteMap = (item: UnknownItem): boolean =>
+  item._visibility !== "draft";
 
 export async function loadRouteData(): Promise<{
   routes: readonly DBOutput<Route>[];
@@ -146,6 +149,7 @@ export const generateRouteMapItems = (
     const result: RouteMapItemInput[] = [];
     for (const language of languages) {
       for (const item of items) {
+        if (!isVisibleForRouteMap(item)) continue;
         if (!item[route.field as string]) continue;
         const parentPath = await getParentPath(
           item,
@@ -179,21 +183,69 @@ export async function updateRouteMapEntries(
   routesMap: RouteMapItemInput[],
 ): Promise<void> {
   const db = await getMongoService();
-  await Promise.all(
-    routesMap.map((route) =>
-      db.upsert(
-        RouteMap,
-        {
-          contentTypeId: route.contentTypeId,
-          contentType: route.contentType,
-          routeId: route.routeId,
-          languageId: route.languageId,
-        },
-        route,
-      ),
-    ),
-  );
+
+  for (const route of routesMap) {
+    const identity = {
+      contentTypeId: route.contentTypeId,
+      contentType: route.contentType,
+      routeId: route.routeId,
+      languageId: route.languageId,
+    };
+    const existingByIdentity = await db.find(RouteMap, identity);
+
+    if (existingByIdentity) {
+      await db.update(RouteMap, existingByIdentity._id, route);
+      continue;
+    }
+
+    const existingByPath = await db.find(RouteMap, { path: route.path });
+
+    if (!existingByPath) {
+      await db.create(RouteMap, route);
+      continue;
+    }
+
+    if (isSameRouteMapOwner(existingByPath, route)) {
+      await db.update(RouteMap, existingByPath._id, route);
+      continue;
+    }
+
+    if (await isStaleRouteMapEntry(db, existingByPath)) {
+      await db.delete(RouteMap, { _id: existingByPath._id });
+      await db.create(RouteMap, route);
+      continue;
+    }
+
+    throw new DbErrorConflict(
+      "Route path conflict",
+      `Path ${route.path} is already used by ${existingByPath.contentType} (${existingByPath.contentTypeId})`,
+    );
+  }
 }
+
+const isSameRouteMapOwner = (
+  existing: DBOutput<RouteMap>,
+  next: RouteMapItemInput,
+) =>
+  existing.contentType === next.contentType &&
+  String(existing.contentTypeId) === String(next.contentTypeId) &&
+  String(existing.languageId) === String(next.languageId);
+
+const isStaleRouteMapEntry = async (
+  db: DBService,
+  routeMap: DBOutput<RouteMap>,
+) => {
+  const contentType = getContentTypeByName(routeMap.contentType);
+
+  if (!contentType) return true;
+
+  try {
+    const item = await db.get(contentType, routeMap.contentTypeId);
+    return item._visibility === "draft";
+  } catch {
+    return true;
+  }
+};
 
 export async function revalidateRoutePaths(
   routesMap: RouteMapItemInput[],

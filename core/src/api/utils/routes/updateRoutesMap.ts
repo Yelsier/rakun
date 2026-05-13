@@ -8,6 +8,7 @@ import {
   generateRouteMapItems,
   getParentPath,
   getRouteFields,
+  isVisibleForRouteMap,
   loadRouteData,
   revalidateRoutePaths,
   updateRouteMapEntries,
@@ -104,6 +105,13 @@ export async function updateSingleRouteMap({
   Logger.addTrace("routes.updateSingle: previous map loaded", {
     items: prevRoutesMap.length,
   });
+
+  if (!isVisibleForRouteMap(item)) {
+    await db.delete(RouteMap, { contentType, contentTypeId });
+    await revalidateRoutePaths([], prevRoutesMap);
+    Logger.addTrace("routes.updateSingle: hidden draft removed from map");
+    return;
+  }
 
   const routesMap: RouteMapItemInput[] = (
     await Promise.all(

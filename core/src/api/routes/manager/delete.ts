@@ -71,7 +71,7 @@ export const deleteHandler = async ({
     });
   }
 
-  await db.delete(contentType, { _id: id });
+  await db.delete(contentType, { _id: id }, { actorId: ctx.getUser()._id });
   Logger.addTrace("manager.delete: db delete success");
 
   await checkRevalidatePath({

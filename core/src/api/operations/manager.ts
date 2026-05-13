@@ -10,8 +10,10 @@ import { throwAppError } from "../../lib/errors";
 import { Logger } from "../../lib/Logger";
 import { getPermissionList } from "../../lib/Permissions";
 import { getContentTypesForManager } from "../../lib/Registry";
+import { getMongoService } from "../../orm";
 import { getLanguages } from "../utils/getLanguages";
 import { regenerateAllRoutesMap } from "../utils/routes/updateRoutesMap";
+import { checkRevalidatePath } from "../utils/routes/revalidatePath";
 import { createHandler } from "../routes/manager/create";
 import { deleteHandler } from "../routes/manager/delete";
 import { getHandler } from "../routes/manager/get";
@@ -77,6 +79,147 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.permissions": {
       resolve: async () => getPermissionList(),
+    },
+    "manager.backups.list": {
+      resolve: async ({ ctx }) => {
+        Logger.addTrace("manager.backups.list: handler start");
+        ctx.getUser();
+        const db = await getMongoService();
+        Logger.addTrace("manager.backups.list: mongo service ready");
+        const backups = await db.backups.list();
+        Logger.addTrace("manager.backups.list: handler success", {
+          backups: backups.length,
+        });
+        return backups;
+      },
+    },
+    "manager.backups.create": {
+      resolve: async ({ input, ctx }) => {
+        Logger.addTrace("manager.backups.create: handler start", {
+          contentTypes: input.contentTypes,
+          hasReason: !!input.reason,
+        });
+        const user = ctx.getUser();
+        Logger.addTrace("manager.backups.create: user resolved", {
+          userId: user._id,
+        });
+        const db = await getMongoService();
+        Logger.addTrace("manager.backups.create: mongo service ready");
+        const backup = await db.backups.create({
+          ...input,
+          actorId: user._id,
+        });
+        Logger.addTrace("manager.backups.create: handler success", {
+          backupId: backup._id,
+          documentCount: backup.documentCount,
+        });
+        return backup;
+      },
+    },
+    "manager.backups.restore": {
+      resolve: async ({ input, ctx }) => {
+        Logger.addTrace("manager.backups.restore: handler start", {
+          backupId: input.backupId,
+          hasReason: !!input.reason,
+        });
+        const user = ctx.getUser();
+        Logger.addTrace("manager.backups.restore: user resolved", {
+          userId: user._id,
+        });
+        const db = await getMongoService();
+        Logger.addTrace("manager.backups.restore: mongo service ready");
+        const result = await db.backups.restore({
+          ...input,
+          actorId: user._id,
+        });
+        Logger.addTrace("manager.backups.restore: backup restored", {
+          backupId: result.backup._id,
+          safetyBackupId: result.safetyBackup._id,
+          restoredCount: result.restoredCount,
+        });
+        await regenerateAllRoutesMap();
+        Logger.addTrace("manager.backups.restore: routes regenerated");
+        return result;
+      },
+    },
+    "manager.migrations.list": {
+      resolve: async ({ ctx }) => {
+        Logger.addTrace("manager.migrations.list: handler start");
+        ctx.getUser();
+        const db = await getMongoService();
+        Logger.addTrace("manager.migrations.list: mongo service ready");
+        const migrations = await db.migrations.list();
+        Logger.addTrace("manager.migrations.list: handler success", {
+          states: migrations.states.length,
+          migrations: migrations.migrations.length,
+          pending: migrations.pending.length,
+        });
+        return migrations;
+      },
+    },
+    "manager.versions.list": {
+      resolve: async ({ input, ctx }) => {
+        Logger.addTrace("manager.versions.list: handler start", {
+          contentType: input.contentType,
+          documentId: input.documentId,
+        });
+        ctx.getUser();
+        const db = await getMongoService();
+        Logger.addTrace("manager.versions.list: mongo service ready");
+        const versions = await db.versions.list(input);
+        Logger.addTrace("manager.versions.list: handler success", {
+          versions: versions.length,
+        });
+        return versions;
+      },
+    },
+    "manager.versions.get": {
+      resolve: async ({ input, ctx }) => {
+        Logger.addTrace("manager.versions.get: handler start", {
+          versionId: input.versionId,
+        });
+        ctx.getUser();
+        const db = await getMongoService();
+        Logger.addTrace("manager.versions.get: mongo service ready");
+        const version = await db.versions.get(input.versionId);
+        Logger.addTrace("manager.versions.get: handler success", {
+          found: !!version,
+          contentType: version?.contentType,
+          documentId: version?.documentId,
+          revision: version?.revision,
+        });
+        return version;
+      },
+    },
+    "manager.versions.restore": {
+      resolve: async ({ input, ctx }) => {
+        Logger.addTrace("manager.versions.restore: handler start", {
+          versionId: input.versionId,
+          hasReason: !!input.reason,
+        });
+        const user = ctx.getUser();
+        Logger.addTrace("manager.versions.restore: user resolved", {
+          userId: user._id,
+        });
+        const db = await getMongoService();
+        Logger.addTrace("manager.versions.restore: mongo service ready");
+        const result = await db.versions.restore({
+          ...input,
+          actorId: user._id,
+        });
+        Logger.addTrace("manager.versions.restore: version restored", {
+          contentType: result.version.contentType,
+          documentId: result.version.documentId,
+          restoredRevision: result.restored._revision,
+        });
+        await checkRevalidatePath({
+          contentType: result.version.contentType,
+          contentTypeId: result.version.documentId,
+          operation: "update",
+        });
+        Logger.addTrace("manager.versions.restore: revalidate done");
+        return result;
+      },
     },
     "manager.apiOperations": {
       resolve: async () => {

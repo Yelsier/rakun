@@ -15,6 +15,9 @@ import { updateHandler } from './operations/update'
 import { updateManyHandler } from './operations/updateMany'
 import { upsertHandler } from './operations/upsert'
 import { getAllHandler } from './operations/getAll'
+import { createMongoBackupAdapter } from './backups'
+import { createMongoMigrationAdapter } from './migrations'
+import { createMongoVersionAdapter } from './versions'
 
 const dbServices = new Map<string, DBService>()
 const dbServicePromises = new Map<string, Promise<DBService>>()
@@ -43,6 +46,9 @@ export async function createMongoService(
 
     const dbService = {
       rawDB: db,
+      backups: createMongoBackupAdapter(db),
+      migrations: createMongoMigrationAdapter(db),
+      versions: createMongoVersionAdapter(db),
       get: getHandler(db),
       list: listhandler(db),
       create: createHandler(db),

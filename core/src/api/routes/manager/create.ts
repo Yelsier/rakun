@@ -63,7 +63,9 @@ export const createHandler = async ({
       Logger.addTrace("manager.create: input proxied");
     }
 
-    const created = await db.create(contentType, proxied);
+    const created = await db.create(contentType, proxied, {
+      actorId: user._id,
+    });
     Logger.addTrace("manager.create: db create success", { id: created._id });
 
     await checkRevalidatePath({

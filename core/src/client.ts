@@ -32,10 +32,33 @@ export {
 export {
   type EncodedContentType,
   EncodedContentTypeSchema,
+  DocumentVisibility,
+  type DocumentVisibility as DocumentVisibilityType,
 } from "./lib/ContentType";
 export type { FileOptimizeOptions } from "./lib/fields/File";
 export { loginInput, type LoginInput } from "./schemas/manager/auth/login";
 export type { ApiOperationsOutput } from "./schemas/manager/apiOperations";
+export type {
+  BackupRecord,
+  CreateBackupInput,
+  ListBackupsOutput,
+  RestoreBackupInput,
+  RestoreBackupOutput,
+} from "./schemas/manager/backups";
+export type {
+  ListMigrationsOutput,
+  MigrationLedgerRecord,
+  MigrationStateRecord,
+  PendingMigrationRecord,
+} from "./schemas/manager/migrations";
+export type {
+  ContentVersionRecord,
+  GetVersionInput,
+  ListVersionsInput,
+  ListVersionsOutput,
+  RestoreVersionInput,
+  RestoreVersionOutput,
+} from "./schemas/manager/versions";
 export type { ListOutput } from "./schemas/manager/list";
 export type { ListLiteralsOutput } from "./schemas/manager/literals/list";
 export type {

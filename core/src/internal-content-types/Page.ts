@@ -19,6 +19,9 @@ export const Page = new ContentType({
   },
   listFields: ["title", "slug"],
   uniques: [["slug"]],
+  versioning: {
+    maxVersions: 5,
+  },
 });
 
 export type Page = typeof Page;

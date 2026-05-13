@@ -13,6 +13,7 @@ import { ManagerSettingsRedirectsScreen } from "../dashboard/settings/redirects"
 import { ManagerSettingsRoutePathsScreen } from "../dashboard/settings/routes/paths";
 import { ManagerSettingsRoutesScreen } from "../dashboard/settings/routes";
 import { ManagerSettingsHomeScreen } from "../dashboard/settings";
+import { ManagerSettingsSystemScreen } from "../dashboard/settings/system";
 import {
   ManagerSettingsUserRoleCreateScreen,
   ManagerSettingsUserRoleEditScreen,
@@ -96,6 +97,13 @@ export const managerRouteDefinitions = [
     parse: () => ({ kind: "settings-home" }),
     render: (route, props) =>
       props.renderSettingsHome?.(route) ?? <ManagerSettingsHomeScreen />,
+  }),
+  defineManagerRoute({
+    kind: "settings-system",
+    path: "/settings/system",
+    layout: "dashboard",
+    parse: () => ({ kind: "settings-system" }),
+    render: () => <ManagerSettingsSystemScreen />,
   }),
   defineManagerRoute({
     kind: "settings-languages",

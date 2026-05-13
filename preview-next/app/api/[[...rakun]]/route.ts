@@ -23,21 +23,21 @@ const mongoUri =
 const bootstrap = {
   literals: {
     "test.hello": {
-        defaultMessage: "Hello, {name}!",
-        description: "A greeting message",
-        usedBy: ["HelloWorld"],
-        params: {
-          name: "string",
-        }
+      defaultMessage: "Hello, {name}!",
+      description: "A greeting message",
+      usedBy: ["HelloWorld"],
+      params: {
+        name: "string",
+      },
     },
     "test.goodbye": {
-        defaultMessage: "Goodbye, {name}!",
-        description: "A farewell message",
-        usedBy: ["HelloWorld"],
-        params: {
-          name: "string",
-        }
-    }
+      defaultMessage: "Goodbye, {name}!",
+      description: "A farewell message",
+      usedBy: ["HelloWorld"],
+      params: {
+        name: "string",
+      },
+    },
   },
   contentTypes: previewContentTypes,
   routes: [
