@@ -4,11 +4,7 @@ import {
   type RakunBootstrapOptions,
 } from "@rakun-kit/next";
 
-import {
-  Footer,
-  Header,
-  previewContentTypes,
-} from "./content-types";
+import { Footer, Header, previewContentTypes } from "./content-types";
 import { apiOperations } from "./api-operations";
 
 export const getPreviewMongoUri = () =>

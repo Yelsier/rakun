@@ -9,7 +9,7 @@ import ContentType from "../lib/ContentType";
 import { Fields } from "../lib/fields";
 import { createLogger } from "../lib/Logger";
 import { registerContentType } from "../lib/Registry";
-import { Media } from "../internal-content-types";
+import { Media, Migration, SchemaState } from "../internal-content-types";
 import { DataInput } from "../lib/types";
 
 let dbService: DBService;
@@ -365,10 +365,10 @@ describe.serial("MongoDB Service", () => {
   it("should run content type migrations once with a backup", async () => {
     const rawDB = dbService.rawDB as Db;
     await rawDB.collection("MigrationTest").deleteMany({});
-    await rawDB.collection("_rakun_schema_state").deleteMany({
+    await rawDB.collection(SchemaState.name).deleteMany({
       contentType: "MigrationTest",
     });
-    await rawDB.collection("_rakun_migrations").deleteMany({
+    await rawDB.collection(Migration.name).deleteMany({
       contentType: "MigrationTest",
     });
     await rawDB.collection("MigrationTest").insertOne({
@@ -381,7 +381,7 @@ describe.serial("MongoDB Service", () => {
 
     const migrated = await rawDB.collection("MigrationTest").findOne({});
     const ledger = await rawDB
-      .collection("_rakun_migrations")
+      .collection(Migration.name)
       .find({ contentType: "MigrationTest" })
       .toArray();
     const backups = await dbService.backups.list();

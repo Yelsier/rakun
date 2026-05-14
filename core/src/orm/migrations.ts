@@ -1,5 +1,6 @@
 import type { Db } from "mongodb";
 
+import { Migration, MigrationLock, SchemaState } from "../internal-content-types";
 import type ContentType from "../lib/ContentType";
 import { Logger } from "../lib/Logger";
 import { getContentTypes } from "../lib/Registry";
@@ -48,9 +49,9 @@ export interface MigrationAdapter {
   list(): Promise<MigrationOverview>;
 }
 
-const MIGRATIONS = "_rakun_migrations";
-const SCHEMA_STATE = "_rakun_schema_state";
-const MIGRATION_LOCK = "_rakun_migration_lock";
+const MIGRATIONS = Migration.name;
+const SCHEMA_STATE = SchemaState.name;
+const MIGRATION_LOCK = MigrationLock.name;
 const LOCK_ID = "global";
 const LOCK_TTL_MS = 15 * 60 * 1000;
 
@@ -269,7 +270,6 @@ export const runMigrations = async (dbService: DBService): Promise<void> => {
           migrationId: key,
         });
         const backup = await dbService.backups.create({
-          contentTypes: [contentType.name],
           reason: `pre-migration: ${key}`,
         });
         Logger.addTrace("migrations.run: backup created", {

@@ -9,6 +9,7 @@ import type {
   InferPopulated,
 } from "./fields/Field";
 import { isNeverOptional } from "./utils/isNeverOptional";
+import type { DBService } from "../orm/dbService";
 
 export const Menu = z
   .object({
@@ -29,7 +30,7 @@ export type VersioningOptions = {
 };
 
 export type ContentTypeMigrationContext = {
-  db: unknown;
+  db: DBService;
   rawDB: unknown;
   contentType: ContentType;
   backupId?: string;

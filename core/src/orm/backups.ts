@@ -1,5 +1,6 @@
 import type { Db, Document } from "mongodb";
 
+import { Backup, BackupDocument } from "../internal-content-types";
 import { Logger } from "../lib/Logger";
 import { getContentTypes } from "../lib/Registry";
 import { parseId } from "./utils/parseId";
@@ -42,11 +43,14 @@ export interface BackupAdapter {
   restore(input: RestoreBackupInput): Promise<RestoreBackupOutput>;
 }
 
-const BACKUPS = "_rakun_backups";
-const BACKUP_DOCUMENTS = "_rakun_backup_documents";
-const INTERNAL_COLLECTION_PREFIX = "_rakun_";
+const BACKUPS = Backup.name;
+const BACKUP_DOCUMENTS = BackupDocument.name;
+const BACKUP_EXCLUDED_CONTENT_TYPES = new Set<string>([
+  Backup.name,
+  BackupDocument.name,
+]);
 
-type BackupDocument = {
+type BackupSnapshotDocument = {
   backupId: string;
   contentType: string;
   documentId: string;
@@ -59,7 +63,7 @@ const toBackupRecord = (value: Document | null): BackupRecord | null =>
 const defaultContentTypes = () =>
   getContentTypes()
     .map((contentType) => contentType.name)
-    .filter((name) => !name.startsWith(INTERNAL_COLLECTION_PREFIX));
+    .filter((name) => !BACKUP_EXCLUDED_CONTENT_TYPES.has(name));
 
 export const createMongoBackupAdapter = (db: Db): BackupAdapter => {
   const create = async (
@@ -101,7 +105,7 @@ export const createMongoBackupAdapter = (db: Db): BackupAdapter => {
 
         if (documents.length === 0) continue;
 
-        await db.collection<BackupDocument>(BACKUP_DOCUMENTS).insertMany(
+        await db.collection<BackupSnapshotDocument>(BACKUP_DOCUMENTS).insertMany(
           documents.map((document) => ({
             backupId,
             contentType,
@@ -210,7 +214,7 @@ export const createMongoBackupAdapter = (db: Db): BackupAdapter => {
 
     for (const contentType of backup.contentTypes) {
       const snapshots = await db
-        .collection<BackupDocument>(BACKUP_DOCUMENTS)
+        .collection<BackupSnapshotDocument>(BACKUP_DOCUMENTS)
         .find({ backupId: input.backupId, contentType })
         .toArray();
 

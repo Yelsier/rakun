@@ -1,6 +1,6 @@
 import type { Db, Document } from "mongodb";
 
-import { ManagerUser } from "../internal-content-types";
+import { ContentVersion, ManagerUser } from "../internal-content-types";
 import type ContentType from "../lib/ContentType";
 import { Logger } from "../lib/Logger";
 import { getContentTypeByName } from "../lib/Registry";
@@ -68,7 +68,7 @@ type VersionedContentType = Pick<
   "name" | "schemaVersion" | "versioning"
 >;
 
-const VERSIONS = "_rakun_content_versions";
+const VERSIONS = ContentVersion.name;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value &&
