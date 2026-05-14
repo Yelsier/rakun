@@ -112,15 +112,20 @@ export const buildRoutePath = (
     return `/${code}/`;
   }
 
+  const routeSegment =
+    item._visibility === "hidden"
+      ? item._id
+      : translate(
+          item[route.field as string] as TranslatableValue<string> | string,
+          language,
+          [...languages],
+        );
+
   return `/${code}/${parentPath}/${translate(
     route.basePath as TranslatableValue<string>,
     language,
     [...languages],
-  )}/${translate(
-    item[route.field as string] as TranslatableValue<string> | string,
-    language,
-    [...languages],
-  )}/`.replace(/\/\/+/g, "/");
+  )}/${routeSegment}/`.replace(/\/\/+/g, "/");
 };
 
 export const getRouteFields = (route: DBOutput<Route>) => {

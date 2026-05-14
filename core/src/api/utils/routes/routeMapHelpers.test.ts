@@ -152,6 +152,12 @@ describe("route map helpers", () => {
     expect(routeMaps.map((item) => item.contentTypeId)).not.toContain("draft");
     expect(routeMaps.map((item) => item.contentTypeId)).toContain("hidden");
     expect(routeMaps.map((item) => item.contentTypeId)).toContain("published");
+    expect(
+      routeMaps.find((item) => item.contentTypeId === "hidden")?.path,
+    ).toBe("/en/articles/hidden/");
+    expect(
+      routeMaps.find((item) => item.contentTypeId === "published")?.path,
+    ).toBe("/en/articles/published-post/");
   });
 
   it("maps configured home page item to the locale root", () => {

@@ -14,6 +14,7 @@ import type { EncodedContentType } from "@rakun-kit/core/client";
 import { Seo } from "@rakun-kit/core/internal-content-types";
 import {
   Eye,
+  EyeOff,
   GitBranch,
   Globe,
   LayoutPanelTop,
@@ -50,6 +51,7 @@ import {
 import { useLanguage } from "@/state/language";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 type RouteLayoutModuleRecord = {
   _id: string;
@@ -84,6 +86,21 @@ type LayoutModuleOption = {
 
 type DocumentVisibility = "draft" | "hidden" | "published" | "trash";
 type EditableDocumentVisibility = Exclude<DocumentVisibility, "trash">;
+
+const visibilitySelectStyles: Record<EditableDocumentVisibility, string> = {
+  draft:
+    "border-blue-500/70 text-blue-700 hover:bg-blue-500/10 dark:text-blue-300",
+  hidden:
+    "border-purple-500/70 text-purple-700 hover:bg-purple-500/10 dark:text-purple-300",
+  published:
+    "border-primary/70 text-primary hover:bg-primary/10",
+};
+
+const visibilityIcons = {
+  draft: EyeOff,
+  hidden: Eye,
+  published: Eye,
+} satisfies Record<EditableDocumentVisibility, typeof Eye>;
 
 type VersionRecord = {
   _id: string;
@@ -894,7 +911,7 @@ const EditPage: React.FC<{
       ?._visibility === "trash";
   const [visibility, setVisibility] = useState<DocumentVisibility>(
     ((defaultData as { _visibility?: DocumentVisibility } | undefined)
-      ?._visibility ?? "published") as DocumentVisibility,
+      ?._visibility ?? "draft") as DocumentVisibility,
   );
   const visibilityBeforeTrash = ((
     defaultData as
@@ -903,12 +920,13 @@ const EditPage: React.FC<{
   )?._visibilityBeforeTrash ?? "published") as EditableDocumentVisibility;
   const editableVisibility =
     visibility === "trash" ? visibilityBeforeTrash : visibility;
+  const VisibilityIcon = visibilityIcons[editableVisibility];
 
   useEffect(() => {
     draft.current = defaultData;
     setVisibility(
       ((defaultData as { _visibility?: DocumentVisibility } | undefined)
-        ?._visibility ?? "published") as DocumentVisibility,
+        ?._visibility ?? "draft") as DocumentVisibility,
     );
   }, [defaultData]);
   const routeLayoutModulesQuery = useManagerQuery({
@@ -1287,8 +1305,10 @@ const EditPage: React.FC<{
                     setVisibility(value as DocumentVisibility)
                   }
                 >
-                  <SelectTrigger className="w-36">
-                    <Eye />
+                  <SelectTrigger
+                    className={cn("w-36", visibilitySelectStyles[editableVisibility])}
+                  >
+                    <VisibilityIcon className="text-current" />
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

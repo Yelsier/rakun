@@ -93,7 +93,7 @@ export const createHandler =
       ...(contentType.documentVisibility
         ? {
             _visibility:
-              (data as Record<string, unknown>)._visibility ?? "published",
+              (data as Record<string, unknown>)._visibility ?? "draft",
           }
         : {}),
       ...(versioned ? { _revision: 1 } : {}),
