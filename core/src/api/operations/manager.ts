@@ -16,6 +16,7 @@ import { regenerateAllRoutesMap } from "../utils/routes/updateRoutesMap";
 import { checkRevalidatePath } from "../utils/routes/revalidatePath";
 import { createHandler } from "../routes/manager/create";
 import { deleteHandler } from "../routes/manager/delete";
+import { trashHandler } from "../routes/manager/trash";
 import { getHandler } from "../routes/manager/get";
 import { listHandler } from "../routes/manager/list";
 import { setDefaultLanguageHandler } from "../routes/manager/setDefaultLanguage";
@@ -66,6 +67,9 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.delete": {
       resolve: async ({ input, ctx }) => await deleteHandler({ input, ctx }),
+    },
+    "manager.trash": {
+      resolve: async ({ input, ctx }) => await trashHandler({ input, ctx }),
     },
     "manager.get": {
       resolve: async ({ input, ctx }) => await getHandler({ input, ctx }),

@@ -39,19 +39,18 @@ export const listhandler =
       Object.assign(optionsQuery, { sort: options.sort });
     }
 
+    const dbFilter = transformStringToObjectIds(filter || {});
+
     const items = transformObjectIdsToStrings(
       await db
         .collection(contentType.name)
-        .find<DBOutput<T>>(
-          transformStringToObjectIds(filter || {}),
-          optionsQuery,
-        )
+        .find<DBOutput<T>>(dbFilter, optionsQuery)
         .toArray(),
     ) as DBOutput<T>[];
 
     const totalItems = await db
       .collection(contentType.name)
-      .countDocuments(transformStringToObjectIds(filter || {}));
+      .countDocuments(dbFilter);
 
     return { totalItems, items };
   };

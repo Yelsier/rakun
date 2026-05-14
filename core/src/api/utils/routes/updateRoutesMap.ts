@@ -15,6 +15,10 @@ import {
   type RouteMapItemInput,
 } from "./routeMapHelpers";
 
+const activeContentFilter = {
+  _trashed: { $ne: true },
+};
+
 export const regenerateAllRoutesMap = async (): Promise<void> => {
   Logger.addTrace("routes.regenerateAll: start");
   const { routes, languages, routeSettings, db } = await loadRouteData();
@@ -37,6 +41,7 @@ export const regenerateAllRoutesMap = async (): Promise<void> => {
           const routFields = getRouteFields(route);
           const routesItems = (
             await db.list(getContentTypeByName(route.contentType), {
+              filter: activeContentFilter,
               options: { limit: "all", fields: routFields },
             })
           ).items;
@@ -187,6 +192,7 @@ export async function updateLanguageRoutesMap(
           const routFields = getRouteFields(route);
           const routesItems = (
             await db.list(getContentTypeByName(route.contentType)!, {
+              filter: activeContentFilter,
               options: { limit: "all", fields: routFields },
             })
           ).items;
@@ -265,6 +271,7 @@ export async function updateRouteRouteMap(
       const routFields = getRouteFields(route);
       const routesItems = (
         await db.list(getContentTypeByName(route.contentType)!, {
+          filter: activeContentFilter,
           options: { limit: "all", fields: routFields },
         })
       ).items;

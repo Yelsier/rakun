@@ -20,6 +20,7 @@ import {
   NotepadText,
   RotateCcw,
   ScrollText,
+  Trash,
 } from "lucide-react";
 import { EncodedField } from "@rakun-kit/core/client";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
@@ -81,7 +82,8 @@ type LayoutModuleOption = {
   label: string;
 };
 
-type DocumentVisibility = "draft" | "hidden" | "published";
+type DocumentVisibility = "draft" | "hidden" | "published" | "trash";
+type EditableDocumentVisibility = Exclude<DocumentVisibility, "trash">;
 
 type VersionRecord = {
   _id: string;
@@ -603,8 +605,7 @@ const ActionShell = ({
   const styles = {
     added:
       "border-emerald-500/25 bg-emerald-500/5 text-emerald-900 dark:text-emerald-100",
-    removed:
-      "border-red-500/25 bg-red-500/5 text-red-900 dark:text-red-100",
+    removed: "border-red-500/25 bg-red-500/5 text-red-900 dark:text-red-100",
     updated:
       "border-amber-500/25 bg-amber-500/5 text-amber-900 dark:text-amber-100",
   };
@@ -881,14 +882,27 @@ const EditPage: React.FC<{
   const managerClient = useManagerClient();
   const createMutation = useManagerMutation("manager.create");
   const updateMutation = useManagerMutation("manager.update");
+  const deleteMutation = useManagerMutation("manager.delete");
+  const trashMutation = useManagerMutation("manager.trash");
   const { getTranslation } = useLanguage();
   const contentTypeId = (defaultData as { _id?: string } | undefined)?._id;
   const hasVisibility = Boolean(contentType.documentVisibility);
   const hasVersioning = Boolean(contentType.versioning);
+  const isTrashed =
+    (defaultData as { _trashed?: boolean } | undefined)?._trashed === true ||
+    (defaultData as { _visibility?: DocumentVisibility } | undefined)
+      ?._visibility === "trash";
   const [visibility, setVisibility] = useState<DocumentVisibility>(
     ((defaultData as { _visibility?: DocumentVisibility } | undefined)
       ?._visibility ?? "published") as DocumentVisibility,
   );
+  const visibilityBeforeTrash = ((
+    defaultData as
+      | { _visibilityBeforeTrash?: EditableDocumentVisibility }
+      | undefined
+  )?._visibilityBeforeTrash ?? "published") as EditableDocumentVisibility;
+  const editableVisibility =
+    visibility === "trash" ? visibilityBeforeTrash : visibility;
 
   useEffect(() => {
     draft.current = defaultData;
@@ -946,6 +960,24 @@ const EditPage: React.FC<{
     enabled: Boolean(contentTypeId),
   });
 
+  const invalidateContentListQueries = async () => {
+    await queryClient.invalidateQueries({
+      predicate: (query) => {
+        const [prefix, name, input] = query.queryKey as [
+          string?,
+          string?,
+          { contentType?: string }?,
+        ];
+
+        return (
+          prefix === "rakun-manager" &&
+          name === "manager.list" &&
+          input?.contentType === contentType.name
+        );
+      },
+    });
+  };
+
   const handleCreate = async (data: unknown) => {
     const result = await createMutation.mutateAsync({
       contentType: contentType.name,
@@ -960,6 +992,7 @@ const EditPage: React.FC<{
       });
     }
 
+    await invalidateContentListQueries();
     toast.success("Created successfully");
   };
 
@@ -987,7 +1020,57 @@ const EditPage: React.FC<{
       });
     }
 
+    await invalidateContentListQueries();
     toast.success("Updated successfully");
+  };
+
+  const handleRestoreFromTrash = async () => {
+    if (!contentTypeId) return;
+
+    const restoredVisibility = visibilityBeforeTrash;
+
+    await updateMutation.mutateAsync({
+      contentType: contentType.name,
+      id: contentTypeId,
+      data: {
+        _trashed: false,
+        _visibility: restoredVisibility,
+      },
+    });
+    setVisibility(restoredVisibility);
+    await invalidateContentListQueries();
+    await onAfterRestore?.();
+    toast.success("Restored from trash");
+  };
+
+  const handleMoveToTrash = async () => {
+    if (!contentTypeId) return;
+
+    await trashMutation.mutateAsync({
+      contentType: contentType.name,
+      id: contentTypeId,
+    });
+    await invalidateContentListQueries();
+    await onAfterRestore?.();
+    toast.success("Moved to trash");
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!contentTypeId) return;
+    if (!window.confirm("Delete this item permanently? This cannot be undone.")) {
+      return;
+    }
+
+    await deleteMutation.mutateAsync({
+      contentType: contentType.name,
+      id: contentTypeId,
+    });
+    await invalidateContentListQueries();
+    navigation.push?.({
+      name: "content.list",
+      contentType: contentType.name,
+    });
+    toast.success("Deleted permanently");
   };
 
   const handleSave = async () => {
@@ -1178,9 +1261,28 @@ const EditPage: React.FC<{
               </TabsList>
             </div>
             <div className="flex items-center gap-2">
-              {hasVisibility ? (
+              {hasVisibility && isTrashed ? (
+                <>
+                  <Button
+                    variant="outline"
+                    loading={updateMutation.isPending}
+                    onClick={() => void handleRestoreFromTrash()}
+                  >
+                    <RotateCcw />
+                    Restore from trash
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    loading={deleteMutation.isPending}
+                    onClick={() => void handlePermanentDelete()}
+                  >
+                    <Trash />
+                    Delete permanently
+                  </Button>
+                </>
+              ) : hasVisibility ? (
                 <Select
-                  value={visibility}
+                  value={editableVisibility}
                   onValueChange={(value) =>
                     setVisibility(value as DocumentVisibility)
                   }
@@ -1196,10 +1298,25 @@ const EditPage: React.FC<{
                   </SelectContent>
                 </Select>
               ) : null}
+              {contentTypeId && !isTrashed ? (
+                <Button
+                  variant="destructive"
+                  loading={trashMutation.isPending}
+                  onClick={() => void handleMoveToTrash()}
+                >
+                  <Trash />
+                  Move to trash
+                </Button>
+              ) : null}
               <LanguageSelector />
 
               <Button
-                loading={createMutation.isPending || updateMutation.isPending}
+                loading={
+                  createMutation.isPending ||
+                  updateMutation.isPending ||
+                  deleteMutation.isPending ||
+                  trashMutation.isPending
+                }
                 className="cursor-pointer ml-auto"
                 onClick={() => void handleSave()}
               >

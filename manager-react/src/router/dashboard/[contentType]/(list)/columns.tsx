@@ -1,7 +1,7 @@
 'use client'
 
 import type { ColumnDef } from '@tanstack/react-table'
-import { Check, Edit, MoreHorizontal, Trash, X } from 'lucide-react'
+import { Check, Edit, MoreHorizontal, RotateCcw, Trash, X } from 'lucide-react'
 import type { MaybeTranslatableValue, Permission } from '@rakun-kit/core/client'
 
 import IDColumn from '../../../../components/IDColumnt'
@@ -21,6 +21,9 @@ export const columns = ({
   contentType,
   getTranslation,
   setDeleteItem,
+  setPermanentDeleteItem,
+  setRestoreItem,
+  isTrash,
   hasPermissions,
   hasAnyPermission,
 }: {
@@ -28,6 +31,9 @@ export const columns = ({
   contentType: string
   getTranslation: <T>(object: MaybeTranslatableValue<T>) => T
   setDeleteItem: (item: { _id: string } | null) => void
+  setPermanentDeleteItem: (item: { _id: string } | null) => void
+  setRestoreItem: (item: Record<string, unknown> | null) => void
+  isTrash: boolean
   hasPermissions: (permissions: Permission[]) => boolean
   hasAnyPermission: (permissions: Permission[]) => boolean
 }): ColumnDef<object>[] => {
@@ -110,7 +116,34 @@ export const columns = ({
                 </DropdownMenuTrigger>
               )}
               <DropdownMenuContent align='end'>
-                {hasPermissions([
+                {isTrash &&
+                  hasPermissions([
+                    `content.${contentType}.updateAny` as Permission,
+                  ]) && (
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setRestoreItem(row.original as Record<string, unknown>)
+                      }
+                    >
+                      <RotateCcw />
+                      Restore
+                    </DropdownMenuItem>
+                  )}
+                {isTrash &&
+                  hasPermissions([
+                    `content.${contentType}.deleteAny` as Permission,
+                  ]) && (
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setPermanentDeleteItem({ _id: row.getValue('_id') })
+                      }
+                      className='text-destructive'
+                    >
+                      <Trash className='text-destructive' />
+                      Delete permanently
+                    </DropdownMenuItem>
+                  )}
+                {!isTrash && hasPermissions([
                   `content.${contentType}.deleteAny` as Permission,
                 ]) && (
                   <DropdownMenuItem
@@ -118,10 +151,10 @@ export const columns = ({
                     className='text-destructive'
                   >
                     <Trash className='text-destructive' />
-                    Delete
+                    Move to trash
                   </DropdownMenuItem>
                 )}
-                {hasPermissions([
+                {!isTrash && hasPermissions([
                   `content.${contentType}.updateAny` as Permission,
                 ]) && (
                   <DropdownMenuItem asChild>

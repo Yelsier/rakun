@@ -26,6 +26,7 @@ export function registerInternalContentType(
   if (internalRegistry[ct.name] && !options?.override) {
     return;
   }
+  ct.isInternal = true;
   internalRegistry[ct.name] = ct;
 }
 
@@ -43,6 +44,7 @@ const removeSchemaFromCT = <T extends ContentType>(ct: T) => {
     schemaVersion: ct.schemaVersion,
     versioning: ct.versioning,
     documentVisibility: ct.documentVisibility,
+    isInternal: ct.isInternal,
     fields: Object.fromEntries(
       Object.entries(ct.fields).map(([key, field]) => [
         key,

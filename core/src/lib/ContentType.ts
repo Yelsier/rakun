@@ -21,7 +21,12 @@ export const Menu = z
 
 export type Menu = z.infer<typeof Menu>;
 
-export const DocumentVisibility = z.enum(["draft", "hidden", "published"]);
+export const DocumentVisibility = z.enum([
+  "draft",
+  "hidden",
+  "published",
+  "trash",
+]);
 
 export type DocumentVisibility = z.infer<typeof DocumentVisibility>;
 
@@ -128,6 +133,8 @@ type ContentTypeInputShape<F extends FieldRecord, N extends string> = Simplify<
     _type: N;
     _schemaVersion?: number;
     _visibility?: DocumentVisibility;
+    _visibilityBeforeTrash?: Exclude<DocumentVisibility, "trash">;
+    _trashed?: boolean;
     _revision?: number;
     createdBy?: string;
     updatedBy?: string;
@@ -140,6 +147,10 @@ type ContentTypeDbShape<F extends FieldRecord, N extends string> = Simplify<
     _type: N;
     _schemaVersion?: number;
     _visibility?: DocumentVisibility;
+    _visibilityBeforeTrash?: Exclude<DocumentVisibility, "trash">;
+    _trashed?: boolean;
+    trashedAt?: Date;
+    trashedBy?: string;
     _revision?: number;
     createdAt?: Date;
     updatedAt?: Date;
@@ -154,6 +165,9 @@ type ContentTypeOutputShape<F extends FieldRecord, N extends string> = Simplify<
     _id: string;
     _schemaVersion?: number;
     _visibility?: DocumentVisibility;
+    _visibilityBeforeTrash?: Exclude<DocumentVisibility, "trash">;
+    _trashed?: boolean;
+    trashedAt?: Date;
     _revision?: number;
     createdAt?: Date;
     updatedAt?: Date;
@@ -169,6 +183,10 @@ type ContentTypePopulatedShape<
     _id: string;
     _schemaVersion?: number;
     _visibility?: DocumentVisibility;
+    _visibilityBeforeTrash?: Exclude<DocumentVisibility, "trash">;
+    _trashed?: boolean;
+    trashedAt?: Date;
+    trashedBy?: string;
     _revision?: number;
     createdAt?: Date;
     updatedAt?: Date;
@@ -208,6 +226,7 @@ export default class ContentType<
   migrations: ContentTypeMigration[] = [];
   versioning?: boolean | VersioningOptions;
   documentVisibility?: boolean;
+  isInternal?: boolean;
 
   constructor(params: {
     name: N;
@@ -237,6 +256,8 @@ export default class ContentType<
       _type: z.literal(this.name),
       _schemaVersion: z.number().optional(),
       _visibility: DocumentVisibility.optional(),
+      _visibilityBeforeTrash: DocumentVisibility.exclude(["trash"]).optional(),
+      _trashed: z.boolean().optional(),
       _revision: z.number().optional(),
       createdBy: z.string().optional(),
       updatedBy: z.string().optional(),
@@ -252,6 +273,10 @@ export default class ContentType<
       _type: z.literal(this.name),
       _schemaVersion: z.number().optional(),
       _visibility: DocumentVisibility.optional(),
+      _visibilityBeforeTrash: DocumentVisibility.exclude(["trash"]).optional(),
+      _trashed: z.boolean().optional(),
+      trashedAt: z.date().optional(),
+      trashedBy: z.string().optional(),
       _revision: z.number().optional(),
     }) as unknown as z.ZodType<
       ContentTypeDbShape<F, N>,
@@ -266,6 +291,10 @@ export default class ContentType<
       _id: z.string(),
       _schemaVersion: z.number().optional(),
       _visibility: DocumentVisibility.optional(),
+      _visibilityBeforeTrash: DocumentVisibility.exclude(["trash"]).optional(),
+      _trashed: z.boolean().optional(),
+      trashedAt: z.date().optional(),
+      trashedBy: z.string().optional(),
       _revision: z.number().optional(),
       createdBy: z.string().optional(),
       updatedBy: z.string().optional(),
@@ -282,6 +311,9 @@ export default class ContentType<
       _id: z.string(),
       _schemaVersion: z.number().optional(),
       _visibility: DocumentVisibility.optional(),
+      _visibilityBeforeTrash: DocumentVisibility.exclude(["trash"]).optional(),
+      _trashed: z.boolean().optional(),
+      trashedAt: z.date().optional(),
       _revision: z.number().optional(),
     }) as unknown as z.ZodType<
       ContentTypeOutputShape<F, N>,
@@ -302,6 +334,9 @@ export default class ContentType<
       _id: z.string(),
       _schemaVersion: z.number().optional(),
       _visibility: DocumentVisibility.optional(),
+      _visibilityBeforeTrash: DocumentVisibility.exclude(["trash"]).optional(),
+      _trashed: z.boolean().optional(),
+      trashedAt: z.date().optional(),
       _revision: z.number().optional(),
     }) as unknown as z.ZodType<
       ContentTypeOutputShape<NonIteratorFields<F>, N>,
@@ -368,6 +403,7 @@ export default class ContentType<
     contentType.migrations = this.migrations;
     contentType.versioning = this.versioning;
     contentType.documentVisibility = this.documentVisibility;
+    contentType.isInternal = this.isInternal;
     return contentType;
   }
 
@@ -392,6 +428,7 @@ export default class ContentType<
     contentType.migrations = this.migrations;
     contentType.versioning = this.versioning;
     contentType.documentVisibility = this.documentVisibility;
+    contentType.isInternal = this.isInternal;
     return contentType;
   }
 
@@ -465,6 +502,7 @@ export const EncodedContentTypeSchema = z.object({
   schemaVersion: z.number().optional(),
   versioning: z.union([z.boolean(), z.object({ maxVersions: z.number().optional() })]).optional(),
   documentVisibility: z.boolean().optional(),
+  isInternal: z.boolean().optional(),
 });
 
 export type EncodedContentType = z.infer<typeof EncodedContentTypeSchema> & {

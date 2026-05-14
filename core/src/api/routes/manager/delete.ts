@@ -1,9 +1,6 @@
-import { Media } from "../../../internal-content-types";
 import { throwAppError } from "../../../lib/errors";
 import { Logger } from "../../../lib/Logger";
 import { getContentTypeByName } from "../../../lib/Registry";
-import { DBOutput } from "../../../lib/types";
-import { getMediaService } from "../../../media";
 import { getMongoService } from "../../../orm";
 import { RakunRequestContext } from "../../context";
 import { DeleteInput } from "../../../schemas/manager/delete";
@@ -62,15 +59,6 @@ export const deleteHandler = async ({
     });
   }
 
-  let mediaToDelete: DBOutput<Media> | null = null;
-
-  if (contentType.name === Media.name) {
-    mediaToDelete = await db.get(Media, id);
-    Logger.addTrace("manager.delete: media record loaded for storage cleanup", {
-      exists: !!mediaToDelete,
-    });
-  }
-
   await db.delete(contentType, { _id: id }, { actorId: ctx.getUser()._id });
   Logger.addTrace("manager.delete: db delete success");
 
@@ -80,30 +68,6 @@ export const deleteHandler = async ({
     operation: "delete",
   });
   Logger.addTrace("manager.delete: revalidate done");
-
-  if (mediaToDelete) {
-    try {
-      const mediaService = getMediaService();
-      const keysToDelete = Array.from(
-        new Set([mediaToDelete.key, mediaToDelete.previewKey].filter(Boolean)),
-      ) as string[];
-
-      for (const key of keysToDelete) {
-        await mediaService.rawAdapter.deleteObject({
-          key,
-          access: mediaToDelete.access,
-        });
-      }
-      Logger.addTrace("manager.delete: media storage objects deleted", {
-        count: keysToDelete.length,
-      });
-    } catch (error) {
-      Logger.error("Failed to delete media from storage after DB deletion", {
-        mediaId: mediaToDelete._id,
-        error: (error as Error).message,
-      });
-    }
-  }
 
   return { ok: true };
 };

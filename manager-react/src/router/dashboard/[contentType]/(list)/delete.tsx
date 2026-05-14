@@ -17,9 +17,12 @@ const DeleteCT: React.FC<{
   ct: string
   item: { _id: string } | null
   setDeleteItem: (item: null) => void
-}> = ({ refetch, setDeleteItem, ct, item }) => {
+  mode: 'trash' | 'delete'
+}> = ({ refetch, setDeleteItem, ct, item, mode }) => {
   const [open, setOpen] = useState(false)
-  const mutation = useManagerMutation('manager.delete')
+  const mutation = useManagerMutation(
+    mode === 'trash' ? 'manager.trash' : 'manager.delete',
+  )
 
   useEffect(() => {
     if (item) {
@@ -60,10 +63,14 @@ const DeleteCT: React.FC<{
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent aria-describedby='Create a new language'>
         <DialogHeader>
-          <DialogTitle>Delete item</DialogTitle>
+          <DialogTitle>
+            {mode === 'trash' ? 'Move item to trash' : 'Delete item permanently'}
+          </DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          Are you sure you want to delete this item?
+          {mode === 'trash'
+            ? 'This item will be hidden from lists and public routes. You can restore it from the trash.'
+            : 'This item will be permanently deleted. This cannot be undone.'}
         </DialogDescription>
         <DialogFooter>
           <Button onClick={() => setOpen(false)} variant='ghost'>
@@ -74,7 +81,7 @@ const DeleteCT: React.FC<{
             onClick={handleDelete}
             variant='destructive'
           >
-            Delete
+            {mode === 'trash' ? 'Move to trash' : 'Delete permanently'}
           </Button>
         </DialogFooter>
       </DialogContent>

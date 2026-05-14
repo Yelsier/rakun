@@ -49,6 +49,13 @@ export const listHandler = async ({
     };
   }
 
+  if (!("_trashed" in (query.filter ?? {}))) {
+    query.filter = {
+      ...query.filter,
+      _trashed: { $ne: true },
+    };
+  }
+
   if (
     contentType.name === "Route" ||
     contentType.name === "RouteLayoutModule" ||

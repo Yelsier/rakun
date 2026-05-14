@@ -106,7 +106,15 @@ export const createManagerOperationContracts = () =>
     "manager.delete": defineOperationContract({
       access: "auth",
       kind: "mutation",
-      description: "Delete an entry for a content type",
+      description: "Permanently delete an entry for a content type",
+      input: deleteInput,
+      output: z.any(),
+      method: "post",
+    }),
+    "manager.trash": defineOperationContract({
+      access: "auth",
+      kind: "mutation",
+      description: "Move an entry for a content type to trash",
       input: deleteInput,
       output: z.any(),
       method: "post",

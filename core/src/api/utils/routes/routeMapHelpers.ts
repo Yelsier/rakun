@@ -20,7 +20,9 @@ export type UnknownItem = {
 export type RouteMapItemInput = DataInput<RouteMap>;
 
 export const isVisibleForRouteMap = (item: UnknownItem): boolean =>
-  item._visibility !== "draft";
+  item._trashed !== true &&
+  item._visibility !== "draft" &&
+  item._visibility !== "trash";
 
 export async function loadRouteData(): Promise<{
   routes: readonly DBOutput<Route>[];
@@ -241,7 +243,7 @@ const isStaleRouteMapEntry = async (
 
   try {
     const item = await db.get(contentType, routeMap.contentTypeId);
-    return item._visibility === "draft";
+    return item._trashed === true || item._visibility === "draft" || item._visibility === "trash";
   } catch {
     return true;
   }
