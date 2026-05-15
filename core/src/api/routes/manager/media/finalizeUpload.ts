@@ -178,21 +178,10 @@ export const finalizeUploadHandler = async ({
   input: FinalizeUploadInput;
   ctx: RakunRequestContext;
 }): Promise<FinalizeUploadOutput> => {
-  Logger.addTrace("manager.media.finalizeUpload: handler start", {
-    key: input.key,
-    access: input.access,
-    folderId: input.folderId,
-    folderPath: input.folderPath,
-    previewKey: input.previewKey,
-  });
   const user = ctx.getUser();
 
   try {
-    Logger.addTrace("manager.media.finalizeUpload: user resolved", {
-      userId: user._id,
-    });
     checkPermissions(user, ["content.Media.own"]);
-    Logger.addTrace("manager.media.finalizeUpload: permissions checked");
 
     const canReadAny = hasPermissions(user, ["content.Media.readAny"]);
     Logger.addTrace("manager.media.finalizeUpload: ownership scope resolved", {
@@ -210,7 +199,6 @@ export const finalizeUploadHandler = async ({
       hasPublicUrl: Boolean(finalized.publicUrl),
     });
     const db = await getMongoService();
-    Logger.addTrace("manager.media.finalizeUpload: mongo service ready");
 
     let folder:
       | {

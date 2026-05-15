@@ -1,5 +1,6 @@
 import type { RakunOperationImplementationMap } from "./types";
 import { mergeOperationContracts } from "./types";
+import { traceOperationMap } from "./tracing";
 import { createWebOperationContracts } from "./web-contract";
 import {
   getCustomApiOperationDefinitions,
@@ -50,8 +51,10 @@ export const createWebOperationDefinitions = () => {
     },
   };
 
-  return mergeOperationMaps(
-    mergeOperationContracts(contracts, implementations),
-    getCustomApiOperationDefinitions("web"),
+  return traceOperationMap(
+    mergeOperationMaps(
+      mergeOperationContracts(contracts, implementations),
+      getCustomApiOperationDefinitions("web"),
+    ),
   );
 };

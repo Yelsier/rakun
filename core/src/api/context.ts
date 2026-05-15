@@ -1,5 +1,6 @@
 import { ManagerUserSchema } from "../internal-content-types";
 import { throwAppError } from "../lib/errors";
+import { Logger } from "../lib/Logger";
 import { getUser } from "./utils/getUser";
 
 export type CookieOptions = {
@@ -48,6 +49,7 @@ export const createRequestContext = async (
   };
 
   const user = await getUser(ctx);
+  let userResolvedTraceAdded = false;
 
   return {
     ...ctx,
@@ -55,6 +57,11 @@ export const createRequestContext = async (
     getUser() {
       if (!user) {
         throwAppError("AUTH_REQUIRED");
+      }
+
+      if (!userResolvedTraceAdded) {
+        Logger.addTrace("getUser: user resolved", { userId: user._id });
+        userResolvedTraceAdded = true;
       }
 
       return user;

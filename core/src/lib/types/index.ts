@@ -188,6 +188,13 @@ export type ApiOnlyKeys<F extends ContentType["fields"]> = KeysByVisibility<
 export type DBMetadata = {
   _id: string;
   _type: string;
+  _schemaVersion?: number;
+  _visibility?: "draft" | "hidden" | "published" | "trash";
+  _visibilityBeforeTrash?: "draft" | "hidden" | "published";
+  _trashed?: boolean;
+  trashedAt?: Date;
+  trashedBy?: string;
+  _revision?: number;
   createdAt?: Date;
   updatedAt?: Date;
   createdBy?: string;

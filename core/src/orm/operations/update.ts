@@ -3,12 +3,14 @@ import { ZodError } from "zod";
 
 import {
   checkFailureCase,
+  type DBMutationOptions,
   DbError,
   DbErrorConflict,
   DbErrorInvalidData,
   DbErrorNotFound,
   DbErrorUnknown,
 } from "../dbService";
+import { recordContentVersion } from "../versions";
 import { parseId } from "../utils/parseId";
 import { transformObjectIdsToStrings } from "../utils/transformObjectIdsToStrings";
 import { transformStringToObjectIds } from "../utils/transformStringToObjectIds";
@@ -23,6 +25,7 @@ export const updateHandler =
     contentType: T,
     id: Id,
     data: Partial<DataInput<T>> | DataInput<T>,
+    options?: DBMutationOptions,
   ): Promise<DBOutput<T>> => {
     checkFailureCase("UpdateError");
 
@@ -100,27 +103,50 @@ export const updateHandler =
     }
 
     const noNullData = deepDeleteNulls(data) as Partial<DataInput<T>>;
+    const versioned = !!contentType.versioning && !options?.skipVersioning;
+    const parsedId = parseId(id);
+    const before = versioned
+      ? await db.collection(contentType.name).findOne({ _id: parsedId })
+      : null;
+    const nextRevision = versioned
+      ? Number(before?._revision ?? 0) + 1
+      : undefined;
 
     const nullData = Object.fromEntries(
       Object.entries(data).filter(([_, value]) => value === null),
     ) as Partial<DataInput<T>>;
 
-    const result = transformObjectIdsToStrings(
-      await db.collection(contentType.name).findOneAndUpdate(
-        { _id: parseId(id) },
-        {
-          $set: {
-            ...transformStringToObjectIds(noNullData),
-            updatedAt: new Date(),
-          },
-          $unset: nullData,
+    const rawResult = await db.collection(contentType.name).findOneAndUpdate(
+      { _id: parsedId },
+      {
+        $set: {
+          ...transformStringToObjectIds(noNullData),
+          ...(contentType.schemaVersion
+            ? { _schemaVersion: contentType.schemaVersion }
+            : {}),
+          ...(versioned ? { _revision: nextRevision } : {}),
+          updatedAt: new Date(),
         },
-        { returnDocument: "after" },
-      ),
-    ) as DBOutput<T> | null;
+        $unset: nullData,
+      },
+      { returnDocument: "after" },
+    );
+
+    const result = transformObjectIdsToStrings(rawResult) as DBOutput<T> | null;
 
     if (result === null) {
       throw new DbErrorNotFound("Document not found for update");
+    }
+
+    if (versioned) {
+      await recordContentVersion(db, contentType, {
+        operation: "update",
+        actorId: options?.actorId,
+        reason: options?.reason,
+        before,
+        after: rawResult,
+        revision: nextRevision,
+      });
     }
 
     return result;

@@ -8,6 +8,7 @@ import {
   getCustomApiOperationDefinitions,
   mergeOperationMaps,
 } from "./custom";
+import { traceOperationMap } from "./tracing";
 
 export const createRakunOperationDefinitions = () => {
   const coreOperations = {
@@ -15,9 +16,11 @@ export const createRakunOperationDefinitions = () => {
     ...createWebOperationDefinitions(),
   };
 
-  return mergeOperationMaps(
-    coreOperations,
-    getCustomApiOperationDefinitions("unscoped"),
+  return traceOperationMap(
+    mergeOperationMaps(
+      coreOperations,
+      getCustomApiOperationDefinitions("unscoped"),
+    ),
   );
 };
 

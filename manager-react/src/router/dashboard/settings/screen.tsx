@@ -1,4 +1,5 @@
 import {
+  Database,
   Languages,
   Route,
   UserRoundKey,
@@ -20,6 +21,11 @@ const cards = [
     title: 'Routes',
     icon: <Route size='80' />,
     link: '/settings/routes',
+  },
+  {
+    title: 'System',
+    icon: <Database size='80' />,
+    link: '/settings/system',
   },
   {
     title: 'User Roles',

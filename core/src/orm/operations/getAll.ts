@@ -28,7 +28,7 @@ export const getAllHandler =
     return transformObjectIdsToStrings(
       await db
         .collection(contentType.name)
-        .find<DBOutput<T>>(optionsQuery)
+        .find<DBOutput<T>>({}, optionsQuery)
         .toArray(),
     ) as DBOutput<T>[];
   };

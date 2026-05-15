@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 
 import {
   checkFailureCase,
+  type DBMutationOptions,
   DbError,
   DbErrorConflict,
   DbErrorInvalidData,
@@ -19,6 +20,7 @@ export const updateManyHandler =
     contentType: T,
     filter: Filter<T>,
     data: Partial<DataInput<T>>,
+    _options?: DBMutationOptions,
   ): Promise<{ updatedCount: number }> => {
     checkFailureCase("UpdateError");
 

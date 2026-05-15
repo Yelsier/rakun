@@ -2,7 +2,6 @@ import { Media, MediaFolder } from "../../../../internal-content-types";
 import { throwAppError } from "../../../../lib/errors";
 import { Logger } from "../../../../lib/Logger";
 import { hasPermissions } from "../../../../lib/Permissions";
-import { getMediaService } from "../../../../media";
 import { getMongoService } from "../../../../orm";
 import { RakunRequestContext } from "../../../context";
 import {
@@ -10,6 +9,7 @@ import {
   DeleteFolderOutput,
 } from "../../../../schemas/manager/media/deleteFolder";
 import { checkAnyPermissions } from "../../../utils/checkPermissions";
+import { deleteMediaStorage } from "./deleteMediaStorage";
 
 export const deleteFolderHandler = async ({
   input,
@@ -18,16 +18,10 @@ export const deleteFolderHandler = async ({
   input: DeleteFolderInput;
   ctx: RakunRequestContext;
 }): Promise<DeleteFolderOutput> => {
-  Logger.addTrace("manager.media.deleteFolder: handler start", {
-    folderId: input.id,
-    recursive: input.recursive,
-  });
   const user = ctx.getUser();
   const db = await getMongoService();
-  Logger.addTrace("manager.media.deleteFolder: mongo service ready");
 
   checkAnyPermissions(user, ["content.Media.own", "content.Media.deleteAny"]);
-  Logger.addTrace("manager.media.deleteFolder: permissions checked");
 
   const rootFolder = await db.find(MediaFolder, { _id: input.id });
   if (!rootFolder) {
@@ -111,23 +105,9 @@ export const deleteFolderHandler = async ({
   });
 
   try {
-    const mediaService = getMediaService();
-    Logger.addTrace("manager.media.deleteFolder: media service ready");
-
-    for (const media of mediaResult.items) {
-      const keysToDelete = Array.from(
-        new Set([media.key, media.previewKey].filter(Boolean)),
-      ) as string[];
-
-      for (const key of keysToDelete) {
-        await mediaService.rawAdapter.deleteObject({
-          key,
-          access: media.access,
-        });
-      }
-    }
-    Logger.addTrace("manager.media.deleteFolder: storage objects deleted", {
-      mediaCount: mediaResult.items.length,
+    await deleteMediaStorage({
+      mediaItems: mediaResult.items,
+      traceName: "manager.media.deleteFolder",
     });
   } catch (error) {
     Logger.error(
@@ -138,8 +118,6 @@ export const deleteFolderHandler = async ({
       },
     );
   }
-  Logger.addTrace("manager.media.deleteFolder: handler success");
-
   return {
     ok: true,
     deletedFolders: folderIdList.length,

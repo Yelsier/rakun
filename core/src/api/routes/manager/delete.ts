@@ -1,13 +1,12 @@
-import { Media } from "../../../internal-content-types";
 import { throwAppError } from "../../../lib/errors";
 import { Logger } from "../../../lib/Logger";
-import { getContentTypeByName } from "../../../lib/Registry";
-import { DBOutput } from "../../../lib/types";
-import { getMediaService } from "../../../media";
+import { Media } from "../../../internal-content-types";
 import { getMongoService } from "../../../orm";
 import { RakunRequestContext } from "../../context";
 import { DeleteInput } from "../../../schemas/manager/delete";
 import { checkOwnership } from "../../utils/checkOwnership";
+import { deleteMediaStorage } from "./media/deleteMediaStorage";
+import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
 
 export const deleteHandler = async ({
@@ -17,21 +16,9 @@ export const deleteHandler = async ({
   input: DeleteInput;
   ctx: RakunRequestContext;
 }) => {
-  Logger.addTrace("manager.delete: handler start", {
-    contentType: input.contentType,
-    id: input.id,
-  });
   const db = await getMongoService();
-  Logger.addTrace("manager.delete: mongo service ready");
   const { contentType: contentTypeName, id } = input;
-  const contentType = getContentTypeByName(contentTypeName);
-
-  if (!contentType) {
-    throwAppError("NOT_FOUND", {
-      resource: "ContentType",
-      id: contentTypeName,
-    });
-  }
+  const contentType = requireContentType(contentTypeName);
 
   await checkOwnership({
     ctx,
@@ -39,7 +26,6 @@ export const deleteHandler = async ({
     id,
     permission: "deleteAny",
   });
-  Logger.addTrace("manager.delete: ownership checked");
 
   if (contentType.name === "Route") {
     throwAppError("FORBIDDEN", {
@@ -62,16 +48,15 @@ export const deleteHandler = async ({
     });
   }
 
-  let mediaToDelete: DBOutput<Media> | null = null;
-
   if (contentType.name === Media.name) {
-    mediaToDelete = await db.get(Media, id);
-    Logger.addTrace("manager.delete: media record loaded for storage cleanup", {
-      exists: !!mediaToDelete,
+    const media = await db.get(Media, id);
+    await deleteMediaStorage({
+      mediaItems: [media],
+      traceName: "manager.delete.media",
     });
   }
 
-  await db.delete(contentType, { _id: id });
+  await db.delete(contentType, { _id: id }, { actorId: ctx.getUser()._id });
   Logger.addTrace("manager.delete: db delete success");
 
   await checkRevalidatePath({
@@ -79,31 +64,6 @@ export const deleteHandler = async ({
     contentTypeId: id,
     operation: "delete",
   });
-  Logger.addTrace("manager.delete: revalidate done");
-
-  if (mediaToDelete) {
-    try {
-      const mediaService = getMediaService();
-      const keysToDelete = Array.from(
-        new Set([mediaToDelete.key, mediaToDelete.previewKey].filter(Boolean)),
-      ) as string[];
-
-      for (const key of keysToDelete) {
-        await mediaService.rawAdapter.deleteObject({
-          key,
-          access: mediaToDelete.access,
-        });
-      }
-      Logger.addTrace("manager.delete: media storage objects deleted", {
-        count: keysToDelete.length,
-      });
-    } catch (error) {
-      Logger.error("Failed to delete media from storage after DB deletion", {
-        mediaId: mediaToDelete._id,
-        error: (error as Error).message,
-      });
-    }
-  }
 
   return { ok: true };
 };

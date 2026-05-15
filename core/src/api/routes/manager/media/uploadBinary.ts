@@ -90,18 +90,13 @@ export async function handleMediaBinaryUpload(
   res: MediaBinaryUploadResponse,
 ) {
   try {
-    Logger.addTrace("manager.media.uploadBinary: handler start");
     const ctx = await createRequestContext({
       headers: req.headers,
       cookies: parseCookieHeader(getHeader(req, "cookie")),
       res,
     });
     const user = ctx.getUser();
-    Logger.addTrace("manager.media.uploadBinary: user resolved", {
-      userId: user._id,
-    });
     checkPermissions(user, ["content.Media.own"]);
-    Logger.addTrace("manager.media.uploadBinary: permissions checked");
 
     const parsedHeaders = uploadHeadersSchema.parse({
       key: getHeader(req, "x-cms-upload-key"),

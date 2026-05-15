@@ -15,6 +15,10 @@ import { updateHandler } from './operations/update'
 import { updateManyHandler } from './operations/updateMany'
 import { upsertHandler } from './operations/upsert'
 import { getAllHandler } from './operations/getAll'
+import { createMongoBackupAdapter } from './backups'
+import { createMongoMigrationAdapter } from './migrations'
+import { createMongoVersionAdapter } from './versions'
+import { Logger } from '../lib/Logger'
 
 const dbServices = new Map<string, DBService>()
 const dbServicePromises = new Map<string, Promise<DBService>>()
@@ -30,19 +34,29 @@ export async function createMongoService(
   _config = config
   const existing = dbServices.get(config.MONGO_URI)
   if (existing) {
+    if (Logger.isVerbose()) {
+      Logger.addTrace('mongo service cache hit')
+    }
     return existing
   }
 
   const existingPromise = dbServicePromises.get(config.MONGO_URI)
   if (existingPromise) {
+    if (Logger.isVerbose()) {
+      Logger.addTrace('mongo service pending')
+    }
     return await existingPromise
   }
 
   const promise = (async () => {
+    Logger.addTrace('mongo service connect start')
     const { db } = await connectDatabase(config)
 
     const dbService = {
       rawDB: db,
+      backups: createMongoBackupAdapter(db),
+      migrations: createMongoMigrationAdapter(db),
+      versions: createMongoVersionAdapter(db),
       get: getHandler(db),
       list: listhandler(db),
       create: createHandler(db),
@@ -56,6 +70,7 @@ export async function createMongoService(
       getAll: getAllHandler(db),
     }
     dbServices.set(config.MONGO_URI, dbService)
+    Logger.addTrace('mongo service ready')
 
     return dbService
   })()

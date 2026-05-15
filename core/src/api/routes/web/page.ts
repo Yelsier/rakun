@@ -52,10 +52,8 @@ const normalizePath = (path: string): string => {
 
 export const getPage = async (input: PageInput): Promise<PageOutput> => {
   const path = normalizePath(input.path);
-  Logger.addTrace("web.page: handler start", { path });
   try {
     const db = await getMongoService();
-    Logger.addTrace("web.page: mongo service ready");
 
     const redirect = await resolveRedirect({
       path,
@@ -99,6 +97,14 @@ export const getPage = async (input: PageInput): Promise<PageOutput> => {
     });
 
     if (!data) return NotFoundResponse;
+
+    if (
+      data._trashed === true ||
+      data._visibility === "draft" ||
+      data._visibility === "trash"
+    ) {
+      return NotFoundResponse;
+    }
 
     const language = await db.get(Language, routeMapEntry.languageId);
     Logger.addTrace("web.page: language loaded", {

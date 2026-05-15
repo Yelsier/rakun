@@ -1,6 +1,6 @@
 import type { Db } from "mongodb";
 
-import { checkFailureCase } from "../dbService";
+import { checkFailureCase, type DBMutationOptions } from "../dbService";
 import { findHandler } from "./find";
 import { updateHandler } from "./update";
 import { createHandler } from "./create";
@@ -13,18 +13,24 @@ export const upsertHandler =
     contentType: T,
     filter: Filter<T>,
     data: DataInput<T>,
+    options?: DBMutationOptions,
   ): Promise<DBOutput<T>> => {
     checkFailureCase("UpdateError");
 
     const exists = await findHandler(db)(contentType, filter);
 
     if (exists) {
-      return updateHandler(db)(contentType, exists._id, {
-        ...data,
-        createdAt: undefined,
-        createdBy: undefined,
-      });
+      return updateHandler(db)(
+        contentType,
+        exists._id,
+        {
+          ...data,
+          createdAt: undefined,
+          createdBy: undefined,
+        },
+        options,
+      );
     }
 
-    return createHandler(db)(contentType, data);
+    return createHandler(db)(contentType, data, options);
   };

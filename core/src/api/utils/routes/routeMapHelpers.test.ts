@@ -123,6 +123,43 @@ describe("route map helpers", () => {
     expect(routeMaps).toEqual([]);
   });
 
+  it("skips draft items while keeping hidden and published items", async () => {
+    const english = makeLanguage({ code: "en", default: true });
+
+    const routeMaps = await generateRouteMapItems(
+      [
+        {
+          _id: "draft",
+          slug: "draft-post",
+          _visibility: "draft",
+        },
+        {
+          _id: "hidden",
+          slug: "hidden-post",
+          _visibility: "hidden",
+        },
+        {
+          _id: "published",
+          slug: "published-post",
+        },
+      ],
+      makeRoute({ basePath: { _tag: "Translatable", en: "articles" } }),
+      [english],
+      [],
+      null,
+    );
+
+    expect(routeMaps.map((item) => item.contentTypeId)).not.toContain("draft");
+    expect(routeMaps.map((item) => item.contentTypeId)).toContain("hidden");
+    expect(routeMaps.map((item) => item.contentTypeId)).toContain("published");
+    expect(
+      routeMaps.find((item) => item.contentTypeId === "hidden")?.path,
+    ).toBe("/en/articles/hidden/");
+    expect(
+      routeMaps.find((item) => item.contentTypeId === "published")?.path,
+    ).toBe("/en/articles/published-post/");
+  });
+
   it("maps configured home page item to the locale root", () => {
     const english = makeLanguage({ code: "en", default: true });
     const route = makeRoute({ contentType: "Page" });

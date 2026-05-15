@@ -2,12 +2,12 @@ import { z } from "zod";
 import { UpdateInput } from "../../../schemas/manager/update";
 import { throwAppError } from "../../../lib/errors";
 import { Logger } from "../../../lib/Logger";
-import { getContentTypeByName } from "../../../lib/Registry";
 import { getMongoService } from "../../../orm";
 import { DbErrorInvalidData, DbErrorConflict } from "../../../orm/dbService";
 import { RakunRequestContext } from "../../context";
 import { getInputProxy } from "../../proxies";
 import { checkOwnership } from "../../utils/checkOwnership";
+import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
 
 export const updateHandler = async ({
@@ -17,24 +17,11 @@ export const updateHandler = async ({
   input: UpdateInput;
   ctx: RakunRequestContext;
 }) => {
-  Logger.addTrace("manager.update: handler start", {
-    contentType: input.contentType,
-    id: input.id,
-  });
   const db = await getMongoService();
-  Logger.addTrace("manager.update: mongo service ready");
   const { contentType: contentTypeName, id, data } = input;
   const user = ctx.getUser();
-  Logger.addTrace("manager.update: user resolved", { userId: user._id });
 
-  const contentType = getContentTypeByName(contentTypeName);
-
-  if (!contentType) {
-    throwAppError("NOT_FOUND", {
-      resource: "ContentType",
-      id: contentTypeName,
-    });
-  }
+  const contentType = requireContentType(contentTypeName);
 
   await checkOwnership({
     ctx,
@@ -42,7 +29,6 @@ export const updateHandler = async ({
     id,
     permission: "updateAny",
   });
-  Logger.addTrace("manager.update: ownership checked");
 
   const effectiveData =
     contentType.name === "Route"
@@ -79,7 +65,9 @@ export const updateHandler = async ({
       Logger.addTrace("manager.update: input proxied");
     }
 
-    const updated = await db.update(contentType, id, proxied);
+    const updated = await db.update(contentType, id, proxied, {
+      actorId: user._id,
+    });
     Logger.addTrace("manager.update: db update success", { id: updated._id });
 
     await checkRevalidatePath({
@@ -87,7 +75,6 @@ export const updateHandler = async ({
       contentTypeId: updated._id,
       operation: "update",
     });
-    Logger.addTrace("manager.update: revalidate done");
 
     return updated;
   } catch (error) {

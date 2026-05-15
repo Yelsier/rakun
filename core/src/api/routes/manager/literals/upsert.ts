@@ -20,18 +20,10 @@ export const upsertLiteralHandler = async ({
   input: UpsertLiteralInput;
   ctx: RakunRequestContext;
 }): Promise<UpsertLiteralOutput> => {
-  Logger.addTrace("manager.literals.upsert: handler start", {
-    key: input.key,
-    locale: input.locale,
-  });
 
   const user = ctx.getUser();
 
   checkPermissions(user, ["manager.literals.updateAny"]);
-
-  Logger.addTrace("manager.literals.upsert: permissions checked", {
-    userId: user._id,
-  });
 
   const literalDefinition = getLiteralDefinition(input.key);
   if (!literalDefinition) {
@@ -75,7 +67,6 @@ export const upsertLiteralHandler = async ({
   }
 
   const db = await getMongoService();
-  Logger.addTrace("manager.literals.upsert: mongo service ready");
 
   await db.upsert(
     LiteralTranslation,

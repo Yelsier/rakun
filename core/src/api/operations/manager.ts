@@ -1,21 +1,23 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { RakunOperationImplementationMap } from "./types";
 import { mergeOperationContracts } from "./types";
+import { traceOperationMap } from "./tracing";
 import { createManagerOperationContracts } from "./manager-contract";
 import { getCustomApiOperationDefinitions, mergeOperationMaps } from "./custom";
-import { createWebOperationDefinitions } from "./web";
-import { createApiOperationCatalog } from "./catalog";
 import { setSessionCookie } from "../sessionCookie";
-import { throwAppError } from "../../lib/errors";
-import { Logger } from "../../lib/Logger";
-import { getPermissionList } from "../../lib/Permissions";
-import { getContentTypesForManager } from "../../lib/Registry";
-import { getLanguages } from "../utils/getLanguages";
-import { regenerateAllRoutesMap } from "../utils/routes/updateRoutesMap";
+import { apiOperationsHandler } from "../routes/manager/apiOperations";
+import { createBackupHandler } from "../routes/manager/backups/create";
+import { listBackupsHandler } from "../routes/manager/backups/list";
+import { restoreBackupHandler } from "../routes/manager/backups/restore";
+import { contentTypesHandler } from "../routes/manager/contentTypes";
 import { createHandler } from "../routes/manager/create";
 import { deleteHandler } from "../routes/manager/delete";
+import { trashHandler } from "../routes/manager/trash";
 import { getHandler } from "../routes/manager/get";
 import { listHandler } from "../routes/manager/list";
+import { languagesHandler } from "../routes/manager/languages";
+import { listMigrationsHandler } from "../routes/manager/migrations/list";
+import { permissionsHandler } from "../routes/manager/permissions";
+import { regenerateRoutesHandler } from "../routes/manager/regenerateRoutes";
 import { setDefaultLanguageHandler } from "../routes/manager/setDefaultLanguage";
 import { updateHandler } from "../routes/manager/update";
 import { loginHandler } from "../routes/manager/auth/login";
@@ -24,6 +26,7 @@ import { logoutHandler } from "../routes/manager/auth/logout";
 import { updatePasswordHandler } from "../routes/manager/auth/updatePassword";
 import { confirmTotpHandler } from "../routes/manager/auth/totp/confirmTotp";
 import { verifyTotpHandler } from "../routes/manager/auth/totp/verifyTotp";
+import { getSessionHandler } from "../routes/manager/auth/getSession";
 import { webauthnRegisterOptionsHandler } from "../routes/manager/auth/webauthn/webauthnRegisterOptions";
 import { webauthnRegisterVerifyHandler } from "../routes/manager/auth/webauthn/webauthnRegisterVerify";
 import { webauthnAuthOptionsHandler } from "../routes/manager/auth/webauthn/webauthnAuthOptions";
@@ -38,102 +41,99 @@ import { listFoldersHandler } from "../routes/manager/media/listFolders";
 import { deleteFolderHandler } from "../routes/manager/media/deleteFolder";
 import { listLiteralsHandler } from "../routes/manager/literals/list";
 import { upsertLiteralHandler } from "../routes/manager/literals/upsert";
+import { getVersionHandler } from "../routes/manager/versions/get";
+import { listVersionsHandler } from "../routes/manager/versions/list";
+import { restoreVersionHandler } from "../routes/manager/versions/restore";
 
 export const createManagerOperationDefinitions = () => {
   const contracts = createManagerOperationContracts();
   const implementations: RakunOperationImplementationMap<typeof contracts> = {
     "manager.contentTypes": {
-      resolve: async () => getContentTypesForManager(),
+      resolve: contentTypesHandler,
     },
     "manager.languages": {
-      resolve: async () => await getLanguages(),
+      resolve: languagesHandler,
     },
     "manager.regenerateRoutes": {
-      resolve: async () => {
-        Logger.addTrace("manager.regenerateRoutes: handler start");
-        await regenerateAllRoutesMap();
-        Logger.addTrace("manager.regenerateRoutes: handler success");
-        return { ok: true };
-      },
+      resolve: regenerateRoutesHandler,
     },
     "manager.create": {
-      resolve: async ({ input, ctx }) => await createHandler({ input, ctx }),
+      resolve: createHandler,
     },
     "manager.update": {
-      resolve: async ({ input, ctx }) => await updateHandler({ input, ctx }),
+      resolve: updateHandler,
     },
     "manager.delete": {
-      resolve: async ({ input, ctx }) => await deleteHandler({ input, ctx }),
+      resolve: deleteHandler,
+    },
+    "manager.trash": {
+      resolve: trashHandler,
     },
     "manager.get": {
-      resolve: async ({ input, ctx }) => await getHandler({ input, ctx }),
+      resolve: getHandler,
     },
     "manager.list": {
-      resolve: async ({ input, ctx }) => await listHandler({ input, ctx }),
+      resolve: listHandler,
     },
     "manager.setDefaultLanguage": {
-      resolve: async ({ input, ctx }) =>
-        await setDefaultLanguageHandler({ input, ctx }),
+      resolve: setDefaultLanguageHandler,
     },
     "manager.permissions": {
-      resolve: async () => getPermissionList(),
+      resolve: permissionsHandler,
+    },
+    "manager.backups.list": {
+      resolve: listBackupsHandler,
+    },
+    "manager.backups.create": {
+      resolve: createBackupHandler,
+    },
+    "manager.backups.restore": {
+      resolve: restoreBackupHandler,
+    },
+    "manager.migrations.list": {
+      resolve: listMigrationsHandler,
+    },
+    "manager.versions.list": {
+      resolve: listVersionsHandler,
+    },
+    "manager.versions.get": {
+      resolve: getVersionHandler,
+    },
+    "manager.versions.restore": {
+      resolve: restoreVersionHandler,
     },
     "manager.apiOperations": {
-      resolve: async () => {
-        const managerOperations = mergeOperationMaps(
-          mergeOperationContracts(contracts, implementations),
-          getCustomApiOperationDefinitions("manager"),
-        );
-        const coreOperations = {
-          ...managerOperations,
-          ...createWebOperationDefinitions(),
-        };
-        const operations = mergeOperationMaps(
-          coreOperations,
-          getCustomApiOperationDefinitions("unscoped"),
-        );
-
-        return createApiOperationCatalog(operations);
-      },
+      resolve: () => apiOperationsHandler({ contracts, implementations }),
     },
     "manager.media.prepareUpload": {
-      resolve: async ({ input, ctx }) =>
-        await prepareUploadHandler({ input, ctx }),
+      resolve: prepareUploadHandler,
     },
     "manager.media.finalizeUpload": {
-      resolve: async ({ input, ctx }) =>
-        await finalizeUploadHandler({ input, ctx }),
+      resolve: finalizeUploadHandler,
     },
     "manager.media.getUrl": {
-      resolve: async ({ input, ctx }) =>
-        await getMediaUrlHandler({ input, ctx }),
+      resolve: getMediaUrlHandler,
     },
     "manager.media.createFolder": {
-      resolve: async ({ input, ctx }) =>
-        await createFolderHandler({ input, ctx }),
+      resolve: createFolderHandler,
     },
     "manager.media.listFolders": {
-      resolve: async ({ input, ctx }) =>
-        await listFoldersHandler({ input, ctx }),
+      resolve: listFoldersHandler,
     },
     "manager.media.deleteFolder": {
-      resolve: async ({ input, ctx }) =>
-        await deleteFolderHandler({ input, ctx }),
+      resolve: deleteFolderHandler,
     },
     "manager.literals.list": {
-      resolve: async ({ input, ctx }) =>
-        await listLiteralsHandler({ input, ctx }),
+      resolve: listLiteralsHandler,
     },
     "manager.literals.upsert": {
-      resolve: async ({ input, ctx }) =>
-        await upsertLiteralHandler({ input, ctx }),
+      resolve: upsertLiteralHandler,
     },
     "manager.auth.updatePassword": {
-      resolve: async ({ input, ctx }) =>
-        await updatePasswordHandler({ input, ctx }),
+      resolve: updatePasswordHandler,
     },
     "manager.auth.login": {
-      resolve: async ({ input }) => await loginHandler({ input }),
+      resolve: loginHandler,
       onSuccess: ({ ctx, result }) => {
         if ("token" in result) {
           setSessionCookie(ctx, result.token);
@@ -141,53 +141,28 @@ export const createManagerOperationDefinitions = () => {
       },
     },
     "manager.auth.logout": {
-      resolve: async ({ ctx }) => await logoutHandler({ ctx }),
+      resolve: logoutHandler,
       onSuccess: ({ ctx }) => {
         setSessionCookie(ctx, "", { maxAge: 0 });
       },
     },
     "manager.auth.getSession": {
-      resolve: async ({ ctx }) => ctx.user || null,
+      resolve: getSessionHandler,
     },
     "manager.auth.accountInfo": {
-      resolve: async ({ ctx }) => await accountInfoHandler({ ctx }),
+      resolve: accountInfoHandler,
     },
     "manager.auth.deleteSession": {
-      resolve: async ({ input, ctx }) =>
-        await deleteSessionHandler({ input, ctx }),
+      resolve: deleteSessionHandler,
     },
     "manager.auth.totp.enroll": {
-      resolve: async ({ ctx }) => {
-        if (!enrollTotpHandler) {
-          throwAppError("FEATURE_UNSUPPORTED", {
-            feature: "TOTP enrollment",
-          });
-        }
-
-        return await enrollTotpHandler({ ctx });
-      },
+      resolve: enrollTotpHandler,
     },
     "manager.auth.totp.confirm": {
-      resolve: async ({ input, ctx }) => {
-        if (!confirmTotpHandler) {
-          throwAppError("FEATURE_UNSUPPORTED", {
-            feature: "TOTP",
-          });
-        }
-
-        return await confirmTotpHandler({ input, ctx });
-      },
+      resolve: confirmTotpHandler,
     },
     "manager.auth.totp.verify": {
-      resolve: async ({ input }) => {
-        if (!verifyTotpHandler) {
-          throwAppError("FEATURE_UNSUPPORTED", {
-            feature: "TOTP",
-          });
-        }
-
-        return await verifyTotpHandler({ input });
-      },
+      resolve: verifyTotpHandler,
       onSuccess: ({ ctx, result }) => {
         if ("token" in result) {
           setSessionCookie(ctx, result.token);
@@ -195,48 +170,16 @@ export const createManagerOperationDefinitions = () => {
       },
     },
     "manager.auth.webauthn.register.options": {
-      resolve: async ({ input, ctx }) => {
-        if (!webauthnRegisterOptionsHandler) {
-          throwAppError("FEATURE_UNSUPPORTED", {
-            feature: "WebAuthn",
-          });
-        }
-
-        return await webauthnRegisterOptionsHandler({ ctx, input });
-      },
+      resolve: webauthnRegisterOptionsHandler,
     },
     "manager.auth.webauthn.register.verify": {
-      resolve: async ({ input, ctx }) => {
-        if (!webauthnRegisterVerifyHandler) {
-          throwAppError("FEATURE_UNSUPPORTED", {
-            feature: "WebAuthn",
-          });
-        }
-
-        return await webauthnRegisterVerifyHandler({ input, ctx });
-      },
+      resolve: webauthnRegisterVerifyHandler,
     },
     "manager.auth.webauthn.auth.options": {
-      resolve: async ({ input }) => {
-        if (!webauthnAuthOptionsHandler) {
-          throwAppError("FEATURE_UNSUPPORTED", {
-            feature: "WebAuthn",
-          });
-        }
-
-        return await webauthnAuthOptionsHandler({ input });
-      },
+      resolve: webauthnAuthOptionsHandler,
     },
     "manager.auth.webauthn.auth.verify": {
-      resolve: async ({ input }) => {
-        if (!webauthnAuthVerifyHandler) {
-          throwAppError("FEATURE_UNSUPPORTED", {
-            feature: "WebAuthn",
-          });
-        }
-
-        return await webauthnAuthVerifyHandler({ input });
-      },
+      resolve: webauthnAuthVerifyHandler,
       onSuccess: ({ ctx, result }) => {
         if ("token" in result) {
           setSessionCookie(ctx, result.token);
@@ -245,8 +188,10 @@ export const createManagerOperationDefinitions = () => {
     },
   };
 
-  return mergeOperationMaps(
-    mergeOperationContracts(contracts, implementations),
-    getCustomApiOperationDefinitions("manager"),
+  return traceOperationMap(
+    mergeOperationMaps(
+      mergeOperationContracts(contracts, implementations),
+      getCustomApiOperationDefinitions("manager"),
+    ),
   );
 };

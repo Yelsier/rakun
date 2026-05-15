@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { MongoClient } from "mongodb";
+import { MongoClient, type Db, type Document } from "mongodb";
 
 import { ensureRakunInitialized } from "@rakun-kit/core";
 import { PermissionsList } from "@rakun-kit/core";
@@ -16,6 +16,95 @@ import { env } from "./env";
 
 const now = () => new Date();
 const translatable = (value: string) => ({ _tag: "Translatable", en: value });
+const SEED_LOCKS = "_rakun_preview_seed_locks";
+const SEED_LOCK_ID = "preview";
+const SEED_LOCK_TTL_MS = 30_000;
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isDuplicateKeyError = (error: unknown) =>
+  !!error &&
+  typeof error === "object" &&
+  "code" in error &&
+  (error as { code?: number }).code === 11000;
+
+type SeedLock = {
+  _id: string;
+  acquiredAt: Date;
+};
+
+const acquireSeedLock = async (db: Db) => {
+  const locks = db.collection<SeedLock>(SEED_LOCKS);
+
+  for (let attempt = 0; attempt < 300; attempt += 1) {
+    await locks.deleteMany({
+      _id: SEED_LOCK_ID,
+      acquiredAt: { $lt: new Date(Date.now() - SEED_LOCK_TTL_MS) },
+    });
+
+    try {
+      await locks.insertOne({
+        _id: SEED_LOCK_ID,
+        acquiredAt: new Date(),
+      });
+      return;
+    } catch (error) {
+      if (!isDuplicateKeyError(error)) {
+        throw error;
+      }
+      await wait(100);
+    }
+  }
+
+  throw new Error("Timed out waiting for preview seed lock.");
+};
+
+const releaseSeedLock = async (db: Db) => {
+  await db.collection<SeedLock>(SEED_LOCKS).deleteOne({ _id: SEED_LOCK_ID });
+};
+
+const upsertHomeRouteMap = async ({
+  db,
+  page,
+  route,
+  language,
+}: {
+  db: Db;
+  page: Document;
+  route: Document;
+  language: Document;
+}) => {
+  const path = "/en/";
+  const payload = {
+    path,
+    contentType: Page.name,
+    contentTypeId: page._id.toString(),
+    routeId: route._id.toString(),
+    languageId: language._id.toString(),
+    _type: "RouteMap",
+    updatedAt: now(),
+  };
+
+  try {
+    await db.collection("RouteMap").updateOne(
+      { path },
+      {
+        $set: payload,
+        $setOnInsert: {
+          createdAt: now(),
+        },
+      },
+      { upsert: true },
+    );
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) {
+      throw error;
+    }
+
+    await db.collection("RouteMap").updateOne({ path }, { $set: payload });
+  }
+};
+
 const richText = (text: string) => ({
   root: {
     children: [
@@ -55,8 +144,12 @@ export const seedPreviewData = async () => {
 
   const client = await MongoClient.connect(env.mongoUri);
   const db = client.db(env.mongoUri.split("/").pop()?.split("?")[0]);
+  let lockAcquired = false;
 
   try {
+    await acquireSeedLock(db);
+    lockAcquired = true;
+
     await db.collection("Language").updateOne(
       { code: "en" },
       {
@@ -250,29 +343,7 @@ export const seedPreviewData = async () => {
         { upsert: true },
       );
 
-      await db.collection("RouteMap").updateOne(
-        {
-          contentType: Page.name,
-          contentTypeId: page._id.toString(),
-          routeId: route._id.toString(),
-          languageId: language._id.toString(),
-        },
-        {
-          $set: {
-            path: "/en/",
-            contentType: Page.name,
-            contentTypeId: page._id.toString(),
-            routeId: route._id.toString(),
-            languageId: language._id.toString(),
-            _type: "RouteMap",
-            updatedAt: now(),
-          },
-          $setOnInsert: {
-            createdAt: now(),
-          },
-        },
-        { upsert: true },
-      );
+      await upsertHomeRouteMap({ db, page, route, language });
     }
 
     const author = await db.collection(Author.name).findOneAndUpdate(
@@ -334,6 +405,9 @@ export const seedPreviewData = async () => {
       `[preview] seeded admin ${env.adminEmail} / ${env.adminPassword}`,
     );
   } finally {
+    if (lockAcquired) {
+      await releaseSeedLock(db);
+    }
     await client.close();
   }
 };

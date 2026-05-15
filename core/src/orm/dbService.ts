@@ -8,6 +8,9 @@ import type {
 } from "../lib/types";
 import ContentType from "../lib/ContentType";
 import { Id } from "../lib/utils/id";
+import type { BackupAdapter } from "./backups";
+import type { MigrationAdapter } from "./migrations";
+import type { VersionAdapter } from "./versions";
 
 type DbErrorTag =
   | "DbError"
@@ -113,6 +116,9 @@ export function checkFailureCase(
 
 export interface DBService {
   rawDB: unknown;
+  backups: BackupAdapter;
+  migrations: MigrationAdapter;
+  versions: VersionAdapter;
   get: <T extends ContentType>(
     contentType: T,
     id: Id,
@@ -125,20 +131,24 @@ export interface DBService {
   create: <T extends ContentType>(
     contentType: T,
     data: DataInput<T>,
+    options?: DBMutationOptions,
   ) => Promise<DBOutput<T>>;
   update: <T extends ContentType>(
     contentType: T,
     id: Id,
     data: Partial<DataInput<T>> | DataInput<T>,
+    options?: DBMutationOptions,
   ) => Promise<DBOutput<T>>;
   updateMany: <T extends ContentType>(
     contentType: T,
     filter: Filter<T>,
     data: Partial<DataInput<T>>,
+    options?: DBMutationOptions,
   ) => Promise<{ updatedCount: number }>;
   delete: <T extends ContentType>(
     contentType: T,
     filter: Filter<T>,
+    options?: DBMutationOptions,
   ) => Promise<void>;
   find: <T extends ContentType>(
     contentType: T,
@@ -154,9 +164,16 @@ export interface DBService {
     contentType: T,
     filter: Filter<T>,
     data: DataInput<T>,
+    options?: DBMutationOptions,
   ) => Promise<DBOutput<T>>;
   getAll: <T extends ContentType>(
     contentType: T,
     query?: GetAllInput<T>,
   ) => Promise<DBOutput<T>[]>;
 }
+
+export type DBMutationOptions = {
+  actorId?: string;
+  reason?: string;
+  skipVersioning?: boolean;
+};

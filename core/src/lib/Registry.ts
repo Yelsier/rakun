@@ -26,6 +26,7 @@ export function registerInternalContentType(
   if (internalRegistry[ct.name] && !options?.override) {
     return;
   }
+  ct.isInternal = true;
   internalRegistry[ct.name] = ct;
 }
 
@@ -35,7 +36,15 @@ export function getContentTypes() {
 
 const removeSchemaFromCT = <T extends ContentType>(ct: T) => {
   return {
-    ...ct,
+    name: ct.name,
+    menu: ct.menu,
+    uniques: ct.uniques,
+    listFields: ct.listFields,
+    isHiddenFromManager: ct.isHiddenFromManager,
+    schemaVersion: ct.schemaVersion,
+    versioning: ct.versioning,
+    documentVisibility: ct.documentVisibility,
+    isInternal: ct.isInternal,
     fields: Object.fromEntries(
       Object.entries(ct.fields).map(([key, field]) => [
         key,

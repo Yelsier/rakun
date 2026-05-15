@@ -3,12 +3,14 @@ import { ZodError } from "zod";
 
 import {
   checkFailureCase,
+  type DBMutationOptions,
   DbError,
   DbErrorConflict,
   DbErrorInvalidData,
   DbErrorNotFound,
   DbErrorUnknown,
 } from "../dbService";
+import { recordContentVersion } from "../versions";
 import { transformStringToObjectIds } from "../utils/transformStringToObjectIds";
 import { transformObjectIdsToStrings } from "../utils/transformObjectIdsToStrings";
 import { deepDeleteNulls } from "../utils/deepDeleteNulls";
@@ -20,6 +22,7 @@ export const createHandler =
   async <T extends ContentType>(
     contentType: T,
     data: DataInput<T>,
+    options?: DBMutationOptions,
   ): Promise<DBOutput<T>> => {
     checkFailureCase("CreationError");
 
@@ -82,7 +85,23 @@ export const createHandler =
       }
     }
 
-    const noNullData = deepDeleteNulls(data) as DataInput<T>;
+    const versioned = !!contentType.versioning && !options?.skipVersioning;
+    const metadata = {
+      ...(contentType.schemaVersion
+        ? { _schemaVersion: contentType.schemaVersion }
+        : {}),
+      ...(contentType.documentVisibility
+        ? {
+            _visibility:
+              (data as Record<string, unknown>)._visibility ?? "draft",
+          }
+        : {}),
+      ...(versioned ? { _revision: 1 } : {}),
+    };
+    const noNullData = deepDeleteNulls({
+      ...data,
+      ...metadata,
+    }) as DataInput<T>;
 
     const result = await db.collection(contentType.name).insertOne(
       {
@@ -103,6 +122,20 @@ export const createHandler =
 
     if (!document) {
       throw new DbErrorNotFound("Document not found after creation");
+    }
+
+    if (versioned) {
+      await recordContentVersion(db, contentType, {
+        operation: "create",
+        actorId: options?.actorId,
+        reason: options?.reason,
+        before: null,
+        after: transformStringToObjectIds(document) as Record<
+          string,
+          unknown
+        >,
+        revision: 1,
+      });
     }
 
     return document;

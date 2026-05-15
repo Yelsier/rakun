@@ -5,7 +5,8 @@ import {
 import { createLogger, Logger } from "./lib/Logger";
 import * as internalContentTypes from "./internal-content-types";
 import { syncConfiguredRoutes } from "./api/utils/routes/syncConfiguredRoutes";
-import { createMongoConnection } from "./orm";
+import { createMongoConnection, getMongoService } from "./orm";
+import { runMigrations } from "./orm/migrations";
 import { createMediaService } from "./media";
 import {
   getRakunBootstrapOptions,
@@ -65,6 +66,9 @@ export const ensureRakunInitialized = async () => {
     ensureLogger();
     ensureMongo();
     ensureMedia();
+
+    const db = await getMongoService();
+    await runMigrations(db);
 
     const shouldSyncRoutes = bootstrapOptions?.syncRoutes;
 
@@ -148,12 +152,23 @@ export const rakunBootstrap = (options: RakunBootstrapOptions) => {
     ...internalContentTypes,
     ...options.internalContentTypes,
   };
+  const routeableContentTypes = new Set(
+    (options.routes ?? [])
+      .filter((route) => route.hasPage)
+      .map((route) => route.contentType),
+  );
 
   for (const ct of Object.values(configuredInternalContentTypes)) {
+    if (routeableContentTypes.has(ct.name)) {
+      ct.enableDocumentVisibility();
+    }
     registerInternalContentType(ct, { override: true });
   }
 
   for (const ct of options.contentTypes) {
+    if (routeableContentTypes.has(ct.name)) {
+      ct.enableDocumentVisibility();
+    }
     registerContentType(ct);
   }
 };
@@ -174,7 +189,13 @@ export type {
 } from "./api/utils/routes/routeDefinitions";
 export type { ApiProxies, InputProxy, OutputProxy } from "./api/proxies";
 export { getRakunBootstrapOptions } from "./bootstrapState";
-export { default as ContentType } from "./lib/ContentType";
+export {
+  default as ContentType,
+  DocumentVisibility,
+  type ContentTypeMigration,
+  type ContentTypeMigrationContext,
+  type VersioningOptions,
+} from "./lib/ContentType";
 export * from "./lib/fields";
 
 export {
