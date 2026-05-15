@@ -1,9 +1,11 @@
 import { throwAppError } from "../../../lib/errors";
 import { Logger } from "../../../lib/Logger";
+import { Media } from "../../../internal-content-types";
 import { getMongoService } from "../../../orm";
 import { RakunRequestContext } from "../../context";
 import { DeleteInput } from "../../../schemas/manager/delete";
 import { checkOwnership } from "../../utils/checkOwnership";
+import { deleteMediaStorage } from "./media/deleteMediaStorage";
 import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
 
@@ -44,6 +46,14 @@ export const deleteHandler = async ({
         .map((dep) => `${dep.contentType} (${dep._id})`)
         .join(", ")}`,
       key: "DEPENDENCIES_FOUND",
+    });
+  }
+
+  if (contentType.name === Media.name) {
+    const media = await db.get(Media, id);
+    await deleteMediaStorage({
+      mediaItems: [media],
+      traceName: "manager.delete.media",
     });
   }
 
