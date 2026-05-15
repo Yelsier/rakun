@@ -14,6 +14,5 @@ export const getVersionHandler = async ({
 }): Promise<ContentVersionRecord | null> => {
   ctx.getUser();
   const db = await getMongoService();
-  const version = await db.versions.get(input.versionId);
-  return version;
+  return db.versions.get(input.versionId);
 };

@@ -14,6 +14,5 @@ export const listVersionsHandler = async ({
 }): Promise<ListVersionsOutput> => {
   ctx.getUser();
   const db = await getMongoService();
-  const versions = await db.versions.list(input);
-  return versions;
+  return db.versions.list(input);
 };
