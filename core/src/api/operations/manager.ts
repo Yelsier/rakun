@@ -3,22 +3,22 @@ import type { RakunOperationImplementationMap } from "./types";
 import { mergeOperationContracts } from "./types";
 import { createManagerOperationContracts } from "./manager-contract";
 import { getCustomApiOperationDefinitions, mergeOperationMaps } from "./custom";
-import { createWebOperationDefinitions } from "./web";
-import { createApiOperationCatalog } from "./catalog";
 import { setSessionCookie } from "../sessionCookie";
 import { throwAppError } from "../../lib/errors";
-import { Logger } from "../../lib/Logger";
-import { getPermissionList } from "../../lib/Permissions";
-import { getContentTypesForManager } from "../../lib/Registry";
-import { getMongoService } from "../../orm";
-import { getLanguages } from "../utils/getLanguages";
-import { regenerateAllRoutesMap } from "../utils/routes/updateRoutesMap";
-import { checkRevalidatePath } from "../utils/routes/revalidatePath";
+import { apiOperationsHandler } from "../routes/manager/apiOperations";
+import { createBackupHandler } from "../routes/manager/backups/create";
+import { listBackupsHandler } from "../routes/manager/backups/list";
+import { restoreBackupHandler } from "../routes/manager/backups/restore";
+import { contentTypesHandler } from "../routes/manager/contentTypes";
 import { createHandler } from "../routes/manager/create";
 import { deleteHandler } from "../routes/manager/delete";
 import { trashHandler } from "../routes/manager/trash";
 import { getHandler } from "../routes/manager/get";
 import { listHandler } from "../routes/manager/list";
+import { languagesHandler } from "../routes/manager/languages";
+import { listMigrationsHandler } from "../routes/manager/migrations/list";
+import { permissionsHandler } from "../routes/manager/permissions";
+import { regenerateRoutesHandler } from "../routes/manager/regenerateRoutes";
 import { setDefaultLanguageHandler } from "../routes/manager/setDefaultLanguage";
 import { updateHandler } from "../routes/manager/update";
 import { loginHandler } from "../routes/manager/auth/login";
@@ -27,6 +27,7 @@ import { logoutHandler } from "../routes/manager/auth/logout";
 import { updatePasswordHandler } from "../routes/manager/auth/updatePassword";
 import { confirmTotpHandler } from "../routes/manager/auth/totp/confirmTotp";
 import { verifyTotpHandler } from "../routes/manager/auth/totp/verifyTotp";
+import { getSessionHandler } from "../routes/manager/auth/getSession";
 import { webauthnRegisterOptionsHandler } from "../routes/manager/auth/webauthn/webauthnRegisterOptions";
 import { webauthnRegisterVerifyHandler } from "../routes/manager/auth/webauthn/webauthnRegisterVerify";
 import { webauthnAuthOptionsHandler } from "../routes/manager/auth/webauthn/webauthnAuthOptions";
@@ -41,23 +42,21 @@ import { listFoldersHandler } from "../routes/manager/media/listFolders";
 import { deleteFolderHandler } from "../routes/manager/media/deleteFolder";
 import { listLiteralsHandler } from "../routes/manager/literals/list";
 import { upsertLiteralHandler } from "../routes/manager/literals/upsert";
+import { getVersionHandler } from "../routes/manager/versions/get";
+import { listVersionsHandler } from "../routes/manager/versions/list";
+import { restoreVersionHandler } from "../routes/manager/versions/restore";
 
 export const createManagerOperationDefinitions = () => {
   const contracts = createManagerOperationContracts();
   const implementations: RakunOperationImplementationMap<typeof contracts> = {
     "manager.contentTypes": {
-      resolve: async () => getContentTypesForManager(),
+      resolve: async () => await contentTypesHandler(),
     },
     "manager.languages": {
-      resolve: async () => await getLanguages(),
+      resolve: async () => await languagesHandler(),
     },
     "manager.regenerateRoutes": {
-      resolve: async () => {
-        Logger.addTrace("manager.regenerateRoutes: handler start");
-        await regenerateAllRoutesMap();
-        Logger.addTrace("manager.regenerateRoutes: handler success");
-        return { ok: true };
-      },
+      resolve: async () => await regenerateRoutesHandler(),
     },
     "manager.create": {
       resolve: async ({ input, ctx }) => await createHandler({ input, ctx }),
@@ -82,166 +81,37 @@ export const createManagerOperationDefinitions = () => {
         await setDefaultLanguageHandler({ input, ctx }),
     },
     "manager.permissions": {
-      resolve: async () => getPermissionList(),
+      resolve: async () => await permissionsHandler(),
     },
     "manager.backups.list": {
-      resolve: async ({ ctx }) => {
-        Logger.addTrace("manager.backups.list: handler start");
-        ctx.getUser();
-        const db = await getMongoService();
-        Logger.addTrace("manager.backups.list: mongo service ready");
-        const backups = await db.backups.list();
-        Logger.addTrace("manager.backups.list: handler success", {
-          backups: backups.length,
-        });
-        return backups;
-      },
+      resolve: async ({ ctx }) => await listBackupsHandler({ ctx }),
     },
     "manager.backups.create": {
-      resolve: async ({ input, ctx }) => {
-        Logger.addTrace("manager.backups.create: handler start", {
-          contentTypes: input.contentTypes,
-          hasReason: !!input.reason,
-        });
-        const user = ctx.getUser();
-        Logger.addTrace("manager.backups.create: user resolved", {
-          userId: user._id,
-        });
-        const db = await getMongoService();
-        Logger.addTrace("manager.backups.create: mongo service ready");
-        const backup = await db.backups.create({
-          ...input,
-          actorId: user._id,
-        });
-        Logger.addTrace("manager.backups.create: handler success", {
-          backupId: backup._id,
-          documentCount: backup.documentCount,
-        });
-        return backup;
-      },
+      resolve: async ({ input, ctx }) =>
+        await createBackupHandler({ input, ctx }),
     },
     "manager.backups.restore": {
-      resolve: async ({ input, ctx }) => {
-        Logger.addTrace("manager.backups.restore: handler start", {
-          backupId: input.backupId,
-          hasReason: !!input.reason,
-        });
-        const user = ctx.getUser();
-        Logger.addTrace("manager.backups.restore: user resolved", {
-          userId: user._id,
-        });
-        const db = await getMongoService();
-        Logger.addTrace("manager.backups.restore: mongo service ready");
-        const result = await db.backups.restore({
-          ...input,
-          actorId: user._id,
-        });
-        Logger.addTrace("manager.backups.restore: backup restored", {
-          backupId: result.backup._id,
-          safetyBackupId: result.safetyBackup._id,
-          restoredCount: result.restoredCount,
-        });
-        await regenerateAllRoutesMap();
-        Logger.addTrace("manager.backups.restore: routes regenerated");
-        return result;
-      },
+      resolve: async ({ input, ctx }) =>
+        await restoreBackupHandler({ input, ctx }),
     },
     "manager.migrations.list": {
-      resolve: async ({ ctx }) => {
-        Logger.addTrace("manager.migrations.list: handler start");
-        ctx.getUser();
-        const db = await getMongoService();
-        Logger.addTrace("manager.migrations.list: mongo service ready");
-        const migrations = await db.migrations.list();
-        Logger.addTrace("manager.migrations.list: handler success", {
-          states: migrations.states.length,
-          migrations: migrations.migrations.length,
-          pending: migrations.pending.length,
-        });
-        return migrations;
-      },
+      resolve: async ({ ctx }) => await listMigrationsHandler({ ctx }),
     },
     "manager.versions.list": {
-      resolve: async ({ input, ctx }) => {
-        Logger.addTrace("manager.versions.list: handler start", {
-          contentType: input.contentType,
-          documentId: input.documentId,
-        });
-        ctx.getUser();
-        const db = await getMongoService();
-        Logger.addTrace("manager.versions.list: mongo service ready");
-        const versions = await db.versions.list(input);
-        Logger.addTrace("manager.versions.list: handler success", {
-          versions: versions.length,
-        });
-        return versions;
-      },
+      resolve: async ({ input, ctx }) =>
+        await listVersionsHandler({ input, ctx }),
     },
     "manager.versions.get": {
-      resolve: async ({ input, ctx }) => {
-        Logger.addTrace("manager.versions.get: handler start", {
-          versionId: input.versionId,
-        });
-        ctx.getUser();
-        const db = await getMongoService();
-        Logger.addTrace("manager.versions.get: mongo service ready");
-        const version = await db.versions.get(input.versionId);
-        Logger.addTrace("manager.versions.get: handler success", {
-          found: !!version,
-          contentType: version?.contentType,
-          documentId: version?.documentId,
-          revision: version?.revision,
-        });
-        return version;
-      },
+      resolve: async ({ input, ctx }) =>
+        await getVersionHandler({ input, ctx }),
     },
     "manager.versions.restore": {
-      resolve: async ({ input, ctx }) => {
-        Logger.addTrace("manager.versions.restore: handler start", {
-          versionId: input.versionId,
-          hasReason: !!input.reason,
-        });
-        const user = ctx.getUser();
-        Logger.addTrace("manager.versions.restore: user resolved", {
-          userId: user._id,
-        });
-        const db = await getMongoService();
-        Logger.addTrace("manager.versions.restore: mongo service ready");
-        const result = await db.versions.restore({
-          ...input,
-          actorId: user._id,
-        });
-        Logger.addTrace("manager.versions.restore: version restored", {
-          contentType: result.version.contentType,
-          documentId: result.version.documentId,
-          restoredRevision: result.restored._revision,
-        });
-        await checkRevalidatePath({
-          contentType: result.version.contentType,
-          contentTypeId: result.version.documentId,
-          operation: "update",
-        });
-        Logger.addTrace("manager.versions.restore: revalidate done");
-        return result;
-      },
+      resolve: async ({ input, ctx }) =>
+        await restoreVersionHandler({ input, ctx }),
     },
     "manager.apiOperations": {
-      resolve: async () => {
-        const managerOperations = mergeOperationMaps(
-          mergeOperationContracts(contracts, implementations),
-          getCustomApiOperationDefinitions("manager"),
-        );
-        const coreOperations = {
-          ...managerOperations,
-          ...createWebOperationDefinitions(),
-        };
-        const operations = mergeOperationMaps(
-          coreOperations,
-          getCustomApiOperationDefinitions("unscoped"),
-        );
-
-        return createApiOperationCatalog(operations);
-      },
+      resolve: async () =>
+        await apiOperationsHandler({ contracts, implementations }),
     },
     "manager.media.prepareUpload": {
       resolve: async ({ input, ctx }) =>
@@ -294,7 +164,7 @@ export const createManagerOperationDefinitions = () => {
       },
     },
     "manager.auth.getSession": {
-      resolve: async ({ ctx }) => ctx.user || null,
+      resolve: async ({ ctx }) => await getSessionHandler({ ctx }),
     },
     "manager.auth.accountInfo": {
       resolve: async ({ ctx }) => await accountInfoHandler({ ctx }),
