@@ -9,6 +9,5 @@ export const listMigrationsHandler = async ({
 }): Promise<ListMigrationsOutput> => {
   ctx.getUser();
   const db = await getMongoService();
-  const migrations = await db.migrations.list();
-  return migrations;
+  return db.migrations.list();
 };
