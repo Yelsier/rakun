@@ -43,7 +43,6 @@ export const prepareUploadHandler = async ({
   const user = ctx.getUser();
 
   checkPermissions(user, ["content.Media.own"]);
-  Logger.addTrace("manager.media.prepareUpload: permissions checked");
 
   try {
     const media = getMediaService();

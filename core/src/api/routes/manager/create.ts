@@ -25,7 +25,6 @@ export const createHandler = async ({
   const contentType = requireContentType(contentTypeName);
 
   checkPermissions(user, [`content.${contentTypeName}.own` as Permission]);
-  Logger.addTrace("manager.create: permissions checked");
 
   if (contentType.name === "Route") {
     throwAppError("FORBIDDEN", {

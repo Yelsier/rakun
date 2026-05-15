@@ -24,7 +24,6 @@ export const getHandler = async ({
     id,
     permission: "readAny",
   });
-  Logger.addTrace("manager.get: ownership checked");
 
   if (contentType.name === "Route") {
     await syncConfiguredRoutes();

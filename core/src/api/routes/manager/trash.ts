@@ -24,7 +24,6 @@ export const trashHandler = async ({
     id,
     permission: "deleteAny",
   });
-  Logger.addTrace("manager.trash: ownership checked");
 
   if (contentType.name === "Route") {
     throwAppError("FORBIDDEN", {

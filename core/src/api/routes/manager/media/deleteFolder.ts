@@ -22,7 +22,6 @@ export const deleteFolderHandler = async ({
   const db = await getMongoService();
 
   checkAnyPermissions(user, ["content.Media.own", "content.Media.deleteAny"]);
-  Logger.addTrace("manager.media.deleteFolder: permissions checked");
 
   const rootFolder = await db.find(MediaFolder, { _id: input.id });
   if (!rootFolder) {

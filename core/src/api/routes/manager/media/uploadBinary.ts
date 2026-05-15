@@ -97,7 +97,6 @@ export async function handleMediaBinaryUpload(
     });
     const user = ctx.getUser();
     checkPermissions(user, ["content.Media.own"]);
-    Logger.addTrace("manager.media.uploadBinary: permissions checked");
 
     const parsedHeaders = uploadHeadersSchema.parse({
       key: getHeader(req, "x-cms-upload-key"),

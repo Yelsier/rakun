@@ -25,10 +25,6 @@ export const upsertLiteralHandler = async ({
 
   checkPermissions(user, ["manager.literals.updateAny"]);
 
-  Logger.addTrace("manager.literals.upsert: permissions checked", {
-    userId: user._id,
-  });
-
   const literalDefinition = getLiteralDefinition(input.key);
   if (!literalDefinition) {
     throwAppError("NOT_FOUND", {

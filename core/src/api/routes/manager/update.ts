@@ -29,7 +29,6 @@ export const updateHandler = async ({
     id,
     permission: "updateAny",
   });
-  Logger.addTrace("manager.update: ownership checked");
 
   const effectiveData =
     contentType.name === "Route"

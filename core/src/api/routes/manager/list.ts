@@ -24,7 +24,6 @@ export const listHandler = async ({
     `content.${contentTypeName}.own` as Permission,
     `content.${contentTypeName}.readAny` as Permission,
   ]);
-  Logger.addTrace("manager.list: permissions checked");
 
   if (
     !hasPermissions(user, [`content.${contentTypeName}.readAny` as Permission])

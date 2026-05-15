@@ -26,7 +26,6 @@ export const deleteHandler = async ({
     id,
     permission: "deleteAny",
   });
-  Logger.addTrace("manager.delete: ownership checked");
 
   if (contentType.name === "Route") {
     throwAppError("FORBIDDEN", {

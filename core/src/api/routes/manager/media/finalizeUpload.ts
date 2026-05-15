@@ -182,7 +182,6 @@ export const finalizeUploadHandler = async ({
 
   try {
     checkPermissions(user, ["content.Media.own"]);
-    Logger.addTrace("manager.media.finalizeUpload: permissions checked");
 
     const canReadAny = hasPermissions(user, ["content.Media.readAny"]);
     Logger.addTrace("manager.media.finalizeUpload: ownership scope resolved", {

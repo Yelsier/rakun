@@ -1,5 +1,6 @@
 import ContentType from "../../lib/ContentType";
 import { throwAppError } from "../../lib/errors";
+import { Logger } from "../../lib/Logger";
 import { Permission } from "../../lib/Permissions";
 import { getMongoService } from "../../orm";
 import { RakunRequestContext } from "../context";
@@ -28,7 +29,9 @@ export const checkOwnership = async ({
     });
   }
 
-  if (search.createdBy === user._id) {
+  const ownsContent = search.createdBy === user._id;
+
+  if (ownsContent) {
     checkAnyPermissions(user, [
       `content.${contentType.name}.own` as Permission,
       `content.${contentType.name}.${permission}` as Permission,
@@ -38,4 +41,11 @@ export const checkOwnership = async ({
       `content.${contentType.name}.${permission}` as Permission,
     ]);
   }
+
+  Logger.addTrace("ownership checked", {
+    contentType: contentType.name,
+    id,
+    permission,
+    owner: ownsContent,
+  });
 };

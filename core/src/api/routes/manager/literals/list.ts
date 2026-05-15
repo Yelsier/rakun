@@ -32,10 +32,6 @@ export const listLiteralsHandler = async ({
   const user = ctx.getUser();
   checkAnyPermissions(user, ["manager.literals.readAny"]);
 
-  Logger.addTrace("manager.literals.list: permissions checked", {
-    userId: user._id,
-  });
-
   const db = await getMongoService();
 
   const languagesResult = await db.list(Language, {
