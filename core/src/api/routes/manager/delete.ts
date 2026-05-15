@@ -64,7 +64,6 @@ export const deleteHandler = async ({
     contentTypeId: id,
     operation: "delete",
   });
-  Logger.addTrace("manager.delete: revalidate done");
 
   return { ok: true };
 };

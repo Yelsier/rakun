@@ -89,7 +89,6 @@ export const trashHandler = async ({
     contentTypeId: id,
     operation: "delete",
   });
-  Logger.addTrace("manager.trash: revalidate done");
 
   return { ok: true };
 };

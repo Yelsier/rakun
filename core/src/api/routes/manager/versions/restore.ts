@@ -30,6 +30,5 @@ export const restoreVersionHandler = async ({
     contentTypeId: result.version.documentId,
     operation: "update",
   });
-  Logger.addTrace("manager.versions.restore: revalidate done");
   return result;
 };

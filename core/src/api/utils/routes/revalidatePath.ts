@@ -130,6 +130,11 @@ export const checkRevalidatePath = ({
     };
     try {
       await operations[operation](contentType, contentTypeId);
+      Logger.addTrace("revalidate done", {
+        contentType,
+        contentTypeId,
+        operation,
+      });
     } catch (error) {
       Logger.error(
         `Error during ${operation} operation for ${contentType} with ID ${contentTypeId}:`,

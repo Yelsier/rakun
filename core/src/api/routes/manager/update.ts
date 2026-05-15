@@ -75,7 +75,6 @@ export const updateHandler = async ({
       contentTypeId: updated._id,
       operation: "update",
     });
-    Logger.addTrace("manager.update: revalidate done");
 
     return updated;
   } catch (error) {

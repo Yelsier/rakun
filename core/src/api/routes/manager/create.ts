@@ -60,7 +60,6 @@ export const createHandler = async ({
       contentTypeId: created._id,
       operation: "create",
     });
-    Logger.addTrace("manager.create: revalidate done");
 
     return created;
   } catch (error) {
