@@ -1,4 +1,3 @@
-import { Logger } from "../../../../lib/Logger";
 import { getMongoService } from "../../../../orm";
 import { RakunRequestContext } from "../../../context";
 import {
@@ -18,10 +17,6 @@ export const createBackupHandler = async ({
   const backup = await db.backups.create({
     ...input,
     actorId: user._id,
-  });
-  Logger.addTrace("manager.backups.create: handler success", {
-    backupId: backup._id,
-    documentCount: backup.documentCount,
   });
   return backup;
 };

@@ -306,9 +306,11 @@ export const mergeOperationContracts = <
     definitions[name] = {
       ...contracts[name],
       ...implementation,
-      resolve: (args: { ctx: RakunRequestContext; input: unknown }) => {
+      resolve: async (args: { ctx: RakunRequestContext; input: unknown }) => {
         addOperationStartTrace(String(name), args.input);
-        return implementation.resolve(args as never);
+        const result = await implementation.resolve(args as never);
+        addOperationSuccessTrace(String(name), result);
+        return result;
       },
     } as unknown as RakunOperationDefinitionFromContract<TContracts[typeof name]>;
   }
@@ -322,10 +324,10 @@ const MAX_TRACE_INPUT_DEPTH = 6;
 const MAX_TRACE_ARRAY_ITEMS = 25;
 const MAX_TRACE_STRING_LENGTH = 500;
 
-const sensitiveInputKeyPattern =
+const sensitiveTraceKeyPattern =
   /(authorization|challenge|cookie|credential|password|secret|session|token|totp|webauthn)/i;
 
-const sanitizeTraceInput = (
+const sanitizeTraceValue = (
   value: unknown,
   depth = 0,
   seen = new WeakSet<object>(),
@@ -365,7 +367,7 @@ const sanitizeTraceInput = (
   if (Array.isArray(value)) {
     const items = value
       .slice(0, MAX_TRACE_ARRAY_ITEMS)
-      .map((item) => sanitizeTraceInput(item, depth + 1, seen));
+      .map((item) => sanitizeTraceValue(item, depth + 1, seen));
 
     if (value.length > MAX_TRACE_ARRAY_ITEMS) {
       items.push(`[truncated:${value.length - MAX_TRACE_ARRAY_ITEMS}]`);
@@ -377,9 +379,9 @@ const sanitizeTraceInput = (
   return Object.fromEntries(
     Object.entries(value as Record<string, unknown>).map(([key, item]) => [
       key,
-      sensitiveInputKeyPattern.test(key)
+      sensitiveTraceKeyPattern.test(key)
         ? REDACTED_TRACE_VALUE
-        : sanitizeTraceInput(item, depth + 1, seen),
+        : sanitizeTraceValue(item, depth + 1, seen),
     ]),
   );
 };
@@ -387,7 +389,14 @@ const sanitizeTraceInput = (
 const addOperationStartTrace = (name: string, input: unknown) => {
   Logger.addTrace(
     `${name}: handler start`,
-    input === undefined ? undefined : { input: sanitizeTraceInput(input) },
+    input === undefined ? undefined : { input: sanitizeTraceValue(input) },
+  );
+};
+
+const addOperationSuccessTrace = (name: string, result: unknown) => {
+  Logger.addTrace(
+    `${name}: handler success`,
+    result === undefined ? undefined : { result: sanitizeTraceValue(result) },
   );
 };
 

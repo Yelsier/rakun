@@ -133,8 +133,6 @@ export const deleteFolderHandler = async ({
       },
     );
   }
-  Logger.addTrace("manager.media.deleteFolder: handler success");
-
   return {
     ok: true,
     deletedFolders: folderIdList.length,
