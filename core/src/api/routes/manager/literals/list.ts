@@ -40,7 +40,6 @@ export const listLiteralsHandler = async ({
   });
 
   const db = await getMongoService();
-  Logger.addTrace("manager.literals.list: mongo service ready");
 
   const languagesResult = await db.list(Language, {
     options: { limit: "all" },

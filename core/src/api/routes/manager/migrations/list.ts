@@ -11,7 +11,6 @@ export const listMigrationsHandler = async ({
   Logger.addTrace("manager.migrations.list: handler start");
   ctx.getUser();
   const db = await getMongoService();
-  Logger.addTrace("manager.migrations.list: mongo service ready");
   const migrations = await db.migrations.list();
   Logger.addTrace("manager.migrations.list: handler success", {
     states: migrations.states.length,

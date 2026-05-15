@@ -19,7 +19,6 @@ export const getHandler = async ({
     id: input.id,
   });
   const db = await getMongoService();
-  Logger.addTrace("manager.get: mongo service ready");
   const { contentType: contentTypeName, id } = input;
   const contentType = getContentTypeByName(contentTypeName);
 

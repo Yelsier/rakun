@@ -210,7 +210,6 @@ export const finalizeUploadHandler = async ({
       hasPublicUrl: Boolean(finalized.publicUrl),
     });
     const db = await getMongoService();
-    Logger.addTrace("manager.media.finalizeUpload: mongo service ready");
 
     let folder:
       | {

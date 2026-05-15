@@ -23,7 +23,6 @@ export const restoreVersionHandler = async ({
     userId: user._id,
   });
   const db = await getMongoService();
-  Logger.addTrace("manager.versions.restore: mongo service ready");
   const result = await db.versions.restore({
     ...input,
     actorId: user._id,

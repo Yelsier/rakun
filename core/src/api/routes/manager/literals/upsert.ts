@@ -75,7 +75,6 @@ export const upsertLiteralHandler = async ({
   }
 
   const db = await getMongoService();
-  Logger.addTrace("manager.literals.upsert: mongo service ready");
 
   await db.upsert(
     LiteralTranslation,

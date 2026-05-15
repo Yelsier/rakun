@@ -18,6 +18,7 @@ import { getAllHandler } from './operations/getAll'
 import { createMongoBackupAdapter } from './backups'
 import { createMongoMigrationAdapter } from './migrations'
 import { createMongoVersionAdapter } from './versions'
+import { Logger } from '../lib/Logger'
 
 const dbServices = new Map<string, DBService>()
 const dbServicePromises = new Map<string, Promise<DBService>>()
@@ -81,7 +82,9 @@ export async function getMongoService(config?: MongoConfig): Promise<DBService> 
       'MongoDB service not initialized. Call createMongoConnection first.',
     )
   }
-  return await createMongoService(resolvedConfig)
+  const dbService = await createMongoService(resolvedConfig)
+  Logger.addTrace('getMongoService: mongo service ready')
+  return dbService
 }
 
 export async function closeMongoService(): Promise<void> {

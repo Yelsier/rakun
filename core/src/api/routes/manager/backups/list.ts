@@ -11,7 +11,6 @@ export const listBackupsHandler = async ({
   Logger.addTrace("manager.backups.list: handler start");
   ctx.getUser();
   const db = await getMongoService();
-  Logger.addTrace("manager.backups.list: mongo service ready");
   const backups = await db.backups.list();
   Logger.addTrace("manager.backups.list: handler success", {
     backups: backups.length,

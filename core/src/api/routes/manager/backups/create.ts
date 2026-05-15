@@ -22,7 +22,6 @@ export const createBackupHandler = async ({
     userId: user._id,
   });
   const db = await getMongoService();
-  Logger.addTrace("manager.backups.create: mongo service ready");
   const backup = await db.backups.create({
     ...input,
     actorId: user._id,

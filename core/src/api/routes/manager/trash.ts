@@ -19,7 +19,6 @@ export const trashHandler = async ({
     id: input.id,
   });
   const db = await getMongoService();
-  Logger.addTrace("manager.trash: mongo service ready");
   const { contentType: contentTypeName, id } = input;
   const contentType = getContentTypeByName(contentTypeName);
 

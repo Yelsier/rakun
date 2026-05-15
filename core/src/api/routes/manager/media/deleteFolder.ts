@@ -24,7 +24,6 @@ export const deleteFolderHandler = async ({
   });
   const user = ctx.getUser();
   const db = await getMongoService();
-  Logger.addTrace("manager.media.deleteFolder: mongo service ready");
 
   checkAnyPermissions(user, ["content.Media.own", "content.Media.deleteAny"]);
   Logger.addTrace("manager.media.deleteFolder: permissions checked");

@@ -23,7 +23,6 @@ export const restoreBackupHandler = async ({
     userId: user._id,
   });
   const db = await getMongoService();
-  Logger.addTrace("manager.backups.restore: mongo service ready");
   const result = await db.backups.restore({
     ...input,
     actorId: user._id,

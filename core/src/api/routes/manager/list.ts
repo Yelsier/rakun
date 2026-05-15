@@ -20,7 +20,6 @@ export const listHandler = async ({
     contentType: input.contentType,
   });
   const db = await getMongoService();
-  Logger.addTrace("manager.list: mongo service ready");
   const { contentType: contentTypeName, query } = input;
   const contentType = getContentTypeByName(contentTypeName);
   const user = ctx.getUser();

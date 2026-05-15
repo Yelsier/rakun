@@ -55,7 +55,6 @@ export const getPage = async (input: PageInput): Promise<PageOutput> => {
   Logger.addTrace("web.page: handler start", { path });
   try {
     const db = await getMongoService();
-    Logger.addTrace("web.page: mongo service ready");
 
     const redirect = await resolveRedirect({
       path,

@@ -19,7 +19,6 @@ export const deleteHandler = async ({
     id: input.id,
   });
   const db = await getMongoService();
-  Logger.addTrace("manager.delete: mongo service ready");
   const { contentType: contentTypeName, id } = input;
   const contentType = getContentTypeByName(contentTypeName);
 

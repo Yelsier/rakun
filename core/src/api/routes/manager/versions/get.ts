@@ -18,7 +18,6 @@ export const getVersionHandler = async ({
   });
   ctx.getUser();
   const db = await getMongoService();
-  Logger.addTrace("manager.versions.get: mongo service ready");
   const version = await db.versions.get(input.versionId);
   Logger.addTrace("manager.versions.get: handler success", {
     found: !!version,

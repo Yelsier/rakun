@@ -22,7 +22,6 @@ export const createHandler = async ({
     contentType: input.contentType,
   });
   const db = await getMongoService();
-  Logger.addTrace("manager.create: mongo service ready");
   const { contentType: contentTypeName, data } = input;
   const user = ctx.getUser();
   Logger.addTrace("manager.create: user resolved", { userId: user._id });
