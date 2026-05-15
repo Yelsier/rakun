@@ -59,98 +59,82 @@ export const createManagerOperationDefinitions = () => {
       resolve: async () => await regenerateRoutesHandler(),
     },
     "manager.create": {
-      resolve: async ({ input, ctx }) => await createHandler({ input, ctx }),
+      resolve: createHandler,
     },
     "manager.update": {
-      resolve: async ({ input, ctx }) => await updateHandler({ input, ctx }),
+      resolve: updateHandler,
     },
     "manager.delete": {
-      resolve: async ({ input, ctx }) => await deleteHandler({ input, ctx }),
+      resolve: deleteHandler,
     },
     "manager.trash": {
-      resolve: async ({ input, ctx }) => await trashHandler({ input, ctx }),
+      resolve: trashHandler,
     },
     "manager.get": {
-      resolve: async ({ input, ctx }) => await getHandler({ input, ctx }),
+      resolve: getHandler,
     },
     "manager.list": {
-      resolve: async ({ input, ctx }) => await listHandler({ input, ctx }),
+      resolve: listHandler,
     },
     "manager.setDefaultLanguage": {
-      resolve: async ({ input, ctx }) =>
-        await setDefaultLanguageHandler({ input, ctx }),
+      resolve: setDefaultLanguageHandler,
     },
     "manager.permissions": {
-      resolve: async () => await permissionsHandler(),
+      resolve: permissionsHandler,
     },
     "manager.backups.list": {
-      resolve: async ({ ctx }) => await listBackupsHandler({ ctx }),
+      resolve: listBackupsHandler,
     },
     "manager.backups.create": {
-      resolve: async ({ input, ctx }) =>
-        await createBackupHandler({ input, ctx }),
+      resolve: createBackupHandler,
     },
     "manager.backups.restore": {
-      resolve: async ({ input, ctx }) =>
-        await restoreBackupHandler({ input, ctx }),
+      resolve: restoreBackupHandler,
     },
     "manager.migrations.list": {
-      resolve: async ({ ctx }) => await listMigrationsHandler({ ctx }),
+      resolve: listMigrationsHandler,
     },
     "manager.versions.list": {
-      resolve: async ({ input, ctx }) =>
-        await listVersionsHandler({ input, ctx }),
+      resolve: listVersionsHandler,
     },
     "manager.versions.get": {
-      resolve: async ({ input, ctx }) =>
-        await getVersionHandler({ input, ctx }),
+      resolve: getVersionHandler,
     },
     "manager.versions.restore": {
-      resolve: async ({ input, ctx }) =>
-        await restoreVersionHandler({ input, ctx }),
+      resolve: restoreVersionHandler,
     },
     "manager.apiOperations": {
-      resolve: async () =>
-        await apiOperationsHandler({ contracts, implementations }),
+      resolve: () => apiOperationsHandler({ contracts, implementations }),
     },
     "manager.media.prepareUpload": {
-      resolve: async ({ input, ctx }) =>
-        await prepareUploadHandler({ input, ctx }),
+      resolve: prepareUploadHandler,
     },
     "manager.media.finalizeUpload": {
-      resolve: async ({ input, ctx }) =>
-        await finalizeUploadHandler({ input, ctx }),
+      resolve: finalizeUploadHandler,
     },
     "manager.media.getUrl": {
-      resolve: async ({ input, ctx }) =>
-        await getMediaUrlHandler({ input, ctx }),
+      resolve: getMediaUrlHandler,
     },
     "manager.media.createFolder": {
-      resolve: async ({ input, ctx }) =>
-        await createFolderHandler({ input, ctx }),
+      resolve: createFolderHandler,
     },
     "manager.media.listFolders": {
-      resolve: async ({ input, ctx }) =>
-        await listFoldersHandler({ input, ctx }),
+      resolve: listFoldersHandler,
     },
     "manager.media.deleteFolder": {
-      resolve: async ({ input, ctx }) =>
-        await deleteFolderHandler({ input, ctx }),
+      resolve: deleteFolderHandler,
     },
     "manager.literals.list": {
-      resolve: async ({ input, ctx }) =>
-        await listLiteralsHandler({ input, ctx }),
+      resolve: listLiteralsHandler,
     },
     "manager.literals.upsert": {
-      resolve: async ({ input, ctx }) =>
-        await upsertLiteralHandler({ input, ctx }),
+      resolve: upsertLiteralHandler,
     },
     "manager.auth.updatePassword": {
-      resolve: async ({ input, ctx }) =>
-        await updatePasswordHandler({ input, ctx }),
+      resolve: updatePasswordHandler,
     },
     "manager.auth.login": {
-      resolve: async ({ input }) => await loginHandler({ input }),
+      resolve: loginHandler,
       onSuccess: ({ ctx, result }) => {
         if ("token" in result) {
           setSessionCookie(ctx, result.token);
@@ -158,53 +142,28 @@ export const createManagerOperationDefinitions = () => {
       },
     },
     "manager.auth.logout": {
-      resolve: async ({ ctx }) => await logoutHandler({ ctx }),
+      resolve: logoutHandler,
       onSuccess: ({ ctx }) => {
         setSessionCookie(ctx, "", { maxAge: 0 });
       },
     },
     "manager.auth.getSession": {
-      resolve: async ({ ctx }) => await getSessionHandler({ ctx }),
+      resolve: getSessionHandler,
     },
     "manager.auth.accountInfo": {
-      resolve: async ({ ctx }) => await accountInfoHandler({ ctx }),
+      resolve: accountInfoHandler,
     },
     "manager.auth.deleteSession": {
-      resolve: async ({ input, ctx }) =>
-        await deleteSessionHandler({ input, ctx }),
+      resolve: deleteSessionHandler,
     },
     "manager.auth.totp.enroll": {
-      resolve: async ({ ctx }) => {
-        if (!enrollTotpHandler) {
-          throwAppError("FEATURE_UNSUPPORTED", {
-            feature: "TOTP enrollment",
-          });
-        }
-
-        return await enrollTotpHandler({ ctx });
-      },
+      resolve: enrollTotpHandler,
     },
     "manager.auth.totp.confirm": {
-      resolve: async ({ input, ctx }) => {
-        if (!confirmTotpHandler) {
-          throwAppError("FEATURE_UNSUPPORTED", {
-            feature: "TOTP",
-          });
-        }
-
-        return await confirmTotpHandler({ input, ctx });
-      },
+      resolve: confirmTotpHandler,
     },
     "manager.auth.totp.verify": {
-      resolve: async ({ input }) => {
-        if (!verifyTotpHandler) {
-          throwAppError("FEATURE_UNSUPPORTED", {
-            feature: "TOTP",
-          });
-        }
-
-        return await verifyTotpHandler({ input });
-      },
+      resolve: verifyTotpHandler,
       onSuccess: ({ ctx, result }) => {
         if ("token" in result) {
           setSessionCookie(ctx, result.token);
@@ -212,48 +171,16 @@ export const createManagerOperationDefinitions = () => {
       },
     },
     "manager.auth.webauthn.register.options": {
-      resolve: async ({ input, ctx }) => {
-        if (!webauthnRegisterOptionsHandler) {
-          throwAppError("FEATURE_UNSUPPORTED", {
-            feature: "WebAuthn",
-          });
-        }
-
-        return await webauthnRegisterOptionsHandler({ ctx, input });
-      },
+      resolve: webauthnRegisterOptionsHandler,
     },
     "manager.auth.webauthn.register.verify": {
-      resolve: async ({ input, ctx }) => {
-        if (!webauthnRegisterVerifyHandler) {
-          throwAppError("FEATURE_UNSUPPORTED", {
-            feature: "WebAuthn",
-          });
-        }
-
-        return await webauthnRegisterVerifyHandler({ input, ctx });
-      },
+      resolve: webauthnRegisterVerifyHandler,
     },
     "manager.auth.webauthn.auth.options": {
-      resolve: async ({ input }) => {
-        if (!webauthnAuthOptionsHandler) {
-          throwAppError("FEATURE_UNSUPPORTED", {
-            feature: "WebAuthn",
-          });
-        }
-
-        return await webauthnAuthOptionsHandler({ input });
-      },
+      resolve: webauthnAuthOptionsHandler,
     },
     "manager.auth.webauthn.auth.verify": {
-      resolve: async ({ input }) => {
-        if (!webauthnAuthVerifyHandler) {
-          throwAppError("FEATURE_UNSUPPORTED", {
-            feature: "WebAuthn",
-          });
-        }
-
-        return await webauthnAuthVerifyHandler({ input });
-      },
+      resolve: webauthnAuthVerifyHandler,
       onSuccess: ({ ctx, result }) => {
         if ("token" in result) {
           setSessionCookie(ctx, result.token);
