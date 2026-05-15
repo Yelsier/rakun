@@ -1,12 +1,11 @@
-import { throwAppError } from "../../../lib/errors";
 import { Logger } from "../../../lib/Logger";
 import { hasPermissions, Permission } from "../../../lib/Permissions";
-import { getContentTypeByName } from "../../../lib/Registry";
 import { getMongoService } from "../../../orm";
 import { RakunRequestContext } from "../../context";
 import { ListInput } from "../../../schemas/manager/list";
 import { checkAnyPermissions } from "../../utils/checkPermissions";
 import { populateRelations } from "../../utils/populates/populateRelations";
+import { requireContentType } from "../../utils/requireContentType";
 import { syncConfiguredRoutes } from "../../utils/routes/syncConfiguredRoutes";
 
 export const listHandler = async ({
@@ -18,15 +17,8 @@ export const listHandler = async ({
 }) => {
   const db = await getMongoService();
   const { contentType: contentTypeName, query } = input;
-  const contentType = getContentTypeByName(contentTypeName);
+  const contentType = requireContentType(contentTypeName);
   const user = ctx.getUser();
-
-  if (!contentType) {
-    throwAppError("NOT_FOUND", {
-      resource: "ContentType",
-      id: contentTypeName,
-    });
-  }
 
   checkAnyPermissions(user, [
     `content.${contentTypeName}.own` as Permission,

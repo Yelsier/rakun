@@ -2,12 +2,12 @@ import { z } from "zod";
 import { UpdateInput } from "../../../schemas/manager/update";
 import { throwAppError } from "../../../lib/errors";
 import { Logger } from "../../../lib/Logger";
-import { getContentTypeByName } from "../../../lib/Registry";
 import { getMongoService } from "../../../orm";
 import { DbErrorInvalidData, DbErrorConflict } from "../../../orm/dbService";
 import { RakunRequestContext } from "../../context";
 import { getInputProxy } from "../../proxies";
 import { checkOwnership } from "../../utils/checkOwnership";
+import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
 
 export const updateHandler = async ({
@@ -21,14 +21,7 @@ export const updateHandler = async ({
   const { contentType: contentTypeName, id, data } = input;
   const user = ctx.getUser();
 
-  const contentType = getContentTypeByName(contentTypeName);
-
-  if (!contentType) {
-    throwAppError("NOT_FOUND", {
-      resource: "ContentType",
-      id: contentTypeName,
-    });
-  }
+  const contentType = requireContentType(contentTypeName);
 
   await checkOwnership({
     ctx,

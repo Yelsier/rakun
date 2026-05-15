@@ -1,10 +1,10 @@
 import { throwAppError } from "../../../lib/errors";
 import { Logger } from "../../../lib/Logger";
-import { getContentTypeByName } from "../../../lib/Registry";
 import { getMongoService } from "../../../orm";
 import { RakunRequestContext } from "../../context";
 import { GetInput } from "../../../schemas/manager/get";
 import { checkOwnership } from "../../utils/checkOwnership";
+import { requireContentType } from "../../utils/requireContentType";
 import { syncConfiguredRoutes } from "../../utils/routes/syncConfiguredRoutes";
 
 export const getHandler = async ({
@@ -16,7 +16,7 @@ export const getHandler = async ({
 }) => {
   const db = await getMongoService();
   const { contentType: contentTypeName, id } = input;
-  const contentType = getContentTypeByName(contentTypeName);
+  const contentType = requireContentType(contentTypeName);
 
   await checkOwnership({
     ctx,
@@ -25,13 +25,6 @@ export const getHandler = async ({
     permission: "readAny",
   });
   Logger.addTrace("manager.get: ownership checked");
-
-  if (!contentType) {
-    throwAppError("NOT_FOUND", {
-      resource: "ContentType",
-      id: contentTypeName,
-    });
-  }
 
   if (contentType.name === "Route") {
     await syncConfiguredRoutes();

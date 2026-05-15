@@ -1,10 +1,10 @@
 import { DeleteInput } from "../../../schemas/manager/delete";
 import { throwAppError } from "../../../lib/errors";
 import { Logger } from "../../../lib/Logger";
-import { getContentTypeByName } from "../../../lib/Registry";
 import { getMongoService } from "../../../orm";
 import { RakunRequestContext } from "../../context";
 import { checkOwnership } from "../../utils/checkOwnership";
+import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
 
 export const trashHandler = async ({
@@ -16,14 +16,7 @@ export const trashHandler = async ({
 }) => {
   const db = await getMongoService();
   const { contentType: contentTypeName, id } = input;
-  const contentType = getContentTypeByName(contentTypeName);
-
-  if (!contentType) {
-    throwAppError("NOT_FOUND", {
-      resource: "ContentType",
-      id: contentTypeName,
-    });
-  }
+  const contentType = requireContentType(contentTypeName);
 
   await checkOwnership({
     ctx,

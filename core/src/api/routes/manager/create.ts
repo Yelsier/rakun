@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { throwAppError } from "../../../lib/errors";
 import { Logger } from "../../../lib/Logger";
-import { getContentTypeByName } from "../../../lib/Registry";
 import { getMongoService } from "../../../orm";
 import { DbErrorInvalidData, DbErrorConflict } from "../../../orm/dbService";
 import { RakunRequestContext } from "../../context";
 import { CreateInput } from "../../../schemas/manager/create";
 import { checkPermissions } from "../../utils/checkPermissions";
+import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
 import { Permission } from "../../../lib/Permissions";
 import { getInputProxy } from "../../proxies";
@@ -22,14 +22,7 @@ export const createHandler = async ({
   const { contentType: contentTypeName, data } = input;
   const user = ctx.getUser();
 
-  const contentType = getContentTypeByName(contentTypeName);
-
-  if (!contentType) {
-    throwAppError("NOT_FOUND", {
-      resource: "ContentType",
-      id: contentTypeName,
-    });
-  }
+  const contentType = requireContentType(contentTypeName);
 
   checkPermissions(user, [`content.${contentTypeName}.own` as Permission]);
   Logger.addTrace("manager.create: permissions checked");
