@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { RakunOperationImplementationMap } from "./types";
 import { mergeOperationContracts } from "./types";
 import { createManagerOperationContracts } from "./manager-contract";
 import { getCustomApiOperationDefinitions, mergeOperationMaps } from "./custom";
 import { setSessionCookie } from "../sessionCookie";
-import { throwAppError } from "../../lib/errors";
 import { apiOperationsHandler } from "../routes/manager/apiOperations";
 import { createBackupHandler } from "../routes/manager/backups/create";
 import { listBackupsHandler } from "../routes/manager/backups/list";
