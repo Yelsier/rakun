@@ -14,10 +14,6 @@ export const restoreVersionHandler = async ({
   input: RestoreVersionInput;
   ctx: RakunRequestContext;
 }): Promise<RestoreVersionOutput> => {
-  Logger.addTrace("manager.versions.restore: handler start", {
-    versionId: input.versionId,
-    hasReason: !!input.reason,
-  });
   const user = ctx.getUser();
   const db = await getMongoService();
   const result = await db.versions.restore({

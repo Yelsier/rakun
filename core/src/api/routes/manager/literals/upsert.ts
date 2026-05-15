@@ -20,10 +20,6 @@ export const upsertLiteralHandler = async ({
   input: UpsertLiteralInput;
   ctx: RakunRequestContext;
 }): Promise<UpsertLiteralOutput> => {
-  Logger.addTrace("manager.literals.upsert: handler start", {
-    key: input.key,
-    locale: input.locale,
-  });
 
   const user = ctx.getUser();
 

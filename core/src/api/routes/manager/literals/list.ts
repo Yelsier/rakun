@@ -29,9 +29,6 @@ export const listLiteralsHandler = async ({
   input: ListLiteralsInput;
   ctx: RakunRequestContext;
 }): Promise<ListLiteralsOutput> => {
-  Logger.addTrace("manager.literals.list: handler start", {
-    locale: input.locale,
-  });
   const user = ctx.getUser();
   checkAnyPermissions(user, ["manager.literals.readAny"]);
 

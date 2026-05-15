@@ -40,14 +40,6 @@ export const prepareUploadHandler = async ({
   input: PrepareUploadInput;
   ctx: RakunRequestContext;
 }): Promise<PrepareUploadOutput> => {
-  Logger.addTrace("manager.media.prepareUpload: handler start", {
-    fileName: input.fileName,
-    mime: input.mime,
-    size: input.size,
-    access: input.access,
-    folder: input.folder,
-    hasKey: Boolean(input.key),
-  });
   const user = ctx.getUser();
 
   checkPermissions(user, ["content.Media.own"]);

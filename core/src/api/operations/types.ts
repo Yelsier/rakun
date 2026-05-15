@@ -1,6 +1,7 @@
 import type { ZodType } from "zod";
 
 import type { RakunRequestContext } from "../context";
+import { Logger } from "../../lib/Logger";
 
 export type RakunOperationAccess = "public" | "auth";
 export type RakunOperationKind = "query" | "mutation";
@@ -300,13 +301,94 @@ export const mergeOperationContracts = <
   };
 
   for (const name of Object.keys(contracts) as Array<keyof TContracts>) {
+    const implementation = implementations[name];
+
     definitions[name] = {
       ...contracts[name],
-      ...implementations[name],
+      ...implementation,
+      resolve: (args: { ctx: RakunRequestContext; input: unknown }) => {
+        addOperationStartTrace(String(name), args.input);
+        return implementation.resolve(args as never);
+      },
     } as unknown as RakunOperationDefinitionFromContract<TContracts[typeof name]>;
   }
 
   return definitions;
+};
+
+const REDACTED_TRACE_VALUE = "[redacted]";
+const CIRCULAR_TRACE_VALUE = "[circular]";
+const MAX_TRACE_INPUT_DEPTH = 6;
+const MAX_TRACE_ARRAY_ITEMS = 25;
+const MAX_TRACE_STRING_LENGTH = 500;
+
+const sensitiveInputKeyPattern =
+  /(authorization|challenge|cookie|credential|password|secret|session|token|totp|webauthn)/i;
+
+const sanitizeTraceInput = (
+  value: unknown,
+  depth = 0,
+  seen = new WeakSet<object>(),
+): unknown => {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    return value.length > MAX_TRACE_STRING_LENGTH
+      ? `${value.slice(0, MAX_TRACE_STRING_LENGTH)}...`
+      : value;
+  }
+
+  if (typeof value !== "object") {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
+    return "[binary]";
+  }
+
+  if (seen.has(value)) {
+    return CIRCULAR_TRACE_VALUE;
+  }
+
+  if (depth >= MAX_TRACE_INPUT_DEPTH) {
+    return "[max-depth]";
+  }
+
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    const items = value
+      .slice(0, MAX_TRACE_ARRAY_ITEMS)
+      .map((item) => sanitizeTraceInput(item, depth + 1, seen));
+
+    if (value.length > MAX_TRACE_ARRAY_ITEMS) {
+      items.push(`[truncated:${value.length - MAX_TRACE_ARRAY_ITEMS}]`);
+    }
+
+    return items;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+      key,
+      sensitiveInputKeyPattern.test(key)
+        ? REDACTED_TRACE_VALUE
+        : sanitizeTraceInput(item, depth + 1, seen),
+    ]),
+  );
+};
+
+const addOperationStartTrace = (name: string, input: unknown) => {
+  Logger.addTrace(
+    `${name}: handler start`,
+    input === undefined ? undefined : { input: sanitizeTraceInput(input) },
+  );
 };
 
 export const createOperationPath = (name: string) =>

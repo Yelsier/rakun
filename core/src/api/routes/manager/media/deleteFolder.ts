@@ -18,10 +18,6 @@ export const deleteFolderHandler = async ({
   input: DeleteFolderInput;
   ctx: RakunRequestContext;
 }): Promise<DeleteFolderOutput> => {
-  Logger.addTrace("manager.media.deleteFolder: handler start", {
-    folderId: input.id,
-    recursive: input.recursive,
-  });
   const user = ctx.getUser();
   const db = await getMongoService();
 

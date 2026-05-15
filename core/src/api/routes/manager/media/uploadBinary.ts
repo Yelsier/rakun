@@ -90,7 +90,6 @@ export async function handleMediaBinaryUpload(
   res: MediaBinaryUploadResponse,
 ) {
   try {
-    Logger.addTrace("manager.media.uploadBinary: handler start");
     const ctx = await createRequestContext({
       headers: req.headers,
       cookies: parseCookieHeader(getHeader(req, "cookie")),

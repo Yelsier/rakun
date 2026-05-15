@@ -18,9 +18,6 @@ export const createHandler = async ({
   input: CreateInput;
   ctx: RakunRequestContext;
 }) => {
-  Logger.addTrace("manager.create: handler start", {
-    contentType: input.contentType,
-  });
   const db = await getMongoService();
   const { contentType: contentTypeName, data } = input;
   const user = ctx.getUser();

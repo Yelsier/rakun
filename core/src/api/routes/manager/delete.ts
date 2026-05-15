@@ -14,10 +14,6 @@ export const deleteHandler = async ({
   input: DeleteInput;
   ctx: RakunRequestContext;
 }) => {
-  Logger.addTrace("manager.delete: handler start", {
-    contentType: input.contentType,
-    id: input.id,
-  });
   const db = await getMongoService();
   const { contentType: contentTypeName, id } = input;
   const contentType = getContentTypeByName(contentTypeName);

@@ -13,10 +13,6 @@ export const listVersionsHandler = async ({
   input: ListVersionsInput;
   ctx: RakunRequestContext;
 }): Promise<ListVersionsOutput> => {
-  Logger.addTrace("manager.versions.list: handler start", {
-    contentType: input.contentType,
-    documentId: input.documentId,
-  });
   ctx.getUser();
   const db = await getMongoService();
   const versions = await db.versions.list(input);

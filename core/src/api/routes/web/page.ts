@@ -52,7 +52,6 @@ const normalizePath = (path: string): string => {
 
 export const getPage = async (input: PageInput): Promise<PageOutput> => {
   const path = normalizePath(input.path);
-  Logger.addTrace("web.page: handler start", { path });
   try {
     const db = await getMongoService();
 

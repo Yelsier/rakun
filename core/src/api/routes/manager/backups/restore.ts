@@ -14,10 +14,6 @@ export const restoreBackupHandler = async ({
   input: RestoreBackupInput;
   ctx: RakunRequestContext;
 }): Promise<RestoreBackupOutput> => {
-  Logger.addTrace("manager.backups.restore: handler start", {
-    backupId: input.backupId,
-    hasReason: !!input.reason,
-  });
   const user = ctx.getUser();
   const db = await getMongoService();
   const result = await db.backups.restore({

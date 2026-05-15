@@ -8,7 +8,6 @@ export const listMigrationsHandler = async ({
 }: {
   ctx: RakunRequestContext;
 }): Promise<ListMigrationsOutput> => {
-  Logger.addTrace("manager.migrations.list: handler start");
   ctx.getUser();
   const db = await getMongoService();
   const migrations = await db.migrations.list();

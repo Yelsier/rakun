@@ -14,10 +14,6 @@ export const trashHandler = async ({
   input: DeleteInput;
   ctx: RakunRequestContext;
 }) => {
-  Logger.addTrace("manager.trash: handler start", {
-    contentType: input.contentType,
-    id: input.id,
-  });
   const db = await getMongoService();
   const { contentType: contentTypeName, id } = input;
   const contentType = getContentTypeByName(contentTypeName);

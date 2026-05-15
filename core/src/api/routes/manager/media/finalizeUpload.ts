@@ -178,13 +178,6 @@ export const finalizeUploadHandler = async ({
   input: FinalizeUploadInput;
   ctx: RakunRequestContext;
 }): Promise<FinalizeUploadOutput> => {
-  Logger.addTrace("manager.media.finalizeUpload: handler start", {
-    key: input.key,
-    access: input.access,
-    folderId: input.folderId,
-    folderPath: input.folderPath,
-    previewKey: input.previewKey,
-  });
   const user = ctx.getUser();
 
   try {

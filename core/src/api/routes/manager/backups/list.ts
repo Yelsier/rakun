@@ -8,7 +8,6 @@ export const listBackupsHandler = async ({
 }: {
   ctx: RakunRequestContext;
 }): Promise<ListBackupsOutput> => {
-  Logger.addTrace("manager.backups.list: handler start");
   ctx.getUser();
   const db = await getMongoService();
   const backups = await db.backups.list();

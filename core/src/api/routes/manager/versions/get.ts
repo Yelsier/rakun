@@ -13,9 +13,6 @@ export const getVersionHandler = async ({
   input: GetVersionInput;
   ctx: RakunRequestContext;
 }): Promise<ContentVersionRecord | null> => {
-  Logger.addTrace("manager.versions.get: handler start", {
-    versionId: input.versionId,
-  });
   ctx.getUser();
   const db = await getMongoService();
   const version = await db.versions.get(input.versionId);

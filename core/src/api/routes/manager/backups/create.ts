@@ -13,10 +13,6 @@ export const createBackupHandler = async ({
   input: CreateBackupInput;
   ctx: RakunRequestContext;
 }): Promise<BackupRecord> => {
-  Logger.addTrace("manager.backups.create: handler start", {
-    contentTypes: input.contentTypes,
-    hasReason: !!input.reason,
-  });
   const user = ctx.getUser();
   const db = await getMongoService();
   const backup = await db.backups.create({

@@ -14,10 +14,6 @@ export const getHandler = async ({
   input: GetInput;
   ctx: RakunRequestContext;
 }) => {
-  Logger.addTrace("manager.get: handler start", {
-    contentType: input.contentType,
-    id: input.id,
-  });
   const db = await getMongoService();
   const { contentType: contentTypeName, id } = input;
   const contentType = getContentTypeByName(contentTypeName);

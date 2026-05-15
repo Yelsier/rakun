@@ -17,10 +17,6 @@ export const updateHandler = async ({
   input: UpdateInput;
   ctx: RakunRequestContext;
 }) => {
-  Logger.addTrace("manager.update: handler start", {
-    contentType: input.contentType,
-    id: input.id,
-  });
   const db = await getMongoService();
   const { contentType: contentTypeName, id, data } = input;
   const user = ctx.getUser();
