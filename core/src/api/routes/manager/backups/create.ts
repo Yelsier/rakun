@@ -14,9 +14,8 @@ export const createBackupHandler = async ({
 }): Promise<BackupRecord> => {
   const user = ctx.getUser();
   const db = await getMongoService();
-  const backup = await db.backups.create({
+  return db.backups.create({
     ...input,
     actorId: user._id,
   });
-  return backup;
 };

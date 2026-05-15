@@ -1,7 +1,6 @@
 import { Logger } from "../../../../lib/Logger";
 import { getMongoService } from "../../../../orm";
 import { RakunRequestContext } from "../../../context";
-import { regenerateAllRoutesMap } from "../../../utils/routes/updateRoutesMap";
 import {
   RestoreBackupInput,
   RestoreBackupOutput,
@@ -25,7 +24,5 @@ export const restoreBackupHandler = async ({
     safetyBackupId: result.safetyBackup._id,
     restoredCount: result.restoredCount,
   });
-  await regenerateAllRoutesMap();
-  Logger.addTrace("manager.backups.restore: routes regenerated");
   return result;
 };

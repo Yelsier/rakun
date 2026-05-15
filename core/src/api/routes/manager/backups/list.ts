@@ -9,6 +9,5 @@ export const listBackupsHandler = async ({
 }): Promise<ListBackupsOutput> => {
   ctx.getUser();
   const db = await getMongoService();
-  const backups = await db.backups.list();
-  return backups;
+  return db.backups.list();
 };
