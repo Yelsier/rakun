@@ -48,13 +48,13 @@ export const createManagerOperationDefinitions = () => {
   const contracts = createManagerOperationContracts();
   const implementations: RakunOperationImplementationMap<typeof contracts> = {
     "manager.contentTypes": {
-      resolve: async () => await contentTypesHandler(),
+      resolve: contentTypesHandler,
     },
     "manager.languages": {
-      resolve: async () => await languagesHandler(),
+      resolve: languagesHandler,
     },
     "manager.regenerateRoutes": {
-      resolve: async () => await regenerateRoutesHandler(),
+      resolve: regenerateRoutesHandler,
     },
     "manager.create": {
       resolve: createHandler,
