@@ -24,7 +24,6 @@ export const updateHandler = async ({
   const db = await getMongoService();
   const { contentType: contentTypeName, id, data } = input;
   const user = ctx.getUser();
-  Logger.addTrace("manager.update: user resolved", { userId: user._id });
 
   const contentType = getContentTypeByName(contentTypeName);
 

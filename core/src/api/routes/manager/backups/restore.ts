@@ -19,9 +19,6 @@ export const restoreBackupHandler = async ({
     hasReason: !!input.reason,
   });
   const user = ctx.getUser();
-  Logger.addTrace("manager.backups.restore: user resolved", {
-    userId: user._id,
-  });
   const db = await getMongoService();
   const result = await db.backups.restore({
     ...input,

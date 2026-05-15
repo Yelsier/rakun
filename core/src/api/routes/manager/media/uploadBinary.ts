@@ -97,9 +97,6 @@ export async function handleMediaBinaryUpload(
       res,
     });
     const user = ctx.getUser();
-    Logger.addTrace("manager.media.uploadBinary: user resolved", {
-      userId: user._id,
-    });
     checkPermissions(user, ["content.Media.own"]);
     Logger.addTrace("manager.media.uploadBinary: permissions checked");
 

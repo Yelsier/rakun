@@ -23,7 +23,6 @@ export const listHandler = async ({
   const { contentType: contentTypeName, query } = input;
   const contentType = getContentTypeByName(contentTypeName);
   const user = ctx.getUser();
-  Logger.addTrace("manager.list: user resolved", { userId: user._id });
 
   if (!contentType) {
     throwAppError("NOT_FOUND", {

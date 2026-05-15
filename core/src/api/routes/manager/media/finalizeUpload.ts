@@ -188,9 +188,6 @@ export const finalizeUploadHandler = async ({
   const user = ctx.getUser();
 
   try {
-    Logger.addTrace("manager.media.finalizeUpload: user resolved", {
-      userId: user._id,
-    });
     checkPermissions(user, ["content.Media.own"]);
     Logger.addTrace("manager.media.finalizeUpload: permissions checked");
 

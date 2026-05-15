@@ -49,9 +49,6 @@ export const prepareUploadHandler = async ({
     hasKey: Boolean(input.key),
   });
   const user = ctx.getUser();
-  Logger.addTrace("manager.media.prepareUpload: user resolved", {
-    userId: user._id,
-  });
 
   checkPermissions(user, ["content.Media.own"]);
   Logger.addTrace("manager.media.prepareUpload: permissions checked");

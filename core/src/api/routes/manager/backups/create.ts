@@ -18,9 +18,6 @@ export const createBackupHandler = async ({
     hasReason: !!input.reason,
   });
   const user = ctx.getUser();
-  Logger.addTrace("manager.backups.create: user resolved", {
-    userId: user._id,
-  });
   const db = await getMongoService();
   const backup = await db.backups.create({
     ...input,

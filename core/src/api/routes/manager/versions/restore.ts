@@ -19,9 +19,6 @@ export const restoreVersionHandler = async ({
     hasReason: !!input.reason,
   });
   const user = ctx.getUser();
-  Logger.addTrace("manager.versions.restore: user resolved", {
-    userId: user._id,
-  });
   const db = await getMongoService();
   const result = await db.versions.restore({
     ...input,
