@@ -1,5 +1,6 @@
 import type { RakunOperationImplementationMap } from "./types";
 import { mergeOperationContracts } from "./types";
+import { traceOperationMap } from "./tracing";
 import { createManagerOperationContracts } from "./manager-contract";
 import { getCustomApiOperationDefinitions, mergeOperationMaps } from "./custom";
 import { setSessionCookie } from "../sessionCookie";
@@ -187,8 +188,10 @@ export const createManagerOperationDefinitions = () => {
     },
   };
 
-  return mergeOperationMaps(
-    mergeOperationContracts(contracts, implementations),
-    getCustomApiOperationDefinitions("manager"),
+  return traceOperationMap(
+    mergeOperationMaps(
+      mergeOperationContracts(contracts, implementations),
+      getCustomApiOperationDefinitions("manager"),
+    ),
   );
 };
