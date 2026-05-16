@@ -1,69 +1,65 @@
-import type { RakunRequestContext } from "../context";
-import { Logger } from "../../lib/Logger";
+import type { RakunRequestContext } from '../context'
+import { Logger } from '../../lib/Logger'
 
-import type { AnyRakunOperation, RakunOperationMap } from "./types";
+import type { AnyRakunOperation, RakunOperationMap } from './types'
 
-const operationTracingSymbol = Symbol.for("rakun.operation.tracing");
-const REDACTED_TRACE_VALUE = "[redacted]";
-const CIRCULAR_TRACE_VALUE = "[circular]";
-const MAX_TRACE_INPUT_DEPTH = 6;
-const MAX_TRACE_ARRAY_ITEMS = 25;
-const MAX_TRACE_STRING_LENGTH = 500;
+const operationTracingSymbol = Symbol.for('rakun.operation.tracing')
+const REDACTED_TRACE_VALUE = '[redacted]'
+const CIRCULAR_TRACE_VALUE = '[circular]'
+const MAX_TRACE_INPUT_DEPTH = 6
+const MAX_TRACE_ARRAY_ITEMS = 25
+const MAX_TRACE_STRING_LENGTH = 500
 
 type TraceableOperation = AnyRakunOperation & {
-  [operationTracingSymbol]?: true;
-};
+  [operationTracingSymbol]?: true
+}
 
 const sensitiveTraceKeyPattern =
-  /(authorization|challenge|cookie|credential|password|secret|session|token|totp|webauthn)/i;
+  /(authorization|challenge|cookie|credential|password|secret|session|token|totp|webauthn|otpauthURL|qrDataURL)/i
 
-const sanitizeTraceValue = (
-  value: unknown,
-  depth = 0,
-  seen = new WeakSet<object>(),
-): unknown => {
+const sanitizeTraceValue = (value: unknown, depth = 0, seen = new WeakSet<object>()): unknown => {
   if (value === null || value === undefined) {
-    return value;
+    return value
   }
 
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     return value.length > MAX_TRACE_STRING_LENGTH
       ? `${value.slice(0, MAX_TRACE_STRING_LENGTH)}...`
-      : value;
+      : value
   }
 
-  if (typeof value !== "object") {
-    return value;
+  if (typeof value !== 'object') {
+    return value
   }
 
   if (value instanceof Date) {
-    return value.toISOString();
+    return value.toISOString()
   }
 
   if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
-    return "[binary]";
+    return '[binary]'
   }
 
   if (seen.has(value)) {
-    return CIRCULAR_TRACE_VALUE;
+    return CIRCULAR_TRACE_VALUE
   }
 
   if (depth >= MAX_TRACE_INPUT_DEPTH) {
-    return "[max-depth]";
+    return '[max-depth]'
   }
 
-  seen.add(value);
+  seen.add(value)
 
   if (Array.isArray(value)) {
     const items = value
       .slice(0, MAX_TRACE_ARRAY_ITEMS)
-      .map((item) => sanitizeTraceValue(item, depth + 1, seen));
+      .map((item) => sanitizeTraceValue(item, depth + 1, seen))
 
     if (value.length > MAX_TRACE_ARRAY_ITEMS) {
-      items.push(`[truncated:${value.length - MAX_TRACE_ARRAY_ITEMS}]`);
+      items.push(`[truncated:${value.length - MAX_TRACE_ARRAY_ITEMS}]`)
     }
 
-    return items;
+    return items
   }
 
   return Object.fromEntries(
@@ -72,55 +68,49 @@ const sanitizeTraceValue = (
       sensitiveTraceKeyPattern.test(key)
         ? REDACTED_TRACE_VALUE
         : sanitizeTraceValue(item, depth + 1, seen),
-    ]),
-  );
-};
+    ])
+  )
+}
 
 const addOperationStartTrace = (name: string, input: unknown) => {
   Logger.addTrace(
     `${name}: handler start`,
-    input === undefined ? undefined : { input: sanitizeTraceValue(input) },
-  );
-};
+    input === undefined ? undefined : { input: sanitizeTraceValue(input) }
+  )
+}
 
 const addOperationSuccessTrace = (name: string, result: unknown) => {
   Logger.addTrace(
     `${name}: handler success`,
-    result === undefined ? undefined : { result: sanitizeTraceValue(result) },
-  );
-};
+    result === undefined ? undefined : { result: sanitizeTraceValue(result) }
+  )
+}
 
-const traceOperation = (
-  name: string,
-  operation: AnyRakunOperation,
-): AnyRakunOperation => {
-  const traceableOperation = operation as TraceableOperation;
+const traceOperation = (name: string, operation: AnyRakunOperation): AnyRakunOperation => {
+  const traceableOperation = operation as TraceableOperation
 
   if (traceableOperation[operationTracingSymbol]) {
-    return operation;
+    return operation
   }
 
   const wrapped = {
     ...operation,
     resolve: async (args: { ctx: RakunRequestContext; input: unknown }) => {
-      addOperationStartTrace(name, args.input);
-      const result = await operation.resolve(args as never);
-      addOperationSuccessTrace(name, result);
-      return result;
+      addOperationStartTrace(name, args.input)
+      const result = await operation.resolve(args as never)
+      addOperationSuccessTrace(name, result)
+      return result
     },
-  } as TraceableOperation;
+  } as TraceableOperation
 
-  Object.defineProperty(wrapped, operationTracingSymbol, { value: true });
+  Object.defineProperty(wrapped, operationTracingSymbol, { value: true })
 
-  return wrapped;
-};
+  return wrapped
+}
 
 export const traceOperationMap = <TOperations extends RakunOperationMap>(
-  operations: TOperations,
+  operations: TOperations
 ): TOperations =>
   Object.fromEntries(
-    Object.entries(operations).map(([name, operation]) => [
-      name,
-      traceOperation(name, operation),
-    ]),
-  ) as TOperations;
+    Object.entries(operations).map(([name, operation]) => [name, traceOperation(name, operation)])
+  ) as TOperations
