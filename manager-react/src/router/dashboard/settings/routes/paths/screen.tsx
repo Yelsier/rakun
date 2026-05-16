@@ -72,16 +72,18 @@ export const ManagerSettingsRoutePathsScreen = () => {
   return (
     <div className='container mx-auto flex flex-col items-start gap-4 py-10'>
       {canUpdateRoutes ? (
-        <div className='self-end'>
+        <div className='self-end' data-tour='route-paths-regenerate'>
           <Button onClick={() => setConfirmOpen(true)}>Regenerar rutas</Button>
         </div>
       ) : null}
-      <DataTable
-        sorting={sorting}
-        setSorting={setSorting}
-        columns={columns()}
-        data={listQuery.data.items as RouteMapRecord[]}
-      />
+      <div className='w-full' data-tour='route-paths-table'>
+        <DataTable
+          sorting={sorting}
+          setSorting={setSorting}
+          columns={columns()}
+          data={listQuery.data.items as RouteMapRecord[]}
+        />
+      </div>
       <PaginationController
         page={page}
         setPage={setPage}

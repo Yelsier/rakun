@@ -288,7 +288,7 @@ export const ManagerSettingsRoutesScreen = () => {
 
   return (
     <div className="container mx-auto flex flex-col items-start gap-6 px-4 py-10">
-      <div className="flex w-full justify-end gap-2">
+      <div className="flex w-full justify-end gap-2" data-tour="routes-create">
         <Button asChild variant="secondary">
           <ManagerLink href="/settings/routes/paths">Route paths</ManagerLink>
         </Button>
@@ -402,16 +402,18 @@ export const ManagerSettingsRoutesScreen = () => {
         setEdit={setEdit}
         defaultValues={edit}
       />
-      <DataTable
-        columns={columns({
-          getTranslation,
-          setEdit,
-          hasPermissions,
-          canEditLayoutModules: (route) => layoutModuleRouteIds.has(route._id),
-          onEditLayoutModules: setLayoutModulesRoute,
-        })}
-        data={routeListQuery.data.items as ManagerRouteRecord[]}
-      />
+      <div className="w-full" data-tour="routes-table">
+        <DataTable
+          columns={columns({
+            getTranslation,
+            setEdit,
+            hasPermissions,
+            canEditLayoutModules: (route) => layoutModuleRouteIds.has(route._id),
+            onEditLayoutModules: setLayoutModulesRoute,
+          })}
+          data={routeListQuery.data.items as ManagerRouteRecord[]}
+        />
+      </div>
       <PaginationController
         page={page}
         setPage={setPage}

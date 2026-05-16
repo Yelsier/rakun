@@ -80,6 +80,7 @@ export const renderManagerRoute = (args: {
       contentTypes,
     }) ?? (
       <ManagerDashboardLayout
+        route={route}
         contentTypes={contentTypes}
         pathname={pathname}
         basePath={basePath}

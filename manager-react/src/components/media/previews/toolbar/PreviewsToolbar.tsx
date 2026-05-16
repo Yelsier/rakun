@@ -51,7 +51,10 @@ export default function PreviewsToolbar() {
   } = useMediaLibrary()
 
   return (
-    <div className='flex items-center justify-between gap-2 flex-wrap'>
+    <div
+      className='flex items-center justify-between gap-2 flex-wrap'
+      data-tour='media-toolbar'
+    >
       <p className='text-muted-foreground text-sm'>
         {mediaCount} file{mediaCount === 1 ? '' : 's'}
       </p>

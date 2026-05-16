@@ -240,7 +240,7 @@ export const ManagerSettingsLiteralsScreen = () => {
 
   return (
     <div className="container mx-auto flex flex-col gap-4 px-4 py-10">
-      <Card>
+      <Card data-tour="literals-toolbar">
         <CardHeader>
           <CardTitle>Literals</CardTitle>
         </CardHeader>
@@ -270,7 +270,7 @@ export const ManagerSettingsLiteralsScreen = () => {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
+      <div className="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]" data-tour="literals-list">
         <div className="flex flex-col gap-4">
 
         <Card className="h-fit">

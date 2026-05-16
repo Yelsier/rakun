@@ -33,6 +33,8 @@ import { webauthnAuthOptionsHandler } from "../routes/manager/auth/webauthn/weba
 import { webauthnAuthVerifyHandler } from "../routes/manager/auth/webauthn/webauthnAuthVerify";
 import { accountInfoHandler } from "../routes/manager/auth/accountInfo";
 import { updateAccountHandler } from "../routes/manager/auth/updateAccount";
+import { updateTutorialPreferencesHandler } from "../routes/manager/auth/updateTutorialPreferences";
+import { markTourSeenHandler } from "../routes/manager/auth/markTourSeen";
 import { deleteSessionHandler } from "../routes/manager/auth/deleteSession";
 import { prepareUploadHandler } from "../routes/manager/media/prepareUpload";
 import { finalizeUploadHandler } from "../routes/manager/media/finalizeUpload";
@@ -155,6 +157,12 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.auth.updateAccount": {
       resolve: updateAccountHandler,
+    },
+    "manager.auth.updateTutorialPreferences": {
+      resolve: updateTutorialPreferencesHandler,
+    },
+    "manager.auth.markTourSeen": {
+      resolve: markTourSeenHandler,
     },
     "manager.auth.deleteSession": {
       resolve: deleteSessionHandler,

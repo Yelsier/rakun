@@ -2,11 +2,13 @@
 
 import type { EncodedContentType } from "@rakun-kit/core/client";
 import type { ReactNode } from "react";
+import type { ManagerResolvedRoute } from "./router/shared/types";
 
 import { AppSidebar, type ManagerSidebarItem } from "./components/app-sidebar";
 import BreadcrumbComponent from "./components/bread-crumb";
 import { ScrollArea } from "./components/ui/scroll-area";
 import { Separator } from "./components/ui/separator";
+import { ManagerHelpProvider } from "./help/manager-help";
 import {
   SidebarHeader,
   SidebarInset,
@@ -39,6 +41,7 @@ export const ManagerAuthLayout = ({ children }: ManagerAuthLayoutProps) => (
 
 export type ManagerDashboardLayoutProps = {
   children: ReactNode;
+  route?: ManagerResolvedRoute;
   contentTypes: EncodedContentType[];
   pathname?: string;
   basePath?: string;
@@ -50,6 +53,7 @@ export type ManagerDashboardLayoutProps = {
 
 export const ManagerDashboardLayout = ({
   children,
+  route,
   contentTypes,
   pathname,
   basePath = "",
@@ -59,30 +63,42 @@ export const ManagerDashboardLayout = ({
   headerEnd,
 }: ManagerDashboardLayoutProps) => (
   <SidebarProvider className="max-h-screen overflow-hidden">
-    {sidebar ?? (
-      <AppSidebar
-        contentTypes={contentTypes}
-        pathname={pathname}
-        basePath={basePath}
-        secondaryItems={secondaryItems}
-      />
-    )}
-    <SidebarInset className="p-4 pt-0">
-      <SidebarHeader className="flex h-16 shrink-0 flex-row items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <SidebarTrigger className="-ml-1" />
-          <Separator
-            orientation="vertical"
-            className="mr-2 data-[orientation=vertical]:h-4"
-          />
-          {headerStart ?? (
-            <BreadcrumbComponent basePath={basePath} pathname={pathname} />
-          )}
-        </div>
-        {headerEnd}
-      </SidebarHeader>
+    <ManagerHelpProvider
+      route={route ?? { kind: "unknown", pathname: pathname ?? "/" }}
+    >
+      {sidebar ?? (
+        <AppSidebar
+          contentTypes={contentTypes}
+          pathname={pathname}
+          basePath={basePath}
+          secondaryItems={secondaryItems}
+        />
+      )}
+      <SidebarInset className="p-4 pt-0">
+        <SidebarHeader
+          className="flex h-16 shrink-0 flex-row items-center justify-between gap-2"
+          data-tour="manager-header"
+        >
+          <div className="flex items-center gap-2">
+            <SidebarTrigger className="-ml-1" />
+            <Separator
+              orientation="vertical"
+              className="mr-2 data-[orientation=vertical]:h-4"
+            />
+            {headerStart ?? (
+              <BreadcrumbComponent basePath={basePath} pathname={pathname} />
+            )}
+          </div>
+          {headerEnd}
+        </SidebarHeader>
 
-      <ScrollArea className="max-h-[calc(100vh-6rem)]">{children}</ScrollArea>
-    </SidebarInset>
+        <ScrollArea
+          className="max-h-[calc(100vh-6rem)]"
+          data-tour="manager-page"
+        >
+          {children}
+        </ScrollArea>
+      </SidebarInset>
+    </ManagerHelpProvider>
   </SidebarProvider>
 );

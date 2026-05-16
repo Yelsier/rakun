@@ -20,6 +20,7 @@ import {
 import { NavMain } from './nav-main'
 import { NavSecondary } from './nav-secondary'
 import { NavUser } from './nav-user'
+import { useManagerHelp } from '@/help/manager-help'
 import {
   Sidebar,
   SidebarContent,
@@ -35,6 +36,8 @@ export type ManagerSidebarItem = {
   url: string
   icon?: LucideIcon
   isActive?: boolean
+  disabled?: boolean
+  onClick?: () => void
   items?: ManagerSidebarItem[]
 }
 
@@ -107,11 +110,6 @@ const getDefaultSecondaryNavItems = (basePath: string): ManagerSidebarItem[] => 
     url: getManagerPathHref('/settings', { basePath }),
     icon: Settings,
   },
-  {
-    title: 'Help',
-    url: getManagerPathHref('/help', { basePath }),
-    icon: HelpCircle,
-  },
 ]
 
 const getContentTypeNavItems = (
@@ -176,8 +174,17 @@ export function AppSidebar({
   basePath?: string
   secondaryItems?: ManagerSidebarItem[]
 }) {
+  const { hasCurrentTour, startCurrentTour } = useManagerHelp()
+  const helpItem: ManagerSidebarItem = {
+    title: 'Help',
+    url: '#',
+    icon: HelpCircle,
+    disabled: !hasCurrentTour,
+    onClick: startCurrentTour,
+  }
+
   return (
-    <Sidebar variant='inset' {...props}>
+    <Sidebar variant='inset' data-tour="manager-sidebar" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -201,14 +208,16 @@ export function AppSidebar({
           items={getContentTypeNavItems(contentTypes, basePath, pathname)}
         />
         <NavSecondary
-          items={secondaryItems.map((item) => ({
+          items={[...secondaryItems, helpItem].map((item) => ({
             ...item,
-            isActive: isActiveHref(item.url, pathname, basePath),
+            isActive: item.onClick
+              ? false
+              : isActiveHref(item.url, pathname, basePath),
           }))}
           className='mt-auto'
         />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter data-tour="manager-user">
         <NavUser />
       </SidebarFooter>
     </Sidebar>

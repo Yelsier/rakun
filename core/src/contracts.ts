@@ -12,6 +12,7 @@ export * from "./schemas/manager/updatePassword";
 export * from "./schemas/manager/literals/list";
 export * from "./schemas/manager/literals/upsert";
 export * from "./schemas/manager/auth/accountInfo";
+export * from "./schemas/manager/auth/tutorials";
 export * from "./schemas/manager/auth/login";
 export * from "./schemas/manager/auth/logout";
 export * from "./schemas/manager/auth/deleteSession";

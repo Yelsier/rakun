@@ -1227,7 +1227,7 @@ const EditPage: React.FC<{
         >
           <div className="flex gap-2 justify-between items-center sticky top-0 bg-background z-50 pb-3 mb-3 border-b">
             <div className="flex">
-              <TabsList variant={'line'}>
+              <TabsList variant={'line'} data-tour="content-edit-tabs">
                 {hasNonIterables ? (
                   <TabsTrigger
                     value="info"
@@ -1295,20 +1295,22 @@ const EditPage: React.FC<{
                   </Button>
                 </>
               ) : hasVisibility ? (
-                <Select
-                  value={editableVisibility}
-                  onValueChange={(value) => setVisibility(value as DocumentVisibility)}
-                >
-                  <SelectTrigger className={cn('w-36', visibilitySelectStyles[editableVisibility])}>
-                    <VisibilityIcon className="text-current" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="hidden">Hidden</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div data-tour="content-edit-visibility">
+                  <Select
+                    value={editableVisibility}
+                    onValueChange={(value) => setVisibility(value as DocumentVisibility)}
+                  >
+                    <SelectTrigger className={cn('w-36', visibilitySelectStyles[editableVisibility])}>
+                      <VisibilityIcon className="text-current" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="hidden">Hidden</SelectItem>
+                      <SelectItem value="published">Published</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               ) : null}
               {contentTypeId && !isTrashed ? (
                 <Button
@@ -1333,6 +1335,7 @@ const EditPage: React.FC<{
                     }
                     className="cursor-pointer ml-auto"
                     onClick={() => void handleSave()}
+                    data-tour="content-edit-save"
                   >
                     Save
                   </Button>
@@ -1349,6 +1352,7 @@ const EditPage: React.FC<{
               forceMount
               hidden={activeTab !== 'content'}
               className="w-full"
+              data-tour="content-edit-fields"
             >
               <ContentTypeEdit
                 defaultData={draft.current}
@@ -1361,7 +1365,7 @@ const EditPage: React.FC<{
             </TabsContent>
           ) : null}
           {hasNonIterables ? (
-            <TabsContent value="info" forceMount hidden={activeTab !== 'info'} className="w-full">
+            <TabsContent value="info" forceMount hidden={activeTab !== 'info'} className="w-full" data-tour="content-edit-fields">
               <ContentTypeEdit
                 defaultData={draft.current}
                 ref={nonIterablesRef}
@@ -1371,7 +1375,7 @@ const EditPage: React.FC<{
             </TabsContent>
           ) : null}
           {hasSeo ? (
-            <TabsContent value="seo" forceMount hidden={activeTab !== 'seo'} className="w-full">
+            <TabsContent value="seo" forceMount hidden={activeTab !== 'seo'} className="w-full" data-tour="content-edit-fields">
               <ContentTypeEdit
                 defaultData={draft.current}
                 ref={seoRef}

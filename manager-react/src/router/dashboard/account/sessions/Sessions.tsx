@@ -16,7 +16,7 @@ export default function Sessions(props: {
   const [deleteSession, setDeleteSession] = useState<string | null>(null)
 
   return (
-    <div className='w-full'>
+    <div className='w-full' data-tour='account-sessions'>
       <h2 className='mb-4 text-xl font-bold'>Active Sessions</h2>
       <DeleteSession
         session={deleteSession}

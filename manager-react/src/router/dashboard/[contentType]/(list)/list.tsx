@@ -111,7 +111,7 @@ const ListContents: React.FC<{ contentType: string; fields?: string[] }> = ({
             </TabsTrigger>
           </TabsList>
           {canCreate && (
-            <ManagerLink href={`/${contentType}/create`}>
+            <ManagerLink href={`/${contentType}/create`} data-tour='content-list-create'>
               <Button>
                 <Plus />
                 Create
@@ -134,20 +134,22 @@ const ListContents: React.FC<{ contentType: string; fields?: string[] }> = ({
         item={permanentDeleteItem}
         mode='delete'
       />
-      <DataTable
-        columns={columns({
-          fields: fields || [],
-          contentType,
-          getTranslation,
-          setDeleteItem,
-          setPermanentDeleteItem,
-          setRestoreItem,
-          isTrash,
-          hasPermissions,
-          hasAnyPermission,
-        })}
-        data={items as object[]}
-      />
+      <div data-tour='content-list-table'>
+        <DataTable
+          columns={columns({
+            fields: fields || [],
+            contentType,
+            getTranslation,
+            setDeleteItem,
+            setPermanentDeleteItem,
+            setRestoreItem,
+            isTrash,
+            hasPermissions,
+            hasAnyPermission,
+          })}
+          data={items as object[]}
+        />
+      </div>
       {restoreItem ? (
         <div className='flex items-center justify-end gap-2 rounded-md border p-3'>
           <span className='text-muted-foreground text-sm'>

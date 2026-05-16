@@ -7,7 +7,7 @@ import { MfaEnroller } from './MfaEnroller'
 
 export default function Mfa(props: AccountInfoOutput) {
   return (
-    <div className='flex w-full flex-col gap-4'>
+    <div className='flex w-full flex-col gap-4' data-tour='account-mfa'>
       <div className='flex w-full items-start justify-between gap-4'>
         <div>
           <h2 className='mb-4 text-xl font-bold'>Multi-Factor Authentication</h2>

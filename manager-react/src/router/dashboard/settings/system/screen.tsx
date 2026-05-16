@@ -152,7 +152,7 @@ export const ManagerSettingsSystemScreen = () => {
 
       <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         {canReadBackups ? (
-          <Card className="rounded-lg">
+          <Card className="rounded-lg" data-tour="system-backups">
             <CardHeader>
               <CardTitle>Backups</CardTitle>
             </CardHeader>
@@ -208,7 +208,7 @@ export const ManagerSettingsSystemScreen = () => {
         ) : null}
 
         {canReadMigrations ? (
-          <Card className="rounded-lg">
+          <Card className="rounded-lg" data-tour="system-migrations">
             <CardHeader>
               <CardTitle>Schema State</CardTitle>
             </CardHeader>
@@ -240,7 +240,7 @@ export const ManagerSettingsSystemScreen = () => {
       </section>
 
       {canReadMigrations ? (
-        <Card className="rounded-lg">
+        <Card className="rounded-lg" data-tour="system-migrations">
           <CardHeader>
             <CardTitle>Migration Ledger</CardTitle>
           </CardHeader>

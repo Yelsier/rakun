@@ -38,7 +38,7 @@ export function ManagerUsersScreen() {
   return (
     <div className='container mx-auto flex flex-col items-start gap-6 px-4 py-10'>
       {hasPermissions(['manager.users.updateAny']) ? (
-        <div className='self-end'>
+        <div className='self-end' data-tour='users-create'>
           <CreateUser refetch={() => void listQuery.refetch()} />
         </div>
       ) : null}
@@ -52,15 +52,17 @@ export function ManagerUsersScreen() {
         setDeleteUser={setDeleteUser}
         user={deleteUser}
       />
-      <DataTable
-        columns={columns({
-          setEdit,
-          setDeleteUser,
-          hasPermissions,
-          hasAnyPermission,
-        })}
-        data={listQuery.data.items as ManagerUserRecord[]}
-      />
+      <div className='w-full' data-tour='users-table'>
+        <DataTable
+          columns={columns({
+            setEdit,
+            setDeleteUser,
+            hasPermissions,
+            hasAnyPermission,
+          })}
+          data={listQuery.data.items as ManagerUserRecord[]}
+        />
+      </div>
       <PaginationController
         page={page}
         setPage={setPage}

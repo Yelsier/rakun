@@ -113,7 +113,7 @@ export function ManagerAccountScreen() {
 
   return (
     <div className="container mx-auto flex flex-col items-start gap-6 px-4 py-10">
-      <Card className="w-full rounded-lg">
+      <Card className="w-full rounded-lg" data-tour="account-profile">
         <CardHeader className="flex-row items-center justify-between gap-4">
           <CardTitle>Profile</CardTitle>
           <UpdatePassword />

@@ -6,19 +6,12 @@ import type { ApiOperationsOutput } from '@rakun-kit/core/client'
 
 import { CodeBlock } from './CodeBlock'
 import ApiPlayground from './test'
-import {
-  createDefaultInput,
-  operationNameToTitle,
-} from './shared'
+import { createDefaultInput, operationNameToTitle } from './shared'
 import { SchemaViewer } from './SchemaViewer'
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useManagerQuery } from '@/client/react'
@@ -48,9 +41,7 @@ const addToTree = (items: GroupNode[], parts: string[], doc: OperationDoc) => {
   }
 
   const existing = items.find(
-    (item) =>
-      Object.prototype.hasOwnProperty.call(item, head) &&
-      Array.isArray(item[head]),
+    (item) => Object.prototype.hasOwnProperty.call(item, head) && Array.isArray(item[head])
   )
 
   if (existing) {
@@ -120,18 +111,18 @@ const renderTree = ({
       if (!groupHasMatch(value, search)) return []
 
       return (
-        <Collapsible key={`${depth}-${key}`} defaultOpen className='block'>
+        <Collapsible key={`${depth}-${key}`} defaultOpen className="block">
           <CollapsibleTrigger asChild>
             <button
-              type='button'
+              type="button"
               style={{ marginLeft: depth * 12 }}
-              className='flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground'
+              className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             >
-              <Folder className='size-4' />
+              <Folder className="size-4" />
               {operationNameToTitle(key)}
             </button>
           </CollapsibleTrigger>
-          <CollapsibleContent className='flex flex-col gap-2'>
+          <CollapsibleContent className="flex flex-col gap-2">
             {renderTree({
               items: value,
               search,
@@ -148,7 +139,7 @@ const renderTree = ({
 
     return (
       <button
-        type='button'
+        type="button"
         key={value.name}
         style={{ marginLeft: depth * 12 }}
         className={`flex items-center gap-2 rounded px-3 py-1.5 text-left text-sm transition-colors ${
@@ -171,18 +162,12 @@ export default function ApiTest() {
     name: 'manager.apiOperations',
     input: undefined,
   })
-  const docs = useMemo(
-    () => buildDocs(operationsQuery.data ?? []),
-    [operationsQuery.data],
-  )
+  const docs = useMemo(() => buildDocs(operationsQuery.data ?? []), [operationsQuery.data])
   const tree = useMemo(() => buildTree(docs), [docs])
   const [search, setSearch] = useState('')
   const [selectedName, setSelectedName] = useState<string>('manager.contentTypes')
 
-  const filteredDocs = useMemo(
-    () => docs.filter((doc) => itemMatches(doc, search)),
-    [docs, search],
-  )
+  const filteredDocs = useMemo(() => docs.filter((doc) => itemMatches(doc, search)), [docs, search])
 
   useEffect(() => {
     if (filteredDocs.length === 0) return
@@ -195,7 +180,7 @@ export default function ApiTest() {
 
   if (operationsQuery.isLoading) {
     return (
-      <div className='rounded-xl border p-6 text-sm text-muted-foreground'>
+      <div className="rounded-xl border p-6 text-sm text-muted-foreground">
         Loading API operations...
       </div>
     )
@@ -203,7 +188,7 @@ export default function ApiTest() {
 
   if (operationsQuery.isError) {
     return (
-      <div className='rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive'>
+      <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive">
         Failed to load API operations.
       </div>
     )
@@ -211,39 +196,45 @@ export default function ApiTest() {
 
   if (!selectedDoc) {
     return (
-      <div className='rounded-xl border p-6 text-sm text-muted-foreground'>
+      <div className="rounded-xl border p-6 text-sm text-muted-foreground">
         No API operations found.
       </div>
     )
   }
 
   return (
-    <div className='grid w-full grid-cols-[20rem_minmax(0,1fr)] rounded-xl border'>
-      <ScrollArea className='relative h-[calc(100vh-10rem)] overflow-y-auto border-r p-4'>
-        <div className='bg-card sticky top-0 mb-4 flex items-center gap-2 rounded-md border px-3 py-1'>
-          <Search className='size-4 text-muted-foreground' />
+    <div className="grid w-full grid-cols-[20rem_minmax(0,1fr)] rounded-xl border">
+      <ScrollArea
+        className="relative h-[calc(100vh-10rem)] overflow-y-auto border-r p-4"
+        data-tour="api-routes-list"
+      >
+        <div
+          className="bg-card sticky top-0 mb-4 flex items-center gap-2 rounded-md border px-3 py-1"
+          data-tour="api-routes-search"
+        >
+          <Search className="size-4 text-muted-foreground" />
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            className='border-0 shadow-none focus-visible:ring-0'
-            placeholder='Search...'
+            className="border-0 shadow-none focus-visible:ring-0"
+            placeholder="Search..."
           />
         </div>
         {Object.entries(tree).map(([key, value]) => {
           if (!groupHasMatch(value, search)) return null
 
           return (
-            <Collapsible key={key} defaultOpen className='block'>
+            <Collapsible key={key} defaultOpen className="block">
               <CollapsibleTrigger asChild>
                 <button
-                  type='button'
-                  className='flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground'
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                 >
-                  <Folder className='size-4' />
+                  <Folder className="size-4" />
                   {operationNameToTitle(key)}
                 </button>
               </CollapsibleTrigger>
-              <CollapsibleContent className='flex flex-col gap-2'>
+              <CollapsibleContent className="flex flex-col gap-2">
                 {renderTree({
                   items: value,
                   search,
@@ -257,20 +248,19 @@ export default function ApiTest() {
         })}
       </ScrollArea>
 
-      <ScrollArea className='h-[calc(100vh-10rem)] overflow-y-auto p-4'>
-        <section className='space-y-6'>
+      <ScrollArea
+        className="h-[calc(100vh-10rem)] overflow-y-auto p-4"
+        data-tour="api-routes-detail"
+      >
+        <section className="space-y-6">
           <div>
-            <div className='flex items-center gap-2'>
-              <Badge variant={getKindBadgeVariant(selectedDoc.kind)}>
-                {selectedDoc.kind}
-              </Badge>
-              <Badge variant='outline'>{selectedDoc.method.toUpperCase()}</Badge>
-              <Badge variant='outline'>{selectedDoc.access}</Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant={getKindBadgeVariant(selectedDoc.kind)}>{selectedDoc.kind}</Badge>
+              <Badge variant="outline">{selectedDoc.method.toUpperCase()}</Badge>
+              <Badge variant="outline">{selectedDoc.access}</Badge>
             </div>
-            <h2 className='mt-3 text-3xl font-semibold'>{selectedDoc.title}</h2>
-            <p className='mt-2 text-sm text-muted-foreground'>
-              {selectedDoc.description}
-            </p>
+            <h2 className="mt-3 text-3xl font-semibold">{selectedDoc.title}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{selectedDoc.description}</p>
           </div>
 
           <Card>
@@ -279,17 +269,15 @@ export default function ApiTest() {
               <CardDescription>{selectedDoc.name}</CardDescription>
             </CardHeader>
             <CardContent>
-              <CodeBlock className='min-h-0 py-3'>{selectedDoc.path}</CodeBlock>
+              <CodeBlock className="min-h-0 py-3">{selectedDoc.path}</CodeBlock>
             </CardContent>
           </Card>
 
-          <div className='grid grid-cols-1 gap-4 xl:grid-cols-2'>
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle>Input Schema</CardTitle>
-                <CardDescription>
-                  JSON Schema generated from the contract input.
-                </CardDescription>
+                <CardDescription>JSON Schema generated from the contract input.</CardDescription>
               </CardHeader>
               <CardContent>
                 <SchemaViewer schema={selectedDoc.input} />
@@ -299,9 +287,7 @@ export default function ApiTest() {
             <Card>
               <CardHeader>
                 <CardTitle>Output Schema</CardTitle>
-                <CardDescription>
-                  JSON Schema generated from the contract output.
-                </CardDescription>
+                <CardDescription>JSON Schema generated from the contract output.</CardDescription>
               </CardHeader>
               <CardContent>
                 <SchemaViewer schema={selectedDoc.output} />
@@ -323,10 +309,7 @@ export default function ApiTest() {
                   path: selectedDoc.path,
                   method: selectedDoc.method,
                 }}
-                defaultInput={createDefaultInput(
-                  selectedDoc.name,
-                  selectedDoc.input,
-                )}
+                defaultInput={createDefaultInput(selectedDoc.name, selectedDoc.input)}
               />
             </CardContent>
           </Card>

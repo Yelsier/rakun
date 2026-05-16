@@ -518,7 +518,10 @@ export default function Previews() {
   return (
     <ScrollArea className='h-[calc(100%-2.5rem)] w-full'>
       <MediaPreviewProvider value={mediaPreviewContextValue}>
-        <div className='mb-2 grid w-full grid-cols-2 gap-2 p-1 lg:grid-cols-6'>
+        <div
+          className='mb-2 grid w-full grid-cols-2 gap-2 p-1 lg:grid-cols-6'
+          data-tour='media-folders'
+        >
           <Button
             variant='outline'
             disabled={isCreatingFolder}
@@ -595,7 +598,7 @@ export default function Previews() {
             onClick={(event) => event.preventDefault()}
             className='group/dropzone relative w-full rounded-xl border border-transparent p-0 hover:bg-transparent! focus-visible:bg-transparent! data-dragging:border-primary/40 data-dragging:bg-transparent!'
           >
-            <div className='relative w-full'>
+            <div className='relative w-full' data-tour='media-grid'>
               <div className='pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-background/50 opacity-0 backdrop-blur transition-opacity duration-200 ease-out group-data-dragging/dropzone:opacity-100'>
                 <div className='flex flex-col items-center gap-1 text-center'>
                   <div className='flex items-center justify-center rounded-full border p-2.5'>
