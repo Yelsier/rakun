@@ -32,6 +32,7 @@ import { webauthnRegisterVerifyHandler } from "../routes/manager/auth/webauthn/w
 import { webauthnAuthOptionsHandler } from "../routes/manager/auth/webauthn/webauthnAuthOptions";
 import { webauthnAuthVerifyHandler } from "../routes/manager/auth/webauthn/webauthnAuthVerify";
 import { accountInfoHandler } from "../routes/manager/auth/accountInfo";
+import { updateAccountHandler } from "../routes/manager/auth/updateAccount";
 import { deleteSessionHandler } from "../routes/manager/auth/deleteSession";
 import { prepareUploadHandler } from "../routes/manager/media/prepareUpload";
 import { finalizeUploadHandler } from "../routes/manager/media/finalizeUpload";
@@ -151,6 +152,9 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.auth.accountInfo": {
       resolve: accountInfoHandler,
+    },
+    "manager.auth.updateAccount": {
+      resolve: updateAccountHandler,
     },
     "manager.auth.deleteSession": {
       resolve: deleteSessionHandler,

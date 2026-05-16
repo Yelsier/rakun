@@ -25,6 +25,16 @@ export type ContentVersionRecord = {
   operation: VersionOperation;
   actorId?: string;
   actorLabel?: string;
+  actorAvatar?: {
+    _id: string;
+    name?: string;
+    key?: string;
+    access?: "public" | "private";
+    mime?: string;
+    url?: string;
+    previewKey?: string;
+    previewUrl?: string;
+  };
   reason?: string;
   changedAt: Date;
   schemaVersion?: number;
@@ -132,7 +142,12 @@ const toContentVersionRecord = (
   return record as unknown as ContentVersionRecord;
 };
 
-const loadActorLabels = async (
+type ActorInfo = {
+  label: string;
+  avatar?: ContentVersionRecord["actorAvatar"];
+};
+
+const loadActorInfo = async (
   db: Db,
   actorIds: readonly (string | undefined)[],
 ) => {
@@ -142,18 +157,28 @@ const loadActorLabels = async (
   ).filter((actorId) => ObjectId.isValid(actorId));
 
   if (ids.length === 0) {
-    return new Map<string, string>();
+    return new Map<string, ActorInfo>();
   }
 
   const users = await db
     .collection(ManagerUser.name)
     .find({ _id: { $in: ids.map((id) => new ObjectId(id)) } })
-    .project({ user: 1, email: 1 })
+    .project({
+      user: 1,
+      email: 1,
+      avatarId: 1,
+      avatarKey: 1,
+      avatarAccess: 1,
+      avatarUrl: 1,
+      avatarPreviewUrl: 1,
+    })
     .toArray();
 
   return new Map(
     users.map((user) => {
       const id = String(user._id);
+      const avatarId =
+        typeof user.avatarId === "string" ? user.avatarId : undefined;
       const label =
         typeof user.user === "string" && user.user.length > 0
           ? user.user
@@ -161,7 +186,34 @@ const loadActorLabels = async (
             ? user.email
             : id;
 
-      return [id, label] as const;
+      return [
+        id,
+        {
+          label,
+          avatar: avatarId
+            ? {
+                _id: avatarId,
+                key:
+                  typeof user.avatarKey === "string"
+                    ? user.avatarKey
+                    : undefined,
+                access:
+                  user.avatarAccess === "public" ||
+                  user.avatarAccess === "private"
+                    ? user.avatarAccess
+                    : undefined,
+                url:
+                  typeof user.avatarUrl === "string"
+                    ? user.avatarUrl
+                    : undefined,
+                previewUrl:
+                  typeof user.avatarPreviewUrl === "string"
+                    ? user.avatarPreviewUrl
+                    : undefined,
+              }
+            : undefined,
+        },
+      ] as const;
     }),
   );
 };
@@ -170,17 +222,19 @@ const enrichVersionRecords = async (
   db: Db,
   records: ContentVersionRecord[],
 ) => {
-  const actorLabels = await loadActorLabels(
+  const actorInfo = await loadActorInfo(
     db,
     records.map((record) => record.actorId),
   );
 
   return records.map((record) => {
-    const actorLabel = record.actorId
-      ? actorLabels.get(record.actorId)
+    const actor = record.actorId
+      ? actorInfo.get(record.actorId)
       : undefined;
 
-    return actorLabel ? { ...record, actorLabel } : record;
+    return actor
+      ? { ...record, actorLabel: actor.label, actorAvatar: actor.avatar }
+      : record;
   });
 };
 

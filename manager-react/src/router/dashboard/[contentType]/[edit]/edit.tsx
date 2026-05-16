@@ -53,6 +53,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/state/session";
+import { UserAvatar } from "@/components/user-avatar";
 
 type RouteLayoutModuleRecord = {
   _id: string;
@@ -109,6 +110,10 @@ type VersionRecord = {
   operation: "create" | "update" | "delete" | "restore";
   actorId?: string;
   actorLabel?: string;
+  actorAvatar?: {
+    previewUrl?: string;
+    url?: string;
+  };
   changedAt: string | Date;
   diff: VersionDiffEntry[];
 };
@@ -840,11 +845,20 @@ const VersionHistory = ({
                     {visibleDiffs.length === 1 ? "" : "s"}
                   </Badge>
                 </CardTitle>
-                <div className="text-muted-foreground text-xs">
-                  {formatDateTime(version.changedAt)}
-                  {version.actorLabel || version.actorId
-                    ? ` by ${version.actorLabel ?? version.actorId}`
-                    : ""}
+                <div className="text-muted-foreground flex items-center gap-2 text-xs">
+                  <span>{formatDateTime(version.changedAt)}</span>
+                  {version.actorLabel || version.actorId ? (
+                    <>
+                      <span>by</span>
+                      <UserAvatar
+                        name={version.actorLabel}
+                        avatar={version.actorAvatar}
+                        className="size-5"
+                        fallbackClassName="text-[10px]"
+                      />
+                      <span>{version.actorLabel ?? version.actorId}</span>
+                    </>
+                  ) : null}
                 </div>
               </div>
               {canRestore ? (

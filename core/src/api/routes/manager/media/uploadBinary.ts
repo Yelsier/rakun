@@ -13,6 +13,7 @@ const uploadHeadersSchema = z.object({
   fileName: z.string().min(1),
   mime: z.string().min(1).optional(),
   optimizeRaw: z.string().optional(),
+  purpose: z.enum(["profileAvatar"]).optional(),
 });
 
 const parseCookieHeader = (cookieHeader: string | undefined) => {
@@ -96,7 +97,6 @@ export async function handleMediaBinaryUpload(
       res,
     });
     const user = ctx.getUser();
-    checkPermissions(user, ["content.Media.own"]);
 
     const parsedHeaders = uploadHeadersSchema.parse({
       key: getHeader(req, "x-cms-upload-key"),
@@ -104,6 +104,7 @@ export async function handleMediaBinaryUpload(
       fileName: getHeader(req, "x-cms-upload-file-name"),
       mime: getHeader(req, "x-cms-upload-mime") || undefined,
       optimizeRaw: getHeader(req, "x-cms-upload-optimize") || undefined,
+      purpose: getHeader(req, "x-cms-upload-purpose") || undefined,
     });
     Logger.addTrace("manager.media.uploadBinary: headers parsed", {
       key: parsedHeaders.key,
@@ -142,6 +143,16 @@ export async function handleMediaBinaryUpload(
     const mime = sanitizeMime(
       parsedHeaders.mime || getHeader(req, "content-type") || undefined,
     );
+    if (parsedHeaders.purpose === "profileAvatar") {
+      if (!mime.startsWith("image/")) {
+        sendJson(res, 400, {
+          message: "Profile avatars must be images.",
+        });
+        return;
+      }
+    } else {
+      checkPermissions(user, ["content.Media.own"]);
+    }
 
     const optimized = await optimizeImageUpload({
       buffer: rawBody,

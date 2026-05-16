@@ -181,7 +181,15 @@ export const finalizeUploadHandler = async ({
   const user = ctx.getUser();
 
   try {
-    checkPermissions(user, ["content.Media.own"]);
+    if (input.purpose === "profileAvatar") {
+      if (input.mime && !input.mime.startsWith("image/")) {
+        throwAppError("VALIDATION", {
+          errors: [{ message: "Profile avatars must be images." }],
+        });
+      }
+    } else {
+      checkPermissions(user, ["content.Media.own"]);
+    }
 
     const canReadAny = hasPermissions(user, ["content.Media.readAny"]);
     Logger.addTrace("manager.media.finalizeUpload: ownership scope resolved", {

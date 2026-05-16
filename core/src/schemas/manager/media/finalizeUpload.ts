@@ -1,6 +1,6 @@
 import z from 'zod'
 
-import { mediaAccessSchema } from './prepareUpload'
+import { mediaAccessSchema, mediaUploadPurposeSchema } from './prepareUpload'
 
 export const mediaStatusSchema = z.enum(['uploaded', 'archived', 'deleted'])
 export const mediaOrientationSchema = z.enum(['portrait', 'landscape'])
@@ -83,6 +83,7 @@ export const finalizeUploadInput = z.object({
   folderId: z.string().min(1).optional(),
   folderPath: z.string().min(1).optional(),
   status: mediaStatusSchema.optional(),
+  purpose: mediaUploadPurposeSchema.optional(),
 })
 
 export const finalizeUploadOutput = z.object({

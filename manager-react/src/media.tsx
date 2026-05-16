@@ -105,6 +105,7 @@ export async function prepareMediaUpload(
 export async function uploadFileToPresignedUrl(params: {
   file: Blob
   prepared: PrepareUploadOutput
+  purpose?: PrepareUploadInput['purpose']
   optimizeOptions?: FileOptimizeOptions
   fetchImpl?: typeof fetch
   signal?: AbortSignal
@@ -146,6 +147,11 @@ export async function uploadFileToPresignedUrl(params: {
       ...(params.optimizeOptions
         ? {
             'x-cms-upload-optimize': JSON.stringify(params.optimizeOptions),
+          }
+        : {}),
+      ...(params.purpose
+        ? {
+            'x-cms-upload-purpose': params.purpose,
           }
         : {}),
     },
@@ -198,6 +204,7 @@ export async function uploadMediaFile(
   input: {
     file: File
     access?: PrepareUploadInput['access']
+    purpose?: PrepareUploadInput['purpose']
     folder?: PrepareUploadInput['folder']
     folderId?: string
     folderPath?: string
@@ -222,6 +229,7 @@ export async function uploadMediaFile(
       mime: input.mime ?? (input.file.type || 'application/octet-stream'),
       size: input.file.size,
       access: input.access,
+      purpose: input.purpose,
       folder: input.folder,
       key: input.key,
     },
@@ -231,6 +239,7 @@ export async function uploadMediaFile(
   const uploaded = await uploadFileToPresignedUrl({
     file: input.file,
     prepared,
+    purpose: input.purpose,
     optimizeOptions: input.optimizeOptions,
     signal: input.signal,
     fetchImpl: input.fetchImpl,
@@ -258,6 +267,7 @@ export async function uploadMediaFile(
       folderId: input.folderId,
       folderPath: input.folderPath,
       status: input.status,
+      purpose: input.purpose,
     },
     mediaClient,
   )

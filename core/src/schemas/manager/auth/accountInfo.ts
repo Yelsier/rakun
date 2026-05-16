@@ -1,5 +1,10 @@
 import z from 'zod'
 
+export const updateAccountInput = z.object({
+  user: z.string().min(1).max(120),
+  avatarId: z.string().min(1).nullable().optional(),
+})
+
 export const accountInfoOutput = z.object({
   has2FA: z.boolean(),
   enabled2FA: z.boolean(),
@@ -14,4 +19,5 @@ export const accountInfoOutput = z.object({
   currentSession: z.string(),
 })
 
+export type UpdateAccountInput = z.infer<typeof updateAccountInput>
 export type AccountInfoOutput = z.infer<typeof accountInfoOutput>

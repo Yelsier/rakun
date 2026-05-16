@@ -60,6 +60,7 @@ export type PrepareUploadInput = {
   access?: MediaAccess;
   key?: string;
   folder?: string;
+  purpose?: "profileAvatar";
 };
 
 export type PrepareUploadOutput = PresignedPut & {

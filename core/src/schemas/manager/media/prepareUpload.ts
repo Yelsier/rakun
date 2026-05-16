@@ -1,6 +1,7 @@
 import z from 'zod'
 
 export const mediaAccessSchema = z.enum(['public', 'private'])
+export const mediaUploadPurposeSchema = z.enum(['profileAvatar'])
 
 export const prepareUploadInput = z.object({
   fileName: z.string().min(1),
@@ -9,6 +10,7 @@ export const prepareUploadInput = z.object({
   access: mediaAccessSchema.optional(),
   key: z.string().min(1).optional(),
   folder: z.string().min(1).optional(),
+  purpose: mediaUploadPurposeSchema.optional(),
 })
 
 export const prepareUploadOutput = z.object({

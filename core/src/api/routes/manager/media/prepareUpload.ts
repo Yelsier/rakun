@@ -42,7 +42,15 @@ export const prepareUploadHandler = async ({
 }): Promise<PrepareUploadOutput> => {
   const user = ctx.getUser();
 
-  checkPermissions(user, ["content.Media.own"]);
+  if (input.purpose === "profileAvatar") {
+    if (!input.mime.startsWith("image/")) {
+      throwAppError("VALIDATION", {
+        errors: [{ message: "Profile avatars must be images." }],
+      });
+    }
+  } else {
+    checkPermissions(user, ["content.Media.own"]);
+  }
 
   try {
     const media = getMediaService();

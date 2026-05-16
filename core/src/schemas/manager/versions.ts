@@ -16,6 +16,18 @@ export const contentVersionRecord = z.object({
   operation: z.enum(["create", "update", "delete", "restore"]),
   actorId: z.string().optional(),
   actorLabel: z.string().optional(),
+  actorAvatar: z
+    .object({
+      _id: z.string(),
+      name: z.string().optional(),
+      key: z.string().optional(),
+      access: z.enum(["public", "private"]).optional(),
+      mime: z.string().optional(),
+      url: z.url().optional(),
+      previewKey: z.string().optional(),
+      previewUrl: z.url().optional(),
+    })
+    .optional(),
   reason: z.string().optional(),
   changedAt: dateLike,
   schemaVersion: z.number().optional(),

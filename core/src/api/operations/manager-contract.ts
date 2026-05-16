@@ -46,6 +46,7 @@ import {
   restoreVersionOutput,
   setDefaultLanguageInput,
   updateInput,
+  updateAccountInput,
   updatePasswordInput,
   upsertLiteralInput,
   upsertLiteralOutput,
@@ -311,6 +312,14 @@ export const createManagerOperationContracts = () =>
       description: "Get account info including 2FA status and sessions",
       output: accountInfoOutput,
       method: "get",
+    }),
+    "manager.auth.updateAccount": defineOperationContract({
+      access: "auth",
+      kind: "mutation",
+      description: "Update the current manager account profile",
+      input: updateAccountInput,
+      output: ManagerUser.getOutputSchema(),
+      method: "post",
     }),
     "manager.auth.deleteSession": defineOperationContract({
       access: "auth",
