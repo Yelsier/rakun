@@ -1,27 +1,29 @@
-import ContentType from "../lib/ContentType";
-import { Fields } from "../lib/fields";
-import { HelloWorld } from "./HelloWorld";
+import ContentType from '../lib/ContentType'
+import { Fields } from '../lib/fields'
+import { HelloWorld } from './HelloWorld'
+import { Seo } from './Seo'
 
 export const Page = new ContentType({
-  name: "Page",
+  name: 'Page',
   fields: {
     title: Fields.string().translatable().required(),
-    slug: Fields.string().type("Slug").required().translatable(),
+    slug: Fields.string().type('Slug').required().translatable(),
     iterator: Fields.iterator([
       {
         contentType: HelloWorld,
-        type: "new",
+        type: 'new',
       },
     ]).required(),
+    seo: Fields.relation(Seo).required(),
   },
   menu: {
-    title: "Pages",
+    title: 'Pages',
   },
-  listFields: ["title", "slug"],
-  uniques: [["slug"]],
+  listFields: ['title', 'slug'],
+  uniques: [['slug']],
   versioning: {
     maxVersions: 5,
   },
-});
+})
 
-export type Page = typeof Page;
+export type Page = typeof Page

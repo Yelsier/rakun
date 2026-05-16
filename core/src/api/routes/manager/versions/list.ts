@@ -1,20 +1,18 @@
-import { getMongoService } from "../../../../orm";
-import { RakunRequestContext } from "../../../context";
-import {
-  ListVersionsInput,
-  ListVersionsOutput,
-} from "../../../../schemas/manager/versions";
-import { checkPermissions } from "../../../utils/checkPermissions";
+import { getMongoService } from '../../../../orm'
+import { RakunRequestContext } from '../../../context'
+import { ListVersionsInput, ListVersionsOutput } from '../../../../schemas/manager/versions'
+import { checkPermissions } from '../../../utils/checkPermissions'
+import { Logger } from '../../../../lib/Logger'
 
 export const listVersionsHandler = async ({
   input,
   ctx,
 }: {
-  input: ListVersionsInput;
-  ctx: RakunRequestContext;
+  input: ListVersionsInput
+  ctx: RakunRequestContext
 }): Promise<ListVersionsOutput> => {
-  const user = ctx.getUser();
-  checkPermissions(user, ["manager.versions.readAny"]);
-  const db = await getMongoService();
-  return db.versions.list(input);
-};
+  const user = ctx.getUser()
+  checkPermissions(user, ['manager.versions.readAny'])
+  const db = await getMongoService()
+  return db.versions.list(input)
+}

@@ -77,6 +77,13 @@ export type FieldRef = {
   getState: () => unknown
 }
 
+const hasNestedError = (value: unknown): boolean => {
+  if (!value || typeof value !== 'object') return false
+  if ('_error' in value) return true
+  if (Array.isArray(value)) return value.some(hasNestedError)
+  return Object.values(value).some(hasNestedError)
+}
+
 const ContentTypeEdit = forwardRef<
   FieldRef,
   {
@@ -111,11 +118,7 @@ const ContentTypeEdit = forwardRef<
           ]),
         )
 
-        if (
-          Object.values(values).some(
-            (v) => typeof v === 'object' && v && '_error' in v,
-          )
-        ) {
+        if (Object.values(values).some(hasNestedError)) {
           const _error = 'Please fix the errors above'
           addError(id, _error)
           return { _error }
