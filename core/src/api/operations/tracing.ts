@@ -15,7 +15,7 @@ type TraceableOperation = AnyRakunOperation & {
 }
 
 const sensitiveTraceKeyPattern =
-  /(authorization|challenge|cookie|credential|password|secret|session|token|totp|webauthn|otpauthURL|qrDataURL)/i
+  /(authorization|challenge|cookie|credential|password|secret|session|token|totp|webauthn)/i
 
 const sanitizeTraceValue = (value: unknown, depth = 0, seen = new WeakSet<object>()): unknown => {
   if (value === null || value === undefined) {
