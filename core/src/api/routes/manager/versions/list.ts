@@ -4,6 +4,7 @@ import {
   ListVersionsInput,
   ListVersionsOutput,
 } from "../../../../schemas/manager/versions";
+import { checkPermissions } from "../../../utils/checkPermissions";
 
 export const listVersionsHandler = async ({
   input,
@@ -12,7 +13,8 @@ export const listVersionsHandler = async ({
   input: ListVersionsInput;
   ctx: RakunRequestContext;
 }): Promise<ListVersionsOutput> => {
-  ctx.getUser();
+  const user = ctx.getUser();
+  checkPermissions(user, ["manager.versions.readAny"]);
   const db = await getMongoService();
   return db.versions.list(input);
 };

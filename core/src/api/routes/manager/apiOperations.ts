@@ -1,4 +1,5 @@
 import type { ApiOperationsOutput } from "../../../schemas/manager/apiOperations";
+import type { RakunRequestContext } from "../../context";
 import type {
   RakunOperationContractMap,
   RakunOperationImplementationMap,
@@ -10,16 +11,22 @@ import {
 } from "../../operations/custom";
 import { mergeOperationContracts } from "../../operations/types";
 import { createWebOperationDefinitions } from "../../operations/web";
+import { checkPermissions } from "../../utils/checkPermissions";
 
 export const apiOperationsHandler = async <
   TContracts extends RakunOperationContractMap,
 >({
   contracts,
   implementations,
+  ctx,
 }: {
   contracts: TContracts;
   implementations: RakunOperationImplementationMap<TContracts>;
+  ctx: RakunRequestContext;
 }): Promise<ApiOperationsOutput> => {
+  const user = ctx.getUser();
+  checkPermissions(user, ["manager.apiOperations.readAny"]);
+
   const managerOperations = mergeOperationMaps(
     mergeOperationContracts(contracts, implementations),
     getCustomApiOperationDefinitions("manager"),

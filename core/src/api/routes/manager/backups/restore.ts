@@ -5,6 +5,7 @@ import {
   RestoreBackupInput,
   RestoreBackupOutput,
 } from "../../../../schemas/manager/backups";
+import { checkPermissions } from "../../../utils/checkPermissions";
 
 export const restoreBackupHandler = async ({
   input,
@@ -14,6 +15,7 @@ export const restoreBackupHandler = async ({
   ctx: RakunRequestContext;
 }): Promise<RestoreBackupOutput> => {
   const user = ctx.getUser();
+  checkPermissions(user, ["manager.backups.updateAny"]);
   const db = await getMongoService();
   const result = await db.backups.restore({
     ...input,

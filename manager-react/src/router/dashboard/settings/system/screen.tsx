@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { useManagerMutation, useManagerQuery } from "@/client/react";
 import Loading from "@/components/loading";
+import UnauthorizedMessage from "@/components/unauthorized";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useSession } from "@/state/session";
 
 type BackupRecord = {
   _id: string;
@@ -64,14 +66,24 @@ const formatDateTime = (value: string | Date) =>
   }).format(new Date(value));
 
 export const ManagerSettingsSystemScreen = () => {
+  const { hasPermissions, hasAnyPermission } = useSession();
   const [restoreTarget, setRestoreTarget] = useState<BackupRecord | null>(null);
+  const canReadBackups = hasPermissions(["manager.backups.readAny"]);
+  const canUpdateBackups = hasPermissions(["manager.backups.updateAny"]);
+  const canReadMigrations = hasPermissions(["manager.migrations.readAny"]);
+  const canReadSystem = hasAnyPermission([
+    "manager.backups.readAny",
+    "manager.migrations.readAny",
+  ]);
   const backupsQuery = useManagerQuery({
     name: "manager.backups.list",
     input: undefined as never,
+    enabled: canReadBackups,
   });
   const migrationsQuery = useManagerQuery({
     name: "manager.migrations.list",
     input: undefined as never,
+    enabled: canReadMigrations,
   });
   const createBackupMutation = useManagerMutation("manager.backups.create");
   const restoreBackupMutation = useManagerMutation("manager.backups.restore");
@@ -96,13 +108,28 @@ export const ManagerSettingsSystemScreen = () => {
     await backupsQuery.refetch();
   };
 
+  if (!canReadSystem) {
+    return (
+      <UnauthorizedMessage
+        anyPermission
+        neededPermission={[
+          "manager.backups.readAny",
+          "manager.migrations.readAny",
+        ]}
+      />
+    );
+  }
+
   const backups = (backupsQuery.data ?? []) as BackupRecord[];
   const migrations = (migrationsQuery.data?.migrations ??
     []) as MigrationRecord[];
   const states = (migrationsQuery.data?.states ?? []) as MigrationState[];
   const pending = (migrationsQuery.data?.pending ?? []) as PendingMigration[];
 
-  if (backupsQuery.isLoading || migrationsQuery.isLoading) {
+  if (
+    (canReadBackups && backupsQuery.isLoading) ||
+    (canReadMigrations && migrationsQuery.isLoading)
+  ) {
     return <Loading />;
   }
 
@@ -112,141 +139,153 @@ export const ManagerSettingsSystemScreen = () => {
         <div>
           <h1 className="text-2xl font-semibold">System</h1>
         </div>
-        <Button
-          loading={createBackupMutation.isPending}
-          onClick={() => void createBackup()}
-        >
-          <DatabaseBackup />
-          Create backup
-        </Button>
+        {canUpdateBackups ? (
+          <Button
+            loading={createBackupMutation.isPending}
+            onClick={() => void createBackup()}
+          >
+            <DatabaseBackup />
+            Create backup
+          </Button>
+        ) : null}
       </div>
 
       <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        {canReadBackups ? (
+          <Card className="rounded-lg">
+            <CardHeader>
+              <CardTitle>Backups</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              {backups.length === 0 ? (
+                <div className="text-muted-foreground text-sm">
+                  No backups yet.
+                </div>
+              ) : (
+                backups.map((backup) => (
+                  <div
+                    key={backup._id}
+                    className="flex items-center justify-between gap-4 rounded-md border p-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">
+                          {backup.reason ?? backup._id}
+                        </span>
+                        <Badge
+                          variant={
+                            backup.status === "completed"
+                              ? "secondary"
+                              : "destructive"
+                          }
+                        >
+                          {backup.status}
+                        </Badge>
+                      </div>
+                      <div className="text-muted-foreground text-xs">
+                        {formatDateTime(backup.createdAt)} ·{" "}
+                        {backup.documentCount} docs ·{" "}
+                        {backup.contentTypes.join(", ")}
+                      </div>
+                    </div>
+                    {canUpdateBackups ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        loading={restoreBackupMutation.isPending}
+                        disabled={backup.status !== "completed"}
+                        onClick={() => setRestoreTarget(backup)}
+                      >
+                        <RotateCcw />
+                        Restore
+                      </Button>
+                    ) : null}
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {canReadMigrations ? (
+          <Card className="rounded-lg">
+            <CardHeader>
+              <CardTitle>Schema State</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              {pending.length > 0 ? (
+                <div className="rounded-md border border-amber-300 p-3 text-sm">
+                  {pending.length} pending migration
+                  {pending.length === 1 ? "" : "s"}
+                </div>
+              ) : null}
+              {states.length === 0 ? (
+                <div className="text-muted-foreground text-sm">
+                  No schema state recorded.
+                </div>
+              ) : (
+                states.map((state) => (
+                  <div
+                    key={state._id}
+                    className="flex items-center justify-between rounded-md border p-3 text-sm"
+                  >
+                    <span className="font-medium">{state.contentType}</span>
+                    <Badge variant="outline">v{state.version}</Badge>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
+      </section>
+
+      {canReadMigrations ? (
         <Card className="rounded-lg">
           <CardHeader>
-            <CardTitle>Backups</CardTitle>
+            <CardTitle>Migration Ledger</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            {backups.length === 0 ? (
+            {migrations.length === 0 ? (
               <div className="text-muted-foreground text-sm">
-                No backups yet.
+                No migrations executed yet.
               </div>
             ) : (
-              backups.map((backup) => (
+              migrations.map((migration) => (
                 <div
-                  key={backup._id}
-                  className="flex items-center justify-between gap-4 rounded-md border p-3"
+                  key={migration._id}
+                  className="grid gap-2 rounded-md border p-3 md:grid-cols-[1fr_auto]"
                 >
-                  <div className="min-w-0">
+                  <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">
-                        {backup.reason ?? backup._id}
+                        {migration.migrationId}
                       </span>
                       <Badge
                         variant={
-                          backup.status === "completed"
-                            ? "secondary"
-                            : "destructive"
+                          migration.status === "failed"
+                            ? "destructive"
+                            : "secondary"
                         }
                       >
-                        {backup.status}
+                        {migration.status}
                       </Badge>
                     </div>
                     <div className="text-muted-foreground text-xs">
-                      {formatDateTime(backup.createdAt)} ·{" "}
-                      {backup.documentCount} docs · {backup.contentTypes.join(", ")}
+                      {migration.contentType} · v{migration.from} to v
+                      {migration.to} · {formatDateTime(migration.startedAt)}
                     </div>
+                    {migration.error ? (
+                      <div className="text-destructive mt-2 text-xs">
+                        {migration.error}
+                      </div>
+                    ) : null}
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    loading={restoreBackupMutation.isPending}
-                    disabled={backup.status !== "completed"}
-                    onClick={() => setRestoreTarget(backup)}
-                  >
-                    <RotateCcw />
-                    Restore
-                  </Button>
                 </div>
               ))
             )}
           </CardContent>
         </Card>
-
-        <Card className="rounded-lg">
-          <CardHeader>
-            <CardTitle>Schema State</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {pending.length > 0 ? (
-              <div className="rounded-md border border-amber-300 p-3 text-sm">
-                {pending.length} pending migration
-                {pending.length === 1 ? "" : "s"}
-              </div>
-            ) : null}
-            {states.length === 0 ? (
-              <div className="text-muted-foreground text-sm">
-                No schema state recorded.
-              </div>
-            ) : (
-              states.map((state) => (
-                <div
-                  key={state._id}
-                  className="flex items-center justify-between rounded-md border p-3 text-sm"
-                >
-                  <span className="font-medium">{state.contentType}</span>
-                  <Badge variant="outline">v{state.version}</Badge>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </section>
-
-      <Card className="rounded-lg">
-        <CardHeader>
-          <CardTitle>Migration Ledger</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {migrations.length === 0 ? (
-            <div className="text-muted-foreground text-sm">
-              No migrations executed yet.
-            </div>
-          ) : (
-            migrations.map((migration) => (
-              <div
-                key={migration._id}
-                className="grid gap-2 rounded-md border p-3 md:grid-cols-[1fr_auto]"
-              >
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">{migration.migrationId}</span>
-                    <Badge
-                      variant={
-                        migration.status === "failed"
-                          ? "destructive"
-                          : "secondary"
-                      }
-                    >
-                      {migration.status}
-                    </Badge>
-                  </div>
-                  <div className="text-muted-foreground text-xs">
-                    {migration.contentType} · v{migration.from} to v
-                    {migration.to} ·{" "}
-                    {formatDateTime(migration.startedAt)}
-                  </div>
-                  {migration.error ? (
-                    <div className="text-destructive mt-2 text-xs">
-                      {migration.error}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+      ) : null}
 
       <Dialog
         open={restoreTarget !== null}

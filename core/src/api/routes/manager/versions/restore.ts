@@ -6,6 +6,7 @@ import {
   RestoreVersionInput,
   RestoreVersionOutput,
 } from "../../../../schemas/manager/versions";
+import { checkPermissions } from "../../../utils/checkPermissions";
 
 export const restoreVersionHandler = async ({
   input,
@@ -15,6 +16,7 @@ export const restoreVersionHandler = async ({
   ctx: RakunRequestContext;
 }): Promise<RestoreVersionOutput> => {
   const user = ctx.getUser();
+  checkPermissions(user, ["manager.versions.updateAny"]);
   const db = await getMongoService();
   const result = await db.versions.restore({
     ...input,

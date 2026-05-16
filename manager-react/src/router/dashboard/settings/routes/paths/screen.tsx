@@ -10,6 +10,7 @@ import { useManagerMutation, useManagerQuery } from '@/client/react'
 import { transformSortingState } from '@/helpers/transform-sorting-state'
 import Loading from '@/components/loading'
 import { PaginationController } from '@/components/PaginationController'
+import UnauthorizedMessage from '@/components/unauthorized'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
 import {
@@ -20,11 +21,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useSession } from '@/state/session'
 
 export const ManagerSettingsRoutePathsScreen = () => {
+  const { hasPermissions } = useSession()
   const [page, setPage] = useState(1)
   const [sorting, setSorting] = useState<SortingState>([])
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const canReadRoutes = hasPermissions(['manager.routes.readAny'])
+  const canUpdateRoutes = hasPermissions(['manager.routes.updateAny'])
   const listQuery = useManagerQuery({
     name: 'manager.list',
     input: {
@@ -37,8 +42,13 @@ export const ManagerSettingsRoutePathsScreen = () => {
         },
       },
     },
+    enabled: canReadRoutes,
   })
   const regenerateMutation = useManagerMutation('manager.regenerateRoutes')
+
+  if (!canReadRoutes) {
+    return <UnauthorizedMessage neededPermission={['manager.routes.readAny']} />
+  }
 
   if (!listQuery.data) {
     return <Loading />
@@ -61,9 +71,11 @@ export const ManagerSettingsRoutePathsScreen = () => {
 
   return (
     <div className='container mx-auto flex flex-col items-start gap-4 py-10'>
-      <div className='self-end'>
-        <Button onClick={() => setConfirmOpen(true)}>Regenerar rutas</Button>
-      </div>
+      {canUpdateRoutes ? (
+        <div className='self-end'>
+          <Button onClick={() => setConfirmOpen(true)}>Regenerar rutas</Button>
+        </div>
+      ) : null}
       <DataTable
         sorting={sorting}
         setSorting={setSorting}

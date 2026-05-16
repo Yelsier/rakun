@@ -52,6 +52,7 @@ import { useLanguage } from "@/state/language";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useSession } from "@/state/session";
 
 type RouteLayoutModuleRecord = {
   _id: string;
@@ -784,10 +785,12 @@ const DiffBlock = ({ entry }: { entry: VersionDiffEntry }) => {
 const VersionHistory = ({
   contentType,
   documentId,
+  canRestore,
   onRestored,
 }: {
   contentType: string;
   documentId: string;
+  canRestore: boolean;
   onRestored?: () => Promise<unknown> | unknown;
 }) => {
   const versionsQuery = useManagerQuery({
@@ -844,15 +847,17 @@ const VersionHistory = ({
                     : ""}
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                loading={restoreMutation.isPending}
-                onClick={() => void restoreVersion(version._id)}
-              >
-                <RotateCcw />
-                Restore
-              </Button>
+              {canRestore ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  loading={restoreMutation.isPending}
+                  onClick={() => void restoreVersion(version._id)}
+                >
+                  <RotateCcw />
+                  Restore
+                </Button>
+              ) : null}
             </CardHeader>
             <CardContent className="px-4">
               {visibleDiffs.length > 0 ? (
@@ -902,9 +907,12 @@ const EditPage: React.FC<{
   const deleteMutation = useManagerMutation("manager.delete");
   const trashMutation = useManagerMutation("manager.trash");
   const { getTranslation } = useLanguage();
+  const { hasPermissions } = useSession();
   const contentTypeId = (defaultData as { _id?: string } | undefined)?._id;
   const hasVisibility = Boolean(contentType.documentVisibility);
-  const hasVersioning = Boolean(contentType.versioning);
+  const canReadVersions = hasPermissions(["manager.versions.readAny"]);
+  const canRestoreVersions = hasPermissions(["manager.versions.updateAny"]);
+  const hasVersioning = Boolean(contentType.versioning) && canReadVersions;
   const isTrashed =
     (defaultData as { _trashed?: boolean } | undefined)?._trashed === true ||
     (defaultData as { _visibility?: DocumentVisibility } | undefined)
@@ -1415,6 +1423,7 @@ const EditPage: React.FC<{
               <VersionHistory
                 contentType={contentType.name}
                 documentId={contentTypeId}
+                canRestore={canRestoreVersions}
                 onRestored={onAfterRestore}
               />
             </TabsContent>

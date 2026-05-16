@@ -4,6 +4,7 @@ import {
   BackupRecord,
   CreateBackupInput,
 } from "../../../../schemas/manager/backups";
+import { checkPermissions } from "../../../utils/checkPermissions";
 
 export const createBackupHandler = async ({
   input,
@@ -13,6 +14,7 @@ export const createBackupHandler = async ({
   ctx: RakunRequestContext;
 }): Promise<BackupRecord> => {
   const user = ctx.getUser();
+  checkPermissions(user, ["manager.backups.updateAny"]);
   const db = await getMongoService();
   return db.backups.create({
     ...input,

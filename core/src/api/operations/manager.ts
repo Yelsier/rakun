@@ -103,7 +103,7 @@ export const createManagerOperationDefinitions = () => {
       resolve: restoreVersionHandler,
     },
     "manager.apiOperations": {
-      resolve: () => apiOperationsHandler({ contracts, implementations }),
+      resolve: ({ ctx }) => apiOperationsHandler({ contracts, implementations, ctx }),
     },
     "manager.media.prepareUpload": {
       resolve: prepareUploadHandler,

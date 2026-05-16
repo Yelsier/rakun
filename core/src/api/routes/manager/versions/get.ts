@@ -4,6 +4,7 @@ import {
   ContentVersionRecord,
   GetVersionInput,
 } from "../../../../schemas/manager/versions";
+import { checkPermissions } from "../../../utils/checkPermissions";
 
 export const getVersionHandler = async ({
   input,
@@ -12,7 +13,8 @@ export const getVersionHandler = async ({
   input: GetVersionInput;
   ctx: RakunRequestContext;
 }): Promise<ContentVersionRecord | null> => {
-  ctx.getUser();
+  const user = ctx.getUser();
+  checkPermissions(user, ["manager.versions.readAny"]);
   const db = await getMongoService();
   return db.versions.get(input.versionId);
 };
