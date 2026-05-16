@@ -191,8 +191,6 @@ export function ManagerHelpProvider({ route, children }: ManagerHelpProviderProp
     [currentTour, hasCurrentTour, startCurrentTour]
   )
 
-  console.log(activeSteps)
-
   return (
     <ManagerHelpContext.Provider value={contextValue}>
       {children}
@@ -250,14 +248,14 @@ export function ManagerHelpProvider({ route, children }: ManagerHelpProviderProp
         >
           <TourPortal>
             <TourSpotlight className="z-40" />
-            <TourSpotlightRing className="z-[55]" />
+            <TourSpotlightRing className="z-55" />
             {activeSteps.map((step) => (
               <TourStep
                 key={`${activeTour.id}:${step.target.dataset.tour ?? step.title}`}
                 target={step.target}
                 side={step.side}
                 align={step.align}
-                className="z-[60] max-w-sm"
+                className="z-60 max-w-sm"
               >
                 <TourArrow />
                 <TourHeader>
