@@ -1,0 +1,137 @@
+import { describe, expect, it } from "bun:test";
+import sharp from "sharp";
+
+import { deleteMediaStorage } from "../api/routes/manager/media/deleteMediaStorage";
+import { createLogger } from "../lib/Logger";
+import { createMediaService, type StorageAdapter } from "./index";
+import { optimizeImageUpload } from "./imageOptimization";
+
+createLogger({ level: "fatal" });
+
+const makeImage = () =>
+  sharp({
+    create: {
+      width: 2000,
+      height: 1000,
+      channels: 3,
+      background: "#336699",
+    },
+  })
+    .jpeg({ quality: 90 })
+    .toBuffer();
+
+describe("optimizeImageUpload responsive sizes", () => {
+  it("generates sorted responsive image variants without upscaling", async () => {
+    const result = await optimizeImageUpload({
+      buffer: await makeImage(),
+      mime: "image/jpeg",
+      fileName: "hero.jpg",
+      key: "public/uploads/hero.jpg",
+      optimizeOptions: {
+        format: "webp",
+        quality: 80,
+        generatePreview: false,
+        generateSizes: true,
+        responsiveSizes: [1280, 320, 640, 2500, 2000],
+        minBytesToOptimize: 1,
+        previewMaxWidth: 480,
+      },
+    });
+
+    expect(result.sizes?.map((size) => size.width)).toEqual([
+      320, 640, 1280,
+    ]);
+    expect(result.sizes?.map((size) => size.height)).toEqual([
+      160, 320, 640,
+    ]);
+    expect(result.sizes?.map((size) => size.key)).toEqual([
+      "public/uploads/hero.320w.webp",
+      "public/uploads/hero.640w.webp",
+      "public/uploads/hero.1280w.webp",
+    ]);
+    expect(result.sizes?.every((size) => size.mime === "image/webp")).toBe(
+      true,
+    );
+    expect(result.sizes?.every((size) => size.content.length > 0)).toBe(true);
+  });
+
+  it("skips responsive variants when generateSizes is false", async () => {
+    const result = await optimizeImageUpload({
+      buffer: await makeImage(),
+      mime: "image/jpeg",
+      fileName: "hero.jpg",
+      key: "public/uploads/hero.jpg",
+      optimizeOptions: {
+        format: "webp",
+        quality: 80,
+        generatePreview: false,
+        generateSizes: false,
+        responsiveSizes: [320, 640],
+        minBytesToOptimize: 1,
+        previewMaxWidth: 480,
+      },
+    });
+
+    expect(result.sizes).toBeUndefined();
+  });
+
+  it("does not generate responsive variants for non-images", async () => {
+    const result = await optimizeImageUpload({
+      buffer: Buffer.from("hello"),
+      mime: "text/plain",
+      fileName: "hello.txt",
+      key: "public/uploads/hello.txt",
+      optimizeOptions: {
+        format: "webp",
+        quality: 80,
+        generatePreview: false,
+        generateSizes: true,
+        responsiveSizes: [320, 640],
+        minBytesToOptimize: 1,
+        previewMaxWidth: 480,
+      },
+    });
+
+    expect(result.sizes).toBeUndefined();
+  });
+});
+
+describe("deleteMediaStorage", () => {
+  it("deletes original, preview, and responsive size objects", async () => {
+    const deletedKeys: string[] = [];
+    const adapter: StorageAdapter = {
+      createPresignedPut: async (input) => ({ url: "", key: input.key }),
+      putObject: async () => undefined,
+      headObject: async () => ({ size: 0 }),
+      createPresignedGet: async () => ({ url: "", expiresAt: new Date() }),
+      deleteObject: async (input) => {
+        deletedKeys.push(input.key);
+      },
+      publicUrl: () => null,
+    };
+    createMediaService({ adapter });
+
+    await deleteMediaStorage({
+      mediaItems: [
+        {
+          key: "public/uploads/hero.webp",
+          previewKey: "public/uploads/hero.preview.webp",
+          access: "public",
+          sizes: [
+            { key: "public/uploads/hero.320w.webp" },
+            { key: "public/uploads/hero.640w.webp" },
+            { notAKey: true },
+          ],
+        },
+      ],
+      traceName: "test",
+    });
+
+    expect(deletedKeys).toEqual([
+      "public/uploads/hero.webp",
+      "public/uploads/hero.preview.webp",
+      "public/uploads/hero.320w.webp",
+      "public/uploads/hero.640w.webp",
+    ]);
+  });
+});

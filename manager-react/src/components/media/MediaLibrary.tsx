@@ -4,7 +4,10 @@ import { useState } from 'react'
 import { useManagerClient } from '@/client/react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { FileOptimizeOptions } from '@rakun-kit/core/client'
+import {
+  DEFAULT_RESPONSIVE_IMAGE_WIDTHS,
+  type FileOptimizeOptions,
+} from '@rakun-kit/core/client'
 
 import { FileUploadProps } from '../ui/file-upload'
 import {
@@ -49,6 +52,8 @@ export default function MediaLibrary({
       format: 'webp',
       quality: 80,
       generatePreview: false,
+      generateSizes: true,
+      responsiveSizes: [...DEFAULT_RESPONSIVE_IMAGE_WIDTHS],
       minBytesToOptimize: 350 * 1024,
       previewMaxWidth: 480,
     })

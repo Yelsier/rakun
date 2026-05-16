@@ -26,6 +26,15 @@ export type SelfRelation<CT extends string> = {
 
 export type MediaStatus = "uploaded" | "archived" | "deleted";
 
+export type MediaSizeRecord = {
+  key: string;
+  url?: string;
+  width: number;
+  height: number;
+  mime: string;
+  size: number;
+};
+
 export type MediaFolderRecord = {
   _id: string;
   _type: "MediaFolder";
@@ -44,6 +53,8 @@ export type MediaRecord = {
   _id: string;
   _type: "Media";
   name: string;
+  title?: string;
+  alt?: string;
   originalName: string;
   key: string;
   access: "public" | "private";
@@ -55,6 +66,7 @@ export type MediaRecord = {
   previewKey?: string;
   previewUrl?: string;
   previewMime?: string;
+  sizes?: MediaSizeRecord[];
   width?: number;
   height?: number;
   orientation?: "portrait" | "landscape";
@@ -105,6 +117,7 @@ export async function uploadFileToPresignedUrl(params: {
   orientation?: "portrait" | "landscape";
   previewKey?: string;
   previewMime?: string;
+  sizes?: MediaSizeRecord[];
   optimized: boolean;
   optimizedFormat?: string;
   optimizationQuality?: number;
@@ -156,6 +169,7 @@ export async function uploadFileToPresignedUrl(params: {
     orientation?: "portrait" | "landscape";
     previewKey?: string;
     previewMime?: string;
+    sizes?: MediaSizeRecord[];
     optimized: boolean;
     optimizedFormat?: string;
     optimizationQuality?: number;
@@ -229,6 +243,7 @@ export async function uploadMediaFile(
       size: uploaded.size,
       previewKey: uploaded.previewKey,
       previewMime: uploaded.previewMime,
+      sizes: uploaded.sizes,
       width: uploaded.width,
       height: uploaded.height,
       orientation: uploaded.orientation,

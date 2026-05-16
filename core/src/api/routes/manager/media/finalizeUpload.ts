@@ -254,6 +254,17 @@ export const finalizeUploadHandler = async ({
           access: finalized.access,
         }) || undefined
       : undefined;
+    const sizes = input.sizes
+      ?.map((size) => ({
+        ...size,
+        url:
+          media.rawAdapter.publicUrl({
+            key: size.key,
+            access: finalized.access,
+          }) || undefined,
+      }))
+      .filter((size) => size.key);
+    const persistedSizes = sizes?.length ? sizes : undefined;
     const createdMedia = await db.create(Media, {
       _type: "Media",
       name: input.name || resolvedOriginalName,
@@ -268,6 +279,7 @@ export const finalizeUploadHandler = async ({
       previewKey,
       previewUrl,
       previewMime: input.previewMime,
+      sizes: persistedSizes,
       width: input.width,
       height: input.height,
       orientation: input.orientation,
@@ -295,6 +307,7 @@ export const finalizeUploadHandler = async ({
 
     const mediaOutput: FinalizeUploadOutput["media"] = {
       ...createdMedia,
+      sizes: persistedSizes,
       folder: createdMedia.folder
         ? {
             type: "existing",

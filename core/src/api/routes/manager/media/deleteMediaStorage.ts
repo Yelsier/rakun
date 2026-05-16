@@ -4,7 +4,25 @@ import { getMediaService } from "../../../../media";
 type MediaStorageTarget = {
   key: string;
   previewKey?: string | null;
+  sizes?: unknown;
   access: "public" | "private";
+};
+
+const getSizeKeys = (sizes: unknown): string[] => {
+  if (!Array.isArray(sizes)) return [];
+
+  return sizes.flatMap((size) => {
+    if (
+      size &&
+      typeof size === "object" &&
+      "key" in size &&
+      typeof size.key === "string"
+    ) {
+      return [size.key];
+    }
+
+    return [];
+  });
 };
 
 export const deleteMediaStorage = async ({
@@ -21,7 +39,11 @@ export const deleteMediaStorage = async ({
 
   for (const media of mediaItems) {
     const keysToDelete = Array.from(
-      new Set([media.key, media.previewKey].filter(Boolean)),
+      new Set(
+        [media.key, media.previewKey, ...getSizeKeys(media.sizes)].filter(
+          Boolean,
+        ),
+      ),
     ) as string[];
 
     for (const key of keysToDelete) {

@@ -12,10 +12,23 @@ export const mediaFolderRefOutput = z.object({
   path: z.string(),
 })
 
+export const mediaSizeOutput = z.object({
+  key: z.string(),
+  url: z.url().optional(),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  mime: z.string(),
+  size: z.number().int().nonnegative(),
+})
+
+export const mediaSizeInput = mediaSizeOutput.omit({ url: true })
+
 export const mediaRecordOutput = z.object({
   _id: z.string(),
   _type: z.literal('Media'),
   name: z.string(),
+  title: z.string().optional(),
+  alt: z.string().optional(),
   originalName: z.string(),
   key: z.string(),
   access: mediaAccessSchema,
@@ -27,6 +40,7 @@ export const mediaRecordOutput = z.object({
   previewKey: z.string().optional(),
   previewUrl: z.url().optional(),
   previewMime: z.string().optional(),
+  sizes: z.array(mediaSizeOutput).optional(),
   width: z.number().int().positive().optional(),
   height: z.number().int().positive().optional(),
   orientation: mediaOrientationSchema.optional(),
@@ -58,6 +72,7 @@ export const finalizeUploadInput = z.object({
   size: z.number().int().nonnegative().optional(),
   previewKey: z.string().min(1).optional(),
   previewMime: z.string().min(1).optional(),
+  sizes: z.array(mediaSizeInput).optional(),
   width: z.number().int().positive().optional(),
   height: z.number().int().positive().optional(),
   orientation: mediaOrientationSchema.optional(),

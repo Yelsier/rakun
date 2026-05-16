@@ -7,6 +7,79 @@ import { getMediaService } from "../../../media";
 import { getMongoService } from "../../../orm";
 import { getMongoDB } from "../../../orm/mongodbPeer";
 
+type MediaSizeRecord = {
+  key: string;
+  url?: string;
+  width: number;
+  height: number;
+  mime: string;
+  size: number;
+};
+
+type ResolvedMediaSizeRecord = MediaSizeRecord & {
+  url: string;
+};
+
+const toMediaSizeRecords = (value: unknown): MediaSizeRecord[] => {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+
+    const record = item as Record<string, unknown>;
+    if (
+      typeof record.key !== "string" ||
+      typeof record.width !== "number" ||
+      typeof record.height !== "number" ||
+      typeof record.mime !== "string" ||
+      typeof record.size !== "number"
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        key: record.key,
+        url: typeof record.url === "string" ? record.url : undefined,
+        width: record.width,
+        height: record.height,
+        mime: record.mime,
+        size: record.size,
+      },
+    ];
+  });
+};
+
+const buildSrcSet = (
+  sizes: MediaSizeRecord[],
+  original?: { url: string; width?: number | null },
+): string | null => {
+  const entries = [...sizes];
+
+  if (
+    original?.url &&
+    original.width &&
+    !entries.some((size) => size.width === original.width)
+  ) {
+    entries.push({
+      key: "",
+      url: original.url,
+      width: original.width,
+      height: 1,
+      mime: "",
+      size: 0,
+    });
+  }
+
+  const srcSet = entries
+    .filter((size) => size.url && size.width > 0)
+    .sort((a, b) => a.width - b.width)
+    .map((size) => `${size.url} ${size.width}w`)
+    .join(", ");
+
+  return srcSet || null;
+};
+
 /**
  *
  * @param data - The raw database output for a content item, which may include relation references.
@@ -90,6 +163,9 @@ export async function populateRelations<T extends ContentType>(
           try {
             const media = await db.get(Media, _id);
             const mediaService = getMediaService();
+            const mediaSizes = toMediaSizeRecords(
+              (media as { sizes?: unknown }).sizes,
+            );
             const [resolved, resolvedPreview] = await Promise.all([
               mediaService
                 .getMediaUrl({
@@ -106,27 +182,59 @@ export async function populateRelations<T extends ContentType>(
                     .catch(() => null)
                 : Promise.resolve(null),
             ]);
+            const resolvedSizes = (
+              await Promise.all(
+                mediaSizes.map(async (size) => {
+                  const resolvedSize = await mediaService
+                    .getMediaUrl({
+                      key: size.key,
+                      access: media.access,
+                    })
+                    .catch(() => null);
+                  const url = resolvedSize?.url || size.url;
+                  if (!url) return null;
+
+                  return {
+                    ...size,
+                    url,
+                  };
+                }),
+              )
+            ).filter(
+              (size): size is ResolvedMediaSizeRecord => size !== null,
+            );
+            const originalUrl = resolved?.url || media.url || "";
 
             return {
-              url: resolved?.url || media.url || "",
+              url: originalUrl,
               previewUrl: resolvedPreview?.url || media.previewUrl || null,
               name: media.name || "",
+              title: media.title || media.name || "",
+              alt: media.alt || null,
               mime: media.mime || "",
               width: media.width ?? null,
               height: media.height ?? null,
               size: media.size ?? 0,
               orientation: media.orientation ?? null,
+              sizes: resolvedSizes.length ? resolvedSizes : undefined,
+              srcSet: buildSrcSet(resolvedSizes, {
+                url: originalUrl,
+                width: media.width,
+              }),
             };
           } catch (_) {
             return {
               url: "",
               previewUrl: null,
               name: "",
+              title: "",
+              alt: null,
               mime: "",
               width: null,
               height: null,
               size: 0,
               orientation: null,
+              srcSet: null,
             };
           }
         }

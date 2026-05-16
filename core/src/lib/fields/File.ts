@@ -19,6 +19,9 @@ import { Id } from "../utils/id";
 export const fileMediaTypes = ["Image", "Video", "Document", "Any"] as const;
 export const fileUploadMethods = ["default", "optimize"] as const;
 export const fileOptimizeFormats = ["webp", "jpeg", "png", "avif"] as const;
+export const DEFAULT_RESPONSIVE_IMAGE_WIDTHS = [
+  320, 640, 960, 1280, 1920,
+] as const;
 
 export type FileMediaType = (typeof fileMediaTypes)[number];
 export type FileUploadMethod = (typeof fileUploadMethods)[number];
@@ -28,6 +31,10 @@ export const FileOptimizeOptionsSchema = z.object({
   format: z.enum(fileOptimizeFormats).default("webp"),
   quality: z.number().int().min(1).max(100).default(80),
   generatePreview: z.boolean().default(false),
+  generateSizes: z.boolean().default(true),
+  responsiveSizes: z
+    .array(z.number().int().positive())
+    .default([...DEFAULT_RESPONSIVE_IMAGE_WIDTHS]),
   minBytesToOptimize: z
     .number()
     .int()
@@ -54,11 +61,26 @@ const fileOutputSchema = z.object({
   url: z.string(),
   previewUrl: z.string().nullable(),
   name: z.string(),
+  title: z.string().optional(),
+  alt: z.string().nullable().optional(),
   mime: z.string(),
   width: z.number().int().positive().nullable(),
   height: z.number().int().positive().nullable(),
   size: z.number().int().nonnegative(),
   orientation: z.enum(["portrait", "landscape"]).nullable(),
+  sizes: z
+    .array(
+      z.object({
+        key: z.string(),
+        url: z.string(),
+        width: z.number().int().positive(),
+        height: z.number().int().positive(),
+        mime: z.string(),
+        size: z.number().int().nonnegative(),
+      }),
+    )
+    .optional(),
+  srcSet: z.string().nullable().optional(),
 });
 
 type FileRelation = z.infer<typeof fileRelationSchema>;

@@ -7,6 +7,8 @@ export const Media = new ContentType({
   name: "Media",
   fields: {
     name: Fields.string().required(),
+    title: Fields.string(),
+    alt: Fields.string(),
     originalName: Fields.string().required(),
     key: Fields.string().required(),
     access: Fields.select(["public", "private"]).required(),
@@ -18,6 +20,7 @@ export const Media = new ContentType({
     previewKey: Fields.string(),
     previewUrl: Fields.string().type("Url"),
     previewMime: Fields.string(),
+    sizes: Fields.array(Fields.string().type("RichText")),
     width: Fields.number().min(1),
     height: Fields.number().min(1),
     orientation: Fields.select(["portrait", "landscape"]),

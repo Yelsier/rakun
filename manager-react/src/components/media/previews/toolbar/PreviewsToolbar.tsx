@@ -134,6 +134,16 @@ export default function PreviewsToolbar() {
                 }
               />
             </div>
+            <div className='flex items-center justify-between gap-2'>
+              <p className='text-sm'>Generate responsive sizes</p>
+              <Switch
+                checked={optimizeOptions.generateSizes ?? true}
+                disabled={!optimizeEnabled}
+                onCheckedChange={(value) =>
+                  setOptimizeOptions({ generateSizes: value })
+                }
+              />
+            </div>
           </PopoverContent>
         </Popover>
         {isUploading ? (

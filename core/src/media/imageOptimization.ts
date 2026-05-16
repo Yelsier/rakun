@@ -45,6 +45,14 @@ type UploadOptimizationOutput = {
     size: number;
     content: Buffer;
   };
+  sizes?: Array<{
+    key: string;
+    mime: string;
+    size: number;
+    width: number;
+    height: number;
+    content: Buffer;
+  }>;
 };
 
 const formatToExt: Record<
@@ -84,6 +92,36 @@ const buildPreviewKey = (key: string, ext: string): string => {
   return path.posix.join(parsed.dir, `${parsed.name}.preview.${ext}`);
 };
 
+const buildSizeKey = (key: string, width: number, ext: string): string => {
+  const parsed = path.posix.parse(key);
+  return path.posix.join(parsed.dir, `${parsed.name}.${width}w.${ext}`);
+};
+
+const applyFormat = (
+  pipeline: ReturnType<SharpFactory>,
+  format: NonNullable<FileOptimizeOptions["format"]>,
+  quality: number,
+) => {
+  if (format === "webp") return pipeline.webp({ quality });
+  if (format === "jpeg") return pipeline.jpeg({ quality });
+  if (format === "png") return pipeline.png({ quality });
+  return pipeline.avif({ quality });
+};
+
+const normalizeResponsiveWidths = (
+  widths: number[],
+  sourceWidth: number,
+): number[] =>
+  Array.from(
+    new Set(
+      widths
+        .map((width) => Math.round(width))
+        .filter((width) => Number.isFinite(width) && width > 0),
+    ),
+  )
+    .filter((width) => width < sourceWidth)
+    .sort((a, b) => a - b);
+
 const resolveDimensions = async (
   mime: string,
   content: Buffer,
@@ -111,6 +149,51 @@ const resolveDimensions = async (
   }
 };
 
+const generateResponsiveSizes = async ({
+  content,
+  key,
+  sourceWidth,
+  format,
+  quality,
+  widths,
+}: {
+  content: Buffer;
+  key: string;
+  sourceWidth?: number;
+  format: NonNullable<FileOptimizeOptions["format"]>;
+  quality: number;
+  widths: number[];
+}): Promise<NonNullable<UploadOptimizationOutput["sizes"]>> => {
+  if (!sourceWidth) return [];
+
+  const sharp = getSharp();
+  const targetExt = formatToExt[format];
+  const targetMime = formatToMime[format];
+  const targetWidths = normalizeResponsiveWidths(widths, sourceWidth);
+
+  return Promise.all(
+    targetWidths.map(async (width) => {
+      const resized = await applyFormat(
+        sharp(content, { failOn: "none" })
+          .rotate()
+          .resize({ width, withoutEnlargement: true }),
+        format,
+        quality,
+      ).toBuffer();
+      const metadata = await sharp(resized, { failOn: "none" }).metadata();
+
+      return {
+        key: buildSizeKey(key, width, targetExt),
+        mime: targetMime,
+        size: resized.length,
+        width: metadata.width ?? width,
+        height: metadata.height ?? 1,
+        content: resized,
+      };
+    }),
+  );
+};
+
 export async function optimizeImageUpload(
   input: UploadOptimizationInput,
 ): Promise<UploadOptimizationOutput> {
@@ -131,9 +214,24 @@ export async function optimizeImageUpload(
   }
 
   const options = FileOptimizeOptionsSchema.parse(input.optimizeOptions);
+  const targetFormat = options.format;
+  const targetExt = formatToExt[targetFormat];
+  const targetMime = formatToMime[targetFormat];
+  const quality = options.quality;
 
   if (originalSize < options.minBytesToOptimize) {
     const dimensions = await resolveDimensions(input.mime, input.buffer);
+    const sizes = options.generateSizes
+      ? await generateResponsiveSizes({
+          content: input.buffer,
+          key: input.key,
+          sourceWidth: dimensions.width,
+          format: targetFormat,
+          quality,
+          widths: options.responsiveSizes,
+        })
+      : [];
+
     return {
       key: input.key,
       mime: input.mime,
@@ -143,21 +241,17 @@ export async function optimizeImageUpload(
       originalSize,
       ...dimensions,
       content: input.buffer,
+      sizes: sizes.length ? sizes : undefined,
     };
   }
 
-  const targetFormat = options.format;
-  const targetExt = formatToExt[targetFormat];
-  const targetMime = formatToMime[targetFormat];
-  const quality = options.quality;
   const sharp = getSharp();
 
-  let optimized = sharp(input.buffer, { failOn: "none" }).rotate();
-  if (targetFormat === "webp") optimized = optimized.webp({ quality });
-  if (targetFormat === "jpeg") optimized = optimized.jpeg({ quality });
-  if (targetFormat === "png") optimized = optimized.png({ quality });
-  if (targetFormat === "avif") optimized = optimized.avif({ quality });
-  const optimizedBuffer = await optimized.toBuffer();
+  const optimizedBuffer = await applyFormat(
+    sharp(input.buffer, { failOn: "none" }).rotate(),
+    targetFormat,
+    quality,
+  ).toBuffer();
 
   const shouldUseOptimized = optimizedBuffer.length < originalSize;
   const finalBuffer = shouldUseOptimized ? optimizedBuffer : input.buffer;
@@ -182,19 +276,13 @@ export async function optimizeImageUpload(
     | undefined;
 
   if (options.generatePreview) {
-    let previewPipeline = sharp(finalBuffer, { failOn: "none" })
-      .rotate()
-      .resize({ width: options.previewMaxWidth, withoutEnlargement: true });
-    if (targetFormat === "webp")
-      previewPipeline = previewPipeline.webp({ quality });
-    if (targetFormat === "jpeg")
-      previewPipeline = previewPipeline.jpeg({ quality });
-    if (targetFormat === "png")
-      previewPipeline = previewPipeline.png({ quality });
-    if (targetFormat === "avif")
-      previewPipeline = previewPipeline.avif({ quality });
-
-    const previewContent = await previewPipeline.toBuffer();
+    const previewContent = await applyFormat(
+      sharp(finalBuffer, { failOn: "none" })
+        .rotate()
+        .resize({ width: options.previewMaxWidth, withoutEnlargement: true }),
+      targetFormat,
+      quality,
+    ).toBuffer();
     preview = {
       key: buildPreviewKey(finalKey, targetExt),
       mime: targetMime,
@@ -204,6 +292,16 @@ export async function optimizeImageUpload(
   }
 
   const dimensions = await resolveDimensions(finalMime, finalBuffer);
+  const sizes = options.generateSizes
+    ? await generateResponsiveSizes({
+        content: finalBuffer,
+        key: finalKey,
+        sourceWidth: dimensions.width,
+        format: targetFormat,
+        quality,
+        widths: options.responsiveSizes,
+      })
+    : [];
 
   return {
     key: finalKey,
@@ -217,5 +315,6 @@ export async function optimizeImageUpload(
     ...dimensions,
     content: finalBuffer,
     preview,
+    sizes: sizes.length ? sizes : undefined,
   };
 }

@@ -186,6 +186,22 @@ export async function handleMediaBinaryUpload(
       });
     }
 
+    if (optimized.sizes?.length) {
+      await Promise.all(
+        optimized.sizes.map((size) =>
+          media.rawAdapter.putObject({
+            key: size.key,
+            access: parsedHeaders.access,
+            mime: size.mime,
+            content: size.content,
+          }),
+        ),
+      );
+      Logger.addTrace("manager.media.uploadBinary: responsive sizes stored", {
+        count: optimized.sizes.length,
+      });
+    }
+
     Logger.addTrace("manager.media.uploadBinary: response ready");
     sendJson(res, 200, {
       key: optimized.key,
@@ -196,6 +212,7 @@ export async function handleMediaBinaryUpload(
       width: optimized.width,
       height: optimized.height,
       orientation: optimized.orientation,
+      sizes: optimized.sizes?.map(({ content: _, ...size }) => size),
       previewKey: optimized.preview?.key,
       previewMime: optimized.preview?.mime,
       optimized: optimized.optimized,

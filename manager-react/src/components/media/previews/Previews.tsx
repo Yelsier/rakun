@@ -416,13 +416,56 @@ export default function Previews() {
     })
   }
 
-  const onRequestEdit = (item: MediaRecord | FolderItem) =>
+  const onRequestEdit = (item: MediaRecord | FolderItem) => {
+    if (isMediaRecord(item)) {
+      onMediaClick(item)
+      return
+    }
+
     handleEdit({
       contentType:
         '_type' in item && item._type === 'Media' ? 'Media' : 'MediaFolder',
       id: item._id,
       name: item.name,
     })
+  }
+
+  const handleSavePreviewDetails = async ({
+    name,
+    title,
+    alt,
+  }: {
+    name: string
+    title: string
+    alt: string
+  }) => {
+    if (!expandedPreview) return
+
+    try {
+      await updateMutation.mutateAsync({
+        contentType: 'Media',
+        id: expandedPreview._id,
+        data: {
+          name: name || expandedPreview.name,
+          title: title || null,
+          alt: alt || null,
+        },
+      })
+
+      setExpandedPreview({
+        ...expandedPreview,
+        name: name || expandedPreview.name,
+        title: title || undefined,
+        alt: alt || undefined,
+      })
+      await refetch()
+      toast.success('Image details saved')
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Could not save image details',
+      )
+    }
+  }
 
   const onRequestMove = (item: MediaRecord) => {
     setMoveTarget({
@@ -624,7 +667,9 @@ export default function Previews() {
         <ExpandedPreviewDialog
           preview={expandedPreview}
           previewUrl={expandedPreviewUrl}
+          isSaving={updateMutation.isPending}
           onClose={() => setExpandedPreview(null)}
+          onSaveDetails={handleSavePreviewDetails}
         />
       </MediaPreviewProvider>
     </ScrollArea>
