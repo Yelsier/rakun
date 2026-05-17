@@ -23,37 +23,37 @@ const LanguageSelector: React.FC<{ manager?: boolean; className?: string }> = (
     setManagerLanguage,
   } = useLanguage()
 
+  if (languageList.length <= 1) return null
+
   return (
-    languageList.length > 1 && (
-      <Select
-        value={props.manager ? managerLanguage.code : language.code}
-        onValueChange={(value) => {
-          if (props.manager) {
-            setManagerLanguage(
-              languageList.find((lang) => lang.code === value)!,
-            )
-          } else {
-            setLanguage(languageList.find((lang) => lang.code === value)!)
-          }
-        }}
-      >
-        <SelectTrigger className={cx('w-45', props.className)}>
-          <SelectValue
-            placeholder={props.manager ? managerLanguage.name : language.name}
-          />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            <SelectLabel>Languages</SelectLabel>
-            {languageList.map((lang) => (
-              <SelectItem key={lang.code} value={lang.code}>
-                {lang.name}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-    )
+    <Select
+      value={props.manager ? managerLanguage.code : language.code}
+      onValueChange={(value) => {
+        if (props.manager) {
+          setManagerLanguage(
+            languageList.find((lang) => lang.code === value)!,
+          )
+        } else {
+          setLanguage(languageList.find((lang) => lang.code === value)!)
+        }
+      }}
+    >
+      <SelectTrigger className={cx('w-45', props.className)}>
+        <SelectValue
+          placeholder={props.manager ? managerLanguage.name : language.name}
+        />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          <SelectLabel>Languages</SelectLabel>
+          {languageList.map((lang) => (
+            <SelectItem key={lang.code} value={lang.code}>
+              {lang.name}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   )
 }
 

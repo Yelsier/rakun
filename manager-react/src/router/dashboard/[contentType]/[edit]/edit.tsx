@@ -768,9 +768,7 @@ const EditPage: React.FC<{
                   Move to trash
                 </Button>
               ) : null}
-              {languageList.length > 1 ? (
-                <LanguageSelector className="w-36 border-0 shadow-none" />
-              ) : null}
+              <LanguageSelector className="w-36 border-0 shadow-none" />
               {contentTypeId && !isTrashed && languageList.length > 1 ? (
                 <Dialog open={translationOpen} onOpenChange={setTranslationOpen}>
                   <DialogTrigger asChild>

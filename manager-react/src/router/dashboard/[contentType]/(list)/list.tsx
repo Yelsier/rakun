@@ -462,9 +462,7 @@ const ListContents: React.FC<{
                 ) : null}
               </div>
             ) : null}
-            {languageList.length > 1 ? (
-              <LanguageSelector className="w-36 border-0 shadow-none" />
-            ) : null}
+            <LanguageSelector className="w-36 border-0 shadow-none" />
             {canCreate && (
               <ManagerLink href={`/${contentType}/create`} data-tour="content-list-create">
                 <Button>
