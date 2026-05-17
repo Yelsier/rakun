@@ -1,12 +1,16 @@
 import bcrypt from "bcrypt";
 import { MongoClient, type Db, type Document } from "mongodb";
-import { Page, HelloWorld } from "@rakun-kit/next/internal-content-types";
+import { Page, HelloWorld, Seo } from "@rakun-kit/next/internal-content-types";
 import { PermissionsList } from "@rakun-kit/next";
 
 import { Article, Author, Footer, Header, PageSection } from "./content-types";
 
 const now = () => new Date();
 const translatable = (value: string) => ({ _tag: "Translatable", en: value });
+const seedLanguages = [
+  { code: "en", name: "English", default: true },
+  { code: "es", name: "Spanish", default: false },
+] as const;
 const SEED_LOCKS = "_rakun_preview_seed_locks";
 const SEED_LOCK_ID = "preview";
 const SEED_LOCK_TTL_MS = 30_000;
@@ -128,6 +132,26 @@ const richText = (text: string) => ({
   },
 });
 
+const previewSeo = () => ({
+  type: "new",
+  data: {
+    _type: Seo.name,
+    title: translatable("Home"),
+    description: translatable("page-1"),
+  },
+});
+
+const previewHelloWorldModule = () => ({
+  name: HelloWorld.name,
+  value: {
+    type: "new",
+    data: {
+      _type: HelloWorld.name,
+      text: translatable("Hello Preview"),
+    },
+  },
+});
+
 type SeedPreviewDataOptions = {
   mongoUri: string;
   adminEmail?: string;
@@ -155,20 +179,20 @@ export const seedPreviewData = async ({
     await acquireSeedLock(db);
     lockAcquired = true;
 
-    await db.collection("Language").updateOne(
-      { code: "en" },
-      {
-        $setOnInsert: {
-          code: "en",
-          name: "English",
-          default: true,
-          _type: "Language",
-          createdAt: now(),
-          updatedAt: now(),
+    for (const language of seedLanguages) {
+      await db.collection("Language").updateOne(
+        { code: language.code },
+        {
+          $setOnInsert: {
+            ...language,
+            _type: "Language",
+            createdAt: now(),
+            updatedAt: now(),
+          },
         },
-      },
-      { upsert: true },
-    );
+        { upsert: true },
+      );
+    }
 
     const language = await db.collection("Language").findOne({ code: "en" });
 
@@ -282,18 +306,8 @@ export const seedPreviewData = async ({
         $setOnInsert: {
           title: translatable("Home"),
           slug: translatable("home"),
-          iterator: [
-            {
-              name: HelloWorld.name,
-              value: {
-                type: "new",
-                data: {
-                  text: "Hello Preview",
-                  _type: HelloWorld.name,
-                },
-              },
-            },
-          ],
+          seo: previewSeo(),
+          iterator: [previewHelloWorldModule()],
           _type: Page.name,
           createdAt: now(),
           updatedAt: now(),
@@ -305,6 +319,80 @@ export const seedPreviewData = async ({
     if (!page) {
       throw new Error("Failed to create preview page.");
     }
+
+    await db.collection(Page.name).updateOne(
+      { _id: page._id, seo: { $exists: false } },
+      {
+        $set: {
+          seo: previewSeo(),
+          updatedAt: now(),
+        },
+      },
+    );
+
+    await db.collection(Page.name).updateOne(
+      {
+        _id: page._id,
+        "seo.type": "new",
+        "seo.data.title": { $exists: false },
+      },
+      {
+        $set: {
+          "seo.data.title": translatable("Home"),
+          updatedAt: now(),
+        },
+      },
+    );
+
+    await db.collection(Page.name).updateOne(
+      {
+        _id: page._id,
+        "seo.type": "new",
+        "seo.data.title": "Home",
+      },
+      {
+        $set: {
+          "seo.data.title": translatable("Home"),
+          updatedAt: now(),
+        },
+      },
+    );
+
+    await db.collection(Page.name).updateOne(
+      {
+        _id: page._id,
+        $or: [{ iterator: { $exists: false } }, { iterator: { $size: 0 } }],
+      },
+      {
+        $set: {
+          iterator: [previewHelloWorldModule()],
+          updatedAt: now(),
+        },
+      },
+    );
+
+    await db.collection(Page.name).updateOne(
+      {
+        _id: page._id,
+        "iterator.name": HelloWorld.name,
+        "iterator.value.data.text": "Hello Preview",
+      },
+      {
+        $set: {
+          "iterator.$[module].value.data.text": translatable("Hello Preview"),
+          updatedAt: now(),
+        },
+      },
+      {
+        arrayFilters: [
+          {
+            "module.name": HelloWorld.name,
+            "module.value.type": "new",
+            "module.value.data.text": "Hello Preview",
+          },
+        ],
+      },
+    );
 
     const route = await db.collection("Route").findOne({
       contentType: Page.name,

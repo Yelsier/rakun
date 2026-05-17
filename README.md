@@ -35,6 +35,7 @@ with Express and Next.js integrations available.
 | `@rakun-kit/next` | Next.js adapter for APIs, media routes and mounting the manager. |
 | `@rakun-kit/trpc` | tRPC router adapter for Rakun operations. |
 | `@rakun-kit/s3` | S3 media storage adapter. |
+| `@rakun-kit/openai` | OpenAI automatic translation adapter. |
 | `@rakun-kit/preview` | Local development app, not intended for publication. |
 
 ## Basic Shape

@@ -11,6 +11,7 @@ import {
   GitBranch,
   Globe,
   LayoutPanelTop,
+  Languages,
   NotepadText,
   RotateCcw,
   ScrollText,
@@ -44,11 +45,18 @@ import {
 import { useLanguage } from '@/state/language'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useSession } from '@/state/session'
 import { UserAvatar } from '@/components/user-avatar'
@@ -873,7 +881,8 @@ const EditPage: React.FC<{
   const updateMutation = useManagerMutation('manager.update')
   const deleteMutation = useManagerMutation('manager.delete')
   const trashMutation = useManagerMutation('manager.trash')
-  const { getTranslation } = useLanguage()
+  const translateDocumentMutation = useManagerMutation('manager.translateDocument')
+  const { getTranslation, language, languageList } = useLanguage()
   const { hasPermissions } = useSession()
   const editErrors = useEditErrorStore((state) => state.errors)
   const contentTypeId = (defaultData as { _id?: string } | undefined)?._id
@@ -888,6 +897,7 @@ const EditPage: React.FC<{
     ((defaultData as { _visibility?: DocumentVisibility } | undefined)?._visibility ??
       'draft') as DocumentVisibility
   )
+  const [formRevision, setFormRevision] = useState(0)
   const visibilityBeforeTrash = ((
     defaultData as { _visibilityBeforeTrash?: EditableDocumentVisibility } | undefined
   )?._visibilityBeforeTrash ?? 'published') as EditableDocumentVisibility
@@ -896,6 +906,7 @@ const EditPage: React.FC<{
 
   useEffect(() => {
     draft.current = defaultData
+    setFormRevision((revision) => revision + 1)
     setVisibility(
       ((defaultData as { _visibility?: DocumentVisibility } | undefined)?._visibility ??
         'draft') as DocumentVisibility
@@ -1056,7 +1067,7 @@ const EditPage: React.FC<{
     toast.success('Deleted permanently')
   }
 
-  const handleSave = async () => {
+  const readFormData = () => {
     saveState()
     const iterablesValue = iterablesRef.current?.getValue() as
       | ({ _error?: string } & object)
@@ -1064,9 +1075,7 @@ const EditPage: React.FC<{
     const nonIterablesValue = nonIterablesRef.current?.getValue() as
       | ({ _error?: string } & object)
       | undefined
-    const seoValue = seoRef.current?.getValue() as
-      | ({ _error?: string } & object)
-      | undefined
+    const seoValue = seoRef.current?.getValue() as ({ _error?: string } & object) | undefined
 
     if (iterablesValue?._error || nonIterablesValue?._error || seoValue?._error) {
       setShowSaveErrorTooltip(true)
@@ -1082,11 +1091,64 @@ const EditPage: React.FC<{
       ...(hasVisibility ? { _visibility: visibility } : {}),
     }
 
+    return data
+  }
+
+  const handleSave = async () => {
+    const data = readFormData()
+
+    if (!data) return
+
     if (defaultData) {
       await handleUpdate(data)
     } else {
       await handleCreate(data)
     }
+  }
+
+  const handleTranslateDocument = async ({
+    from,
+    to,
+    overwrite,
+  }: {
+    from: string
+    to: string[]
+    overwrite: boolean
+  }) => {
+    if (!contentTypeId) return
+    if (to.length === 0) {
+      toast.error('Select at least one target language')
+      return
+    }
+
+    const data = readFormData()
+
+    if (!data) return
+
+    const result = await translateDocumentMutation.mutateAsync({
+      contentType: contentType.name,
+      id: contentTypeId,
+      from,
+      to,
+      overwrite,
+      data,
+    })
+
+    draft.current = result.item as Record<string, FieldValue>
+    setFormRevision((revision) => revision + 1)
+    await invalidateContentListQueries()
+
+    if (hasVersioning && contentTypeId) {
+      await queryClient.invalidateQueries({
+        queryKey: createManagerQueryKey('manager.versions.list', {
+          contentType: contentType.name,
+          documentId: contentTypeId,
+        }),
+      })
+    }
+
+    await onAfterRestore?.()
+    toast.success('Translated successfully')
   }
 
   const saveState = () => {
@@ -1178,14 +1240,18 @@ const EditPage: React.FC<{
     'content' | 'info' | 'seo' | 'versions' | `layout:${string}`
   >(hasNonIterables ? 'info' : hasIterables ? 'content' : hasSeo ? 'seo' : 'versions')
   const [showSaveErrorTooltip, setShowSaveErrorTooltip] = useState(false)
+  const [translationOpen, setTranslationOpen] = useState(false)
+  const [translationSource, setTranslationSource] = useState(language.code)
+  const [translationTargets, setTranslationTargets] = useState<string[]>(() =>
+    languageList.filter((item) => item.code !== language.code).map((item) => item.code)
+  )
+  const [translationOverwrite, setTranslationOverwrite] = useState(false)
+  const translationTargetOptions = languageList.filter((item) => item.code !== translationSource)
   const tabErrors = useMemo(() => {
     const hasErrorsInFields = (fields: Record<string, EncodedField>) =>
       Object.keys(fields).some((fieldName) => {
         const rootId = `${contentType.name}.${fieldName}`
-        return editErrors.some(
-          (error) =>
-            error.id === rootId || error.id.startsWith(`${rootId}.`),
-        )
+        return editErrors.some((error) => error.id === rootId || error.id.startsWith(`${rootId}.`))
       })
 
     return {
@@ -1193,13 +1259,7 @@ const EditPage: React.FC<{
       content: hasErrorsInFields(iterables.fields),
       seo: hasErrorsInFields(seo.fields),
     }
-  }, [
-    contentType.name,
-    editErrors,
-    iterables.fields,
-    nonIterables.fields,
-    seo.fields,
-  ])
+  }, [contentType.name, editErrors, iterables.fields, nonIterables.fields, seo.fields])
   const tabErrorClassName =
     '!text-destructive data-[state=active]:!text-destructive after:bg-destructive'
   const TabErrorText = () => (
@@ -1213,6 +1273,18 @@ const EditPage: React.FC<{
       setShowSaveErrorTooltip(false)
     }
   }, [editErrors.length])
+
+  useEffect(() => {
+    const codes = new Set(languageList.map((item) => item.code))
+
+    if (!codes.has(translationSource)) {
+      setTranslationSource(language.code)
+    }
+
+    setTranslationTargets((targets) =>
+      targets.filter((target) => codes.has(target) && target !== translationSource)
+    )
+  }, [language.code, languageList, translationSource])
 
   return (
     <>
@@ -1229,10 +1301,7 @@ const EditPage: React.FC<{
             <div className="flex">
               <TabsList variant={'line'} data-tour="content-edit-tabs">
                 {hasNonIterables ? (
-                  <TabsTrigger
-                    value="info"
-                    className={cn(tabErrors.info && tabErrorClassName)}
-                  >
+                  <TabsTrigger value="info" className={cn(tabErrors.info && tabErrorClassName)}>
                     <NotepadText />
                     Info
                     {tabErrors.info ? <TabErrorText /> : null}
@@ -1249,10 +1318,7 @@ const EditPage: React.FC<{
                   </TabsTrigger>
                 ) : null}
                 {hasSeo ? (
-                  <TabsTrigger
-                    value="seo"
-                    className={cn(tabErrors.seo && tabErrorClassName)}
-                  >
+                  <TabsTrigger value="seo" className={cn(tabErrors.seo && tabErrorClassName)}>
                     <Globe />
                     Seo
                     {tabErrors.seo ? <TabErrorText /> : null}
@@ -1300,7 +1366,9 @@ const EditPage: React.FC<{
                     value={editableVisibility}
                     onValueChange={(value) => setVisibility(value as DocumentVisibility)}
                   >
-                    <SelectTrigger className={cn('w-36', visibilitySelectStyles[editableVisibility])}>
+                    <SelectTrigger
+                      className={cn('w-36', visibilitySelectStyles[editableVisibility])}
+                    >
                       <VisibilityIcon className="text-current" />
                       <SelectValue />
                     </SelectTrigger>
@@ -1322,7 +1390,118 @@ const EditPage: React.FC<{
                   Move to trash
                 </Button>
               ) : null}
-              <LanguageSelector />
+              {languageList.length > 1 ? (
+                <LanguageSelector className="w-36 border-0 shadow-none" />
+              ) : null}
+              {contentTypeId && !isTrashed && languageList.length > 1 ? (
+                <Dialog open={translationOpen} onOpenChange={setTranslationOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setTranslationSource(language.code)
+                        setTranslationTargets(
+                          languageList
+                            .filter((item) => item.code !== language.code)
+                            .map((item) => item.code)
+                        )
+                      }}
+                    >
+                      <Languages />
+                      Translate
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Translate document</DialogTitle>
+                      <DialogDescription>
+                        Translate supported fields and save the document.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4">
+                      <div className="grid gap-2">
+                        <Label>Source language</Label>
+                        <Select
+                          value={translationSource}
+                          onValueChange={(value) => {
+                            setTranslationSource(value)
+                            setTranslationTargets((targets) =>
+                              targets.filter((target) => target !== value)
+                            )
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select source" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {languageList.map((item) => (
+                              <SelectItem key={item.code} value={item.code}>
+                                {item.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Target languages</Label>
+                        <div className="grid max-h-56 gap-2 overflow-auto rounded-md border p-3">
+                          {translationTargetOptions.map((item) => {
+                            const checked = translationTargets.includes(item.code)
+
+                            return (
+                              <label
+                                key={item.code}
+                                className="flex cursor-pointer items-center gap-2 rounded-sm px-1 py-1"
+                              >
+                                <Checkbox
+                                  checked={checked}
+                                  onCheckedChange={(nextChecked) => {
+                                    setTranslationTargets((targets) =>
+                                      nextChecked
+                                        ? Array.from(new Set([...targets, item.code]))
+                                        : targets.filter((target) => target !== item.code)
+                                    )
+                                  }}
+                                />
+                                <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>
+                                <Badge variant="outline">{item.code}</Badge>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      </div>
+                      <label className="flex cursor-pointer items-center gap-2">
+                        <Checkbox
+                          checked={translationOverwrite}
+                          onCheckedChange={(checked) => setTranslationOverwrite(Boolean(checked))}
+                        />
+                        <span className="text-sm">Overwrite existing translations</span>
+                      </label>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setTranslationOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button
+                        loading={translateDocumentMutation.isPending}
+                        disabled={translationTargets.length === 0}
+                        onClick={() => {
+                          void (async () => {
+                            await handleTranslateDocument({
+                              from: translationSource,
+                              to: translationTargets,
+                              overwrite: translationOverwrite,
+                            })
+                            setTranslationOpen(false)
+                          })()
+                        }}
+                      >
+                        Translate
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              ) : null}
 
               <Tooltip open={showSaveErrorTooltip}>
                 <TooltipTrigger asChild>
@@ -1355,6 +1534,7 @@ const EditPage: React.FC<{
               data-tour="content-edit-fields"
             >
               <ContentTypeEdit
+                key={`iterables:${formRevision}`}
                 defaultData={draft.current}
                 ref={iterablesRef}
                 contentType={iterables}
@@ -1365,8 +1545,15 @@ const EditPage: React.FC<{
             </TabsContent>
           ) : null}
           {hasNonIterables ? (
-            <TabsContent value="info" forceMount hidden={activeTab !== 'info'} className="w-full" data-tour="content-edit-fields">
+            <TabsContent
+              value="info"
+              forceMount
+              hidden={activeTab !== 'info'}
+              className="w-full"
+              data-tour="content-edit-fields"
+            >
               <ContentTypeEdit
+                key={`info:${formRevision}`}
                 defaultData={draft.current}
                 ref={nonIterablesRef}
                 contentType={nonIterables}
@@ -1375,8 +1562,15 @@ const EditPage: React.FC<{
             </TabsContent>
           ) : null}
           {hasSeo ? (
-            <TabsContent value="seo" forceMount hidden={activeTab !== 'seo'} className="w-full" data-tour="content-edit-fields">
+            <TabsContent
+              value="seo"
+              forceMount
+              hidden={activeTab !== 'seo'}
+              className="w-full"
+              data-tour="content-edit-fields"
+            >
               <ContentTypeEdit
+                key={`seo:${formRevision}`}
                 defaultData={draft.current}
                 ref={seoRef}
                 contentType={seo}

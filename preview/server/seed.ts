@@ -16,6 +16,10 @@ import { env } from "./env";
 
 const now = () => new Date();
 const translatable = (value: string) => ({ _tag: "Translatable", en: value });
+const seedLanguages = [
+  { code: "en", name: "English", default: true },
+  { code: "es", name: "Spanish", default: false },
+] as const;
 const SEED_LOCKS = "_rakun_preview_seed_locks";
 const SEED_LOCK_ID = "preview";
 const SEED_LOCK_TTL_MS = 30_000;
@@ -150,20 +154,20 @@ export const seedPreviewData = async () => {
     await acquireSeedLock(db);
     lockAcquired = true;
 
-    await db.collection("Language").updateOne(
-      { code: "en" },
-      {
-        $setOnInsert: {
-          code: "en",
-          name: "English",
-          default: true,
-          _type: "Language",
-          createdAt: now(),
-          updatedAt: now(),
+    for (const language of seedLanguages) {
+      await db.collection("Language").updateOne(
+        { code: language.code },
+        {
+          $setOnInsert: {
+            ...language,
+            _type: "Language",
+            createdAt: now(),
+            updatedAt: now(),
+          },
         },
-      },
-      { upsert: true },
-    );
+        { upsert: true },
+      );
+    }
 
     const language = await db.collection("Language").findOne({ code: "en" });
 

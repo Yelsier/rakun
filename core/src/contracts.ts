@@ -8,6 +8,7 @@ export * from "./schemas/manager/setDefaultLanguage";
 export * from "./schemas/manager/backups";
 export * from "./schemas/manager/migrations";
 export * from "./schemas/manager/versions";
+export * from "./schemas/manager/translateDocument";
 export * from "./schemas/manager/updatePassword";
 export * from "./schemas/manager/literals/list";
 export * from "./schemas/manager/literals/upsert";

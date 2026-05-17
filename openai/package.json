@@ -1,0 +1,45 @@
+{
+  "name": "@rakun-kit/openai",
+  "version": "1.0.0",
+  "description": "OpenAI translation adapter for Rakun.",
+  "license": "MIT",
+  "author": {
+    "name": "Yago Claros",
+    "url": "https://github.com/Yelsier"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yelsier/rakun.git",
+    "directory": "openai"
+  },
+  "bugs": {
+    "url": "https://github.com/Yelsier/rakun/issues"
+  },
+  "homepage": "https://github.com/Yelsier/rakun/tree/main/openai#readme",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "scripts": {
+    "build": "rm -rf dist && bun run build:esm && bun run build:cjs",
+    "build:esm": "tsc -p tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
+    "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../scripts/write-cjs-package-json.mjs dist/cjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "openai": "^6.38.0"
+  },
+  "peerDependencies": {
+    "@rakun-kit/core": "^1.2.1"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    }
+  }
+}

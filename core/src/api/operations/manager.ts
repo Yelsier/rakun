@@ -47,6 +47,7 @@ import { upsertLiteralHandler } from "../routes/manager/literals/upsert";
 import { getVersionHandler } from "../routes/manager/versions/get";
 import { listVersionsHandler } from "../routes/manager/versions/list";
 import { restoreVersionHandler } from "../routes/manager/versions/restore";
+import { translateDocumentHandler } from "../routes/manager/translateDocument";
 
 export const createManagerOperationDefinitions = () => {
   const contracts = createManagerOperationContracts();
@@ -104,6 +105,9 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.versions.restore": {
       resolve: restoreVersionHandler,
+    },
+    "manager.translateDocument": {
+      resolve: translateDocumentHandler,
     },
     "manager.apiOperations": {
       resolve: ({ ctx }) => apiOperationsHandler({ contracts, implementations, ctx }),

@@ -3,6 +3,7 @@ import { createLocalMediaServiceConfig, type RakunBootstrapOptions } from '@raku
 
 import { Footer, Header, previewContentTypes } from './content-types'
 import { apiOperations } from './api-operations'
+import { createOpenAITranslationServiceConfig } from '@rakun-kit/openai'
 
 export const getPreviewMongoUri = () =>
   process.env.MONGO_URI ?? 'mongodb://127.0.0.1:27017/rakun_preview'
@@ -52,6 +53,10 @@ export const createPreviewBootstrap = () =>
       rootDir: '.',
       tokenSecret: 'super-secret-token',
       baseUrl: 'http://localhost:3000/api',
+    }),
+    translation: createOpenAITranslationServiceConfig({
+      apiKey: process.env.OPENAI_API_KEY || '',
+      model: 'gpt-5-mini',
     }),
     apiOperations,
     logger: {

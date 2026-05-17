@@ -5,7 +5,7 @@ import type { DataFront, DBOutput } from "../lib/types";
 export const Seo = new ContentType({
   name: "Seo",
   fields: {
-    title: Fields.string(),
+    title: Fields.string().translatable(),
     description: Fields.string().type("Textarea").translatable(),
   },
   listFields: ["title"],

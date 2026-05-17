@@ -8,6 +8,7 @@ import { syncConfiguredRoutes } from "./api/utils/routes/syncConfiguredRoutes";
 import { createMongoConnection, getMongoService } from "./orm";
 import { runMigrations } from "./orm/migrations";
 import { createMediaService } from "./media";
+import { createTranslationService } from "./translation";
 import {
   getRakunBootstrapOptions,
   hasRakunBootstrapped,
@@ -54,6 +55,15 @@ const ensureMedia = (): void => {
   createMediaService(media);
 };
 
+const ensureTranslation = (): void => {
+  const bootstrapOptions = getRakunBootstrapOptions();
+  const translation = bootstrapOptions?.translation;
+
+  if (!translation) return;
+
+  createTranslationService(translation);
+};
+
 export const ensureRakunInitialized = async () => {
   if (initPromise) {
     await initPromise;
@@ -66,6 +76,7 @@ export const ensureRakunInitialized = async () => {
     ensureLogger();
     ensureMongo();
     ensureMedia();
+    ensureTranslation();
 
     const db = await getMongoService();
     await runMigrations(db);
@@ -197,6 +208,7 @@ export {
   type VersioningOptions,
 } from "./lib/ContentType";
 export * from "./lib/fields";
+export * from "./translation";
 
 export {
   type AnyRakunOperation,

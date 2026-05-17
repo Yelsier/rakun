@@ -45,6 +45,8 @@ import {
   restoreVersionInput,
   restoreVersionOutput,
   setDefaultLanguageInput,
+  translateDocumentInput,
+  translateDocumentOutput,
   updateInput,
   updateAccountInput,
   updateTutorialPreferencesInput,
@@ -205,6 +207,14 @@ export const createManagerOperationContracts = () =>
       description: "Restore a document version",
       input: restoreVersionInput,
       output: restoreVersionOutput,
+      method: "post",
+    }),
+    "manager.translateDocument": defineOperationContract({
+      access: "auth",
+      kind: "mutation",
+      description: "Translate supported translatable fields for a document",
+      input: translateDocumentInput,
+      output: translateDocumentOutput,
       method: "post",
     }),
     "manager.apiOperations": defineOperationContract({

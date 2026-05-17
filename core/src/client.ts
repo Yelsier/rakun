@@ -59,6 +59,11 @@ export type {
   RestoreVersionInput,
   RestoreVersionOutput,
 } from "./schemas/manager/versions";
+export type {
+  TranslateDocumentInput,
+  TranslateDocumentOutput,
+  TranslateDocumentSummary,
+} from "./schemas/manager/translateDocument";
 export type { ListOutput } from "./schemas/manager/list";
 export type { ListLiteralsOutput } from "./schemas/manager/literals/list";
 export type {
