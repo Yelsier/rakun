@@ -12,6 +12,7 @@ import {
   RouteMap,
   Route,
   Language,
+  Seo,
 } from "../../../internal-content-types";
 import { Page } from "../../../internal-content-types/Page";
 import { HelloWorld } from "../../../internal-content-types/HelloWorld";
@@ -38,6 +39,15 @@ const mongoConfig = {
 };
 
 describe.serial("routes", () => {
+  const seo = (title: string) => ({
+    type: "new" as const,
+    data: {
+      _type: Seo.name,
+      title: { en: title, _tag: "Translatable" as const },
+      description: { en: `${title} description`, _tag: "Translatable" as const },
+    },
+  });
+
   beforeAll(async () => {
     createLogger({
       level: "error",
@@ -248,6 +258,7 @@ describe.serial("routes", () => {
       title: { en: "Home", _tag: "Translatable" },
       slug: { en: "home", _tag: "Translatable" },
       iterator: [],
+      seo: seo("Home"),
       _type: "Page",
     });
 
@@ -255,6 +266,7 @@ describe.serial("routes", () => {
       title: { en: "About", _tag: "Translatable" },
       slug: { en: "about", _tag: "Translatable" },
       iterator: [],
+      seo: seo("About"),
       _type: "Page",
     });
 
