@@ -6,6 +6,7 @@ import type {
   TranslationAdapter,
   TranslationServiceConfig,
 } from '@rakun-kit/core'
+import { throwAppError } from '@rakun-kit/core/errors'
 
 export type OpenAITranslationServiceConfig = {
   apiKey?: string
@@ -30,6 +31,9 @@ type RawTranslationOutput = {
 }
 
 const DEFAULT_MODEL = 'gpt-5.4-mini'
+
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error)
 
 const translationSchema = {
   type: 'object',
@@ -74,28 +78,36 @@ export class OpenAITranslationAdapter implements TranslationAdapter {
     const targetCodes = new Set(input.to.map((language) => language.code))
     const segments = input.segments.map(({ id, text }) => ({ id, text }))
     const segmentIds = new Set(segments.map((segment) => segment.id))
-    const response = await this.client.responses.create({
-      model: this.model,
-      instructions: [
-        'Translate CMS content accurately.',
-        'Return only the requested JSON schema.',
-        'Preserve placeholders, variables, numbers, punctuation, and inline markup.',
-        'Do not translate segment IDs or language codes.',
-      ].join(' '),
-      input: JSON.stringify({
-        from: input.from,
-        to: input.to,
-        segments,
-      }),
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'rakun_translation_batch',
-          strict: true,
-          schema: translationSchema,
+    let response: { output_text?: string }
+
+    try {
+      response = await this.client.responses.create({
+        model: this.model,
+        instructions: [
+          'Translate CMS content accurately.',
+          'Return only the requested JSON schema.',
+          'Preserve placeholders, variables, numbers, punctuation, and inline markup.',
+          'Do not translate segment IDs or language codes.',
+        ].join(' '),
+        input: JSON.stringify({
+          from: input.from,
+          to: input.to,
+          segments,
+        }),
+        text: {
+          format: {
+            type: 'json_schema',
+            name: 'rakun_translation_batch',
+            strict: true,
+            schema: translationSchema,
+          },
         },
-      },
-    })
+      })
+    } catch (error) {
+      throwAppError('INTERNAL', {
+        message: `OpenAI translation request failed: ${getErrorMessage(error)}`,
+      })
+    }
 
     const parsed = this.parseOutput(response.output_text)
     const translations: TranslateBatchOutput['translations'] = {}
@@ -120,13 +132,25 @@ export class OpenAITranslationAdapter implements TranslationAdapter {
 
   private parseOutput(outputText: string | undefined): RawTranslationOutput {
     if (!outputText) {
-      throw new Error('OpenAI translation response did not include output text.')
+      throwAppError('INTERNAL', {
+        message: 'OpenAI translation response did not include output text.',
+      })
     }
 
-    const parsed = JSON.parse(outputText) as RawTranslationOutput
+    let parsed: RawTranslationOutput
+
+    try {
+      parsed = JSON.parse(outputText) as RawTranslationOutput
+    } catch (error) {
+      throwAppError('INTERNAL', {
+        message: `OpenAI translation response is not valid JSON: ${getErrorMessage(error)}`,
+      })
+    }
 
     if (!Array.isArray(parsed.translations)) {
-      throw new Error('OpenAI translation response has invalid shape.')
+      throwAppError('INTERNAL', {
+        message: 'OpenAI translation response has invalid shape.',
+      })
     }
 
     return parsed

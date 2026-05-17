@@ -18,6 +18,7 @@
     "noEmit": true,
     "paths": {
       "@rakun-kit/core": ["../core/src/index.ts"],
+      "@rakun-kit/core/errors": ["../core/src/lib/errors/index.ts"],
       "@rakun-kit/core/logger": ["../core/src/lib/Logger.ts"]
     }
   },
