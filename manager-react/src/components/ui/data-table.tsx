@@ -1,6 +1,11 @@
 'use client'
 
-import type { ColumnDef, SortingState } from '@tanstack/react-table'
+import type {
+  ColumnDef,
+  Row,
+  RowSelectionState,
+  SortingState,
+} from '@tanstack/react-table'
 import {
   flexRender,
   getCoreRowModel,
@@ -26,6 +31,9 @@ interface DataTableProps<TData, TValue> {
   data: TData[]
   sorting?: SortingState
   setSorting?: Dispatch<SetStateAction<SortingState>>
+  rowSelection?: RowSelectionState
+  setRowSelection?: Dispatch<SetStateAction<RowSelectionState>>
+  getRowId?: (originalRow: TData, index: number, parent?: Row<TData>) => string
 }
 
 const tableStyle = cva('flex pb-4', {
@@ -42,13 +50,20 @@ export function DataTable<TData, TValue>({
   data,
   sorting,
   setSorting,
+  rowSelection,
+  setRowSelection,
+  getRowId,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
     columns,
+    getRowId,
     onSortingChange: setSorting,
+    onRowSelectionChange: setRowSelection,
+    enableRowSelection: Boolean(setRowSelection),
     state: {
       sorting,
+      rowSelection,
     },
     getCoreRowModel: getCoreRowModel(),
   })

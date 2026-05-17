@@ -1,7 +1,8 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
-import { Archive, Plus, RotateCcw, Trash } from 'lucide-react'
-import { useState } from 'react'
+import type { RowSelectionState } from '@tanstack/react-table'
+import { Archive, Languages, Plus, RotateCcw, Trash } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { Permission } from '@rakun-kit/core/client'
 import { toast } from 'sonner'
 
@@ -11,19 +12,39 @@ import DeleteCT from './delete'
 import { ManagerLink } from '@/link'
 import Loading from '@/components/loading'
 import { PaginationController } from '@/components/PaginationController'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { DataTable } from '@/components/ui/data-table'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import LanguageSelector from '@/components/LanguageSelector'
 import { useLanguage } from '@/state/language'
 import { useTRPC } from '@/components/trpc-provider'
 import { useSession } from '@/state/session'
 import { useManagerMutation } from '@/client/react'
 
-const getDuplicateErrorMessage = (error: unknown) => {
+const getActionErrorMessage = (error: unknown) => {
   if (error instanceof Error && error.message) return error.message
 
   if (!error || typeof error !== 'object') {
-    return 'Could not duplicate item'
+    return 'Action failed'
   }
 
   const cause = (error as { cause?: unknown }).cause
@@ -36,24 +57,38 @@ const getDuplicateErrorMessage = (error: unknown) => {
     if (typeof reason === 'string') return reason
   }
 
-  return 'Could not duplicate item'
+  return 'Action failed'
 }
 
-const ListContents: React.FC<{ contentType: string; fields?: string[] }> = ({
-  contentType,
-  fields,
-}) => {
+const getContentRowId = (row: object, index: number) => {
+  const id = (row as { _id?: unknown })._id
+  return typeof id === 'string' ? id : String(index)
+}
+
+const ListContents: React.FC<{
+  contentType: string
+  fields?: string[]
+  documentVisibility?: boolean
+}> = ({ contentType, fields, documentVisibility }) => {
   const [page, setPage] = useState(1)
   const [isTrash, setIsTrash] = useState(false)
   const [deleteItem, setDeleteItem] = useState<{ _id: string } | null>(null)
   const [permanentDeleteItem, setPermanentDeleteItem] = useState<{
     _id: string
   } | null>(null)
-  const [restoreItem, setRestoreItem] = useState<Record<string, unknown> | null>(
-    null,
-  )
+  const [restoreItem, setRestoreItem] = useState<Record<string, unknown> | null>(null)
   const [duplicatingItemId, setDuplicatingItemId] = useState<string | null>(null)
-  const { getTranslation } = useLanguage()
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+  const [bulkTranslationOpen, setBulkTranslationOpen] = useState(false)
+  const [isBulkTranslating, setIsBulkTranslating] = useState(false)
+  const { getTranslation, language, languageList } = useLanguage()
+  const [bulkTranslationSource, setBulkTranslationSource] = useState(language.code)
+  const [bulkTranslationTargets, setBulkTranslationTargets] = useState<string[]>(() =>
+    languageList.filter((item) => item.code !== language.code).map((item) => item.code)
+  )
+  const [bulkTranslationOverwrite, setBulkTranslationOverwrite] = useState(false)
   const trpc = useTRPC()
   const { hasAnyPermission, hasPermissions } = useSession()
   const { data, refetch } = useQuery(
@@ -65,19 +100,47 @@ const ListContents: React.FC<{ contentType: string; fields?: string[] }> = ({
           limit: 10,
           page,
           fields: fields
-            ? [
-                ...fields,
-                '_trashed',
-                '_visibility',
-                '_visibilityBeforeTrash',
-              ]
+            ? [...fields, '_trashed', '_visibility', '_visibilityBeforeTrash']
             : undefined,
         },
       },
-    }),
+    })
   )
   const restoreMutation = useManagerMutation('manager.update')
   const duplicateMutation = useManagerMutation('manager.duplicate')
+  const trashMutation = useManagerMutation('manager.trash')
+  const permanentDeleteMutation = useManagerMutation('manager.delete')
+  const translateDocumentMutation = useManagerMutation('manager.translateDocument')
+  const selectedIds = useMemo(
+    () =>
+      Object.entries(rowSelection)
+        .filter(([, selected]) => selected)
+        .map(([id]) => id),
+    [rowSelection]
+  )
+  const selectedCount = selectedIds.length
+  const canBulkDelete = hasPermissions([`content.${contentType}.deleteAny` as Permission])
+  const canBulkTranslate =
+    !isTrash &&
+    languageList.length > 1 &&
+    hasAnyPermission([
+      `content.${contentType}.own` as Permission,
+      `content.${contentType}.updateAny` as Permission,
+    ])
+  const enableSelection = canBulkDelete || canBulkTranslate
+  const bulkTranslationTargetOptions = languageList.filter(
+    (item) => item.code !== bulkTranslationSource
+  )
+
+  useEffect(() => {
+    setRowSelection({})
+  }, [contentType, isTrash])
+
+  useEffect(() => {
+    if (!enableSelection) {
+      setRowSelection({})
+    }
+  }, [enableSelection])
 
   const restore = async () => {
     if (!restoreItem) return
@@ -89,8 +152,7 @@ const ListContents: React.FC<{ contentType: string; fields?: string[] }> = ({
         _trashed: false,
         ...(restoreItem._visibility === 'trash'
           ? {
-              _visibility:
-                restoreItem._visibilityBeforeTrash ?? 'published',
+              _visibility: restoreItem._visibilityBeforeTrash ?? 'published',
             }
           : {}),
       },
@@ -115,10 +177,104 @@ const ListContents: React.FC<{ contentType: string; fields?: string[] }> = ({
       toast.success('Item duplicated')
       await refetch()
     } catch (error) {
-      toast.error(getDuplicateErrorMessage(error))
+      toast.error(getActionErrorMessage(error))
     } finally {
       setDuplicatingItemId(null)
     }
+  }
+
+  const bulkDeleteItems = async () => {
+    if (selectedIds.length === 0) return
+
+    setIsBulkDeleting(true)
+
+    const mutation = isTrash ? permanentDeleteMutation : trashMutation
+    let successCount = 0
+    let failedCount = 0
+    let lastError: unknown
+
+    for (const id of selectedIds) {
+      try {
+        await mutation.mutateAsync({ contentType, id })
+        successCount += 1
+      } catch (error) {
+        failedCount += 1
+        lastError = error
+      }
+    }
+
+    if (successCount > 0) {
+      await refetch()
+      setRowSelection({})
+      setBulkDeleteOpen(false)
+      toast.success(
+        `${successCount} item${successCount === 1 ? '' : 's'} ${
+          isTrash ? 'deleted permanently' : 'moved to trash'
+        }`
+      )
+    }
+
+    if (failedCount > 0) {
+      toast.error(
+        `${failedCount} item${failedCount === 1 ? '' : 's'} failed. ${getActionErrorMessage(
+          lastError
+        )}`
+      )
+    }
+
+    setIsBulkDeleting(false)
+  }
+
+  const bulkTranslateItems = async () => {
+    if (selectedIds.length === 0) return
+
+    if (bulkTranslationTargets.length === 0) {
+      toast.error('Select at least one target language')
+      return
+    }
+
+    setIsBulkTranslating(true)
+
+    let successCount = 0
+    let failedCount = 0
+    let translatedSegments = 0
+    let lastError: unknown
+
+    for (const id of selectedIds) {
+      try {
+        const result = await translateDocumentMutation.mutateAsync({
+          contentType,
+          id,
+          from: bulkTranslationSource,
+          to: bulkTranslationTargets,
+          overwrite: bulkTranslationOverwrite,
+        })
+        successCount += 1
+        translatedSegments += result.summary.translatedSegments
+      } catch (error) {
+        failedCount += 1
+        lastError = error
+      }
+    }
+
+    if (successCount > 0) {
+      await refetch()
+      setRowSelection({})
+      setBulkTranslationOpen(false)
+      toast.success(
+        `${successCount} item${successCount === 1 ? '' : 's'} translated (${translatedSegments} segment${translatedSegments === 1 ? '' : 's'})`
+      )
+    }
+
+    if (failedCount > 0) {
+      toast.error(
+        `${failedCount} item${failedCount === 1 ? '' : 's'} failed. ${getActionErrorMessage(
+          lastError
+        )}`
+      )
+    }
+
+    setIsBulkTranslating(false)
   }
 
   if (!data) {
@@ -133,34 +289,191 @@ const ListContents: React.FC<{ contentType: string; fields?: string[] }> = ({
   ])
 
   return (
-    <div className='container mx-auto flex flex-col gap-6 px-4 py-10'>
+    <div className="container mx-auto flex flex-col gap-6 px-4 py-10">
       <Tabs
         value={isTrash ? 'trash' : 'active'}
         onValueChange={(value) => {
           setIsTrash(value === 'trash')
           setPage(1)
         }}
-        className='w-full'
+        className="w-full"
       >
-        <div className='flex items-center justify-between border-b pb-3'>
-          <TabsList variant='line'>
-            <TabsTrigger value='active'>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
+          <TabsList variant="line">
+            <TabsTrigger value="active">
               <Archive />
               Active
             </TabsTrigger>
-            <TabsTrigger value='trash'>
+            <TabsTrigger value="trash">
               <Trash />
               Trash
             </TabsTrigger>
           </TabsList>
-          {canCreate && (
-            <ManagerLink href={`/${contentType}/create`} data-tour='content-list-create'>
-              <Button>
-                <Plus />
-                Create
-              </Button>
-            </ManagerLink>
-          )}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {enableSelection ? (
+              <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/20 px-2 py-1.5">
+                <span className="min-w-20 text-sm text-muted-foreground">
+                  {selectedCount} selected
+                </span>
+                {canBulkTranslate ? (
+                  <Dialog open={bulkTranslationOpen} onOpenChange={setBulkTranslationOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={selectedCount === 0}
+                        onClick={() => {
+                          setBulkTranslationSource(language.code)
+                          setBulkTranslationTargets(
+                            languageList
+                              .filter((item) => item.code !== language.code)
+                              .map((item) => item.code)
+                          )
+                        }}
+                      >
+                        <Languages />
+                        Translate
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Translate selected items</DialogTitle>
+                        <DialogDescription>
+                          Translate supported fields for {selectedCount} selected item
+                          {selectedCount === 1 ? '' : 's'}.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4">
+                        <div className="grid gap-2">
+                          <Label>Source language</Label>
+                          <Select
+                            value={bulkTranslationSource}
+                            onValueChange={(value) => {
+                              setBulkTranslationSource(value)
+                              setBulkTranslationTargets((targets) =>
+                                targets.filter((target) => target !== value)
+                              )
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select source" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {languageList.map((item) => (
+                                <SelectItem key={item.code} value={item.code}>
+                                  {item.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-2">
+                          <Label>Target languages</Label>
+                          <div className="grid max-h-56 gap-2 overflow-auto rounded-md border p-3">
+                            {bulkTranslationTargetOptions.map((item) => {
+                              const checked = bulkTranslationTargets.includes(item.code)
+
+                              return (
+                                <label
+                                  key={item.code}
+                                  className="flex cursor-pointer items-center gap-2 rounded-sm px-1 py-1"
+                                >
+                                  <Checkbox
+                                    checked={checked}
+                                    onCheckedChange={(nextChecked) => {
+                                      setBulkTranslationTargets((targets) =>
+                                        nextChecked
+                                          ? Array.from(new Set([...targets, item.code]))
+                                          : targets.filter((target) => target !== item.code)
+                                      )
+                                    }}
+                                  />
+                                  <span className="min-w-0 flex-1 truncate text-sm">
+                                    {item.name}
+                                  </span>
+                                  <Badge variant="outline">{item.code}</Badge>
+                                </label>
+                              )
+                            })}
+                          </div>
+                        </div>
+                        <label className="flex cursor-pointer items-center gap-2">
+                          <Checkbox
+                            checked={bulkTranslationOverwrite}
+                            onCheckedChange={(checked) =>
+                              setBulkTranslationOverwrite(Boolean(checked))
+                            }
+                          />
+                          <span className="text-sm">Overwrite existing translations</span>
+                        </label>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setBulkTranslationOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button
+                          loading={isBulkTranslating || translateDocumentMutation.isPending}
+                          disabled={bulkTranslationTargets.length === 0}
+                          onClick={() => void bulkTranslateItems()}
+                        >
+                          Translate
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                ) : null}
+                {canBulkDelete ? (
+                  <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="destructive" size="sm" disabled={selectedCount === 0}>
+                        <Trash />
+                        {isTrash ? 'Delete permanently' : 'Move to trash'}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>
+                          {isTrash ? 'Delete selected permanently' : 'Move selected to trash'}
+                        </DialogTitle>
+                        <DialogDescription>
+                          {isTrash
+                            ? `This will permanently delete ${selectedCount} selected item${
+                                selectedCount === 1 ? '' : 's'
+                              }. This cannot be undone.`
+                            : `This will move ${selectedCount} selected item${
+                                selectedCount === 1 ? '' : 's'
+                              } to trash.`}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setBulkDeleteOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          loading={isBulkDeleting}
+                          onClick={() => void bulkDeleteItems()}
+                        >
+                          {isTrash ? 'Delete permanently' : 'Move to trash'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                ) : null}
+              </div>
+            ) : null}
+            {languageList.length > 1 ? (
+              <LanguageSelector className="w-36 border-0 shadow-none" />
+            ) : null}
+            {canCreate && (
+              <ManagerLink href={`/${contentType}/create`} data-tour="content-list-create">
+                <Button>
+                  <Plus />
+                  Create
+                </Button>
+              </ManagerLink>
+            )}
+          </div>
         </div>
       </Tabs>
       <DeleteCT
@@ -168,16 +481,16 @@ const ListContents: React.FC<{ contentType: string; fields?: string[] }> = ({
         setDeleteItem={setDeleteItem}
         ct={contentType}
         item={deleteItem}
-        mode='trash'
+        mode="trash"
       />
       <DeleteCT
         refetch={refetch}
         setDeleteItem={setPermanentDeleteItem}
         ct={contentType}
         item={permanentDeleteItem}
-        mode='delete'
+        mode="delete"
       />
-      <div data-tour='content-list-table'>
+      <div data-tour="content-list-table">
         <DataTable
           columns={columns({
             fields: fields || [],
@@ -188,36 +501,31 @@ const ListContents: React.FC<{ contentType: string; fields?: string[] }> = ({
             setRestoreItem,
             onDuplicateItem: (item) => void duplicateItem(item),
             duplicatingItemId,
+            enableSelection,
+            showVisibility: Boolean(documentVisibility),
             isTrash,
             hasPermissions,
             hasAnyPermission,
           })}
           data={items as object[]}
+          rowSelection={rowSelection}
+          setRowSelection={setRowSelection}
+          getRowId={getContentRowId}
         />
       </div>
       {restoreItem ? (
-        <div className='flex items-center justify-end gap-2 rounded-md border p-3'>
-          <span className='text-muted-foreground text-sm'>
-            Restore selected item?
-          </span>
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={() => setRestoreItem(null)}
-          >
+        <div className="flex items-center justify-end gap-2 rounded-md border p-3">
+          <span className="text-muted-foreground text-sm">Restore selected item?</span>
+          <Button variant="outline" size="sm" onClick={() => setRestoreItem(null)}>
             Cancel
           </Button>
-          <Button
-            size='sm'
-            loading={restoreMutation.isPending}
-            onClick={() => void restore()}
-          >
+          <Button size="sm" loading={restoreMutation.isPending} onClick={() => void restore()}>
             <RotateCcw />
             Restore
           </Button>
         </div>
       ) : null}
-      <div className='mt-6'>
+      <div className="mt-6">
         <PaginationController
           setPage={setPage}
           page={page}

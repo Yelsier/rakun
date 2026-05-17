@@ -204,6 +204,7 @@ export const managerRouteDefinitions = [
         title={contentType?.name ?? route.contentType}
         contentType={route.contentType}
         fields={contentType?.listFields ?? []}
+        documentVisibility={contentType?.documentVisibility}
       />
     ),
   }),
