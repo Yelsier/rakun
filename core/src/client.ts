@@ -59,6 +59,7 @@ export type {
   RestoreVersionInput,
   RestoreVersionOutput,
 } from "./schemas/manager/versions";
+export type { DuplicateInput } from "./schemas/manager/duplicate";
 export type {
   TranslateDocumentInput,
   TranslateDocumentOutput,

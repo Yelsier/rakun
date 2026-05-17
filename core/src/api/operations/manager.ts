@@ -11,6 +11,7 @@ import { restoreBackupHandler } from "../routes/manager/backups/restore";
 import { contentTypesHandler } from "../routes/manager/contentTypes";
 import { createHandler } from "../routes/manager/create";
 import { deleteHandler } from "../routes/manager/delete";
+import { duplicateHandler } from "../routes/manager/duplicate";
 import { trashHandler } from "../routes/manager/trash";
 import { getHandler } from "../routes/manager/get";
 import { listHandler } from "../routes/manager/list";
@@ -63,6 +64,9 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.create": {
       resolve: createHandler,
+    },
+    "manager.duplicate": {
+      resolve: duplicateHandler,
     },
     "manager.update": {
       resolve: updateHandler,

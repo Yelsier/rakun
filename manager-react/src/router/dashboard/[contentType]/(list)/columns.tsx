@@ -1,7 +1,15 @@
 'use client'
 
 import type { ColumnDef } from '@tanstack/react-table'
-import { Check, Edit, MoreHorizontal, RotateCcw, Trash, X } from 'lucide-react'
+import {
+  Check,
+  Copy,
+  Edit,
+  MoreHorizontal,
+  RotateCcw,
+  Trash,
+  X,
+} from 'lucide-react'
 import type { MaybeTranslatableValue, Permission } from '@rakun-kit/core/client'
 
 import IDColumn from '../../../../components/IDColumnt'
@@ -23,6 +31,8 @@ export const columns = ({
   setDeleteItem,
   setPermanentDeleteItem,
   setRestoreItem,
+  onDuplicateItem,
+  duplicatingItemId,
   isTrash,
   hasPermissions,
   hasAnyPermission,
@@ -33,6 +43,8 @@ export const columns = ({
   setDeleteItem: (item: { _id: string } | null) => void
   setPermanentDeleteItem: (item: { _id: string } | null) => void
   setRestoreItem: (item: Record<string, unknown> | null) => void
+  onDuplicateItem: (item: Record<string, unknown>) => void
+  duplicatingItemId: string | null
   isTrash: boolean
   hasPermissions: (permissions: Permission[]) => boolean
   hasAnyPermission: (permissions: Permission[]) => boolean
@@ -101,10 +113,14 @@ export const columns = ({
     {
       id: 'actions',
       cell: ({ row }) => {
+        const id = row.getValue('_id') as string
+        const isDuplicating = duplicatingItemId === id
+
         return (
           <>
             <DropdownMenu>
               {hasAnyPermission([
+                `content.${contentType}.own` as Permission,
                 `content.${contentType}.deleteAny` as Permission,
                 `content.${contentType}.updateAny` as Permission,
               ]) && (
@@ -134,9 +150,7 @@ export const columns = ({
                     `content.${contentType}.deleteAny` as Permission,
                   ]) && (
                     <DropdownMenuItem
-                      onClick={() =>
-                        setPermanentDeleteItem({ _id: row.getValue('_id') })
-                      }
+                      onClick={() => setPermanentDeleteItem({ _id: id })}
                       className='text-destructive'
                     >
                       <Trash className='text-destructive' />
@@ -147,7 +161,7 @@ export const columns = ({
                   `content.${contentType}.deleteAny` as Permission,
                 ]) && (
                   <DropdownMenuItem
-                    onClick={() => setDeleteItem({ _id: row.getValue('_id') })}
+                    onClick={() => setDeleteItem({ _id: id })}
                     className='text-destructive'
                   >
                     <Trash className='text-destructive' />
@@ -155,11 +169,24 @@ export const columns = ({
                   </DropdownMenuItem>
                 )}
                 {!isTrash && hasPermissions([
+                  `content.${contentType}.own` as Permission,
+                ]) && (
+                  <DropdownMenuItem
+                    disabled={isDuplicating}
+                    onClick={() =>
+                      onDuplicateItem(row.original as Record<string, unknown>)
+                    }
+                  >
+                    <Copy />
+                    {isDuplicating ? 'Duplicating...' : 'Duplicate'}
+                  </DropdownMenuItem>
+                )}
+                {!isTrash && hasPermissions([
                   `content.${contentType}.updateAny` as Permission,
                 ]) && (
                   <DropdownMenuItem asChild>
                     <ManagerLink
-                      href={`/${contentType}/${row.getValue('_id')}`}
+                      href={`/${contentType}/${id}`}
                       className='flex w-full items-center gap-2'
                     >
                       <Edit />

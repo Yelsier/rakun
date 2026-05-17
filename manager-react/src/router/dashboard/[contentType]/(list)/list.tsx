@@ -19,6 +19,26 @@ import { useTRPC } from '@/components/trpc-provider'
 import { useSession } from '@/state/session'
 import { useManagerMutation } from '@/client/react'
 
+const getDuplicateErrorMessage = (error: unknown) => {
+  if (error instanceof Error && error.message) return error.message
+
+  if (!error || typeof error !== 'object') {
+    return 'Could not duplicate item'
+  }
+
+  const cause = (error as { cause?: unknown }).cause
+
+  if (cause && typeof cause === 'object') {
+    const message = (cause as { message?: unknown; reason?: unknown }).message
+    const reason = (cause as { message?: unknown; reason?: unknown }).reason
+
+    if (typeof message === 'string') return message
+    if (typeof reason === 'string') return reason
+  }
+
+  return 'Could not duplicate item'
+}
+
 const ListContents: React.FC<{ contentType: string; fields?: string[] }> = ({
   contentType,
   fields,
@@ -32,6 +52,7 @@ const ListContents: React.FC<{ contentType: string; fields?: string[] }> = ({
   const [restoreItem, setRestoreItem] = useState<Record<string, unknown> | null>(
     null,
   )
+  const [duplicatingItemId, setDuplicatingItemId] = useState<string | null>(null)
   const { getTranslation } = useLanguage()
   const trpc = useTRPC()
   const { hasAnyPermission, hasPermissions } = useSession()
@@ -56,6 +77,7 @@ const ListContents: React.FC<{ contentType: string; fields?: string[] }> = ({
     }),
   )
   const restoreMutation = useManagerMutation('manager.update')
+  const duplicateMutation = useManagerMutation('manager.duplicate')
 
   const restore = async () => {
     if (!restoreItem) return
@@ -76,6 +98,27 @@ const ListContents: React.FC<{ contentType: string; fields?: string[] }> = ({
     toast.success('Item restored')
     setRestoreItem(null)
     await refetch()
+  }
+
+  const duplicateItem = async (item: Record<string, unknown>) => {
+    const id = typeof item._id === 'string' ? item._id : null
+
+    if (!id) return
+
+    setDuplicatingItemId(id)
+
+    try {
+      await duplicateMutation.mutateAsync({
+        contentType,
+        id,
+      })
+      toast.success('Item duplicated')
+      await refetch()
+    } catch (error) {
+      toast.error(getDuplicateErrorMessage(error))
+    } finally {
+      setDuplicatingItemId(null)
+    }
   }
 
   if (!data) {
@@ -143,6 +186,8 @@ const ListContents: React.FC<{ contentType: string; fields?: string[] }> = ({
             setDeleteItem,
             setPermanentDeleteItem,
             setRestoreItem,
+            onDuplicateItem: (item) => void duplicateItem(item),
+            duplicatingItemId,
             isTrash,
             hasPermissions,
             hasAnyPermission,
