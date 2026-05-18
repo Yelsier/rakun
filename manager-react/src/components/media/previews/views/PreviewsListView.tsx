@@ -20,8 +20,8 @@ export default function PreviewsListView({ media }: PreviewsListViewProps) {
     renderPreview,
     formatFileSize,
     isSelected,
-    selectionMode,
     bulkSelectedIds,
+    canBulkSelect,
     onToggleBulkSelection,
     onSelectVisible,
   } = useMediaPreview()
@@ -32,7 +32,7 @@ export default function PreviewsListView({ media }: PreviewsListViewProps) {
   )
   const listColumns = cn(
     'grid items-center gap-3',
-    selectionMode
+    canBulkSelect
       ? 'grid-cols-[40px_56px_minmax(0,1fr)] md:grid-cols-[40px_56px_minmax(0,1fr)_minmax(0,180px)] xl:grid-cols-[40px_56px_minmax(0,1fr)_minmax(0,180px)_110px]'
       : 'grid-cols-[56px_minmax(0,1fr)] md:grid-cols-[56px_minmax(0,1fr)_minmax(0,180px)] xl:grid-cols-[56px_minmax(0,1fr)_minmax(0,180px)_110px]',
   )
@@ -45,7 +45,7 @@ export default function PreviewsListView({ media }: PreviewsListViewProps) {
           'border-b bg-muted/40 px-3 py-2 text-muted-foreground text-xs',
         )}
       >
-        {selectionMode ? (
+        {canBulkSelect ? (
           <div className='flex items-center justify-center'>
             <Checkbox
               checked={
@@ -71,9 +71,7 @@ export default function PreviewsListView({ media }: PreviewsListViewProps) {
               role='button'
               tabIndex={0}
               data-selected={
-                selectionMode && bulkSelectedIds.has(item._id)
-                  ? 'true'
-                  : undefined
+                bulkSelectedIds.has(item._id) ? 'true' : undefined
               }
               className={cn(
                 listColumns,
@@ -86,7 +84,7 @@ export default function PreviewsListView({ media }: PreviewsListViewProps) {
                 onMediaClick(item)
               }}
             >
-              {selectionMode ? (
+              {canBulkSelect ? (
                 <div
                   className='flex items-center justify-center'
                   onClick={(event) => event.stopPropagation()}
@@ -103,7 +101,7 @@ export default function PreviewsListView({ media }: PreviewsListViewProps) {
               </div>
               <div className='min-w-0'>
                 <p className='truncate font-medium text-sm'>
-                  {isSelected(item._id) && !selectionMode ? (
+                  {isSelected(item._id) && !bulkSelectedIds.has(item._id) ? (
                     <span className='mr-2 inline-flex rounded-full bg-primary p-0.5 text-primary-foreground align-middle'>
                       <Check className='size-3' />
                     </span>

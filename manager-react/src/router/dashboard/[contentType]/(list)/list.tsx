@@ -311,7 +311,7 @@ const ListContents: React.FC<{
           <div className="flex flex-wrap items-center justify-end gap-2">
             {enableSelection ? (
               <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/20 px-2 py-1.5">
-                <span className="min-w-20 text-sm text-muted-foreground">
+                <span className="min-w-20 text-sm text-muted-foreground text-center">
                   {selectedCount} selected
                 </span>
                 {canBulkTranslate ? (

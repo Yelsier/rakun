@@ -55,7 +55,7 @@ export default function PreviewsToolbar() {
       <div className="flex items-center gap-2 flex-wrap">
         {selectionMode ? (
           <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/20 px-2 py-1.5">
-            <span className="min-w-20 text-muted-foreground text-sm">
+            <span className="min-w-20 text-muted-foreground text-sm text-center">
               {bulkSelectedCount} selected
             </span>
             <Button

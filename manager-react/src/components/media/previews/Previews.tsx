@@ -236,12 +236,22 @@ export default function Previews() {
     })
   }, [media])
 
+  useEffect(() => {
+    if (selectionMode && bulkSelectedCount === 0) {
+      setSelectionMode(false)
+    }
+  }, [selectionMode, bulkSelectedCount])
+
   const clearBulkSelection = () => {
     setSelectionMode(false)
     setBulkSelectedIds(new Set())
   }
 
   const toggleBulkSelection = (item: MediaRecord) => {
+    if (canBulkSelect) {
+      setSelectionMode(true)
+    }
+
     setBulkSelectedIds((prev) => {
       const next = new Set(prev)
 
@@ -256,6 +266,10 @@ export default function Previews() {
   }
 
   const selectVisible = (items: MediaRecord[], selected: boolean) => {
+    if (canBulkSelect) {
+      setSelectionMode(true)
+    }
+
     setBulkSelectedIds((prev) => {
       const next = new Set(prev)
 
