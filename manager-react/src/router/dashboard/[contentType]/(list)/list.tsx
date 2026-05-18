@@ -34,7 +34,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import LanguageSelector from '@/components/LanguageSelector'
 import { useLanguage } from '@/state/language'
 import { useTRPC } from '@/components/trpc-provider'
 import { useSession } from '@/state/session'
@@ -462,7 +461,6 @@ const ListContents: React.FC<{
                 ) : null}
               </div>
             ) : null}
-            <LanguageSelector className="w-36 border-0 shadow-none" />
             {canCreate && (
               <ManagerLink href={`/${contentType}/create`} data-tour="content-list-create">
                 <Button>

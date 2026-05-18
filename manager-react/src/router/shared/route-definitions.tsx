@@ -58,6 +58,11 @@ export const renderManagerRoute = (args: {
       : undefined;
 
   const children = definition.render(route as never, props, matchedContentType);
+  const headerEnd = definition.headerEnd?.(
+    route as never,
+    props,
+    matchedContentType,
+  );
 
   if (definition.layout === "auth") {
     return (
@@ -78,12 +83,14 @@ export const renderManagerRoute = (args: {
       pathname,
       basePath,
       contentTypes,
+      headerEnd,
     }) ?? (
       <ManagerDashboardLayout
         route={route}
         contentTypes={contentTypes}
         pathname={pathname}
         basePath={basePath}
+        headerEnd={headerEnd}
       >
         {children}
       </ManagerDashboardLayout>

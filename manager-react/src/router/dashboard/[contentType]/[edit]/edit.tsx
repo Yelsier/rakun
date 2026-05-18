@@ -27,7 +27,6 @@ import { FieldValue } from './_fields/shared'
 
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import LanguageSelector from '@/components/LanguageSelector'
 import {
   createManagerQueryOptions,
   createManagerQueryKey,
@@ -768,7 +767,6 @@ const EditPage: React.FC<{
                   Move to trash
                 </Button>
               ) : null}
-              <LanguageSelector className="w-36 border-0 shadow-none" />
               {contentTypeId && !isTrashed && languageList.length > 1 ? (
                 <Dialog open={translationOpen} onOpenChange={setTranslationOpen}>
                   <DialogTrigger asChild>

@@ -19,6 +19,11 @@ export type ManagerRouteDefinition<K extends ManagerResolvedRouteKind> = {
   kind: K
   path: string
   layout: ManagerRouteLayout
+  headerEnd?: (
+    route: Extract<ManagerResolvedRoute, { kind: K }>,
+    props: ManagerRouteRendererProps,
+    contentType?: EncodedContentType,
+  ) => ReactNode
   parse: (
     context: ManagerRouteContext,
   ) => Extract<ManagerResolvedRoute, { kind: K }>

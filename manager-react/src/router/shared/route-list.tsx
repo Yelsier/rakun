@@ -20,6 +20,7 @@ import {
   ManagerSettingsUserRolesScreen,
 } from "../dashboard/settings/user-roles";
 import { ManagerUsersScreen } from "../dashboard/users";
+import LanguageSelector from "../../components/LanguageSelector";
 
 import {
   defineManagerRoute,
@@ -186,6 +187,9 @@ export const managerRouteDefinitions = [
       contentType: params.contentType ?? "",
       id: params.id ?? "",
     }),
+    headerEnd: () => (
+      <LanguageSelector className="w-36 border-0 shadow-none" />
+    ),
     render: (route, props, contentType) =>
       props.renderContentEdit?.(route, contentType) ?? (
         <ManagerContentTypeEditScreen contentType={contentType} id={route.id} />
@@ -199,6 +203,9 @@ export const managerRouteDefinitions = [
       kind: "content-list",
       contentType: params.contentType ?? "",
     }),
+    headerEnd: () => (
+      <LanguageSelector className="w-36 border-0 shadow-none" />
+    ),
     render: (route, _props, contentType) => (
       <ManagerContentTypeListScreen
         title={contentType?.name ?? route.contentType}

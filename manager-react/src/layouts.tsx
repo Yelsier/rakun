@@ -1,71 +1,70 @@
-"use client";
+'use client'
 
-import type { EncodedContentType } from "@rakun-kit/core/client";
-import type { ReactNode } from "react";
-import type { ManagerResolvedRoute } from "./router/shared/types";
+import type { EncodedContentType } from '@rakun-kit/core/client'
+import type { ReactNode } from 'react'
+import type { ManagerResolvedRoute } from './router/shared/types'
 
-import { AppSidebar, type ManagerSidebarItem } from "./components/app-sidebar";
-import BreadcrumbComponent from "./components/bread-crumb";
-import { ScrollArea } from "./components/ui/scroll-area";
-import { Separator } from "./components/ui/separator";
-import { ManagerHelpProvider } from "./help/manager-help";
+import { AppSidebar, type ManagerSidebarItem } from './components/app-sidebar'
+import BreadcrumbComponent from './components/bread-crumb'
+import { ScrollArea } from './components/ui/scroll-area'
+import { Separator } from './components/ui/separator'
+import { ManagerHelpProvider } from './help/manager-help'
 import {
   SidebarHeader,
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "./components/ui/sidebar";
+} from './components/ui/sidebar'
 
 export type ManagerLayoutContext = {
-  pathname?: string;
-  contentTypes?: EncodedContentType[];
-};
+  pathname?: string
+  contentTypes?: EncodedContentType[]
+}
 
 export type ManagerLayoutRendererProps = {
-  children: ReactNode;
-  route: { kind: string };
-  pathname?: string;
-  basePath?: string;
-  contentTypes?: EncodedContentType[];
-};
+  children: ReactNode
+  route: { kind: string }
+  pathname?: string
+  basePath?: string
+  contentTypes?: EncodedContentType[]
+  headerEnd?: ReactNode
+}
 
 export type ManagerAuthLayoutProps = {
-  children: ReactNode;
-};
+  children: ReactNode
+}
 
 export const ManagerAuthLayout = ({ children }: ManagerAuthLayoutProps) => (
   <div className="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
     <div className="w-full max-w-sm">{children}</div>
   </div>
-);
+)
 
 export type ManagerDashboardLayoutProps = {
-  children: ReactNode;
-  route?: ManagerResolvedRoute;
-  contentTypes: EncodedContentType[];
-  pathname?: string;
-  basePath?: string;
-  secondaryItems?: ManagerSidebarItem[];
-  sidebar?: ReactNode;
-  headerStart?: ReactNode;
-  headerEnd?: ReactNode;
-};
+  children: ReactNode
+  route?: ManagerResolvedRoute
+  contentTypes: EncodedContentType[]
+  pathname?: string
+  basePath?: string
+  secondaryItems?: ManagerSidebarItem[]
+  sidebar?: ReactNode
+  headerStart?: ReactNode
+  headerEnd?: ReactNode
+}
 
 export const ManagerDashboardLayout = ({
   children,
   route,
   contentTypes,
   pathname,
-  basePath = "",
+  basePath = '',
   secondaryItems,
   sidebar,
   headerStart,
   headerEnd,
 }: ManagerDashboardLayoutProps) => (
   <SidebarProvider className="max-h-screen overflow-hidden">
-    <ManagerHelpProvider
-      route={route ?? { kind: "unknown", pathname: pathname ?? "/" }}
-    >
+    <ManagerHelpProvider route={route ?? { kind: 'unknown', pathname: pathname ?? '/' }}>
       {sidebar ?? (
         <AppSidebar
           contentTypes={contentTypes}
@@ -81,24 +80,16 @@ export const ManagerDashboardLayout = ({
         >
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
-            {headerStart ?? (
-              <BreadcrumbComponent basePath={basePath} pathname={pathname} />
-            )}
+            <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+            {headerStart ?? <BreadcrumbComponent basePath={basePath} pathname={pathname} />}
           </div>
           {headerEnd}
         </SidebarHeader>
 
-        <ScrollArea
-          className="max-h-[calc(100vh-6rem)]"
-          data-tour="manager-page"
-        >
+        <ScrollArea className="max-h-[calc(100vh-6rem)]" data-tour="manager-page">
           {children}
         </ScrollArea>
       </SidebarInset>
     </ManagerHelpProvider>
   </SidebarProvider>
-);
+)

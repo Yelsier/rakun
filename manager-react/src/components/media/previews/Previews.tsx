@@ -86,16 +86,14 @@ export default function Previews() {
   } = useMediaLibrary()
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid-sm')
-  const [mediaTypeFilter, setMediaTypeFilter] = useState<
-    'all' | 'image' | 'video' | 'document'
-  >('all')
+  const [mediaTypeFilter, setMediaTypeFilter] = useState<'all' | 'image' | 'video' | 'document'>(
+    'all'
+  )
   const effectiveMediaTypeFilter = forcedMediaTypeFilter ?? mediaTypeFilter
-  const isMediaTypeFilterLocked =
-    !!forcedMediaTypeFilter && forcedMediaTypeFilter !== 'all'
+  const isMediaTypeFilterLocked = !!forcedMediaTypeFilter && forcedMediaTypeFilter !== 'all'
 
   const [isCreatingFolder, setIsCreatingFolder] = useState(false)
-  const [isCreateFolderDialogOpen, setIsCreateFolderDialogOpen] =
-    useState(false)
+  const [isCreateFolderDialogOpen, setIsCreateFolderDialogOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
   const [editTarget, setEditTarget] = useState<DeleteTarget | null>(null)
@@ -105,11 +103,9 @@ export default function Previews() {
 
   const getMediaQueryFilter = (
     folderId: string | null,
-    mediaType: 'all' | 'image' | 'video' | 'document',
+    mediaType: 'all' | 'image' | 'video' | 'document'
   ) => {
-    const folderFilter = folderId
-      ? { 'folder._id': folderId }
-      : { folder: { $exists: false } }
+    const folderFilter = folderId ? { 'folder._id': folderId } : { folder: { $exists: false } }
 
     switch (mediaType) {
       case 'image':
@@ -119,10 +115,7 @@ export default function Previews() {
       case 'document':
         return {
           ...folderFilter,
-          $or: [
-            { mime: { $regex: '^application/' } },
-            { mime: { $regex: '^text/' } },
-          ],
+          $or: [{ mime: { $regex: '^application/' } }, { mime: { $regex: '^text/' } }],
         }
       default:
         return folderFilter
@@ -160,22 +153,20 @@ export default function Previews() {
   const deleteFolderMutation = useManagerMutation('manager.media.deleteFolder')
   const updateMutation = useManagerMutation('manager.update')
 
-  const media = ((data as { items?: MediaRecord[] } | undefined)?.items ??
-    []) as MediaRecord[]
+  const media = ((data as { items?: MediaRecord[] } | undefined)?.items ?? []) as MediaRecord[]
   const childFoldersData = childFolders as { items: FolderItem[] } | undefined
   const folderOptions = useMemo(
     (): { _id: string | null; name: string; path: string }[] => [
       { _id: null, name: 'Base folder', path: '/' },
       ...[...(folders ?? [])].sort((a, b) => a.path.localeCompare(b.path)),
     ],
-    [folders],
+    [folders]
   )
 
-  const { files, setFiles, isUploading, handleUpload, onFileReject } =
-    useMediaUpload({
-      onUpload,
-      refetchMedia: refetch,
-    })
+  const { files, setFiles, isUploading, handleUpload, onFileReject } = useMediaUpload({
+    onUpload,
+    refetchMedia: refetch,
+  })
 
   const { renderPreview } = useMediaPreviewRenderer({
     media,
@@ -190,23 +181,19 @@ export default function Previews() {
     },
   })
 
-  const {
-    expandedPreview,
-    expandedPreviewUrl,
-    setExpandedPreview,
-    onMediaClick,
-  } = useExpandedPreview({
-    selectable,
-    onSelect,
-    resolveOriginalUrl: async (item) => {
-      if (item.url) return item.url
-      const result = (await managerClient.request('manager.media.getUrl', {
-        key: item.key,
-        access: item.access,
-      })) as { url: string }
-      return result.url
-    },
-  })
+  const { expandedPreview, expandedPreviewUrl, setExpandedPreview, onMediaClick } =
+    useExpandedPreview({
+      selectable,
+      onSelect,
+      resolveOriginalUrl: async (item) => {
+        if (item.url) return item.url
+        const result = (await managerClient.request('manager.media.getUrl', {
+          key: item.key,
+          access: item.access,
+        })) as { url: string }
+        return result.url
+      },
+    })
 
   useEffect(() => {
     if (!externalEditFolderRequest) return
@@ -240,11 +227,7 @@ export default function Previews() {
         },
         {
           onSuccess: async () => {
-            await Promise.all([
-              refetch(),
-              refetchChildFolders(),
-              refetchFoldersTree(),
-            ])
+            await Promise.all([refetch(), refetchChildFolders(), refetchFoldersTree()])
 
             const currentFolder = currentFolderId
               ? folders?.find((folder) => folder._id === currentFolderId)
@@ -252,8 +235,7 @@ export default function Previews() {
             const deletedPath = deleteTarget.path
             if (
               currentFolderId === deleteTarget.id ||
-              (deletedPath &&
-                currentFolder?.path.startsWith(`${deletedPath}/`))
+              (deletedPath && currentFolder?.path.startsWith(`${deletedPath}/`))
             ) {
               setCurrentFolderId(deleteTarget.parentId ?? null)
             }
@@ -261,7 +243,7 @@ export default function Previews() {
             setDeleteTarget(null)
             toast.success('Folder deleted successfully')
           },
-        },
+        }
       )
       return
     }
@@ -273,17 +255,13 @@ export default function Previews() {
       },
       {
         onSuccess: async () => {
-          await Promise.all([
-            refetch(),
-            refetchChildFolders(),
-            refetchFoldersTree(),
-          ])
+          await Promise.all([refetch(), refetchChildFolders(), refetchFoldersTree()])
           setDeleteTarget(null)
           toast.success(
-            `${deleteTarget.contentType === 'MediaFolder' ? 'Folder' : 'File'} deleted successfully`,
+            `${deleteTarget.contentType === 'MediaFolder' ? 'Folder' : 'File'} deleted successfully`
           )
         },
-      },
+      }
     )
   }
 
@@ -323,32 +301,25 @@ export default function Previews() {
       },
       {
         onSuccess: async () => {
-          await Promise.all([
-            refetch(),
-            refetchChildFolders(),
-            refetchFoldersTree(),
-          ])
+          await Promise.all([refetch(), refetchChildFolders(), refetchFoldersTree()])
           setEditTarget(null)
           toast.success(
-            `${editTarget.contentType === 'MediaFolder' ? 'Folder' : 'File'} updated successfully`,
+            `${editTarget.contentType === 'MediaFolder' ? 'Folder' : 'File'} updated successfully`
           )
         },
-      },
+      }
     )
   }
 
   const handleConfirmMove = () => {
     if (!moveTarget || !destinationFolderId) return
-    if (
-      destinationFolderId === (moveTarget.currentFolderId ?? ROOT_FOLDER_VALUE)
-    ) {
+    if (destinationFolderId === (moveTarget.currentFolderId ?? ROOT_FOLDER_VALUE)) {
       setMoveTarget(null)
       return
     }
 
     const sourceFolderId = moveTarget.currentFolderId ?? null
-    const targetFolderId =
-      destinationFolderId === ROOT_FOLDER_VALUE ? null : destinationFolderId
+    const targetFolderId = destinationFolderId === ROOT_FOLDER_VALUE ? null : destinationFolderId
 
     updateMutation.mutate(
       {
@@ -369,31 +340,30 @@ export default function Previews() {
         onSuccess: async () => {
           await Promise.all([
             refetch(),
-            ...(['all', 'image', 'video', 'document'] as const).flatMap(
-              (mediaType) =>
-                [sourceFolderId, targetFolderId].map((folderId) =>
-                  queryClient.invalidateQueries({
-                    queryKey: createManagerQueryKey('manager.list', {
-                      contentType: 'Media',
-                      query: {
-                        filter: getMediaQueryFilter(folderId, mediaType),
-                        options: {
-                          limit: 'all',
-                          sort: {
-                            uploadedAt: 'desc',
-                          },
+            ...(['all', 'image', 'video', 'document'] as const).flatMap((mediaType) =>
+              [sourceFolderId, targetFolderId].map((folderId) =>
+                queryClient.invalidateQueries({
+                  queryKey: createManagerQueryKey('manager.list', {
+                    contentType: 'Media',
+                    query: {
+                      filter: getMediaQueryFilter(folderId, mediaType),
+                      options: {
+                        limit: 'all',
+                        sort: {
+                          uploadedAt: 'desc',
                         },
                       },
-                    }),
+                    },
                   }),
-                ),
+                })
+              )
             ),
           ])
           setMoveTarget(null)
           setDestinationFolderId('')
           toast.success('File moved successfully')
         },
-      },
+      }
     )
   }
 
@@ -423,8 +393,7 @@ export default function Previews() {
     }
 
     handleEdit({
-      contentType:
-        '_type' in item && item._type === 'Media' ? 'Media' : 'MediaFolder',
+      contentType: '_type' in item && item._type === 'Media' ? 'Media' : 'MediaFolder',
       id: item._id,
       name: item.name,
     })
@@ -461,9 +430,7 @@ export default function Previews() {
       await refetch()
       toast.success('Image details saved')
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Could not save image details',
-      )
+      toast.error(error instanceof Error ? error.message : 'Could not save image details')
     }
   }
 
@@ -512,36 +479,36 @@ export default function Previews() {
       onRequestMove,
       onRequestDelete,
       renderPreview,
-    ],
+    ]
   )
 
   return (
-    <ScrollArea className='h-[calc(100%-2.5rem)] w-full'>
+    <ScrollArea className="h-[calc(100%-2.5rem)] w-full">
       <MediaPreviewProvider value={mediaPreviewContextValue}>
         <div
-          className='mb-2 grid w-full grid-cols-2 gap-2 p-1 lg:grid-cols-6'
-          data-tour='media-folders'
+          className="mb-2 grid w-full grid-cols-2 gap-2 p-1 lg:grid-cols-6"
+          data-tour="media-folders"
         >
           <Button
-            variant='outline'
+            variant="outline"
             disabled={isCreatingFolder}
-            size='lg'
-            className='justify-start'
+            size="lg"
+            className="justify-start"
             onClick={() => {
               setIsCreateFolderDialogOpen(true)
             }}
           >
-            <FolderPlus className='size-4' />
-            <span className='truncate'>Create folder</span>
+            <FolderPlus className="size-4" />
+            <span className="truncate">Create folder</span>
           </Button>
           {isLoadingChildFolders
             ? Array.from({ length: 4 }).map((_, index) => (
                 <div
                   key={`child-folder-skeleton-${index}`}
-                  className='flex items-center gap-2 rounded-lg border bg-card p-2'
+                  className="flex items-center gap-2 rounded-lg border bg-card p-2"
                 >
-                  <Skeleton className='h-7 w-7 rounded-md' />
-                  <Skeleton className='h-4 flex-1' />
+                  <Skeleton className="h-7 w-7 rounded-md" />
+                  <Skeleton className="h-4 flex-1" />
                 </div>
               ))
             : childFoldersData?.items?.length
@@ -549,14 +516,14 @@ export default function Previews() {
                   <ContextMenu key={folder._id}>
                     <ContextMenuTrigger asChild>
                       <Button
-                        type='button'
-                        variant='outline'
-                        size='lg'
-                        className='justify-start data-[state=open]:bg-accent/60 data-[state=open]:ring-1 data-[state=open]:ring-primary/30'
+                        type="button"
+                        variant="outline"
+                        size="lg"
+                        className="justify-start data-[state=open]:bg-accent/60 data-[state=open]:ring-1 data-[state=open]:ring-primary/30"
                         onClick={() => setCurrentFolderId(folder._id)}
                       >
-                        <Folder className='size-4' />
-                        <span className='truncate'>{folder.name}</span>
+                        <Folder className="size-4" />
+                        <span className="truncate">{folder.name}</span>
                       </Button>
                     </ContextMenuTrigger>
                     <MediaContextMenuContent item={folder} />
@@ -570,23 +537,23 @@ export default function Previews() {
           onValueChange={setFiles}
           onUpload={handleUpload}
           onFileReject={onFileReject}
-          maxFiles={5}
-          className='relative w-full p-1'
+          maxFiles={20}
+          className="relative w-full p-1"
           multiple
           disabled={isUploading}
         >
           <PreviewsToolbar />
 
-          <FileUploadList className='mb-3'>
+          <FileUploadList className="mb-3">
             {files.map((file) => (
               <FileUploadItem key={file.name + file.lastModified} value={file}>
                 <FileUploadItemPreview />
-                <div className='min-w-0 flex-1'>
+                <div className="min-w-0 flex-1">
                   <FileUploadItemMetadata />
-                  <FileUploadItemProgress className='mt-2' />
+                  <FileUploadItemProgress className="mt-2" />
                 </div>
-                <FileUploadItemDelete className='rounded-md p-1 hover:bg-accent/40'>
-                  <X className='size-4' />
+                <FileUploadItemDelete className="rounded-md p-1 hover:bg-accent/40">
+                  <X className="size-4" />
                 </FileUploadItemDelete>
               </FileUploadItem>
             ))}
@@ -596,17 +563,17 @@ export default function Previews() {
             asChild
             tabIndex={-1}
             onClick={(event) => event.preventDefault()}
-            className='group/dropzone relative w-full rounded-xl border border-transparent p-0 hover:bg-transparent! focus-visible:bg-transparent! data-dragging:border-primary/40 data-dragging:bg-transparent!'
+            className="group/dropzone relative w-full rounded-xl border border-transparent p-0 hover:bg-transparent! focus-visible:bg-transparent! data-dragging:border-primary/40 data-dragging:bg-transparent!"
           >
-            <div className='relative w-full' data-tour='media-grid'>
-              <div className='pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-background/50 opacity-0 backdrop-blur transition-opacity duration-200 ease-out group-data-dragging/dropzone:opacity-100'>
-                <div className='flex flex-col items-center gap-1 text-center'>
-                  <div className='flex items-center justify-center rounded-full border p-2.5'>
-                    <Upload className='size-6 text-muted-foreground' />
+            <div className="relative w-full" data-tour="media-grid">
+              <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-background/50 opacity-0 backdrop-blur transition-opacity duration-200 ease-out group-data-dragging/dropzone:opacity-100">
+                <div className="flex flex-col items-center gap-1 text-center">
+                  <div className="flex items-center justify-center rounded-full border p-2.5">
+                    <Upload className="size-6 text-muted-foreground" />
                   </div>
-                  <p className='font-medium text-sm'>Drag & drop files here</p>
-                  <p className='text-muted-foreground text-xs'>
-                    Upload max 5 files each up to 5MB
+                  <p className="font-medium text-sm">Drag & drop files here</p>
+                  <p className="text-muted-foreground text-xs">
+                    Upload max 20 files each up to 5MB
                   </p>
                 </div>
               </div>
@@ -614,14 +581,12 @@ export default function Previews() {
               {isLoading ? <PreviewsViewLoader viewMode={viewMode} /> : null}
 
               {!isLoading && media.length === 0 ? (
-                <Card className='w-full p-8 text-center text-muted-foreground text-sm'>
+                <Card className="w-full p-8 text-center text-muted-foreground text-sm">
                   No files in this folder yet.
                 </Card>
               ) : null}
 
-              {!isLoading && media.length > 0 ? (
-                <ViewComponent media={media} />
-              ) : null}
+              {!isLoading && media.length > 0 ? <ViewComponent media={media} /> : null}
             </div>
           </FileUploadDropzone>
         </FileUpload>
