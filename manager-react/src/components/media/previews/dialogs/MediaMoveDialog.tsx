@@ -18,7 +18,8 @@ import {
 } from '../../../ui/select'
 
 type MoveTarget = {
-  id: string
+  id?: string
+  ids?: string[]
   name: string
   currentFolderId?: string
 }
@@ -48,14 +49,21 @@ export default function MediaMoveDialog({
   onClose,
   onConfirm,
 }: MediaMoveDialogProps) {
+  const bulkCount = target?.ids?.length ?? 0
+  const isBulk = bulkCount > 0
+
   return (
     <Dialog open={!!target} onOpenChange={(open) => !open && onClose()}>
       <DialogContent aria-describedby='Move media item'>
         <DialogHeader>
-          <DialogTitle>Move file</DialogTitle>
+          <DialogTitle>
+            Move {bulkCount > 1 ? 'files' : 'file'}
+          </DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          Select the destination folder for "{target?.name}".
+          {isBulk
+            ? `Select the destination folder for ${bulkCount} selected file${bulkCount === 1 ? '' : 's'}.`
+            : `Select the destination folder for "${target?.name}".`}
         </DialogDescription>
         <div className='py-2'>
           <Select value={value} onValueChange={onValueChange}>

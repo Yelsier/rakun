@@ -2,6 +2,7 @@
 
 import {
   FilmIcon,
+  FolderInput,
   Grid2x2,
   Image,
   LayoutGrid,
@@ -10,6 +11,7 @@ import {
   Upload,
   FileText,
   SlidersHorizontal,
+  Trash2,
 } from 'lucide-react'
 
 import { Button } from '../../../ui/button'
@@ -31,6 +33,11 @@ export default function PreviewsToolbar() {
     setMediaTypeFilter,
     viewMode,
     setViewMode,
+    selectionMode,
+    bulkSelectedCount,
+    onRequestBulkDelete,
+    onRequestBulkMove,
+    onClearSelection,
   } = useMediaPreview()
   const {
     optimizeEnabled,
@@ -46,6 +53,34 @@ export default function PreviewsToolbar() {
         {mediaCount} file{mediaCount === 1 ? '' : 's'}
       </p>
       <div className="flex items-center gap-2 flex-wrap">
+        {selectionMode ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/20 px-2 py-1.5">
+            <span className="min-w-20 text-muted-foreground text-sm">
+              {bulkSelectedCount} selected
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkSelectedCount === 0}
+              onClick={onRequestBulkMove}
+            >
+              <FolderInput className="size-4" />
+              Move
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={bulkSelectedCount === 0}
+              onClick={onRequestBulkDelete}
+            >
+              <Trash2 className="size-4" />
+              Delete
+            </Button>
+            <Button size="sm" variant="ghost" onClick={onClearSelection}>
+              Cancel
+            </Button>
+          </div>
+        ) : null}
         <FileUploadTrigger asChild>
           <Button size={'sm'} variant={'outline'}>
             <Upload className="size-4" />

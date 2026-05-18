@@ -17,7 +17,17 @@ type MediaPreviewContextValue = {
   viewMode: ViewMode
   setViewMode: (value: ViewMode) => void
   isSelected: (id: string) => boolean
+  selectionMode: boolean
+  bulkSelectedIds: Set<string>
+  bulkSelectedCount: number
+  canBulkSelect: boolean
   onMediaClick: (media: MediaRecord) => void
+  onToggleBulkSelection: (media: MediaRecord) => void
+  onSelectVisible: (media: MediaRecord[], selected: boolean) => void
+  onRequestSelect: (item: MediaRecord) => void
+  onRequestBulkDelete: () => void
+  onRequestBulkMove: () => void
+  onClearSelection: () => void
   onRequestEdit: (item: MediaRecord | FolderItem) => void
   onRequestMove: (item: MediaRecord) => void
   onRequestDelete: (item: MediaRecord | FolderItem) => void

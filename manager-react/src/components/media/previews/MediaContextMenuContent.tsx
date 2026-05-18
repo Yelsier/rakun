@@ -1,6 +1,6 @@
 'use client'
 
-import { FolderInput, Pencil, Trash2 } from 'lucide-react'
+import { Check, FolderInput, Pencil, Trash2 } from 'lucide-react'
 
 import {
   ContextMenuContent,
@@ -19,11 +19,27 @@ type MediaContextMenuContentProps = {
 export default function MediaContextMenuContent({
   item,
 }: MediaContextMenuContentProps) {
-  const { onRequestEdit, onRequestMove, onRequestDelete } = useMediaPreview()
+  const {
+    canBulkSelect,
+    bulkSelectedIds,
+    onRequestSelect,
+    onRequestEdit,
+    onRequestMove,
+    onRequestDelete,
+  } = useMediaPreview()
   const isMediaItem = '_type' in item && item._type === 'Media'
 
   return (
     <ContextMenuContent>
+      {isMediaItem && canBulkSelect ? (
+        <>
+          <ContextMenuItem onSelect={() => onRequestSelect(item)}>
+            <Check className='size-4' />
+            {bulkSelectedIds.has(item._id) ? 'Deselect' : 'Select'}
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+        </>
+      ) : null}
       <ContextMenuItem onSelect={() => onRequestEdit?.(item)}>
         <Pencil className='size-4' />
         Edit

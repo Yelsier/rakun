@@ -15,6 +15,14 @@ import { Button } from '../../ui/button'
 import { Card } from '../../ui/card'
 import { ContextMenu, ContextMenuTrigger } from '../../ui/context-menu'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../ui/dialog'
+import {
   FileUpload,
   FileUploadDropzone,
   FileUploadItem,
@@ -57,7 +65,8 @@ type DeleteTarget = {
 }
 
 type MoveTarget = {
-  id: string
+  id?: string
+  ids?: string[]
   name: string
   currentFolderId?: string
 }
@@ -66,6 +75,9 @@ const ROOT_FOLDER_VALUE = '__root__'
 
 const isMediaRecord = (item: MediaRecord | FolderItem): item is MediaRecord =>
   '_type' in item && item._type === 'Media'
+
+const getActionErrorMessage = (error: unknown) =>
+  error instanceof Error && error.message ? error.message : 'Action failed'
 
 export default function Previews() {
   const managerClient = useManagerClient()
@@ -100,6 +112,13 @@ export default function Previews() {
   const [editName, setEditName] = useState('')
   const [moveTarget, setMoveTarget] = useState<MoveTarget | null>(null)
   const [destinationFolderId, setDestinationFolderId] = useState('')
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(
+    () => new Set()
+  )
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+  const [isMoving, setIsMoving] = useState(false)
 
   const getMediaQueryFilter = (
     folderId: string | null,
@@ -155,6 +174,12 @@ export default function Previews() {
 
   const media = ((data as { items?: MediaRecord[] } | undefined)?.items ?? []) as MediaRecord[]
   const childFoldersData = childFolders as { items: FolderItem[] } | undefined
+  const canBulkSelect = !selectable
+  const bulkSelectedIdsList = useMemo(
+    () => Array.from(bulkSelectedIds),
+    [bulkSelectedIds]
+  )
+  const bulkSelectedCount = bulkSelectedIdsList.length
   const folderOptions = useMemo(
     (): { _id: string | null; name: string; path: string }[] => [
       { _id: null, name: 'Base folder', path: '/' },
@@ -194,6 +219,66 @@ export default function Previews() {
         return result.url
       },
     })
+
+  useEffect(() => {
+    setSelectionMode(false)
+    setBulkSelectedIds(new Set())
+  }, [currentFolderId, effectiveMediaTypeFilter])
+
+  useEffect(() => {
+    setBulkSelectedIds((prev) => {
+      if (prev.size === 0) return prev
+
+      const visibleIds = new Set(media.map((item) => item._id))
+      const next = new Set([...prev].filter((id) => visibleIds.has(id)))
+
+      return next.size === prev.size ? prev : next
+    })
+  }, [media])
+
+  const clearBulkSelection = () => {
+    setSelectionMode(false)
+    setBulkSelectedIds(new Set())
+  }
+
+  const toggleBulkSelection = (item: MediaRecord) => {
+    setBulkSelectedIds((prev) => {
+      const next = new Set(prev)
+
+      if (next.has(item._id)) {
+        next.delete(item._id)
+      } else {
+        next.add(item._id)
+      }
+
+      return next
+    })
+  }
+
+  const selectVisible = (items: MediaRecord[], selected: boolean) => {
+    setBulkSelectedIds((prev) => {
+      const next = new Set(prev)
+
+      for (const item of items) {
+        if (selected) {
+          next.add(item._id)
+        } else {
+          next.delete(item._id)
+        }
+      }
+
+      return next
+    })
+  }
+
+  const handleMediaClick = (item: MediaRecord) => {
+    if (canBulkSelect && selectionMode) {
+      toggleBulkSelection(item)
+      return
+    }
+
+    onMediaClick(item)
+  }
 
   useEffect(() => {
     if (!externalEditFolderRequest) return
@@ -311,7 +396,33 @@ export default function Previews() {
     )
   }
 
-  const handleConfirmMove = () => {
+  const invalidateMediaLists = async (
+    sourceFolderId: string | null,
+    targetFolderId: string | null,
+  ) => {
+    await Promise.all(
+      (['all', 'image', 'video', 'document'] as const).flatMap((mediaType) =>
+        [sourceFolderId, targetFolderId].map((folderId) =>
+          queryClient.invalidateQueries({
+            queryKey: createManagerQueryKey('manager.list', {
+              contentType: 'Media',
+              query: {
+                filter: getMediaQueryFilter(folderId, mediaType),
+                options: {
+                  limit: 'all',
+                  sort: {
+                    uploadedAt: 'desc',
+                  },
+                },
+              },
+            }),
+          })
+        )
+      )
+    )
+  }
+
+  const handleConfirmMove = async () => {
     if (!moveTarget || !destinationFolderId) return
     if (destinationFolderId === (moveTarget.currentFolderId ?? ROOT_FOLDER_VALUE)) {
       setMoveTarget(null)
@@ -320,51 +431,60 @@ export default function Previews() {
 
     const sourceFolderId = moveTarget.currentFolderId ?? null
     const targetFolderId = destinationFolderId === ROOT_FOLDER_VALUE ? null : destinationFolderId
+    const ids = moveTarget.ids ?? (moveTarget.id ? [moveTarget.id] : [])
 
-    updateMutation.mutate(
-      {
-        contentType: 'Media',
-        id: moveTarget.id,
-        data:
-          destinationFolderId === ROOT_FOLDER_VALUE
-            ? { folder: null }
-            : {
-                folder: {
-                  type: 'existing',
-                  _id: destinationFolderId,
-                  contentType: 'MediaFolder',
+    if (ids.length === 0) return
+
+    setIsMoving(true)
+    let successCount = 0
+    let failedCount = 0
+    let lastError: unknown
+
+    for (const id of ids) {
+      try {
+        await updateMutation.mutateAsync({
+          contentType: 'Media',
+          id,
+          data:
+            destinationFolderId === ROOT_FOLDER_VALUE
+              ? { folder: null }
+              : {
+                  folder: {
+                    type: 'existing',
+                    _id: destinationFolderId,
+                    contentType: 'MediaFolder',
+                  },
                 },
-              },
-      },
-      {
-        onSuccess: async () => {
-          await Promise.all([
-            refetch(),
-            ...(['all', 'image', 'video', 'document'] as const).flatMap((mediaType) =>
-              [sourceFolderId, targetFolderId].map((folderId) =>
-                queryClient.invalidateQueries({
-                  queryKey: createManagerQueryKey('manager.list', {
-                    contentType: 'Media',
-                    query: {
-                      filter: getMediaQueryFilter(folderId, mediaType),
-                      options: {
-                        limit: 'all',
-                        sort: {
-                          uploadedAt: 'desc',
-                        },
-                      },
-                    },
-                  }),
-                })
-              )
-            ),
-          ])
-          setMoveTarget(null)
-          setDestinationFolderId('')
-          toast.success('File moved successfully')
-        },
+        })
+        successCount += 1
+      } catch (error) {
+        failedCount += 1
+        lastError = error
       }
-    )
+    }
+
+    if (successCount > 0) {
+      await Promise.all([
+        refetch(),
+        invalidateMediaLists(sourceFolderId, targetFolderId),
+      ])
+      setMoveTarget(null)
+      setDestinationFolderId('')
+      clearBulkSelection()
+      toast.success(
+        `${successCount} file${successCount === 1 ? '' : 's'} moved successfully`
+      )
+    }
+
+    if (failedCount > 0) {
+      toast.error(
+        `${failedCount} file${failedCount === 1 ? '' : 's'} failed. ${getActionErrorMessage(
+          lastError
+        )}`
+      )
+    }
+
+    setIsMoving(false)
   }
 
   const onRequestDelete = (item: MediaRecord | FolderItem) => {
@@ -443,6 +563,65 @@ export default function Previews() {
     setDestinationFolderId(item.folder?._id ?? ROOT_FOLDER_VALUE)
   }
 
+  const onRequestSelect = (item: MediaRecord) => {
+    if (!canBulkSelect) return
+
+    setSelectionMode(true)
+    toggleBulkSelection(item)
+  }
+
+  const onRequestBulkMove = () => {
+    if (bulkSelectedIdsList.length === 0) return
+
+    setMoveTarget({
+      ids: bulkSelectedIdsList,
+      name: `${bulkSelectedIdsList.length} selected files`,
+      currentFolderId: currentFolderId ?? undefined,
+    })
+    setDestinationFolderId(currentFolderId ?? ROOT_FOLDER_VALUE)
+  }
+
+  const handleConfirmBulkDelete = async () => {
+    if (bulkSelectedIdsList.length === 0) return
+
+    setIsBulkDeleting(true)
+    let successCount = 0
+    let failedCount = 0
+    let lastError: unknown
+
+    for (const id of bulkSelectedIdsList) {
+      try {
+        await deleteMutation.mutateAsync({
+          contentType: 'Media',
+          id,
+        })
+        successCount += 1
+      } catch (error) {
+        failedCount += 1
+        lastError = error
+      }
+    }
+
+    if (successCount > 0) {
+      await Promise.all([refetch(), refetchChildFolders(), refetchFoldersTree()])
+      setBulkDeleteOpen(false)
+      clearBulkSelection()
+      toast.success(
+        `${successCount} file${successCount === 1 ? '' : 's'} deleted successfully`
+      )
+    }
+
+    if (failedCount > 0) {
+      toast.error(
+        `${failedCount} file${failedCount === 1 ? '' : 's'} failed. ${getActionErrorMessage(
+          lastError
+        )}`
+      )
+    }
+
+    setIsBulkDeleting(false)
+  }
+
   const ViewComponent =
     viewMode === 'list'
       ? PreviewsListView
@@ -459,8 +638,19 @@ export default function Previews() {
       setMediaTypeFilter,
       viewMode,
       setViewMode,
-      isSelected: (id: string) => selectedMediaIds?.has(id) ?? false,
-      onMediaClick,
+      isSelected: (id: string) =>
+        bulkSelectedIds.has(id) || (selectedMediaIds?.has(id) ?? false),
+      selectionMode,
+      bulkSelectedIds,
+      bulkSelectedCount,
+      canBulkSelect,
+      onMediaClick: handleMediaClick,
+      onToggleBulkSelection: toggleBulkSelection,
+      onSelectVisible: selectVisible,
+      onRequestSelect,
+      onRequestBulkDelete: () => setBulkDeleteOpen(true),
+      onRequestBulkMove,
+      onClearSelection: clearBulkSelection,
       onRequestEdit,
       onRequestMove,
       onRequestDelete,
@@ -473,8 +663,17 @@ export default function Previews() {
       effectiveMediaTypeFilter,
       isMediaTypeFilterLocked,
       viewMode,
+      selectionMode,
+      bulkSelectedIds,
+      bulkSelectedCount,
+      canBulkSelect,
       selectedMediaIds,
-      onMediaClick,
+      handleMediaClick,
+      toggleBulkSelection,
+      selectVisible,
+      onRequestSelect,
+      onRequestBulkMove,
+      clearBulkSelection,
       onRequestEdit,
       onRequestMove,
       onRequestDelete,
@@ -611,14 +810,42 @@ export default function Previews() {
           target={moveTarget}
           folders={folderOptions}
           value={destinationFolderId}
-          isLoading={updateMutation.isPending}
+          isLoading={isMoving || updateMutation.isPending}
           onValueChange={setDestinationFolderId}
           onClose={() => {
             setMoveTarget(null)
             setDestinationFolderId('')
           }}
-          onConfirm={handleConfirmMove}
+          onConfirm={() => void handleConfirmMove()}
         />
+
+        <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete selected files</DialogTitle>
+              <DialogDescription>
+                This will delete {bulkSelectedCount} selected file
+                {bulkSelectedCount === 1 ? '' : 's'}.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="ghost"
+                onClick={() => setBulkDeleteOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                loading={isBulkDeleting}
+                disabled={bulkSelectedCount === 0}
+                onClick={() => void handleConfirmBulkDelete()}
+              >
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <MediaCreateFolderDialog
           open={isCreateFolderDialogOpen}
