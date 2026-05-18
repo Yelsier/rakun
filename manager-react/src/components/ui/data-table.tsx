@@ -1,16 +1,7 @@
 'use client'
 
-import type {
-  ColumnDef,
-  Row,
-  RowSelectionState,
-  SortingState,
-} from '@tanstack/react-table'
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from '@tanstack/react-table'
+import type { ColumnDef, Row, RowSelectionState, SortingState } from '@tanstack/react-table'
+import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
 import { cva } from 'class-variance-authority'
 import type { Dispatch, SetStateAction } from 'react'
 
@@ -54,6 +45,11 @@ export function DataTable<TData, TValue>({
   setRowSelection,
   getRowId,
 }: DataTableProps<TData, TValue>) {
+  const state = {
+    ...(sorting !== undefined ? { sorting } : {}),
+    ...(rowSelection !== undefined ? { rowSelection } : {}),
+  }
+
   const table = useReactTable({
     data,
     columns,
@@ -61,10 +57,7 @@ export function DataTable<TData, TValue>({
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
     enableRowSelection: Boolean(setRowSelection),
-    state: {
-      sorting,
-      rowSelection,
-    },
+    state,
     getCoreRowModel: getCoreRowModel(),
   })
 
@@ -73,9 +66,9 @@ export function DataTable<TData, TValue>({
   return (
     <ScrollArea className={tableStyle({ open })}>
       <div>
-        <div className='overflow-hidden rounded-lg border'>
-          <Table className='table-fixed min-w-150'>
-            <TableHeader className='bg-accent'>
+        <div className="overflow-hidden rounded-lg border">
+          <Table className="table-fixed min-w-150">
+            <TableHeader className="bg-accent">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
@@ -83,10 +76,7 @@ export function DataTable<TData, TValue>({
                       <TableHead key={header.id}>
                         {header.isPlaceholder
                           ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
+                          : flexRender(header.column.columnDef.header, header.getContext())}
                       </TableHead>
                     )
                   })}
@@ -96,26 +86,17 @@ export function DataTable<TData, TValue>({
             <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && 'selected'}
-                  >
-                    {row.getVisibleCells().map((cell) => (
+                  <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                    {row?.getVisibleCells()?.map((cell) => (
                       <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className='h-24 text-center'
-                  >
+                  <TableCell colSpan={columns.length} className="h-24 text-center">
                     No results.
                   </TableCell>
                 </TableRow>
@@ -124,7 +105,7 @@ export function DataTable<TData, TValue>({
           </Table>
         </div>
       </div>
-      <ScrollBar orientation='horizontal' />
+      <ScrollBar orientation="horizontal" />
     </ScrollArea>
   )
 }
