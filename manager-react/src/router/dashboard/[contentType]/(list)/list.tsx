@@ -1,7 +1,7 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
 import type { RowSelectionState } from '@tanstack/react-table'
-import { Archive, Languages, Plus, RotateCcw, Trash } from 'lucide-react'
+import { Archive, Languages, Plus, RotateCcw, Search, Trash } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Permission } from '@rakun-kit/core/client'
 import { toast } from 'sonner'
@@ -10,12 +10,13 @@ import { columns } from './columns'
 import DeleteCT from './delete'
 
 import { ManagerLink } from '@/link'
-import Loading from '@/components/loading'
 import { PaginationController } from '@/components/PaginationController'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DataTable } from '@/components/ui/data-table'
+import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Dialog,
   DialogContent,
@@ -64,6 +65,47 @@ const getContentRowId = (row: object, index: number) => {
   return typeof id === 'string' ? id : String(index)
 }
 
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+const ContentListTableSkeleton = ({
+  fieldsCount,
+  showVisibility,
+  enableSelection,
+}: {
+  fieldsCount: number
+  showVisibility: boolean
+  enableSelection: boolean
+}) => {
+  const columnCount = 2 + fieldsCount + (showVisibility ? 1 : 0) + (enableSelection ? 1 : 0)
+
+  return (
+    <div className="w-full overflow-hidden rounded-lg border">
+      <div
+        className="grid gap-4 border-b bg-muted px-4 py-3"
+        style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
+      >
+        {Array.from({ length: columnCount }).map((_, index) => (
+          <Skeleton key={`content-list-header-${index}`} className="h-4 w-20 max-w-full" />
+        ))}
+      </div>
+      {Array.from({ length: 10 }).map((_, rowIndex) => (
+        <div
+          key={`content-list-row-${rowIndex}`}
+          className="grid gap-4 border-b px-4 py-4 last:border-b-0"
+          style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
+        >
+          {Array.from({ length: columnCount }).map((_, columnIndex) => (
+            <Skeleton
+              key={`content-list-row-${rowIndex}-${columnIndex}`}
+              className="h-4 w-full max-w-32"
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 const ListContents: React.FC<{
   contentType: string
   fields?: string[]
@@ -71,6 +113,8 @@ const ListContents: React.FC<{
 }> = ({ contentType, fields, documentVisibility }) => {
   const [page, setPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [isTrash, setIsTrash] = useState(false)
   const [deleteItem, setDeleteItem] = useState<{ _id: string } | null>(null)
   const [permanentDeleteItem, setPermanentDeleteItem] = useState<{
@@ -91,11 +135,39 @@ const ListContents: React.FC<{
   const [bulkTranslationOverwrite, setBulkTranslationOverwrite] = useState(false)
   const trpc = useTRPC()
   const { hasAnyPermission, hasPermissions } = useSession()
+  const trimmedSearch = debouncedSearch.trim()
+  const searchableFields = useMemo(() => {
+    const searchFields = fields ?? []
+
+    return Array.from(
+      new Set(
+        searchFields.flatMap((field) =>
+          field.includes('.') ? [field] : [field, `${field}.${language.code}`]
+        )
+      )
+    )
+  }, [fields, language.code])
+  const listFilter = useMemo(() => {
+    const filter: Record<string, unknown> = {
+      ...(isTrash ? { _trashed: true } : {}),
+    }
+
+    if (trimmedSearch && searchableFields.length > 0) {
+      filter.$or = searchableFields.map((field) => ({
+        [field]: {
+          $regex: escapeRegExp(trimmedSearch),
+          $options: 'i',
+        },
+      }))
+    }
+
+    return Object.keys(filter).length > 0 ? filter : undefined
+  }, [isTrash, searchableFields, trimmedSearch])
   const { data, refetch } = useQuery(
     trpc.manager.list.queryOptions({
       contentType,
       query: {
-        filter: isTrash ? { _trashed: true } : undefined,
+        filter: listFilter,
         options: {
           limit: itemsPerPage,
           page,
@@ -134,7 +206,24 @@ const ListContents: React.FC<{
 
   useEffect(() => {
     setRowSelection({})
-  }, [contentType, isTrash])
+  }, [contentType, isTrash, debouncedSearch])
+
+  useEffect(() => {
+    setSearch('')
+    setDebouncedSearch('')
+  }, [contentType])
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearch(search)
+    }, 300)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [search])
+
+  useEffect(() => {
+    setPage(1)
+  }, [contentType, isTrash, debouncedSearch])
 
   useEffect(() => {
     if (!enableSelection) {
@@ -277,12 +366,9 @@ const ListContents: React.FC<{
     setIsBulkTranslating(false)
   }
 
-  if (!data) {
-    return <Loading />
-  }
-
-  const typedData = data as { totalItems: number; items: object[] }
-  const { totalItems, items } = typedData
+  const typedData = data as { totalItems: number; items: object[] } | undefined
+  const totalItems = typedData?.totalItems ?? 0
+  const items = typedData?.items ?? []
   const canCreate = hasAnyPermission([
     `content.${contentType}.own` as Permission,
     `content.${contentType}.updateAny` as Permission,
@@ -299,16 +385,29 @@ const ListContents: React.FC<{
         className="w-full"
       >
         <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
-          <TabsList variant="line">
-            <TabsTrigger value="active">
-              <Archive />
-              Active
-            </TabsTrigger>
-            <TabsTrigger value="trash">
-              <Trash />
-              Trash
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex gap-3 items-center">
+            <TabsList variant="line">
+              <TabsTrigger value="active">
+                <Archive />
+                Active
+              </TabsTrigger>
+              <TabsTrigger value="trash">
+                <Trash />
+                Trash
+              </TabsTrigger>
+            </TabsList>
+            {searchableFields.length > 0 ? (
+              <div className="flex min-w-52 max-w-md flex-1 items-center gap-2 rounded-md border px-3 py-1 sm:flex-none">
+                <Search className="size-4 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  className="h-8 border-0 shadow-none focus-visible:ring-0"
+                  placeholder="Search..."
+                />
+              </div>
+            ) : null}
+          </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
             {canCreate && (
               <ManagerLink href={`/${contentType}/create`} data-tour="content-list-create">
@@ -336,27 +435,35 @@ const ListContents: React.FC<{
         mode="delete"
       />
       <div data-tour="content-list-table">
-        <DataTable
-          columns={columns({
-            fields: fields || [],
-            contentType,
-            getTranslation,
-            setDeleteItem,
-            setPermanentDeleteItem,
-            setRestoreItem,
-            onDuplicateItem: (item) => void duplicateItem(item),
-            duplicatingItemId,
-            enableSelection,
-            showVisibility: Boolean(documentVisibility),
-            isTrash,
-            hasPermissions,
-            hasAnyPermission,
-          })}
-          data={items as object[]}
-          rowSelection={rowSelection}
-          setRowSelection={setRowSelection}
-          getRowId={getContentRowId}
-        />
+        {typedData ? (
+          <DataTable
+            columns={columns({
+              fields: fields || [],
+              contentType,
+              getTranslation,
+              setDeleteItem,
+              setPermanentDeleteItem,
+              setRestoreItem,
+              onDuplicateItem: (item) => void duplicateItem(item),
+              duplicatingItemId,
+              enableSelection,
+              showVisibility: Boolean(documentVisibility),
+              isTrash,
+              hasPermissions,
+              hasAnyPermission,
+            })}
+            data={items as object[]}
+            rowSelection={rowSelection}
+            setRowSelection={setRowSelection}
+            getRowId={getContentRowId}
+          />
+        ) : (
+          <ContentListTableSkeleton
+            fieldsCount={(fields || []).length}
+            showVisibility={Boolean(documentVisibility)}
+            enableSelection={enableSelection}
+          />
+        )}
         {enableSelection && selectedCount > 0 ? (
           <div
             className="fixed bottom-12 left-1/2 z-40 -translate-x-1/2 animate-in fade-in-0 slide-in-from-bottom-3 duration-200"
@@ -524,15 +631,17 @@ const ListContents: React.FC<{
           </Button>
         </div>
       ) : null}
-      <div className="mt-6">
-        <PaginationController
-          setPage={setPage}
-          page={page}
-          totalItems={totalItems}
-          itemsPerPage={itemsPerPage}
-          setItemsPerPage={setItemsPerPage}
-        />
-      </div>
+      {typedData ? (
+        <div className="mt-6">
+          <PaginationController
+            setPage={setPage}
+            page={page}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            setItemsPerPage={setItemsPerPage}
+          />
+        </div>
+      ) : null}
     </div>
   )
 }
