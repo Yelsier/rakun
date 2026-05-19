@@ -41,6 +41,7 @@ import ExpandedPreviewDialog from './dialogs/ExpandedPreviewDialog'
 import MediaCreateFolderDialog from './dialogs/MediaCreateFolderDialog'
 import MediaDeleteDialog from './dialogs/MediaDeleteDialog'
 import MediaEditDialog from './dialogs/MediaEditDialog'
+import MediaImageEditorDialog from './dialogs/MediaImageEditorDialog'
 import MediaMoveDialog from './dialogs/MediaMoveDialog'
 import { useExpandedPreview } from './hooks/useExpandedPreview'
 import { useMediaPreviewRenderer } from './hooks/useMediaPreviewRenderer'
@@ -54,6 +55,7 @@ import PreviewsViewLoader from './views/PreviewsViewLoader'
 
 import type { MediaRecord } from '@/lib/media'
 import type { FolderItem } from '@/components/media/contexts/MediaLibraryContext'
+import { useMedia } from '@/media'
 
 type ViewMode = 'list' | 'grid-sm' | 'grid-lg'
 type DeleteTarget = {
@@ -82,8 +84,10 @@ const getActionErrorMessage = (error: unknown) =>
 export default function Previews() {
   const managerClient = useManagerClient()
   const queryClient = useQueryClient()
+  const { uploadMedia } = useMedia()
   const {
     currentFolderId,
+    currentFolderPath,
     setCurrentFolderId,
     folders,
     onCreateFolder,
@@ -111,6 +115,9 @@ export default function Previews() {
   const [editTarget, setEditTarget] = useState<DeleteTarget | null>(null)
   const [editName, setEditName] = useState('')
   const [moveTarget, setMoveTarget] = useState<MoveTarget | null>(null)
+  const [imageEditTarget, setImageEditTarget] = useState<MediaRecord | null>(null)
+  const [imageEditUrl, setImageEditUrl] = useState('')
+  const [isSavingImageEdit, setIsSavingImageEdit] = useState(false)
   const [destinationFolderId, setDestinationFolderId] = useState('')
   const [selectionMode, setSelectionMode] = useState(false)
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(
@@ -533,6 +540,46 @@ export default function Previews() {
     })
   }
 
+  const onRequestImageEdit = async (item: MediaRecord) => {
+    if (!item.mime.startsWith('image/')) return
+
+    try {
+      const url = item.url
+        ? item.url
+        : ((await managerClient.request('manager.media.getUrl', {
+            key: item.key,
+            access: item.access,
+          })) as { url: string }).url
+      setImageEditTarget(item)
+      setImageEditUrl(url)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not open image editor')
+    }
+  }
+
+  const handleSaveImageEdit = async (file: File) => {
+    if (!imageEditTarget) return
+
+    try {
+      setIsSavingImageEdit(true)
+      await uploadMedia({
+        file,
+        folderId: currentFolderId || undefined,
+        folderPath: currentFolderPath,
+        name: file.name,
+        access: imageEditTarget.access,
+      })
+      await refetch()
+      setImageEditTarget(null)
+      setImageEditUrl('')
+      toast.success('Edited image saved')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not save edited image')
+    } finally {
+      setIsSavingImageEdit(false)
+    }
+  }
+
   const handleSavePreviewDetails = async ({
     name,
     title,
@@ -666,6 +713,7 @@ export default function Previews() {
       onRequestBulkMove,
       onClearSelection: clearBulkSelection,
       onRequestEdit,
+      onRequestImageEdit,
       onRequestMove,
       onRequestDelete,
       renderPreview,
@@ -689,6 +737,7 @@ export default function Previews() {
       onRequestBulkMove,
       clearBulkSelection,
       onRequestEdit,
+      onRequestImageEdit,
       onRequestMove,
       onRequestDelete,
       renderPreview,
@@ -831,6 +880,17 @@ export default function Previews() {
             setDestinationFolderId('')
           }}
           onConfirm={() => void handleConfirmMove()}
+        />
+
+        <MediaImageEditorDialog
+          target={imageEditTarget}
+          imageUrl={imageEditUrl}
+          isSaving={isSavingImageEdit}
+          onClose={() => {
+            setImageEditTarget(null)
+            setImageEditUrl('')
+          }}
+          onSave={handleSaveImageEdit}
         />
 
         <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>

@@ -29,6 +29,7 @@ type MediaPreviewContextValue = {
   onRequestBulkMove: () => void
   onClearSelection: () => void
   onRequestEdit: (item: MediaRecord | FolderItem) => void
+  onRequestImageEdit: (item: MediaRecord) => void
   onRequestMove: (item: MediaRecord) => void
   onRequestDelete: (item: MediaRecord | FolderItem) => void
   renderPreview: (item: MediaRecord, className?: string) => React.ReactNode
