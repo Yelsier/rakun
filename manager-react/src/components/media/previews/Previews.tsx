@@ -46,7 +46,7 @@ import MediaMoveDialog from './dialogs/MediaMoveDialog'
 import { useExpandedPreview } from './hooks/useExpandedPreview'
 import { useMediaPreviewRenderer } from './hooks/useMediaPreviewRenderer'
 import { useMediaUpload } from './hooks/useMediaUpload'
-import PreviewsToolbar from './toolbar/PreviewsToolbar'
+import PreviewsToolbar, { PreviewsSelectionToolbar } from './toolbar/PreviewsToolbar'
 import { formatFileSize } from './utils/mediaPreview'
 import PreviewsGridLargeView from './views/PreviewsGridLargeView'
 import PreviewsGridSmallView from './views/PreviewsGridSmallView'
@@ -849,6 +849,7 @@ export default function Previews() {
               ) : null}
 
               {!isLoading && media.length > 0 ? <ViewComponent media={media} /> : null}
+              <PreviewsSelectionToolbar />
             </div>
           </FileUploadDropzone>
         </FileUpload>
