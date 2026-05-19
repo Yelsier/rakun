@@ -1,7 +1,8 @@
 'use client'
 
 import type { SortingState } from '@tanstack/react-table'
-import { useState } from 'react'
+import { Search } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { columns, type RouteMapRecord } from './columns'
@@ -13,6 +14,7 @@ import { PaginationController } from '@/components/PaginationController'
 import UnauthorizedMessage from '@/components/unauthorized'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
+import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -27,14 +29,25 @@ export const ManagerSettingsRoutePathsScreen = () => {
   const { hasPermissions } = useSession()
   const [page, setPage] = useState(1)
   const [sorting, setSorting] = useState<SortingState>([])
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [confirmOpen, setConfirmOpen] = useState(false)
   const canReadRoutes = hasPermissions(['manager.routes.readAny'])
   const canUpdateRoutes = hasPermissions(['manager.routes.updateAny'])
+  const trimmedSearch = debouncedSearch.trim()
   const listQuery = useManagerQuery({
     name: 'manager.list',
     input: {
       contentType: 'RouteMap',
       query: {
+        filter: trimmedSearch
+          ? {
+              path: {
+                $regex: trimmedSearch,
+                $options: 'i',
+              },
+            }
+          : undefined,
         options: {
           limit: 10,
           page,
@@ -45,6 +58,18 @@ export const ManagerSettingsRoutePathsScreen = () => {
     enabled: canReadRoutes,
   })
   const regenerateMutation = useManagerMutation('manager.regenerateRoutes')
+
+  useEffect(() => {
+    setPage(1)
+  }, [trimmedSearch])
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearch(search)
+    }, 300)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [search])
 
   if (!canReadRoutes) {
     return <UnauthorizedMessage neededPermission={['manager.routes.readAny']} />
@@ -71,11 +96,22 @@ export const ManagerSettingsRoutePathsScreen = () => {
 
   return (
     <div className='container mx-auto flex flex-col items-start gap-4 py-10'>
-      {canUpdateRoutes ? (
-        <div className='self-end' data-tour='route-paths-regenerate'>
-          <Button onClick={() => setConfirmOpen(true)}>Regenerar rutas</Button>
+      <div className='flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+        <div className='flex w-full max-w-md items-center gap-2 rounded-md border px-3 py-1'>
+          <Search className='size-4 text-muted-foreground' />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            className='border-0 shadow-none focus-visible:ring-0'
+            placeholder='Search path...'
+          />
         </div>
-      ) : null}
+        {canUpdateRoutes ? (
+          <div className='self-end' data-tour='route-paths-regenerate'>
+            <Button onClick={() => setConfirmOpen(true)}>Regenerar rutas</Button>
+          </div>
+        ) : null}
+      </div>
       <div className='w-full' data-tour='route-paths-table'>
         <DataTable
           sorting={sorting}
