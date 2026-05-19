@@ -61,19 +61,19 @@ const DeleteCT: React.FC<{
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent aria-describedby='Create a new language'>
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>
             {mode === 'trash' ? 'Move item to trash' : 'Delete item permanently'}
           </DialogTitle>
+          <DialogDescription>
+            {mode === 'trash'
+              ? 'Are you sure you want to move this item to trash? It will be hidden from lists and public routes until restored.'
+              : 'Are you sure you want to permanently delete this item? This cannot be undone.'}
+          </DialogDescription>
         </DialogHeader>
-        <DialogDescription>
-          {mode === 'trash'
-            ? 'This item will be hidden from lists and public routes. You can restore it from the trash.'
-            : 'This item will be permanently deleted. This cannot be undone.'}
-        </DialogDescription>
         <DialogFooter>
-          <Button onClick={() => setOpen(false)} variant='ghost'>
+          <Button onClick={() => setOpen(false)} variant='outline'>
             Cancel
           </Button>
           <Button

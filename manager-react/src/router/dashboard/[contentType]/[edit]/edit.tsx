@@ -421,6 +421,7 @@ const EditPage: React.FC<{
       contentType: contentType.name,
       id: contentTypeId,
     })
+    setMoveToTrashOpen(false)
     await invalidateContentListQueries()
     await onAfterRestore?.()
     toast.success('Moved to trash')
@@ -428,14 +429,12 @@ const EditPage: React.FC<{
 
   const handlePermanentDelete = async () => {
     if (!contentTypeId) return
-    if (!window.confirm('Delete this item permanently? This cannot be undone.')) {
-      return
-    }
 
     await deleteMutation.mutateAsync({
       contentType: contentType.name,
       id: contentTypeId,
     })
+    setPermanentDeleteOpen(false)
     await invalidateContentListQueries()
     navigation.push?.({
       name: 'content.list',
@@ -623,6 +622,8 @@ const EditPage: React.FC<{
     languageList.filter((item) => item.code !== language.code).map((item) => item.code)
   )
   const [translationOverwrite, setTranslationOverwrite] = useState(false)
+  const [moveToTrashOpen, setMoveToTrashOpen] = useState(false)
+  const [permanentDeleteOpen, setPermanentDeleteOpen] = useState(false)
   const translationTargetOptions = languageList.filter((item) => item.code !== translationSource)
   const tabErrors = useMemo(() => {
     const hasErrorsInFields = (fields: Record<string, EncodedField>) =>
@@ -731,7 +732,7 @@ const EditPage: React.FC<{
                   <Button
                     variant="destructive"
                     loading={deleteMutation.isPending}
-                    onClick={() => void handlePermanentDelete()}
+                    onClick={() => setPermanentDeleteOpen(true)}
                   >
                     <Trash />
                     Delete permanently
@@ -761,7 +762,7 @@ const EditPage: React.FC<{
                 <Button
                   variant="destructive"
                   loading={trashMutation.isPending}
-                  onClick={() => void handleMoveToTrash()}
+                  onClick={() => setMoveToTrashOpen(true)}
                 >
                   <Trash />
                   Move to trash
@@ -899,6 +900,51 @@ const EditPage: React.FC<{
               </Tooltip>
             </div>
           </div>
+          <Dialog open={moveToTrashOpen} onOpenChange={setMoveToTrashOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Move item to trash</DialogTitle>
+                <DialogDescription>
+                  This item will be hidden from lists and public routes. You can restore it from
+                  the trash.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setMoveToTrashOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  loading={trashMutation.isPending}
+                  onClick={() => void handleMoveToTrash()}
+                >
+                  Move to trash
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Dialog open={permanentDeleteOpen} onOpenChange={setPermanentDeleteOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete item permanently</DialogTitle>
+                <DialogDescription>
+                  This item will be permanently deleted. This cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setPermanentDeleteOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  loading={deleteMutation.isPending}
+                  onClick={() => void handlePermanentDelete()}
+                >
+                  Delete permanently
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           {hasIterables ? (
             <TabsContent
               value="content"
