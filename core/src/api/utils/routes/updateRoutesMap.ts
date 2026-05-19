@@ -7,6 +7,7 @@ import {
   buildRoutePath,
   generateRouteMapItems,
   getParentPath,
+  getRouteMapLastModified,
   getRouteFields,
   isVisibleForRouteMap,
   loadRouteData,
@@ -145,6 +146,7 @@ export async function updateSingleRouteMap({
           ),
           routeId: route._id as string,
           languageId: language._id as string,
+          lastModified: getRouteMapLastModified(item),
           _type: "RouteMap" as const,
         };
       }),

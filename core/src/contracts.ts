@@ -32,3 +32,4 @@ export * from "./schemas/manager/media/createFolder";
 export * from "./schemas/manager/media/listFolders";
 export * from "./schemas/manager/media/deleteFolder";
 export * from "./schemas/web/page";
+export * from "./schemas/web/sitemap";

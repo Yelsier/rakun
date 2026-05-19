@@ -90,7 +90,6 @@ export default function ApiPlayground({
       </ResizablePanelGroup>
       <Button
         className='mt-4 w-full'
-        variant='secondary'
         onClick={() => void run()}
         disabled={running}
       >

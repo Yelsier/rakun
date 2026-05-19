@@ -3,7 +3,12 @@ import z from "zod";
 import type { RakunOperationContractMap } from "./types";
 import { defineOperationContract } from "./types";
 import { Language } from "../../internal-content-types";
-import { pageInput, pageOutput } from "../../contracts";
+import {
+  pageInput,
+  pageOutput,
+  sitemapInput,
+  sitemapOutput,
+} from "../../contracts";
 
 export const createWebOperationContracts = () =>
   ({
@@ -21,6 +26,14 @@ export const createWebOperationContracts = () =>
       description: "Get page data for a given path",
       input: pageInput,
       output: pageOutput,
+    }),
+    "web.sitemap": defineOperationContract({
+      access: "public",
+      kind: "query",
+      method: "get",
+      description: "Get public page paths for sitemap generation",
+      input: sitemapInput,
+      output: sitemapOutput,
     }),
     "web.test": defineOperationContract({
       access: "public",

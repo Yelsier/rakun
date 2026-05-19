@@ -15,6 +15,8 @@ import { DbErrorConflict, type DBService } from "../../../orm/dbService";
 export type UnknownItem = {
   [x: string]: unknown;
   _id: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
 export type RouteMapItemInput = DataInput<RouteMap>;
@@ -129,12 +131,15 @@ export const buildRoutePath = (
 };
 
 export const getRouteFields = (route: DBOutput<Route>) => {
-  const routFields = [route.field as string];
+  const routFields = [route.field as string, "createdAt", "updatedAt"];
   if (route.parent && route.parentRelationField) {
     routFields.push(route.parentRelationField as string);
   }
   return routFields;
 };
+
+export const getRouteMapLastModified = (item: UnknownItem): Date =>
+  item.updatedAt ?? item.createdAt ?? new Date();
 
 /**
  *  Generates route map items for a given content items, route and language, including parent paths.
@@ -179,6 +184,7 @@ export const generateRouteMapItems = (
           ),
           routeId: route._id as string,
           languageId: language._id as string,
+          lastModified: getRouteMapLastModified(item),
           _type: "RouteMap",
         });
       }

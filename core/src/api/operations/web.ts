@@ -8,6 +8,7 @@ import {
 } from "./custom";
 import { getLanguages } from "../utils/getLanguages";
 import { getPage } from "../routes/web/page";
+import { getSitemap } from "../routes/web/sitemap";
 
 const getStringHeaders = (
   headers: Record<string, string | string[] | undefined>,
@@ -45,6 +46,9 @@ export const createWebOperationDefinitions = () => {
           ...input,
           headers: input.headers ?? getStringHeaders(ctx.req?.headers ?? {}),
         }),
+    },
+    "web.sitemap": {
+      resolve: async ({ input }) => await getSitemap(input),
     },
     "web.test": {
       resolve: async () => ({ ok: true }),

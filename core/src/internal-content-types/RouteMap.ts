@@ -10,6 +10,7 @@ export const RouteMap = new ContentType({
     contentTypeId: Fields.string().type("Id").required(),
     routeId: Fields.string().type("Id").required(),
     languageId: Fields.string().type("Id").required(),
+    lastModified: Fields.date().type("DateTime"),
   },
   uniques: [["path"]],
 }).hideFromManager();

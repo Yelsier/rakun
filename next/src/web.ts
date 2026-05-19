@@ -1,5 +1,6 @@
 import { headers as nextHeaders } from "next/headers";
-import type { PageOutput } from "@rakun-kit/core/contracts";
+import type { MetadataRoute } from "next";
+import type { PageOutput, SitemapOutput } from "@rakun-kit/core/contracts";
 
 export {
   RakunPageRenderer,
@@ -34,6 +35,32 @@ export type GetRakunPageOptions = {
   fetchOptions?: RakunNextFetchOptions;
   fetch?: typeof globalThis.fetch;
 };
+
+export type GetRakunSitemapOptions = {
+  apiBaseUrl?: string | URL;
+  siteUrl?: string | URL;
+  language?: string;
+  headers?: HeadersInit;
+  forwardHeaders?: boolean;
+  fetchOptions?: RakunNextFetchOptions;
+  fetch?: typeof globalThis.fetch;
+};
+
+export type RakunSitemapRouteHandlerContext = {
+  params: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export type CreateRakunSitemapIndexRouteHandlerOptions = Omit<
+  GetRakunSitemapOptions,
+  "language"
+> & {
+  sitemapPath?: (language: string) => string;
+};
+
+export type CreateRakunLocaleSitemapRouteHandlerOptions =
+  GetRakunSitemapOptions & {
+    paramKey?: string;
+  };
 
 export type GetRakunPathFromParamsOptions = {
   params: RakunNextPageParams;
@@ -118,6 +145,12 @@ const resolveApiBaseUrl = async (apiBaseUrl: string | URL): Promise<URL> => {
   } catch {
     return new URL(apiBaseUrl, await getRequestOrigin());
   }
+};
+
+const resolveSiteUrl = async (siteUrl?: string | URL): Promise<URL> => {
+  if (siteUrl instanceof URL) return siteUrl;
+  if (typeof siteUrl === "string") return new URL(siteUrl);
+  return new URL(await getRequestOrigin());
 };
 
 const createForwardHeaders = async (): Promise<Headers> => {
@@ -205,3 +238,186 @@ export const getRakunPage = async ({
 
   return (await response.json()) as PageOutput;
 };
+
+export const getRakunSitemap = async ({
+  apiBaseUrl = defaultApiBaseUrl,
+  siteUrl,
+  language,
+  headers,
+  forwardHeaders = true,
+  fetchOptions,
+  fetch: fetchFn = globalThis.fetch,
+}: GetRakunSitemapOptions = {}): Promise<MetadataRoute.Sitemap> => {
+  const [baseUrl, resolvedSiteUrl] = await Promise.all([
+    resolveApiBaseUrl(apiBaseUrl),
+    resolveSiteUrl(siteUrl),
+  ]);
+  const url = new URL(
+    `${baseUrl.pathname.replace(/\/$/, "")}/web/sitemap`,
+    baseUrl,
+  );
+  if (language) {
+    url.searchParams.set("language", language);
+  }
+
+  const response = await fetchFn(url, {
+    cache: "no-store",
+    ...fetchOptions,
+    method: "GET",
+    headers: await createRequestHeaders({
+      headers,
+      forwardHeaders,
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new Error(
+      `Rakun sitemap request failed with ${response.status}: ${text.slice(0, 200)}`,
+    );
+  }
+
+  const sitemap = (await response.json()) as SitemapOutput;
+
+  return sitemap.items.map((item) => ({
+    url: new URL(item.path, resolvedSiteUrl).toString(),
+    lastModified: item.lastModified
+      ? new Date(item.lastModified)
+      : undefined,
+  }));
+};
+
+export const getRakunSitemapLanguages = async ({
+  apiBaseUrl = defaultApiBaseUrl,
+  headers,
+  forwardHeaders = true,
+  fetchOptions,
+  fetch: fetchFn = globalThis.fetch,
+}: Omit<GetRakunSitemapOptions, "language" | "siteUrl"> = {}) => {
+  const baseUrl = await resolveApiBaseUrl(apiBaseUrl);
+  const url = new URL(
+    `${baseUrl.pathname.replace(/\/$/, "")}/web/sitemap`,
+    baseUrl,
+  );
+
+  const response = await fetchFn(url, {
+    cache: "no-store",
+    ...fetchOptions,
+    method: "GET",
+    headers: await createRequestHeaders({
+      headers,
+      forwardHeaders,
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new Error(
+      `Rakun sitemap languages request failed with ${response.status}: ${text.slice(0, 200)}`,
+    );
+  }
+
+  return ((await response.json()) as SitemapOutput).languages;
+};
+
+export const createRakunSitemapHandler =
+  (options: GetRakunSitemapOptions = {}) =>
+  async (): Promise<MetadataRoute.Sitemap> =>
+    await getRakunSitemap(options);
+
+const escapeXml = (value: string): string =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+
+const createXmlResponse = (xml: string): Response =>
+  new Response(xml, {
+    headers: {
+      "Content-Type": "application/xml; charset=utf-8",
+    },
+  });
+
+const renderSitemapIndexXml = (
+  entries: Array<{ url: string; lastModified?: string | Date }>,
+): string => `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${entries
+  .map(
+    (entry) => `  <sitemap>
+    <loc>${escapeXml(entry.url)}</loc>${
+      entry.lastModified
+        ? `
+    <lastmod>${new Date(entry.lastModified).toISOString()}</lastmod>`
+        : ""
+    }
+  </sitemap>`,
+  )
+  .join("\n")}
+</sitemapindex>`;
+
+const renderSitemapXml = (entries: MetadataRoute.Sitemap): string => `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${entries
+  .map(
+    (entry) => `  <url>
+    <loc>${escapeXml(entry.url)}</loc>${
+      entry.lastModified
+        ? `
+    <lastmod>${new Date(entry.lastModified).toISOString()}</lastmod>`
+        : ""
+    }
+  </url>`,
+  )
+  .join("\n")}
+</urlset>`;
+
+const getStringParam = (
+  params: Record<string, string | string[] | undefined>,
+  key: string,
+): string | undefined => {
+  const value = params[key];
+  return Array.isArray(value) ? value[0] : value;
+};
+
+export const createRakunSitemapIndexRouteHandler =
+  ({
+    siteUrl,
+    sitemapPath = (language) => `/${language}/sitemap.xml`,
+    ...options
+  }: CreateRakunSitemapIndexRouteHandlerOptions = {}) =>
+  async (): Promise<Response> => {
+    const [languages, resolvedSiteUrl] = await Promise.all([
+      getRakunSitemapLanguages(options),
+      resolveSiteUrl(siteUrl),
+    ]);
+
+    return createXmlResponse(
+      renderSitemapIndexXml(
+        languages.map((language) => ({
+          url: new URL(sitemapPath(language.code), resolvedSiteUrl).toString(),
+        })),
+      ),
+    );
+  };
+
+export const createRakunLocaleSitemapRouteHandler =
+  ({
+    paramKey = "language",
+    ...options
+  }: CreateRakunLocaleSitemapRouteHandlerOptions = {}) =>
+  async (
+    _request: Request,
+    context: RakunSitemapRouteHandlerContext,
+  ): Promise<Response> => {
+    const params = await context.params;
+    const language = getStringParam(params, paramKey);
+    const entries = await getRakunSitemap({
+      ...options,
+      language,
+    });
+
+    return createXmlResponse(renderSitemapXml(entries));
+  };
