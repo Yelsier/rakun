@@ -1,6 +1,10 @@
 import { headers as nextHeaders } from "next/headers";
 import type { MetadataRoute } from "next";
-import type { PageOutput, SitemapOutput } from "@rakun-kit/core/contracts";
+import type {
+  PageOutput,
+  RobotsOutput,
+  SitemapOutput,
+} from "@rakun-kit/core/contracts";
 
 export {
   RakunPageRenderer,
@@ -61,6 +65,14 @@ export type CreateRakunLocaleSitemapRouteHandlerOptions =
   GetRakunSitemapOptions & {
     paramKey?: string;
   };
+
+export type GetRakunRobotsTxtOptions = {
+  apiBaseUrl?: string | URL;
+  headers?: HeadersInit;
+  forwardHeaders?: boolean;
+  fetchOptions?: RakunNextFetchOptions;
+  fetch?: typeof globalThis.fetch;
+};
 
 export type GetRakunPathFromParamsOptions = {
   params: RakunNextPageParams;
@@ -421,3 +433,45 @@ export const createRakunLocaleSitemapRouteHandler =
 
     return createXmlResponse(renderSitemapXml(entries));
   };
+
+export const getRakunRobotsTxt = async ({
+  apiBaseUrl = defaultApiBaseUrl,
+  headers,
+  forwardHeaders = true,
+  fetchOptions,
+  fetch: fetchFn = globalThis.fetch,
+}: GetRakunRobotsTxtOptions = {}): Promise<string> => {
+  const baseUrl = await resolveApiBaseUrl(apiBaseUrl);
+  const url = new URL(
+    `${baseUrl.pathname.replace(/\/$/, "")}/web/robots`,
+    baseUrl,
+  );
+
+  const response = await fetchFn(url, {
+    cache: "no-store",
+    ...fetchOptions,
+    method: "GET",
+    headers: await createRequestHeaders({
+      headers,
+      forwardHeaders,
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new Error(
+      `Rakun robots.txt request failed with ${response.status}: ${text.slice(0, 200)}`,
+    );
+  }
+
+  return ((await response.json()) as RobotsOutput).content;
+};
+
+export const createRakunRobotsTxtRouteHandler =
+  (options: GetRakunRobotsTxtOptions = {}) =>
+  async (): Promise<Response> =>
+    new Response(await getRakunRobotsTxt(options), {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+      },
+    });

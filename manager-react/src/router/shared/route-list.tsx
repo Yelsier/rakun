@@ -10,6 +10,7 @@ import { ManagerMfaScreen } from "../mfa";
 import { ManagerSettingsLanguagesScreen } from "../dashboard/settings/languages";
 import { ManagerSettingsLiteralsScreen } from "../dashboard/settings/literals";
 import { ManagerSettingsRedirectsScreen } from "../dashboard/settings/redirects";
+import { ManagerSettingsRobotsScreen } from "../dashboard/settings/robots";
 import { ManagerSettingsRoutePathsScreen } from "../dashboard/settings/routes/paths";
 import { ManagerSettingsRoutesScreen } from "../dashboard/settings/routes";
 import { ManagerSettingsHomeScreen } from "../dashboard/settings";
@@ -164,6 +165,13 @@ export const managerRouteDefinitions = [
     layout: "dashboard",
     parse: () => ({ kind: "settings-redirects" }),
     render: () => <ManagerSettingsRedirectsScreen />,
+  }),
+  defineManagerRoute({
+    kind: "settings-robots",
+    path: "/settings/robots",
+    layout: "dashboard",
+    parse: () => ({ kind: "settings-robots" }),
+    render: () => <ManagerSettingsRobotsScreen />,
   }),
   defineManagerRoute({
     kind: "content-create",

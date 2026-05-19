@@ -8,6 +8,7 @@ import {
   pageOutput,
   sitemapInput,
   sitemapOutput,
+  robotsOutput,
 } from "../../contracts";
 
 export const createWebOperationContracts = () =>
@@ -34,6 +35,13 @@ export const createWebOperationContracts = () =>
       description: "Get public page paths for sitemap generation",
       input: sitemapInput,
       output: sitemapOutput,
+    }),
+    "web.robots": defineOperationContract({
+      access: "public",
+      kind: "query",
+      method: "get",
+      description: "Get robots.txt content",
+      output: robotsOutput,
     }),
     "web.test": defineOperationContract({
       access: "public",

@@ -8,6 +8,7 @@ import {
 } from "./custom";
 import { getLanguages } from "../utils/getLanguages";
 import { getPage } from "../routes/web/page";
+import { getRobots } from "../routes/web/robots";
 import { getSitemap } from "../routes/web/sitemap";
 
 const getStringHeaders = (
@@ -49,6 +50,9 @@ export const createWebOperationDefinitions = () => {
     },
     "web.sitemap": {
       resolve: async ({ input }) => await getSitemap(input),
+    },
+    "web.robots": {
+      resolve: async () => await getRobots(),
     },
     "web.test": {
       resolve: async () => ({ ok: true }),

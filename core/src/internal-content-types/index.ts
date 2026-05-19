@@ -22,5 +22,6 @@ export * from "./UserMfa";
 export * from "./WebAuthnCredential";
 export * from "./WebAuthnRegChallenge";
 export * from "./Redirect";
+export * from "./RobotsRule";
 export * from "./Page";
 export * from "./HelloWorld";

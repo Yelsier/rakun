@@ -21,6 +21,7 @@ export type ManagerResolvedRoute =
   | { kind: "settings-user-roles-edit"; id: string }
   | { kind: "settings-literals" }
   | { kind: "settings-redirects" }
+  | { kind: "settings-robots" }
   | { kind: "content-list"; contentType: string }
   | { kind: "content-create"; contentType: string }
   | { kind: "content-edit"; contentType: string; id: string }
