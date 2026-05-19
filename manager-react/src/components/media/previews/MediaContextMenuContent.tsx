@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, FolderInput, Pencil, Trash2 } from 'lucide-react'
+import { Check, Crop, FolderInput, Pencil, Trash2 } from 'lucide-react'
 
 import {
   ContextMenuContent,
@@ -24,10 +24,12 @@ export default function MediaContextMenuContent({
     bulkSelectedIds,
     onRequestSelect,
     onRequestEdit,
+    onRequestImageEdit,
     onRequestMove,
     onRequestDelete,
   } = useMediaPreview()
   const isMediaItem = '_type' in item && item._type === 'Media'
+  const isImageItem = isMediaItem && item.mime.startsWith('image/')
 
   return (
     <ContextMenuContent>
@@ -44,6 +46,12 @@ export default function MediaContextMenuContent({
         <Pencil className='size-4' />
         Edit
       </ContextMenuItem>
+      {isImageItem ? (
+        <ContextMenuItem onSelect={() => onRequestImageEdit(item)}>
+          <Crop className='size-4' />
+          Crop and rotate
+        </ContextMenuItem>
+      ) : null}
       {isMediaItem ? (
         <>
           <ContextMenuItem onSelect={() => onRequestMove(item)}>
