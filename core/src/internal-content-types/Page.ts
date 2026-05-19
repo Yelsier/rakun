@@ -14,7 +14,7 @@ export const Page = new ContentType({
         type: 'new',
       },
     ]).required(),
-    seo: Fields.relation(Seo).required(),
+    seo: Fields.relation(Seo, "new").required(),
   },
   menu: {
     title: 'Pages',

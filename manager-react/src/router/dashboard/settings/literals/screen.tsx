@@ -266,206 +266,264 @@ export const ManagerSettingsLiteralsScreen = () => {
             className="max-w-sm"
           />
           <Badge variant="outline">Default locale: {data.defaultLocale}</Badge>
-          <Badge variant="secondary">{filteredItems.length} literals</Badge>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]" data-tour="literals-list">
-        <div className="flex flex-col gap-4">
-
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle>Namespaces</CardTitle>
+      <Card>
+        <CardHeader>
+            <CardTitle className="text-base">
+              Namespaces
+            </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3">
-            <Tabs
-              value={selectedNamespace}
-              onValueChange={setSelectedNamespace}
-              orientation="vertical"
-            >
-              <TabsList className="grid h-auto grid-cols-1">
-                {namespaces.map((namespace) => (
-                  <TabsTrigger
-                    key={namespace}
-                    value={namespace}
-                    className="justify-start"
-                  >
-                    {namespace}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+        <CardContent>
+          <Tabs value={selectedNamespace} onValueChange={setSelectedNamespace}>
+            <TabsList className="bg-card w-full flex-wrap justify-start gap-2">
+              {namespaces.map((namespace) => (
+                <TabsTrigger
+                  key={namespace}
+                  value={namespace}
+                  className="flex-none"
+                >
+                  {namespace}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      <div
+        className="grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]"
+        data-tour="literals-list"
+      >
+        <Card className="max-h-[70vh] overflow-auto">
+          <CardHeader>
+            <CardTitle className="text-base">
+              Keys ({filteredItems.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {filteredItems.map((item) => {
+              const isSelected = item.key === selectedKey;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={`w-full rounded-md border p-3 text-left transition ${
+                    isSelected
+                      ? "border-primary bg-accent/30"
+                      : "hover:bg-accent/20"
+                  }`}
+                  onClick={() => setSelectedKey(item.key)}
+                >
+                  <p className="font-mono text-xs">
+                    {getLiteralDisplayKey(item.key)}
+                  </p>
+                  <p className="mt-1 line-clamp-2 text-muted-foreground text-xs">
+                    {item.description}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {item.hasTranslation ? (
+                      <Badge variant="secondary">Translated</Badge>
+                    ) : (
+                      <Badge variant="outline">Fallback</Badge>
+                    )}
+                    {!item.validation.isValid ? (
+                      <Badge variant="destructive">Invalid ICU</Badge>
+                    ) : null}
+                  </div>
+                </button>
+              );
+            })}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Keys</CardTitle>
+            <CardTitle className="font-mono text-sm">
+              {selectedLiteral ? getLiteralDisplayKey(selectedLiteral.key) : ""}
+            </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-2">
-            {filteredItems.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                className={`rounded-md border px-3 py-2 text-left ${
-                  item.key === selectedKey ? "border-primary bg-accent" : ""
-                }`}
-                onClick={() => setSelectedKey(item.key)}
-              >
-                <div className="font-medium">
-                  {getLiteralDisplayKey(item.key)}
-                </div>
-                <div className="text-muted-foreground text-xs">
-                  {item.description}
-                </div>
-              </button>
-            ))}
-          </CardContent>
-        </Card>
-        </div>
-
-        <div className="grid gap-4">
-          {selectedLiteral ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>{selectedLiteral.key}</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  {selectedLiteral.hasTranslation ? (
-                    <Badge>Translated</Badge>
-                  ) : (
-                    <Badge variant="secondary">Using default</Badge>
-                  )}
-                  {!selectedLiteral.validation.isValid ? (
-                    <Badge variant="destructive">Needs review</Badge>
-                  ) : null}
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Description</label>
+          <CardContent className="space-y-4">
+            {!selectedLiteral ? (
+              <p className="text-muted-foreground text-sm">
+                Select a literal key.
+              </p>
+            ) : (
+              <>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Description</p>
                   <p className="text-muted-foreground text-sm">
                     {selectedLiteral.description}
                   </p>
                 </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Default message</label>
-                  <Textarea value={selectedLiteral.defaultMessage} readOnly />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Translation</label>
-                  <Textarea
-                    value={messageDraft}
-                    onChange={(event) => setMessageDraft(event.target.value)}
-                    disabled={!hasPermissions(["manager.literals.updateAny"])}
-                  />
-                </div>
-                <div className="grid gap-3">
-                  <div className="flex items-center gap-2">
-                    <Info size={16} />
-                    <span className="text-sm font-medium">Variables</span>
+
+                <div className="space-y-1">
+                  <p className="flex items-center gap-2 text-sm font-medium">
+                    Used by
+                    <Info className="size-4 text-muted-foreground" />
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedLiteral.usedBy.length > 0 ? (
+                      selectedLiteral.usedBy.map((usage) => (
+                        <Badge key={usage} variant="outline">
+                          {usage}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-muted-foreground text-sm">
+                        No usage metadata
+                      </span>
+                    )}
                   </div>
-                  {selectedLiteral.variables.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">
-                      No variables.
-                    </p>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Available ICU variables</p>
+                  {selectedLiteral.variables.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedLiteral.variables.map((variable) => (
+                        <Button
+                          key={variable.name}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setMessageDraft(
+                              (prev) =>
+                                `${prev}${
+                                  prev.endsWith(" ") || prev.length === 0
+                                    ? ""
+                                    : " "
+                                }${placeholderHint(
+                                  variable.name,
+                                  variable.kind,
+                                )}`,
+                            );
+                          }}
+                        >
+                          {variable.name} ({variable.kind})
+                        </Button>
+                      ))}
+                    </div>
                   ) : (
-                    selectedLiteral.variables.map((variable) => (
-                      <div key={variable.name} className="grid gap-2">
-                        <label className="text-sm font-medium">
-                          {variable.name}
-                        </label>
-                        <Input
-                          value={previewValues[variable.name] || ""}
-                          placeholder={placeholderHint(
-                            variable.name,
-                            variable.kind,
-                          )}
-                          onChange={(event) =>
-                            setPreviewValues((current) => ({
-                              ...current,
-                              [variable.name]: event.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-                    ))
+                    <p className="text-muted-foreground text-sm">
+                      No variables
+                    </p>
                   )}
                 </div>
+
                 {!selectedLiteral.validation.isValid ? (
-                  <Card className="border-destructive">
-                    <CardContent className="flex flex-col gap-3 pt-6 text-sm">
-                      <div className="flex items-center gap-2 text-destructive">
-                        <AlertTriangle size={16} />
-                        Validation issues
-                      </div>
-                      {selectedLiteral.validation.missing.length ? (
-                        <p>
-                          Missing:{" "}
-                          {formatList(
-                            selectedLiteral.validation.missing,
-                            locale,
-                          )}
-                        </p>
-                      ) : null}
-                      {selectedLiteral.validation.kindMismatch.length ? (
-                        <p>
-                          Kind mismatch:{" "}
-                          {formatList(
-                            selectedLiteral.validation.kindMismatch,
-                            locale,
-                          )}
-                        </p>
-                      ) : null}
-                      {selectedLiteral.validation.extra.length ? (
-                        <p>
-                          Extra:{" "}
-                          {formatList(selectedLiteral.validation.extra, locale)}
-                        </p>
-                      ) : null}
-                    </CardContent>
-                  </Card>
+                  <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                    <p className="flex items-center gap-2 font-medium">
+                      <AlertTriangle className="size-4" />
+                      Stored translation has ICU validation issues
+                    </p>
+                    {selectedLiteral.validation.missing.length > 0 ? (
+                      <p className="mt-1">
+                        Missing:{" "}
+                        {formatList(selectedLiteral.validation.missing, locale)}
+                      </p>
+                    ) : null}
+                    {selectedLiteral.validation.kindMismatch.length > 0 ? (
+                      <p className="mt-1">
+                        Kind mismatch:{" "}
+                        {formatList(
+                          selectedLiteral.validation.kindMismatch,
+                          locale,
+                        )}
+                      </p>
+                    ) : null}
+                  </div>
                 ) : null}
-                <div className="grid gap-2">
-                  <label className="text-sm font-medium">Preview</label>
-                  <Card>
-                    <CardContent className="text-sm">
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Default message (base)</p>
+                  <Textarea
+                    value={selectedLiteral.defaultMessage}
+                    readOnly
+                    className="min-h-20 font-mono text-xs"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Translation</p>
+                  <Textarea
+                    disabled={!hasPermissions(["manager.literals.updateAny"])}
+                    value={messageDraft}
+                    onChange={(event) => setMessageDraft(event.target.value)}
+                    className="min-h-28 font-mono text-xs"
+                  />
+                  {!hasPermissions(["manager.literals.updateAny"]) ? (
+                    <p className="flex items-center gap-2 text-muted-foreground text-sm">
+                      <Info className="size-4" />
+                      You don't have permissions to edit literals
+                    </p>
+                  ) : null}
+                </div>
+
+                {selectedLiteral.variables.length > 0 ? (
+                  <div className="space-y-3 rounded-md border p-3">
+                    <p className="text-sm font-medium">Preview</p>
+                    <div className="grid gap-2 md:grid-cols-2">
+                      {selectedLiteral.variables.map((variable) => (
+                        <div
+                          key={`preview-${variable.name}`}
+                          className="space-y-1"
+                        >
+                          <p className="font-mono text-xs">
+                            {variable.name} ({variable.kind})
+                          </p>
+                          <Input
+                            value={previewValues[variable.name] ?? ""}
+                            onChange={(event) =>
+                              setPreviewValues((prev) => ({
+                                ...prev,
+                                [variable.name]: event.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="whitespace-pre-wrap rounded-md border bg-muted/20 p-3 font-mono text-xs">
                       {renderIcuPreview({
                         message: messageDraft,
                         locale,
                         values: previewValues,
                       })}
-                    </CardContent>
-                  </Card>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() =>
-                      setMessageDraft(
-                        selectedLiteral.translation ||
-                          selectedLiteral.defaultMessage,
-                      )
-                    }
-                    disabled={!hasDraftChanges}
-                  >
-                    Reset
-                  </Button>
-                  <Button
-                    onClick={() => void onSave()}
-                    loading={upsertMutation.isPending}
-                    disabled={
-                      !hasDraftChanges ||
-                      !hasPermissions(["manager.literals.updateAny"])
-                    }
-                  >
-                    <Save />
-                    Save
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : null}
-        </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {hasPermissions(["manager.literals.updateAny"]) ? (
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() =>
+                        setMessageDraft(
+                          selectedLiteral.translation ||
+                            selectedLiteral.defaultMessage,
+                        )
+                      }
+                      disabled={!hasDraftChanges}
+                    >
+                      Reset
+                    </Button>
+                    <Button
+                      onClick={() => void onSave()}
+                      loading={upsertMutation.isPending}
+                      disabled={!hasDraftChanges || upsertMutation.isPending}
+                    >
+                      <Save className="size-4" />
+                      Save translation
+                    </Button>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -27,6 +27,12 @@ export const createPreviewBootstrap = () =>
           name: 'string',
         },
       },
+      "demo.welcome": {
+        defaultMessage: "Welcome to the demo!",
+        description: "A welcome message for the demo",
+        usedBy: ["Page"],
+        params: {},
+      },
     },
     contentTypes: previewContentTypes,
     routes: [
