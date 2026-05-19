@@ -141,6 +141,33 @@ const richText = (text: string) => ({
   },
 });
 
+const seedAuthors = async (db: Db) => {
+  const timestamp = now();
+
+  await db.collection(Author.name).bulkWrite(
+    Array.from({ length: 100 }, (_, index) => {
+      const authorIndex = index + 1;
+
+      return {
+        updateOne: {
+          filter: { email: `author-${authorIndex}@example.com` },
+          update: {
+            $setOnInsert: {
+              name: `Author-${authorIndex}`,
+              email: `author-${authorIndex}@example.com`,
+              bio: `Seed author ${authorIndex} for pagination testing.`,
+              _type: Author.name,
+              createdAt: timestamp,
+              updatedAt: timestamp,
+            },
+          },
+          upsert: true,
+        },
+      };
+    }),
+  );
+};
+
 export const seedPreviewData = async () => {
   if (!env.seedPreview) {
     return;
@@ -368,6 +395,8 @@ export const seedPreviewData = async () => {
     if (!author) {
       throw new Error("Failed to create preview author.");
     }
+
+    await seedAuthors(db);
 
     await db.collection(Article.name).updateOne(
       {
