@@ -182,6 +182,7 @@ export const ManagerSettingsRedirectsScreen = () => {
   const { user, hasPermissions } = useSession()
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [editing, setEditing] = useState<RedirectManager | null>(null)
   const [deleting, setDeleting] = useState<RedirectManager | null>(null)
   const [samplePath, setSamplePath] = useState('/old/hello-world')
@@ -190,7 +191,7 @@ export const ManagerSettingsRedirectsScreen = () => {
     name: 'manager.list',
     input: {
       contentType: 'Redirect',
-      query: { options: { limit: 10, page } },
+      query: { options: { limit: itemsPerPage, page } },
     },
   })
   const createMutation = useManagerMutation('manager.create')
@@ -351,7 +352,8 @@ export const ManagerSettingsRedirectsScreen = () => {
         page={page}
         setPage={setPage}
         totalItems={listQuery.data.totalItems}
-        itemsPerPage={10}
+        itemsPerPage={itemsPerPage}
+        setItemsPerPage={setItemsPerPage}
       />
 
       <Dialog open={open} onOpenChange={setOpen}>

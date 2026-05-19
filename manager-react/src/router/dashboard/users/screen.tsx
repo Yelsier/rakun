@@ -16,13 +16,14 @@ import { useSession } from '@/state/session'
 
 export function ManagerUsersScreen() {
   const [page, setPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [edit, setEdit] = useState<ManagerUserRecord | null>(null)
   const [deleteUser, setDeleteUser] = useState<ManagerUserRecord | null>(null)
   const listQuery = useManagerQuery({
     name: 'manager.list',
     input: {
       contentType: 'ManagerUser',
-      query: { options: { limit: 10, page } },
+      query: { options: { limit: itemsPerPage, page } },
     },
   })
   const { hasPermissions, hasAnyPermission } = useSession()
@@ -67,7 +68,8 @@ export function ManagerUsersScreen() {
         page={page}
         setPage={setPage}
         totalItems={listQuery.data.totalItems}
-        itemsPerPage={10}
+        itemsPerPage={itemsPerPage}
+        setItemsPerPage={setItemsPerPage}
       />
     </div>
   )

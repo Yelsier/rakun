@@ -70,6 +70,7 @@ const ListContents: React.FC<{
   documentVisibility?: boolean
 }> = ({ contentType, fields, documentVisibility }) => {
   const [page, setPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [isTrash, setIsTrash] = useState(false)
   const [deleteItem, setDeleteItem] = useState<{ _id: string } | null>(null)
   const [permanentDeleteItem, setPermanentDeleteItem] = useState<{
@@ -96,7 +97,7 @@ const ListContents: React.FC<{
       query: {
         filter: isTrash ? { _trashed: true } : undefined,
         options: {
-          limit: 10,
+          limit: itemsPerPage,
           page,
           fields: fields
             ? [...fields, '_trashed', '_visibility', '_visibilityBeforeTrash']
@@ -528,7 +529,8 @@ const ListContents: React.FC<{
           setPage={setPage}
           page={page}
           totalItems={totalItems}
-          itemsPerPage={10}
+          itemsPerPage={itemsPerPage}
+          setItemsPerPage={setItemsPerPage}
         />
       </div>
     </div>

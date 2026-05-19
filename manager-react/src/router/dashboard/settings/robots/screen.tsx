@@ -88,6 +88,7 @@ export const ManagerSettingsRobotsScreen = () => {
   const { user, hasPermissions } = useSession()
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [editing, setEditing] = useState<RobotsRuleManager | null>(null)
   const [deleting, setDeleting] = useState<RobotsRuleManager | null>(null)
 
@@ -95,7 +96,7 @@ export const ManagerSettingsRobotsScreen = () => {
     name: 'manager.list',
     input: {
       contentType: 'RobotsRule',
-      query: { options: { limit: 10, page, sort: { order: 'asc' } } },
+      query: { options: { limit: itemsPerPage, page, sort: { order: 'asc' } } },
     },
   })
   const createMutation = useManagerMutation('manager.create')
@@ -233,7 +234,8 @@ export const ManagerSettingsRobotsScreen = () => {
         page={page}
         setPage={setPage}
         totalItems={listQuery.data.totalItems}
-        itemsPerPage={10}
+        itemsPerPage={itemsPerPage}
+        setItemsPerPage={setItemsPerPage}
       />
 
       <Dialog open={open} onOpenChange={setOpen}>

@@ -73,6 +73,7 @@ type ManagerContentTypeRecord = {
 
 export const ManagerSettingsRoutesScreen = () => {
   const [page, setPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [edit, setEdit] = useState<ManagerRouteRecord | null>(null);
   const [layoutModulesRoute, setLayoutModulesRoute] =
     useState<ManagerRouteRecord | null>(null);
@@ -85,7 +86,7 @@ export const ManagerSettingsRoutesScreen = () => {
     name: "manager.list",
     input: {
       contentType: "Route",
-      query: { options: { limit: 10, page } },
+      query: { options: { limit: itemsPerPage, page } },
     },
   });
   const routeSettingsQuery = useManagerQuery({
@@ -418,7 +419,8 @@ export const ManagerSettingsRoutesScreen = () => {
         page={page}
         setPage={setPage}
         totalItems={routeListQuery.data.totalItems}
-        itemsPerPage={10}
+        itemsPerPage={itemsPerPage}
+        setItemsPerPage={setItemsPerPage}
       />
     </div>
   );

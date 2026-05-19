@@ -16,6 +16,7 @@ import { useSession } from '@/state/session'
 
 export const ManagerSettingsLanguagesScreen = () => {
   const [page, setPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [edit, setEdit] = useState<ManagerLanguageRecord | null>(null)
   const [deleteLanguage, setDeleteLanguage] =
     useState<ManagerLanguageRecord | null>(null)
@@ -23,7 +24,7 @@ export const ManagerSettingsLanguagesScreen = () => {
     name: 'manager.list',
     input: {
       contentType: 'Language',
-      query: { options: { limit: 10, page } },
+      query: { options: { limit: itemsPerPage, page } },
     },
   })
   const setDefaultLanguage = useManagerMutation('manager.setDefaultLanguage')
@@ -78,7 +79,8 @@ export const ManagerSettingsLanguagesScreen = () => {
         page={page}
         setPage={setPage}
         totalItems={data.totalItems}
-        itemsPerPage={10}
+        itemsPerPage={itemsPerPage}
+        setItemsPerPage={setItemsPerPage}
       />
     </div>
   )

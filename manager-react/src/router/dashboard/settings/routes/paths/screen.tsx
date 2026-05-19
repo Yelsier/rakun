@@ -28,6 +28,7 @@ import { useSession } from '@/state/session'
 export const ManagerSettingsRoutePathsScreen = () => {
   const { hasPermissions } = useSession()
   const [page, setPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [sorting, setSorting] = useState<SortingState>([])
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -49,7 +50,7 @@ export const ManagerSettingsRoutePathsScreen = () => {
             }
           : undefined,
         options: {
-          limit: 10,
+          limit: itemsPerPage,
           page,
           sort: transformSortingState(sorting),
         },
@@ -124,7 +125,8 @@ export const ManagerSettingsRoutePathsScreen = () => {
         page={page}
         setPage={setPage}
         totalItems={listQuery.data.totalItems}
-        itemsPerPage={10}
+        itemsPerPage={itemsPerPage}
+        setItemsPerPage={setItemsPerPage}
       />
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent aria-describedby='Confirm action'>
