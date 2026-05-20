@@ -7,6 +7,7 @@ type EncodedField = {
   isRequired: ReturnType<AnyField["getIsRequired"]>;
   isTranslatable: ReturnType<AnyField["getIsTranslatable"]>;
   visibility: ReturnType<AnyField["getVisibility"]>;
+  condition: ReturnType<AnyField["getCondition"]>;
 } & Record<string, unknown>;
 
 const registry: Record<string, ContentType> = {};
@@ -62,6 +63,7 @@ const removeSchemaFromField = (field: AnyField): EncodedField => {
     isRequired: field.getIsRequired(),
     isTranslatable: field.getIsTranslatable(),
     visibility: field.getVisibility(),
+    condition: field.getCondition(),
   } satisfies EncodedField;
 
   if (field.meta.ui === "ContentType" && "contentType" in field) {

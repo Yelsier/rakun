@@ -1,6 +1,7 @@
-import React, { useImperativeHandle } from 'react'
+import React, { useEffect, useImperativeHandle } from 'react'
 
 import type { FieldRef } from '../../ContentTypeEdit'
+import { useConditionFieldState } from './condition-state'
 
 interface FieldWrapperProps {
   id: string
@@ -19,6 +20,8 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({
   children,
   ref,
 }) => {
+  const conditionFieldState = useConditionFieldState()
+
   useImperativeHandle(
     ref,
     (): FieldRef => ({
@@ -26,6 +29,10 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({
       getState,
     }),
   )
+
+  useEffect(() => {
+    conditionFieldState?.onFieldStateChange(id, getState())
+  })
 
   const error = errors.find((e) => e.id === id)?.error
 

@@ -1,7 +1,14 @@
 'use client'
 
 import { ChevronsUpDown, Languages, Shield } from 'lucide-react'
-import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react'
+import {
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import type { EncodedContentType } from '@rakun-kit/core/client'
 import { EncodedFieldUnknown, FieldType } from '@rakun-kit/core/client'
 import { EncodedRelationField } from '@rakun-kit/core/client'
@@ -17,6 +24,8 @@ import RelationField from './_fields/RelationField'
 import StringField from './_fields/StringField'
 import SelectField from './_fields/Select'
 import { FieldValue } from './_fields/shared'
+import { evaluateFieldCondition } from './_fields/shared/condition'
+import { ConditionFieldStateProvider } from './_fields/shared/condition-state'
 import { errorStyle } from './edit'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,6 +37,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { Button } from '@/components/ui/button'
+import { deepEqual } from '@/helpers/deepEqual'
 
 const defaultDataExtractor = (
   fieldName: string,
@@ -99,12 +109,58 @@ const ContentTypeEdit = forwardRef<
   const { refs, setRef } = useArrayRefs<FieldRef>()
   const errors = useEditErrorStore((state) => state.errors)
   const addError = useEditErrorStore((state) => state.addError)
-  const visibleItems = useMemo(
+  const formStateInitialValue = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.keys(contentType.fields).map((fieldName) => [
+          fieldName,
+          defaultDataExtractor(fieldName, props.defaultData),
+        ]),
+      ) as Record<string, unknown>,
+    [contentType.fields, props.defaultData],
+  )
+  const [formState, setFormState] = useState(formStateInitialValue)
+  const allItems = useMemo(
     () =>
       Object.entries(contentType.fields).filter(
         ([_, fieldValue]) => !(fieldValue.visibility === 'api'),
       ),
     [contentType.fields],
+  )
+  const visibleItems = useMemo(
+    () =>
+      allItems.filter(([, fieldValue]) =>
+        evaluateFieldCondition(fieldValue.condition, formState),
+      ),
+    [allItems, formState],
+  )
+  const visibleFieldNames = useMemo(
+    () => new Set(visibleItems.map(([fieldName]) => fieldName)),
+    [visibleItems],
+  )
+  const handleFieldStateChange = useCallback(
+    (fieldId: string, state: unknown) => {
+      const prefix = `${id}.`
+      const fieldName = fieldId.startsWith(prefix)
+        ? fieldId.slice(prefix.length)
+        : fieldId
+
+      if (fieldName.includes('.')) {
+        return
+      }
+
+      setFormState((previous) => {
+        if (deepEqual(previous[fieldName], state)) {
+          return previous
+        }
+
+        return {
+          ...previous,
+          [fieldName]: state,
+        }
+      })
+    },
+    [id],
   )
 
   useImperativeHandle(
@@ -112,10 +168,13 @@ const ContentTypeEdit = forwardRef<
     (): FieldRef => ({
       getValue: () => {
         const values = Object.fromEntries(
-          visibleItems.map(([fieldName], i) => [
-            fieldName,
-            refs.current[i]?.getValue(),
-          ]),
+          allItems.map(([fieldName], i) => {
+            if (!visibleFieldNames.has(fieldName)) {
+              return [fieldName, null]
+            }
+
+            return [fieldName, refs.current[i]?.getValue()]
+          }),
         )
 
         if (Object.values(values).some(hasNestedError)) {
@@ -128,97 +187,110 @@ const ContentTypeEdit = forwardRef<
       },
       getState: () => {
         const states = Object.fromEntries(
-          visibleItems.map(([fieldName], i) => [
-            fieldName,
-            refs.current[i]?.getState(),
-          ]),
+          allItems.map(([fieldName], i) => {
+            if (!visibleFieldNames.has(fieldName)) {
+              return [fieldName, formState[fieldName]]
+            }
+
+            return [fieldName, refs.current[i]?.getState()]
+          }),
         )
         return states
       },
     }),
-    [addError, contentType.name, id, visibleItems],
+    [addError, allItems, contentType.name, formState, id, visibleFieldNames],
   )
 
   return (
-    <div className='flex flex-1 flex-col gap-8 mx-auto w-full'>
-      {visibleItems.map(([fieldName, fieldValue], i) => {
-        const error = errors.find((e) => e.id === id + '.' + fieldName)?.error
-        const FieldComponent = fieldsMap[
-          fieldValue.config.type
-        ] as FieldComponent
-        const field = (
-          <FieldComponent
-            id={id + '.' + fieldName}
-            ref={setRef(i)}
-            {...fieldValue}
-            defaultData={defaultDataExtractor(fieldName, props.defaultData)}
-          />
-        )
+    <ConditionFieldStateProvider
+      value={{ onFieldStateChange: handleFieldStateChange }}
+    >
+      <div className='flex flex-1 flex-col gap-8 mx-auto w-full'>
+        {allItems.map(([fieldName, fieldValue], i) => {
+          const isVisible = visibleFieldNames.has(fieldName)
 
-        const Tags = () => (
-          <div className='flex items-center gap-2'>
-            {fieldValue.isTranslatable && <Languages size={16} />}
-            {fieldValue.isRequired && <Shield size={16} />}
-          </div>
-        )
+          if (!isVisible) {
+            return null
+          }
 
-        const canCollapse =
-          fieldValue.config.ui === 'ContentType' &&
-          (fieldValue as EncodedRelationField).only === 'new' &&
-          collapsible
-
-        if (canCollapse) {
-          return (
-            <Collapsible defaultOpen key={fieldName}>
-              <Card className={errorStyle({ error: !!error })}>
-                <CardHeader className='gap-0'>
-                  <CollapsibleTrigger>
-                    <div className='flex justify-between items-center cursor-pointer'>
-                      <CardTitle className='flex items-center gap-2 '>
-                        <Button
-                          variant='ghost'
-                          size='icon'
-                          className='size-8'
-                          asChild
-                        >
-                          <div>
-                            <ChevronsUpDown />
-                            <span className='sr-only'>Toggle</span>
-                          </div>
-                        </Button>
-                        {decodeCamelCase(fieldName)}
-                      </CardTitle>
-                      <Tags />
-                    </div>
-                  </CollapsibleTrigger>
-                </CardHeader>
-                <CollapsibleContent
-                  forceMount
-                  className='data-[state=closed]:hidden'
-                >
-                  <CardContent>{field}</CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
+          const error = errors.find((e) => e.id === id + '.' + fieldName)?.error
+          const FieldComponent = fieldsMap[
+            fieldValue.config.type
+          ] as FieldComponent
+          const field = (
+            <FieldComponent
+              id={id + '.' + fieldName}
+              ref={setRef(i)}
+              {...fieldValue}
+              defaultData={defaultDataExtractor(fieldName, props.defaultData)}
+            />
           )
-        }
 
-        return (
-          <div
-            key={fieldName}
-            className={canCollapse ? 'bg-red-600' : undefined}
-          >
-            {hideTitle ? null : (
-              <CardTitle className='flex justify-between items-center gap-2 mb-4'>
-                {decodeCamelCase(fieldName)}
-                <Tags />
-              </CardTitle>
-            )}
-            {field}
-          </div>
-        )
-      })}
-    </div>
+          const Tags = () => (
+            <div className='flex items-center gap-2'>
+              {fieldValue.isTranslatable && <Languages size={16} />}
+              {fieldValue.isRequired && <Shield size={16} />}
+            </div>
+          )
+
+          const canCollapse =
+            fieldValue.config.ui === 'ContentType' &&
+            (fieldValue as EncodedRelationField).only === 'new' &&
+            collapsible
+
+          if (canCollapse) {
+            return (
+              <Collapsible defaultOpen key={fieldName}>
+                <Card className={errorStyle({ error: !!error })}>
+                  <CardHeader className='gap-0'>
+                    <CollapsibleTrigger>
+                      <div className='flex justify-between items-center cursor-pointer'>
+                        <CardTitle className='flex items-center gap-2 '>
+                          <Button
+                            variant='ghost'
+                            size='icon'
+                            className='size-8'
+                            asChild
+                          >
+                            <div>
+                              <ChevronsUpDown />
+                              <span className='sr-only'>Toggle</span>
+                            </div>
+                          </Button>
+                          {decodeCamelCase(fieldName)}
+                        </CardTitle>
+                        <Tags />
+                      </div>
+                    </CollapsibleTrigger>
+                  </CardHeader>
+                  <CollapsibleContent
+                    forceMount
+                    className='data-[state=closed]:hidden'
+                  >
+                    <CardContent>{field}</CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            )
+          }
+
+          return (
+            <div
+              key={fieldName}
+              className={canCollapse ? 'bg-red-600' : undefined}
+            >
+              {hideTitle ? null : (
+                <CardTitle className='flex justify-between items-center gap-2 mb-4'>
+                  {decodeCamelCase(fieldName)}
+                  <Tags />
+                </CardTitle>
+              )}
+              {field}
+            </div>
+          )
+        })}
+      </div>
+    </ConditionFieldStateProvider>
   )
 })
 

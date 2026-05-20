@@ -3,6 +3,7 @@ import z from "zod";
 import type {
   AnyField,
   EncodedFieldUnknown,
+  FieldCondition,
   InferDb,
   InferInput,
   InferOutput,
@@ -251,7 +252,14 @@ export default class ContentType<
   }
 
   getInputSchema() {
-    return z.object({
+    return this.buildInputSchema(false) as unknown as z.ZodType<
+      ContentTypeInputShape<F, N>,
+      ContentTypeInputShape<F, N>
+    >;
+  }
+
+  private buildInputSchema(partial: boolean) {
+    const schema = z.object({
       ...this.fieldSchemas("input"),
       _type: z.literal(this.name),
       _schemaVersion: z.number().optional(),
@@ -261,10 +269,13 @@ export default class ContentType<
       _revision: z.number().optional(),
       createdBy: z.string().optional(),
       updatedBy: z.string().optional(),
-    }) as unknown as z.ZodType<
-      ContentTypeInputShape<F, N>,
-      ContentTypeInputShape<F, N>
-    >;
+    });
+
+    const inputSchema = partial ? schema.partial() : schema;
+
+    return inputSchema.superRefine((value, ctx) => {
+      this.refineConditionalRequiredFields(value, ctx, partial);
+    });
   }
 
   getSchema() {
@@ -349,9 +360,7 @@ export default class ContentType<
   }
 
   partialValidate(data: unknown) {
-    return (this.getInputSchema() as unknown as z.ZodObject<any>)
-      .partial()
-      .parse(data);
+    return this.buildInputSchema(true).parse(data);
   }
 
   validateOutput(data: unknown) {
@@ -462,6 +471,98 @@ export default class ContentType<
       return field;
     }) as F;
   }
+
+  private refineConditionalRequiredFields(
+    data: Record<string, unknown>,
+    ctx: z.RefinementCtx,
+    partial: boolean,
+  ) {
+    for (const [key, field] of Object.entries(this.fields)) {
+      const condition = field.getCondition();
+
+      if (!condition || !field.getIsRequired()) {
+        continue;
+      }
+
+      if (partial && !(condition.field in data)) {
+        continue;
+      }
+
+      if (!evaluateFieldCondition(condition, data)) {
+        continue;
+      }
+
+      const value = data[key];
+
+      if (value === null || value === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Required conditional field is missing",
+          path: [key],
+        });
+      }
+    }
+  }
+}
+
+function evaluateFieldCondition(
+  condition: FieldCondition,
+  data: Record<string, unknown>,
+) {
+  const value = data[condition.field];
+
+  if ("equals" in condition) {
+    return value === condition.equals;
+  }
+
+  if ("notEquals" in condition) {
+    return value !== condition.notEquals;
+  }
+
+  if ("gt" in condition) {
+    return typeof value === "number" && value > condition.gt;
+  }
+
+  if ("gte" in condition) {
+    return typeof value === "number" && value >= condition.gte;
+  }
+
+  if ("lt" in condition) {
+    return typeof value === "number" && value < condition.lt;
+  }
+
+  if ("lte" in condition) {
+    return typeof value === "number" && value <= condition.lte;
+  }
+
+  if ("includes" in condition) {
+    return Array.isArray(value) && value.includes(condition.includes);
+  }
+
+  if ("notIncludes" in condition) {
+    return Array.isArray(value) && !value.includes(condition.notIncludes);
+  }
+
+  if ("length" in condition) {
+    if (!Array.isArray(value) && typeof value !== "string") {
+      return false;
+    }
+
+    const { length } = value;
+    const checks = condition.length;
+
+    return (
+      (checks.equals === undefined || length === checks.equals) &&
+      (checks.gt === undefined || length > checks.gt) &&
+      (checks.gte === undefined || length >= checks.gte) &&
+      (checks.lt === undefined || length < checks.lt) &&
+      (checks.lte === undefined || length <= checks.lte)
+    );
+  }
+
+  return condition.exists
+    ? value !== undefined && value !== null
+    : value === undefined || value === null;
 }
 
 function getFieldSchema(

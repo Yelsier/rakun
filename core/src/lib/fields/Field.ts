@@ -59,23 +59,76 @@ export type FieldType = z.infer<typeof FieldType>;
 
 export type Visibility = "all" | "api" | "manager";
 
+export const FieldCondition = z.union([
+  z.object({
+    field: z.string(),
+    equals: z.unknown(),
+  }),
+  z.object({
+    field: z.string(),
+    notEquals: z.unknown(),
+  }),
+  z.object({
+    field: z.string(),
+    exists: z.boolean(),
+  }),
+  z.object({
+    field: z.string(),
+    gt: z.number(),
+  }),
+  z.object({
+    field: z.string(),
+    gte: z.number(),
+  }),
+  z.object({
+    field: z.string(),
+    lt: z.number(),
+  }),
+  z.object({
+    field: z.string(),
+    lte: z.number(),
+  }),
+  z.object({
+    field: z.string(),
+    includes: z.unknown(),
+  }),
+  z.object({
+    field: z.string(),
+    notIncludes: z.unknown(),
+  }),
+  z.object({
+    field: z.string(),
+    length: z.object({
+      equals: z.number().int().nonnegative().optional(),
+      gt: z.number().int().nonnegative().optional(),
+      gte: z.number().int().nonnegative().optional(),
+      lt: z.number().int().nonnegative().optional(),
+      lte: z.number().int().nonnegative().optional(),
+    }),
+  }),
+]);
+
+export type FieldCondition = z.infer<typeof FieldCondition>;
+
 export type FieldState = {
   required: boolean;
   translatable: boolean;
   visibility: Visibility;
+  condition?: FieldCondition;
 };
 
 export type DefaultFieldState = {
   required: false;
   translatable: false;
   visibility: "all";
+  condition?: undefined;
 };
 
-export const defaultFieldState = {
+export const defaultFieldState: DefaultFieldState = {
   required: false,
   translatable: false,
   visibility: "all",
-} as const satisfies DefaultFieldState;
+};
 
 export type SetRequired<State extends FieldState> = Omit<State, "required"> & {
   required: true;
@@ -95,6 +148,13 @@ export type SetVisibility<
   visibility: V;
 };
 
+export type SetCondition<
+  State extends FieldState,
+  Condition extends FieldCondition,
+> = Omit<State, "condition"> & {
+  condition: Condition;
+};
+
 export type TranslatableValue<Value> = {
   _tag: "Translatable";
   [key: string]: Value | "Translatable";
@@ -104,7 +164,11 @@ type MaybeTranslatable<Value, State extends FieldState> =
   State["translatable"] extends true ? TranslatableValue<Value> : Value;
 
 type MaybeInput<Value, State extends FieldState> =
-  State["required"] extends true ? Value : Value | null | undefined;
+  State["condition"] extends FieldCondition
+    ? Value | null | undefined
+    : State["required"] extends true
+      ? Value
+      : Value | null | undefined;
 
 type MaybeOutput<Value, State extends FieldState> =
   State["required"] extends true ? Value : Value | undefined;
@@ -149,6 +213,7 @@ export type FieldLike<
   getIsRequired: () => State["required"];
   getIsTranslatable: () => State["translatable"];
   getVisibility: () => State["visibility"];
+  getCondition: () => State["condition"];
 };
 
 type FieldModifierKeys =
@@ -156,6 +221,7 @@ type FieldModifierKeys =
   | "translatable"
   | "apiOnly"
   | "managerOnly"
+  | "condition"
   | "getPopulatedSchema";
 
 export type FieldValueOf<F> =
@@ -179,7 +245,7 @@ export type FieldMetaOf<F> =
     : never;
 
 export type FieldStateOf<F> =
-  F extends { readonly __fieldTypes?: { state: infer State } }
+  F extends { readonly __fieldTypes?: { state: infer State extends FieldState } }
     ? State
     : never;
 
@@ -221,6 +287,9 @@ export type FieldWithModifiers<F extends AnyFieldLike> = F & {
     F,
     SetVisibility<FieldStateOf<F>, "manager">
   >;
+  condition: <Condition extends FieldCondition>(
+    condition: Condition,
+  ) => WithFieldState<F, SetCondition<FieldStateOf<F>, Condition>>;
 };
 
 export type AnyField = FieldWithModifiers<AnyFieldLike>;
@@ -235,6 +304,7 @@ export type EncodedField = {
   isRequired: boolean;
   isTranslatable: boolean;
   visibility: Visibility;
+  condition?: FieldCondition;
 };
 
 export type EncodedFieldUnknown =
@@ -310,6 +380,7 @@ export function createField<
     getIsRequired: () => params.state.required,
     getIsTranslatable: () => params.state.translatable,
     getVisibility: () => params.state.visibility,
+    getCondition: () => params.state.condition,
     getInputSchema: () =>
       applyManagerVisibility(
         applyInputPresence(
@@ -372,6 +443,11 @@ export function withFieldModifiers<F extends AnyFieldLike>(params: {
         ...field.state,
         visibility: "manager",
       } as SetVisibility<FieldStateOf<F>, "manager">),
+    condition: (condition) =>
+      rebuild({
+        ...field.state,
+        condition,
+      } as SetCondition<FieldStateOf<F>, typeof condition>),
   };
 }
 
@@ -391,6 +467,10 @@ function applyTranslatable<Value>(
 }
 
 function applyInputPresence(schema: z.ZodTypeAny, state: FieldState) {
+  if (state.condition) {
+    return schema.nullish();
+  }
+
   return state.required ? schema : schema.nullish();
 }
 

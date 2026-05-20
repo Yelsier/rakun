@@ -80,10 +80,43 @@ export const Article = new ContentType({
   listFields: ["title", "slug", "published", "author.name"],
 });
 
+export const ConditionalDemo = new ContentType({
+  name: "ConditionalDemo",
+  menu: {
+    title: "Conditional demos",
+    icon: "ListChecks",
+    category: "Development",
+  },
+  fields: {
+    title: Fields.string().required(),
+    intent: Fields.select(["basic", "advanced", "experimental"] as const).required(),
+    advancedEnabled: Fields.boolean().condition({
+      field: "intent",
+      equals: "advanced",
+    }),
+    priority: Fields.number(),
+    priorityNotes: Fields.string().type("Textarea").condition({
+      field: "priority",
+      gte: 5,
+    }),
+    flags: Fields.select(["featured", "sponsored", "archived"] as const).multiple(),
+    featuredLabel: Fields.string().condition({
+      field: "flags",
+      includes: "featured",
+    }),
+    multiFlagSummary: Fields.string().type("Textarea").condition({
+      field: "flags",
+      length: { gte: 2 },
+    }),
+  },
+  listFields: ["title", "intent", "priority"],
+});
+
 export const previewContentTypes = [
   Header,
   Footer,
   PageSection,
   Author,
   Article,
+  ConditionalDemo,
 ];
