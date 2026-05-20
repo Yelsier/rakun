@@ -260,10 +260,16 @@ export {
 export type { MaybeTranslatableValue, TranslatableValue } from "./lib/types";
 export { getListField } from "./lib/utils/getListField";
 export { getTranslation } from "./lib/utils/getTranslation";
+export { encodeContentTypeForManager } from "./lib/Registry";
 export { Id, isId, type Id as IdType } from "./lib/utils/id";
 export { isTranslatableObject } from "./lib/utils/isTranslatableObject";
 export { slugify } from "./lib/utils/slugify";
-export { Language, ManagerUser, Seo } from "./internal-content-types";
+export {
+  Language,
+  ManagerUser,
+  Seo,
+  SeoSettings,
+} from "./internal-content-types";
 export type { LanguageSchema } from "./internal-content-types/Language";
 export type { ManagerUserSchema } from "./internal-content-types/ManagerUser";
 export type { EncodedContentType } from "./lib/ContentType";

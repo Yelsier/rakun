@@ -35,7 +35,7 @@ export function getContentTypes() {
   return Object.values(registry).concat(Object.values(internalRegistry));
 }
 
-const removeSchemaFromCT = <T extends ContentType>(ct: T) => {
+export const encodeContentTypeForManager = <T extends ContentType>(ct: T) => {
   return {
     name: ct.name,
     menu: ct.menu,
@@ -69,7 +69,9 @@ const removeSchemaFromField = (field: AnyField): EncodedField => {
   if (field.meta.ui === "ContentType" && "contentType" in field) {
     return {
       ...base,
-      contentType: removeSchemaFromCT(field.contentType as ContentType),
+      contentType: encodeContentTypeForManager(
+        field.contentType as ContentType,
+      ),
     };
   }
 
@@ -128,7 +130,7 @@ function isField(value: unknown): value is AnyField {
 
 export function getContentTypesForManager() {
   return getContentTypes()
-    .map((ct) => removeSchemaFromCT(ct))
+    .map((ct) => encodeContentTypeForManager(ct))
     .filter((ct) => !ct.isHiddenFromManager);
 }
 

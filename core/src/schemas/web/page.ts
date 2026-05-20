@@ -15,6 +15,15 @@ export const pageModule = z
   })
   .catchall(z.unknown());
 
+export const pageSeoOutput = z.intersection(
+  Seo.getOutputSchema(),
+  z.object({
+    siteName: z.string().optional(),
+    siteUrl: z.string().optional(),
+    twitterSite: z.string().optional(),
+  }),
+);
+
 export const pageOutput = z.object({
   renderMode: z.enum(["static", "dynamic"]),
   ttl: z.number().optional(),
@@ -34,7 +43,7 @@ export const pageOutput = z.object({
       ]),
     )
     .optional(),
-  seo: Seo.getOutputSchema().optional(),
+  seo: pageSeoOutput.optional(),
   language: Language.getOutputSchema().optional(),
   info: z.record(z.string(), z.unknown()).optional(),
   redirect: z
@@ -47,4 +56,5 @@ export const pageOutput = z.object({
 
 export type PageInput = z.infer<typeof pageInput>;
 export type PageOutput = z.infer<typeof pageOutput>;
+export type PageSeoOutput = z.infer<typeof pageSeoOutput>;
 export type PageModule = z.infer<typeof pageModule>;

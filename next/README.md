@@ -77,6 +77,7 @@ Fetch Rakun page data from a Next Server Component with `@rakun-kit/next/web`:
 ```tsx
 // app/[[...slug]]/page.tsx
 import {
+  createRakunPageMetadata,
   getRakunPage,
   getRakunPathFromParams,
   RakunPageRenderer,
@@ -88,6 +89,16 @@ type Props = {
   params: Promise<RakunNextPageParams>;
   searchParams: Promise<RakunNextPageSearchParams>;
 };
+
+export async function generateMetadata({ params, searchParams }: Props) {
+  const page = await getRakunPage({
+    path: getRakunPathFromParams({ params: await params }),
+    search: await searchParams,
+    apiBaseUrl: "/api/rakun",
+  });
+
+  return createRakunPageMetadata(page);
+}
 
 export default async function Page({ params, searchParams }: Props) {
   const page = await getRakunPage({

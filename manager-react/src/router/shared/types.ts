@@ -22,6 +22,7 @@ export type ManagerResolvedRoute =
   | { kind: "settings-literals" }
   | { kind: "settings-redirects" }
   | { kind: "settings-robots" }
+  | { kind: "settings-seo" }
   | { kind: "content-list"; contentType: string }
   | { kind: "content-create"; contentType: string }
   | { kind: "content-edit"; contentType: string; id: string }

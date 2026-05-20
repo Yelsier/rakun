@@ -1,0 +1,1 @@
+export { ManagerSettingsSeoScreen } from './screen'

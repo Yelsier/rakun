@@ -5,7 +5,7 @@ import {
   RouteLayoutModuleOverride,
   Language,
   LiteralTranslation,
-  SeoSchema,
+  SeoSettings,
 } from "../../../internal-content-types";
 import { throwAppError } from "../../../lib/errors";
 import { Logger } from "../../../lib/Logger";
@@ -13,13 +13,18 @@ import { getContentTypeByName } from "../../../lib/Registry";
 import { translateObject } from "../../../lib/utils/translateObject";
 import { getLiteralDefinitions } from "../../../literals";
 import { getMongoService } from "../../../orm";
-import { PageOutput, PageInput, PageModule } from "../../../schemas/web/page";
+import {
+  PageOutput,
+  PageInput,
+  PageModule,
+} from "../../../schemas/web/page";
 import { ProxyOutput } from "../../proxies";
 import { runProxyContext, ProxyContext } from "../../proxies/context";
 import { getLanguages } from "../../utils/getLanguages";
 import { populateRelations } from "../../utils/populates/populateRelations";
 import { resolveRedirect } from "../../utils/redirects/resolveRedirect";
 import { validateModule } from "../../utils/validateModule";
+import { resolveSeo } from "./seo";
 
 const NotFoundResponse: PageOutput = {
   renderMode: "static",
@@ -124,11 +129,8 @@ export const getPage = async (input: PageInput): Promise<PageOutput> => {
 
     Logger.addTrace("web.page: output proxied");
 
-    const populatedTranslated = translateObject(
-      proxied,
-      language,
-      await getLanguages(),
-    );
+    const languages = await getLanguages();
+    const populatedTranslated = translateObject(proxied, language, languages);
     Logger.addTrace("web.page: content translated");
 
     const localeCode = language?.code || "en";
@@ -159,6 +161,25 @@ export const getPage = async (input: PageInput): Promise<PageOutput> => {
     const { [route.iterator]: modules, ...rest } = populatedTranslated;
 
     const { seo, ...info } = rest;
+    const seoSettingsRaw = await db.find(SeoSettings, {
+      key: "default",
+    });
+    const seoSettings = seoSettingsRaw
+      ? translateObject(
+          await populateRelations(seoSettingsRaw),
+          language,
+          languages,
+        )
+      : null;
+    const seoSettingsRecord = seoSettings as Record<string, unknown> | null;
+    const resolvedSeo = resolveSeo({
+      pageSeo: seo as Record<string, unknown> | undefined,
+      defaultSeo: seoSettingsRecord?.defaultSeo as
+        | Record<string, unknown>
+        | undefined,
+      settings: seoSettingsRecord,
+      path,
+    });
 
     const layoutModuleSelections = (
       await db.list(RouteLayoutModule, {
@@ -204,7 +225,7 @@ export const getPage = async (input: PageInput): Promise<PageOutput> => {
           const layoutTranslated = translateObject(
             layoutProxied,
             language,
-            await getLanguages(),
+            languages,
           );
 
           return [
@@ -255,7 +276,7 @@ export const getPage = async (input: PageInput): Promise<PageOutput> => {
           ttl: route.dynamic ? undefined : 86400,
           modules: contentModules,
           language,
-          seo: seo as SeoSchema,
+          seo: resolvedSeo,
           layout,
           info: {
             ...info,
