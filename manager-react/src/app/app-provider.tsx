@@ -8,6 +8,7 @@ import type { LanguageSchema, ManagerUserSchema } from '@rakun-kit/core/client'
 import { toast } from 'sonner'
 
 import { ManagerLinkProvider, type ManagerLinkComponent } from '@/link'
+import { renderDefaultManagerMediaPicker } from '@/app/media-picker'
 import { LanguageProvider } from '@/state/language'
 import {
   ManagerMediaProvider,
@@ -183,13 +184,11 @@ export const ManagerAppProvider = ({
       <ManagerProvider client={client}>
         <ManagerNavigationProvider navigation={navigation}>
           <ManagerLinkProvider component={linkComponent}>
-            {renderMediaPicker ? (
-              <ManagerMediaProvider renderPicker={renderMediaPicker}>
-                {content}
-              </ManagerMediaProvider>
-            ) : (
-              content
-            )}
+            <ManagerMediaProvider
+              renderPicker={renderMediaPicker ?? renderDefaultManagerMediaPicker}
+            >
+              {content}
+            </ManagerMediaProvider>
           </ManagerLinkProvider>
         </ManagerNavigationProvider>
       </ManagerProvider>

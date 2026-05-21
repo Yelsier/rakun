@@ -24,6 +24,11 @@ import { LanguageProvider } from "@/state/language";
 import { ManagerRootProviders } from "@/app/root-providers";
 import { ManagerLoadingFallback } from "@/components/manager-loading-fallback";
 import { ManagerLinkProvider, type ManagerLinkComponent } from "@/link";
+import { renderDefaultManagerMediaPicker } from "@/app/media-picker";
+import {
+  ManagerMediaProvider,
+  type ManagerMediaPickerRenderArgs,
+} from "@/media";
 import type { ManagerAppOverrides } from "../router";
 
 type BootstrapState =
@@ -56,6 +61,7 @@ export type ManagerRuntimeAppProps = {
   errorFallback?: (message: string) => ReactNode;
   overrides?: ManagerAppOverrides;
   linkComponent?: ManagerLinkComponent;
+  renderMediaPicker?: (args: ManagerMediaPickerRenderArgs) => ReactNode;
 };
 
 export type ManagerBrowserAppProps = Omit<
@@ -77,6 +83,7 @@ export const ManagerRuntimeApp = ({
   errorFallback,
   overrides,
   linkComponent,
+  renderMediaPicker,
 }: ManagerRuntimeAppProps) => {
   const queryClient = useMemo(() => createManagerQueryClient(), []);
   const scopedNavigation = useMemo<ManagerNavigation>(
@@ -147,48 +154,56 @@ export const ManagerRuntimeApp = ({
         <ManagerProvider client={client}>
           <ManagerNavigationProvider navigation={scopedNavigation}>
             <ManagerLinkProvider component={linkComponent}>
-              {state.status === "loading" ? (
-                <>{loadingFallback ?? <ManagerLoadingFallback />}</>
-              ) : null}
+              <ManagerMediaProvider
+                renderPicker={
+                  renderMediaPicker ?? renderDefaultManagerMediaPicker
+                }
+              >
+                {state.status === "loading" ? (
+                  <>{loadingFallback ?? <ManagerLoadingFallback />}</>
+                ) : null}
 
-              {state.status === "error" ? (
-                <>
-                  {errorFallback?.(state.message) ?? (
-                    <div className="p-6">Bootstrap failed: {state.message}</div>
-                  )}
-                </>
-              ) : null}
+                {state.status === "error" ? (
+                  <>
+                    {errorFallback?.(state.message) ?? (
+                      <div className="p-6">
+                        Bootstrap failed: {state.message}
+                      </div>
+                    )}
+                  </>
+                ) : null}
 
-              {state.status === "unauthenticated" ? (
-                <>
-                  {unauthenticatedFallback ?? (
-                    <ManagerApp
-                      pathname={pathname}
-                      basePath={basePath}
-                      searchParams={searchParams}
-                      {...overrides}
-                    />
-                  )}
-                </>
-              ) : null}
+                {state.status === "unauthenticated" ? (
+                  <>
+                    {unauthenticatedFallback ?? (
+                      <ManagerApp
+                        pathname={pathname}
+                        basePath={basePath}
+                        searchParams={searchParams}
+                        {...overrides}
+                      />
+                    )}
+                  </>
+                ) : null}
 
-              {state.status === "ready" ? (
-                <SessionProvider initialUser={state.user}>
-                  <LanguageProvider
-                    languages={state.languages}
-                    initialLanguage={state.initialLanguage}
-                  >
-                    <ManagerApp
-                      pathname={pathname}
-                      basePath={basePath}
-                      searchParams={searchParams}
-                      contentTypes={state.contentTypes}
-                      authenticated
-                      {...overrides}
-                    />
-                  </LanguageProvider>
-                </SessionProvider>
-              ) : null}
+                {state.status === "ready" ? (
+                  <SessionProvider initialUser={state.user}>
+                    <LanguageProvider
+                      languages={state.languages}
+                      initialLanguage={state.initialLanguage}
+                    >
+                      <ManagerApp
+                        pathname={pathname}
+                        basePath={basePath}
+                        searchParams={searchParams}
+                        contentTypes={state.contentTypes}
+                        authenticated
+                        {...overrides}
+                      />
+                    </LanguageProvider>
+                  </SessionProvider>
+                ) : null}
+              </ManagerMediaProvider>
             </ManagerLinkProvider>
           </ManagerNavigationProvider>
         </ManagerProvider>
