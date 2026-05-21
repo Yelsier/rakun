@@ -1,5 +1,5 @@
 import { headers as nextHeaders } from "next/headers";
-import type { MetadataRoute } from "next";
+import type { Metadata, MetadataRoute } from "next";
 import type {
   PageOutput,
   RobotsOutput,
@@ -78,6 +78,14 @@ export type GetRakunPathFromParamsOptions = {
   params: RakunNextPageParams;
   paramKey?: string;
   basePath?: string;
+};
+
+type RakunMetadataImage = {
+  url?: string;
+  width?: number | null;
+  height?: number | null;
+  alt?: string | null;
+  title?: string;
 };
 
 const defaultApiBaseUrl = "/api/rakun";
@@ -249,6 +257,83 @@ export const getRakunPage = async ({
   }
 
   return (await response.json()) as PageOutput;
+};
+
+const isRakunMetadataImage = (value: unknown): value is RakunMetadataImage =>
+  !!value &&
+  typeof value === "object" &&
+  "url" in value &&
+  typeof (value as RakunMetadataImage).url === "string";
+
+const createMetadataImage = (
+  image: unknown,
+  alt?: string,
+):
+  | {
+      url: string;
+      width?: number;
+      height?: number;
+      alt?: string;
+    }
+  | undefined => {
+  if (!isRakunMetadataImage(image) || !image.url) {
+    return undefined;
+  }
+
+  return {
+    url: image.url,
+    width: image.width ?? undefined,
+    height: image.height ?? undefined,
+    alt: alt || image.alt || image.title || undefined,
+  };
+};
+
+export const createRakunPageMetadata = (page: PageOutput): Metadata => {
+  const seo = page.seo;
+
+  if (!seo) return {};
+
+  const metadata: Metadata = {};
+  const openGraphImage = createMetadataImage(
+    seo.openGraphImage ?? seo.image,
+    seo.openGraphImageAlt ?? seo.imageAlt,
+  );
+  const twitterImage = createMetadataImage(
+    seo.twitterImage ?? seo.image,
+    seo.twitterImageAlt ?? seo.imageAlt,
+  );
+
+  if (seo.title) metadata.title = seo.title;
+  if (seo.description) metadata.description = seo.description;
+  if (seo.canonicalUrl) {
+    metadata.alternates = {
+      canonical: seo.canonicalUrl,
+    };
+  }
+  if (seo.noIndex) {
+    metadata.robots = {
+      index: false,
+    };
+  }
+
+  metadata.openGraph = {
+    title: seo.openGraphTitle ?? seo.title,
+    description: seo.openGraphDescription ?? seo.description,
+    url: seo.openGraphUrl ?? seo.canonicalUrl,
+    siteName: seo.openGraphSiteName ?? seo.siteName,
+    type: seo.openGraphType ?? "website",
+    images: openGraphImage ? [openGraphImage] : undefined,
+  } as NonNullable<Metadata["openGraph"]>;
+
+  metadata.twitter = {
+    card: seo.twitterCard ?? (twitterImage ? "summary_large_image" : "summary"),
+    site: seo.twitterSite,
+    title: seo.twitterTitle ?? seo.title,
+    description: seo.twitterDescription ?? seo.description,
+    images: twitterImage ? [twitterImage] : undefined,
+  } as NonNullable<Metadata["twitter"]>;
+
+  return metadata;
 };
 
 export const getRakunSitemap = async ({

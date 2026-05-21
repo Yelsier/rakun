@@ -17,6 +17,7 @@ export * from "./RouteMap";
 export * from "./RouteSettings";
 export * from "./SchemaState";
 export * from "./Seo";
+export * from "./SeoSettings";
 export * from "./Session";
 export * from "./UserMfa";
 export * from "./WebAuthnCredential";

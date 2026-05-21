@@ -25,6 +25,7 @@ export { getTranslation } from "./lib/utils/getTranslation";
 export { Id, isId, type Id as IdType } from "./lib/utils/id";
 export { isTranslatableObject } from "./lib/utils/isTranslatableObject";
 export { slugify } from "./lib/utils/slugify";
+export { encodeContentTypeForManager } from "./lib/Registry";
 export {
   instanceofAppErrorShape,
   type AppErrorShape,

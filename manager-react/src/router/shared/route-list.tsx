@@ -11,6 +11,7 @@ import { ManagerSettingsLanguagesScreen } from "../dashboard/settings/languages"
 import { ManagerSettingsLiteralsScreen } from "../dashboard/settings/literals";
 import { ManagerSettingsRedirectsScreen } from "../dashboard/settings/redirects";
 import { ManagerSettingsRobotsScreen } from "../dashboard/settings/robots";
+import { ManagerSettingsSeoScreen } from "../dashboard/settings/seo";
 import { ManagerSettingsRoutePathsScreen } from "../dashboard/settings/routes/paths";
 import { ManagerSettingsRoutesScreen } from "../dashboard/settings/routes";
 import { ManagerSettingsHomeScreen } from "../dashboard/settings";
@@ -172,6 +173,13 @@ export const managerRouteDefinitions = [
     layout: "dashboard",
     parse: () => ({ kind: "settings-robots" }),
     render: () => <ManagerSettingsRobotsScreen />,
+  }),
+  defineManagerRoute({
+    kind: "settings-seo",
+    path: "/settings/seo",
+    layout: "dashboard",
+    parse: () => ({ kind: "settings-seo" }),
+    render: () => <ManagerSettingsSeoScreen />,
   }),
   defineManagerRoute({
     kind: "content-create",

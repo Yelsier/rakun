@@ -1,4 +1,13 @@
-import { Bot, Database, Languages, Route, UserRoundKey, WholeWord, Waypoints } from 'lucide-react'
+import {
+  Bot,
+  Database,
+  Languages,
+  Route,
+  Search,
+  UserRoundKey,
+  WholeWord,
+  Waypoints,
+} from 'lucide-react'
 
 import { ManagerLink } from '@/link'
 import { Button } from '@/components/ui/button'
@@ -46,6 +55,12 @@ const cards = [
     icon: <Bot size="80" />,
     link: '/settings/robots',
     tour: 'settings-link-robots',
+  },
+  {
+    title: 'SEO',
+    icon: <Search size="80" />,
+    link: '/settings/seo',
+    tour: 'settings-link-seo',
   },
 ]
 
