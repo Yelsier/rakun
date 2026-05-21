@@ -55,6 +55,7 @@ type FieldComponentProps = EncodedFieldUnknown & {
   defaultData?: FieldValue
   ref: React.Ref<FieldRef>
   collapsible?: boolean
+  parentContentType?: EncodedContentType
 }
 
 type FieldComponent = (config: FieldComponentProps) => React.ReactElement
@@ -223,6 +224,7 @@ const ContentTypeEdit = forwardRef<
               ref={setRef(i)}
               {...fieldValue}
               defaultData={defaultDataExtractor(fieldName, props.defaultData)}
+              parentContentType={contentType}
             />
           )
 

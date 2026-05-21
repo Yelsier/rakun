@@ -80,6 +80,69 @@ export const Article = new ContentType({
   listFields: ["title", "slug", "published", "author.name"],
 });
 
+export const RelationLevel3 = new ContentType({
+  name: "RelationLevel3",
+  fields: {
+    title: Fields.string().required(),
+    existingArticle: Fields.relation(Article, "existing"),
+    flexibleArticle: Fields.relation(Article),
+    authors: Fields.relation(Author, "existing").multiple(),
+  },
+  listFields: ["title", "existingArticle.title", "flexibleArticle.title"],
+}).hideFromManager();
+
+export const RelationLevel2 = new ContentType({
+  name: "RelationLevel2",
+  menu: {
+    title: "Relations level 2",
+    icon: "PanelsTopLeft",
+    category: "Development",
+  },
+  fields: {
+    title: Fields.string().required(),
+    existingArticle: Fields.relation(Article, "existing").required(),
+    flexibleArticle: Fields.relation(Article),
+    existingArticles: Fields.relation(Article, "existing").multiple(),
+    self: Fields.selfRelation(),
+    inlineItems: Fields.relation(RelationLevel3, "new").multiple(),
+  },
+  listFields: ["title", "existingArticle.title", "flexibleArticle.title"],
+});
+
+export const RelationPlayground = new ContentType({
+  name: "RelationPlayground",
+  menu: {
+    title: "Relations playground",
+    icon: "Network",
+    category: "Development",
+  },
+  fields: {
+    title: Fields.string().required(),
+    slug: Fields.string().type("Slug").required(),
+    existingAuthor: Fields.relation(Author, "existing").required(),
+    flexibleArticle: Fields.relation(Article),
+    existingLevel2: Fields.relation(RelationLevel2, "existing"),
+    existingLevel2List: Fields.relation(RelationLevel2, "existing").multiple(),
+    inlineLevel3: Fields.relation(RelationLevel3, "new"),
+    sections: Fields.blocks([
+      {
+        name: "level2",
+        field: Fields.relation(RelationLevel2, "existing"),
+      },
+      {
+        name: "article",
+        field: Fields.relation(Article, "existing"),
+      },
+      {
+        name: "level3",
+        field: Fields.relation(RelationLevel3, "new"),
+      },
+    ]),
+  },
+  uniques: [["slug"]],
+  listFields: ["title", "slug", "existingAuthor.name", "existingLevel2.title"],
+});
+
 export const ConditionalDemo = new ContentType({
   name: "ConditionalDemo",
   menu: {
@@ -118,5 +181,8 @@ export const previewContentTypes = [
   PageSection,
   Author,
   Article,
+  RelationLevel3,
+  RelationLevel2,
+  RelationPlayground,
   ConditionalDemo,
 ];

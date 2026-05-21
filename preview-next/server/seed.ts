@@ -3,7 +3,16 @@ import { MongoClient, type Db, type Document } from "mongodb";
 import { Page, HelloWorld, Seo } from "@rakun-kit/next/internal-content-types";
 import { PermissionsList } from "@rakun-kit/next";
 
-import { Article, Author, Footer, Header, PageSection } from "./content-types";
+import {
+  Article,
+  Author,
+  Footer,
+  Header,
+  PageSection,
+  RelationLevel2,
+  RelationLevel3,
+  RelationPlayground,
+} from "./content-types";
 
 const now = () => new Date();
 const translatable = (value: string) => ({ _tag: "Translatable", en: value });
@@ -129,6 +138,35 @@ const richText = (text: string) => ({
     indent: 0,
     type: "root",
     version: 1,
+  },
+});
+
+const existingRelation = (contentType: string, document: Document) => ({
+  type: "existing",
+  contentType,
+  _id: document._id,
+});
+
+const nestedCallout = ({
+  title,
+  existingArticle,
+  flexibleArticle = existingArticle,
+  contributors,
+}: {
+  title: string;
+  existingArticle: Document;
+  flexibleArticle?: Document;
+  contributors: Document[];
+}) => ({
+  type: "new",
+  data: {
+    _type: RelationLevel3.name,
+    title,
+    existingArticle: existingRelation(Article.name, existingArticle),
+    flexibleArticle: existingRelation(Article.name, flexibleArticle),
+    authors: contributors.map((contributor) =>
+      existingRelation(Author.name, contributor),
+    ),
   },
 });
 
@@ -489,6 +527,25 @@ export const seedPreviewData = async ({
       throw new Error("Failed to create preview author.");
     }
 
+    const editor = await db.collection(Author.name).findOneAndUpdate(
+      { email: "grace@example.com" },
+      {
+        $setOnInsert: {
+          name: "Grace Hopper",
+          email: "grace@example.com",
+          bio: "Relation fixture author.",
+          _type: Author.name,
+          createdAt: now(),
+          updatedAt: now(),
+        },
+      },
+      { upsert: true, returnDocument: "after" },
+    );
+
+    if (!editor) {
+      throw new Error("Failed to create preview editor.");
+    }
+
     await seedAuthors(db);
 
     await db.collection(Article.name).updateOne(
@@ -504,7 +561,7 @@ export const seedPreviewData = async ({
       },
     );
 
-    await db.collection(Article.name).updateOne(
+    const helloArticle = await db.collection(Article.name).findOneAndUpdate(
       { slug: "hello-preview" },
       {
         $setOnInsert: {
@@ -524,7 +581,146 @@ export const seedPreviewData = async ({
           updatedAt: now(),
         },
       },
-      { upsert: true },
+      { upsert: true, returnDocument: "after" },
+    );
+
+    if (!helloArticle) {
+      throw new Error("Failed to create preview article.");
+    }
+
+    const relationsArticle = await db.collection(Article.name).findOneAndUpdate(
+      { slug: "nested-relations" },
+      {
+        $setOnInsert: {
+          title: "Relation Target A",
+          slug: "nested-relations",
+          excerpt: "Relation fixture target.",
+          published: true,
+          author: existingRelation(Author.name, editor),
+          body: richText("Target A."),
+          tags: ["relations"],
+          _type: Article.name,
+          createdAt: now(),
+          updatedAt: now(),
+        },
+      },
+      { upsert: true, returnDocument: "after" },
+    );
+
+    if (!relationsArticle) {
+      throw new Error("Failed to create nested relations article.");
+    }
+
+    const workflowArticle = await db.collection(Article.name).findOneAndUpdate(
+      { slug: "manager-workflows" },
+      {
+        $setOnInsert: {
+          title: "Relation Target B",
+          slug: "manager-workflows",
+          excerpt: "Relation fixture target.",
+          published: true,
+          author: existingRelation(Author.name, author),
+          body: richText("Target B."),
+          tags: ["relations"],
+          _type: Article.name,
+          createdAt: now(),
+          updatedAt: now(),
+        },
+      },
+      { upsert: true, returnDocument: "after" },
+    );
+
+    if (!workflowArticle) {
+      throw new Error("Failed to create manager workflows article.");
+    }
+
+    const level2 = await db.collection(RelationLevel2.name).findOneAndUpdate(
+      { title: "Level 2 fixture" },
+      {
+        $set: {
+          existingArticle: existingRelation(Article.name, relationsArticle),
+          flexibleArticle: existingRelation(Article.name, helloArticle),
+          existingArticles: [
+            existingRelation(Article.name, helloArticle),
+            existingRelation(Article.name, workflowArticle),
+          ],
+          inlineItems: [
+            nestedCallout({
+              title: "Level 3 fixture",
+              existingArticle: workflowArticle,
+              contributors: [author, editor],
+            }),
+          ],
+          updatedAt: now(),
+        },
+        $setOnInsert: {
+          title: "Level 2 fixture",
+          _type: RelationLevel2.name,
+          createdAt: now(),
+        },
+      },
+      { upsert: true, returnDocument: "after" },
+    );
+
+    if (!level2) {
+      throw new Error("Failed to create relation level 2 fixture.");
+    }
+
+    await db.collection(RelationLevel2.name).updateOne(
+      { _id: level2._id },
+      {
+        $set: {
+          self: {
+            type: "self",
+            contentType: RelationLevel2.name,
+            _id: level2._id,
+          },
+          updatedAt: now(),
+        },
+      },
+    );
+
+    await db.collection(RelationPlayground.name).findOneAndUpdate(
+      { slug: "relations-fixture" },
+      {
+        $set: {
+          title: "Relations fixture",
+          existingAuthor: existingRelation(Author.name, author),
+          flexibleArticle: existingRelation(Article.name, relationsArticle),
+          existingLevel2: existingRelation(RelationLevel2.name, level2),
+          existingLevel2List: [existingRelation(RelationLevel2.name, level2)],
+          inlineLevel3: nestedCallout({
+            title: "Inline level 3",
+            existingArticle: relationsArticle,
+            contributors: [editor],
+          }),
+          sections: [
+            {
+              name: "level2",
+              value: existingRelation(RelationLevel2.name, level2),
+            },
+            {
+              name: "article",
+              value: existingRelation(Article.name, helloArticle),
+            },
+            {
+              name: "level3",
+              value: nestedCallout({
+                title: "Block level 3",
+                existingArticle: workflowArticle,
+                contributors: [author, editor],
+              }),
+            },
+          ],
+          updatedAt: now(),
+        },
+        $setOnInsert: {
+          slug: "relations-fixture",
+          _type: RelationPlayground.name,
+          createdAt: now(),
+        },
+      },
+      { upsert: true, returnDocument: "after" },
     );
 
     console.log(`[preview-next] seeded admin ${adminEmail} / ${adminPassword}`);
