@@ -2,8 +2,9 @@
 
 import type { Permission } from '@rakun-kit/core/client'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Check, Edit, MoreHorizontal, Trash, X } from 'lucide-react'
+import { Edit, MoreHorizontal, Trash } from 'lucide-react'
 
+import { BooleanIndicator } from '@/components/boolean-indicator'
 import IDColumn from '@/components/IDColumnt'
 import { Button } from '@/components/ui/button'
 import {
@@ -58,17 +59,7 @@ export const columns = ({
     accessorKey: 'twoFactorEnabled',
     header: () => <span className='ml-2'>Two Factor Enabled</span>,
     cell: ({ row }) => (
-      <span className='ml-2 flex items-center'>
-        {row.getValue('twoFactorEnabled') ? (
-          <div className='rounded-full bg-green-400 p-1 text-background'>
-            <Check size={12} />
-          </div>
-        ) : (
-          <div className='rounded-full bg-destructive p-1 text-background'>
-            <X size={12} />
-          </div>
-        )}
-      </span>
+      <BooleanIndicator value={Boolean(row.getValue('twoFactorEnabled'))} />
     ),
   },
   {

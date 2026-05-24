@@ -1,8 +1,9 @@
 'use client'
 
 import type { ColumnDef } from '@tanstack/react-table'
-import { Check, Edit, MoreHorizontal, Trash, X } from 'lucide-react'
+import { Edit, MoreHorizontal, Trash } from 'lucide-react'
 
+import { BooleanIndicator } from '@/components/boolean-indicator'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -38,19 +39,7 @@ export const columns = ({
   {
     accessorKey: 'enabled',
     header: () => <span className='ml-2'>Enabled</span>,
-    cell: ({ row }) => (
-      <span className='ml-2 flex items-center'>
-        {row.original.enabled ? (
-          <div className='rounded-full bg-green-400 p-1 text-background'>
-            <Check size={12} />
-          </div>
-        ) : (
-          <div className='rounded-full bg-destructive p-1 text-background'>
-            <X size={12} />
-          </div>
-        )}
-      </span>
-    ),
+    cell: ({ row }) => <BooleanIndicator value={row.original.enabled} />,
   },
   {
     accessorKey: 'order',

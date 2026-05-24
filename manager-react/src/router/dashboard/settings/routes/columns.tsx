@@ -2,8 +2,9 @@
 
 import type { MaybeTranslatableValue, Permission } from '@rakun-kit/core/client'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Check, Edit, MoreHorizontal, Settings, X } from 'lucide-react'
+import { Edit, MoreHorizontal, Settings } from 'lucide-react'
 
+import { BooleanIndicator } from '@/components/boolean-indicator'
 import IDColumn from '@/components/IDColumnt'
 import { Button } from '@/components/ui/button'
 import {
@@ -47,34 +48,14 @@ export const columns = ({
     accessorKey: 'hasPage',
     header: () => <span className='ml-2'>Has page</span>,
     cell: ({ row }) => (
-      <span className='ml-2 flex items-center'>
-        {row.getValue('hasPage') ? (
-          <div className='rounded-full bg-green-400 p-1 text-background'>
-            <Check size={12} />
-          </div>
-        ) : (
-          <div className='rounded-full bg-destructive p-1 text-background'>
-            <X size={12} />
-          </div>
-        )}
-      </span>
+      <BooleanIndicator value={Boolean(row.getValue('hasPage'))} />
     ),
   },
   {
     accessorKey: 'dynamic',
     header: () => <span className='ml-2'>Dynamic</span>,
     cell: ({ row }) => (
-      <span className='ml-2 flex items-center'>
-        {row.getValue('dynamic') ? (
-          <div className='rounded-full bg-green-400 p-1 text-background'>
-            <Check size={12} />
-          </div>
-        ) : (
-          <div className='rounded-full bg-destructive p-1 text-background'>
-            <X size={12} />
-          </div>
-        )}
-      </span>
+      <BooleanIndicator value={Boolean(row.getValue('dynamic'))} />
     ),
   },
   {

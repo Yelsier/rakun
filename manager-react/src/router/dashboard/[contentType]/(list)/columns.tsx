@@ -2,18 +2,17 @@
 
 import type { ColumnDef } from '@tanstack/react-table'
 import {
-  Check,
   Copy,
   Edit,
   MoreHorizontal,
   RotateCcw,
   Trash,
-  X,
 } from 'lucide-react'
 import type { MaybeTranslatableValue, Permission } from '@rakun-kit/core/client'
 
 import IDColumn from '../../../../components/IDColumnt'
 
+import { BooleanIndicator } from '@/components/boolean-indicator'
 import { ManagerLink } from '@/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -153,19 +152,7 @@ export const columns = ({
               .reduce((acc, key) => acc?.[key], row.original as any)
 
             if (typeof value === 'boolean') {
-              return (
-                <span className='flex items-center ml-2'>
-                  {value ? (
-                    <div className='bg-green-400 text-background rounded-full p-1'>
-                      <Check size={12} />
-                    </div>
-                  ) : (
-                    <div className='bg-destructive text-background rounded-full p-1'>
-                      <X size={12} />
-                    </div>
-                  )}
-                </span>
-              )
+              return <BooleanIndicator value={value} className='ml-2' />
             }
 
             if (i === 0 && typeof getTranslation(value) === 'string') {

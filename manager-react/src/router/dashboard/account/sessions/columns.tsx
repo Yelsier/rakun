@@ -2,8 +2,9 @@
 
 import type { AccountInfoOutput } from '@rakun-kit/core/contracts'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Check, MoreHorizontal, Trash, X } from 'lucide-react'
+import { MoreHorizontal, Trash } from 'lucide-react'
 
+import { BooleanIndicator } from '@/components/boolean-indicator'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -25,19 +26,7 @@ export const columns = ({
     header: () => <span className='ml-2'>Current session</span>,
     cell: ({ row }) => {
       const token = row.getValue('token') as string
-      return (
-        <span className='ml-2 flex items-center'>
-          {token === current ? (
-            <div className='rounded-full bg-green-400 p-1 text-background'>
-              <Check size={12} />
-            </div>
-          ) : (
-            <div className='rounded-full bg-destructive p-1 text-background'>
-              <X size={12} />
-            </div>
-          )}
-        </span>
-      )
+      return <BooleanIndicator value={token === current} />
     },
   },
   {
