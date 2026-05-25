@@ -6,12 +6,7 @@ import { EyeOff, Maximize2, Monitor, RefreshCw, X } from 'lucide-react'
 import { useEditPageContext } from '../_context/EditPageContext'
 
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 export const PreviewPanel = () => {

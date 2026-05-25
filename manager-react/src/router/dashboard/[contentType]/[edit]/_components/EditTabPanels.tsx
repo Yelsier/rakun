@@ -2,7 +2,7 @@
 
 import ContentTypeEdit from '../ContentTypeEdit'
 import { useEditPageContext } from '../_context/EditPageContext'
-import VersionHistory from '../versions'
+import VersionHistory from './Versions'
 import { RouteLayoutModuleTabContent } from './RouteLayoutModuleTabContent'
 
 import { TabsContent } from '@/components/ui/tabs'
@@ -21,14 +21,14 @@ export const EditTabPanels = () => {
   } = useEditPageContext()
 
   return (
-    <div className='min-w-0'>
+    <div className="min-w-0">
       {sections.hasIterables ? (
         <TabsContent
-          value='content'
+          value="content"
           forceMount
           hidden={activeTab !== 'content'}
-          className='w-full'
-          data-tour='content-edit-fields'
+          className="w-full"
+          data-tour="content-edit-fields"
         >
           <ContentTypeEdit
             key={`iterables:${form.formRevision}`}
@@ -43,11 +43,11 @@ export const EditTabPanels = () => {
       ) : null}
       {sections.hasNonIterables ? (
         <TabsContent
-          value='info'
+          value="info"
           forceMount
           hidden={activeTab !== 'info'}
-          className='w-full'
-          data-tour='content-edit-fields'
+          className="w-full"
+          data-tour="content-edit-fields"
         >
           <ContentTypeEdit
             key={`info:${form.formRevision}`}
@@ -60,11 +60,11 @@ export const EditTabPanels = () => {
       ) : null}
       {sections.hasSeo ? (
         <TabsContent
-          value='seo'
+          value="seo"
           forceMount
           hidden={activeTab !== 'seo'}
-          className='w-full'
-          data-tour='content-edit-fields'
+          className="w-full"
+          data-tour="content-edit-fields"
         >
           <ContentTypeEdit
             key={`seo:${form.formRevision}`}
@@ -80,7 +80,7 @@ export const EditTabPanels = () => {
         <RouteLayoutModuleTabContent key={layoutModule._id} layoutModule={layoutModule} />
       ))}
       {hasVersioning && contentTypeId ? (
-        <TabsContent value='versions'>
+        <TabsContent value="versions">
           <VersionHistory
             contentType={contentTypeName}
             documentId={contentTypeId}

@@ -21,6 +21,7 @@ const isRakunServerPackage = (request: string) =>
   rakunServerPackages.some((pkg) => request === pkg || request.startsWith(`${pkg}/`))
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   turbopack: {
     root: repoRoot,
   },

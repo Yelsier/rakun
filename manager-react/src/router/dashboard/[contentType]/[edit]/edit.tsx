@@ -9,11 +9,7 @@ import { TrashDialogs } from './_components/TrashDialogs'
 import { EditPageProvider, useEditPageContext } from './_context/EditPageContext'
 import type { EditPageProps } from './edit.types'
 
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@/components/ui/resizable'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { Tabs } from '@/components/ui/tabs'
 
 const previewResizableQuery = '(min-width: 1280px)'
@@ -40,26 +36,26 @@ const EditPageContent = () => {
   const previewOpen = canPreview && previewState.previewOpen
 
   return (
-    <div className='container py-10 px-4 mx-auto'>
-      <Tabs value={activeTab} onValueChange={handleTabChange} className='w-full'>
+    <div className="container py-10 px-4 mx-auto">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <EditToolbar />
         <TrashDialogs />
         {previewOpen && canResizePreview ? (
-          <ResizablePanelGroup className='w-full' orientation='horizontal'>
-            <ResizablePanel className='min-w-[320px]' defaultSize={50} minSize={20}>
-              <div className='min-w-0 pr-2'>
+          <ResizablePanelGroup className="w-full" orientation="horizontal">
+            <ResizablePanel className="min-w-[320px]" defaultSize={50} minSize={20}>
+              <div className="min-w-0 pr-2">
                 <EditTabPanels />
               </div>
             </ResizablePanel>
-            <ResizableHandle withHandle className='mx-2' />
-            <ResizablePanel className='min-w-[520px]' defaultSize={50} minSize={35}>
-              <div className='min-w-[520px] pl-2'>
+            <ResizableHandle withHandle className="mx-2" />
+            <ResizablePanel className="min-w-130" defaultSize={50} minSize={35}>
+              <div className="min-w-130 pl-2">
                 <PreviewPanel />
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
         ) : (
-          <div className='grid gap-4'>
+          <div className="grid gap-4">
             <EditTabPanels />
             {previewOpen ? <PreviewPanel /> : null}
           </div>
