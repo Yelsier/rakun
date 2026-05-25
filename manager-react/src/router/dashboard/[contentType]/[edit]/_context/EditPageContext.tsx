@@ -3,13 +3,17 @@
 import {
   createContext,
   type PropsWithChildren,
+  useCallback,
   useContext,
   useEffect,
   useState,
 } from 'react'
 
 import { useContentDocumentActions } from '../_hooks/useContentDocumentActions'
-import { useContentPreview } from '../_hooks/useContentPreview'
+import {
+  useContentPreview,
+  type PreviewModuleSelectMessage,
+} from '../_hooks/useContentPreview'
 import { useContentTypeSections } from '../_hooks/useContentTypeSections'
 import { useEditFormController } from '../_hooks/useEditFormController'
 import { useEditTabErrors } from '../_hooks/useEditTabErrors'
@@ -25,6 +29,7 @@ import type {
 import type { FieldValue } from '../_fields/shared'
 
 import { useEditErrorStore } from '@/hooks/app-store'
+import { useOptionalManagerNavigation } from '@/state/navigation'
 import { useLanguage } from '@/state/language'
 import { useSession } from '@/state/session'
 
@@ -42,6 +47,54 @@ const getInitialTab = ({
   hasSeo: boolean
 }): EditPageTab =>
   hasNonIterables ? 'info' : hasIterables ? 'content' : hasSeo ? 'seo' : 'versions'
+
+const managerPreviewSelectedClassName = 'rakun-manager-preview-selected'
+
+const escapeCssValue = (value: string) => {
+  if (typeof window.CSS?.escape === 'function') {
+    return window.CSS.escape(value)
+  }
+
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+}
+
+const highlightManagerPreviewTarget = (selectors: string[]) => {
+  const run = () => {
+    const target = selectors
+      .map((selector) => document.querySelector<HTMLElement>(selector))
+      .find((element): element is HTMLElement => Boolean(element))
+
+    if (!target) return
+
+    target.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    target.classList.remove(managerPreviewSelectedClassName)
+    void target.offsetWidth
+    target.classList.add(managerPreviewSelectedClassName)
+
+    window.setTimeout(() => {
+      target.classList.remove(managerPreviewSelectedClassName)
+    }, 2200)
+  }
+
+  window.requestAnimationFrame(() => window.requestAnimationFrame(run))
+}
+
+const getContentModuleSelectors = (message: PreviewModuleSelectMessage) => {
+  const rootSelector = '[data-rakun-manager-tab-panel="content"]'
+  const selectors: string[] = []
+
+  if (message.moduleId) {
+    selectors.push(
+      `${rootSelector} [data-rakun-manager-module-id="${escapeCssValue(message.moduleId)}"]`,
+    )
+  }
+
+  if (message.moduleIndex !== undefined) {
+    selectors.push(`${rootSelector} [data-rakun-manager-module-index="${message.moduleIndex}"]`)
+  }
+
+  return selectors
+}
 
 type EditPageContextValue = {
   activeTab: EditPageTab
@@ -86,6 +139,7 @@ export const EditPageProvider = ({
 }: PropsWithChildren<EditPageProps>) => {
   const { language, languageList } = useLanguage()
   const { hasPermissions } = useSession()
+  const navigation = useOptionalManagerNavigation()
   const editErrors = useEditErrorStore((state) => state.errors)
   const sections = useContentTypeSections(contentType)
   const contentTypeId = (defaultData as { _id?: string } | undefined)?._id
@@ -115,6 +169,7 @@ export const EditPageProvider = ({
     setSaveErrorVisible: setShowSaveErrorTooltip,
     visibility,
   })
+  const saveFormState = form.saveState
   const documentActions = useContentDocumentActions({
     closeMoveToTrashDialog: () => setMoveToTrashOpen(false),
     closePermanentDeleteDialog: () => setPermanentDeleteOpen(false),
@@ -140,11 +195,48 @@ export const EditPageProvider = ({
     (contentType as typeof contentType & { routes?: ContentTypeRouteMeta[] }).routes ?? []
   ).find((route) => route.hasPage)
   const canPreview = Boolean(preview && previewRoute && !isTrashed)
+  const handlePreviewModuleSelect = useCallback(
+    (message: PreviewModuleSelectMessage) => {
+      if (message.entryType === 'content') {
+        if (!sections.hasIterables) return
+
+        saveFormState()
+        setActiveTab('content')
+        highlightManagerPreviewTarget(getContentModuleSelectors(message))
+        return
+      }
+
+      if (message.moduleId && message.moduleType && navigation?.push) {
+        navigation.push({
+          name: 'content.edit',
+          contentType: message.moduleType,
+          id: message.moduleId,
+        })
+        return
+      }
+
+      const layoutModule = routeLayout.routeLayoutModules.find(
+        (item) =>
+          item.key === message.layoutKey &&
+          (!previewRoute || item.routeKey === previewRoute.key),
+      )
+
+      if (!layoutModule) return
+
+      saveFormState()
+      setActiveTab(`layout:${layoutModule._id}`)
+      highlightManagerPreviewTarget([
+        `[data-rakun-manager-layout-key="${escapeCssValue(layoutModule.key)}"]`,
+      ])
+    },
+    [navigation, previewRoute, routeLayout.routeLayoutModules, saveFormState, sections.hasIterables],
+  )
   const previewState = useContentPreview({
     canPreview,
     contentTypeName: contentType.name,
     contentTypeId,
     languageCode: language.code,
+    onModuleSelect: handlePreviewModuleSelect,
     preview,
     previewRoute,
     readFormData: form.readFormData,

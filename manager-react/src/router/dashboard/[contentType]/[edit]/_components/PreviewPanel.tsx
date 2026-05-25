@@ -1,7 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { EyeOff, Maximize2, Monitor, RefreshCw, X } from 'lucide-react'
+import {
+  EyeOff,
+  Maximize2,
+  Monitor,
+  RefreshCw,
+  SquareDashedMousePointer,
+  X,
+} from 'lucide-react'
 
 import { useEditPageContext } from '../_context/EditPageContext'
 
@@ -39,6 +46,27 @@ export const PreviewPanel = () => {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">Update preview</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={previewState.previewInspectorEnabled ? 'secondary' : 'ghost'}
+                    size="icon"
+                    disabled={!previewState.previewUrl}
+                    aria-pressed={previewState.previewInspectorEnabled}
+                    onClick={() =>
+                      previewState.setPreviewInspectorEnabled((enabled) => !enabled)
+                    }
+                  >
+                    <SquareDashedMousePointer />
+                    <span className="sr-only">Select module</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  {previewState.previewInspectorEnabled
+                    ? 'Stop selecting modules'
+                    : 'Select module'}
+                </TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>

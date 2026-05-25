@@ -4,16 +4,10 @@ import { useState } from 'react'
 import { useManagerClient } from '@/client/react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import {
-  DEFAULT_RESPONSIVE_IMAGE_WIDTHS,
-  type FileOptimizeOptions,
-} from '@rakun-kit/core/client'
+import { DEFAULT_RESPONSIVE_IMAGE_WIDTHS, type FileOptimizeOptions } from '@rakun-kit/core/client'
 
 import { FileUploadProps } from '../ui/file-upload'
-import {
-  FolderItem,
-  MediaLibraryProvider,
-} from './contexts/MediaLibraryContext'
+import { FolderItem, MediaLibraryProvider } from './contexts/MediaLibraryContext'
 import FoldersTree from './folders/FoldersTree'
 import Previews from './previews/Previews'
 
@@ -47,16 +41,15 @@ export default function MediaLibrary({
 
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [libraryOptimizeEnabled, setLibraryOptimizeEnabled] = useState(false)
-  const [libraryOptimizeOptions, setLibraryOptimizeOptions] =
-    useState<FileOptimizeOptions>({
-      format: 'webp',
-      quality: 80,
-      generatePreview: false,
-      generateSizes: true,
-      responsiveSizes: [...DEFAULT_RESPONSIVE_IMAGE_WIDTHS],
-      minBytesToOptimize: 350 * 1024,
-      previewMaxWidth: 480,
-    })
+  const [libraryOptimizeOptions, setLibraryOptimizeOptions] = useState<FileOptimizeOptions>({
+    format: 'webp',
+    quality: 80,
+    generatePreview: false,
+    generateSizes: true,
+    responsiveSizes: [...DEFAULT_RESPONSIVE_IMAGE_WIDTHS],
+    minBytesToOptimize: 350 * 1024,
+    previewMaxWidth: 480,
+  })
   const [externalEditFolderRequest, setExternalEditFolderRequest] = useState<{
     id: string
     name: string
@@ -64,14 +57,13 @@ export default function MediaLibrary({
     parentId?: string
     requestId: number
   } | null>(null)
-  const [externalDeleteFolderRequest, setExternalDeleteFolderRequest] =
-    useState<{
-      id: string
-      name: string
-      path: string
-      parentId?: string
-      requestId: number
-    } | null>(null)
+  const [externalDeleteFolderRequest, setExternalDeleteFolderRequest] = useState<{
+    id: string
+    name: string
+    path: string
+    parentId?: string
+    requestId: number
+  } | null>(null)
   const [, setFolderRequestSeq] = useState(0)
 
   const {
@@ -87,7 +79,7 @@ export default function MediaLibrary({
       const walk = async (parentId?: string) => {
         const response = (await managerClient.request(
           'manager.media.listFolders',
-          parentId ? { parentId } : {},
+          parentId ? { parentId } : {}
         )) as { items: FolderItem[] }
 
         for (const item of response.items) {
@@ -104,25 +96,20 @@ export default function MediaLibrary({
   })
 
   const currentFolder = currentFolderId
-    ? (folders ?? []).find((folder) => folder._id === currentFolderId) ?? null
+    ? ((folders ?? []).find((folder) => folder._id === currentFolderId) ?? null)
     : null
 
   const onCreateFolder = async (parentId: string | null, name: string) => {
     try {
-      const created = (await managerClient.request(
-        'manager.media.createFolder',
-        {
-          name,
-          parentId: parentId || undefined,
-        },
-      )) as { _id: string }
+      const created = (await managerClient.request('manager.media.createFolder', {
+        name,
+        parentId: parentId || undefined,
+      })) as { _id: string }
       await refetchFolders()
       setCurrentFolderId(created._id)
       toast.success('Folder created')
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Could not create folder',
-      )
+      toast.error(error instanceof Error ? error.message : 'Could not create folder')
     }
   }
 
@@ -156,7 +143,7 @@ export default function MediaLibrary({
 
   const onUpload: NonNullable<FileUploadProps['onUpload']> = async (
     files,
-    { onProgress, onSuccess, onError },
+    { onProgress, onSuccess, onError }
   ) => {
     const effectiveOptimizeOptions = optimizeOptions
       ? optimizeOptions
@@ -177,26 +164,18 @@ export default function MediaLibrary({
           onProgress(file, 100)
           onSuccess(file)
         } catch (error) {
-          const uploadError =
-            error instanceof Error ? error : new Error('Upload failed')
-          onError(
-            file,
-            uploadError,
-          )
+          const uploadError = error instanceof Error ? error : new Error('Upload failed')
+          onError(file, uploadError)
           throw uploadError
         }
-      }),
+      })
     )
 
-    const failedCount = results.filter(
-      (result) => result.status === 'rejected',
-    ).length
+    const failedCount = results.filter((result) => result.status === 'rejected').length
 
     if (failedCount > 0) {
       throw new Error(
-        failedCount === 1
-          ? '1 file failed to upload'
-          : `${failedCount} files failed to upload`,
+        failedCount === 1 ? '1 file failed to upload' : `${failedCount} files failed to upload`
       )
     }
   }
@@ -234,7 +213,7 @@ export default function MediaLibrary({
         className={cn(
           'relative grid h-[calc(100vh-6rem)] min-h-0 grid-cols-1 overflow-hidden rounded-xl border md:grid-cols-[320px_1fr]',
           isModal ? 'h-[calc(100vh-14.2rem)]' : '',
-          className,
+          className
         )}
       >
         <FoldersTree isModal={isModal} />
@@ -242,14 +221,12 @@ export default function MediaLibrary({
         <div
           className={cn(
             'h-[calc(100vh-6rem)] min-w-0 overflow-hidden p-4',
-            isModal ? 'h-[calc(100vh-11rem)]' : '',
+            isModal ? 'h-[calc(100vh-14rem)]' : ''
           )}
         >
-          <p className='mb-4 text-muted-foreground text-sm'>
+          <p className="mb-4 text-muted-foreground text-sm">
             Current folder:{' '}
-            <span className='font-medium text-foreground'>
-              {currentFolder?.path || '/'}
-            </span>
+            <span className="font-medium text-foreground">{currentFolder?.path || '/'}</span>
           </p>
 
           <Previews />

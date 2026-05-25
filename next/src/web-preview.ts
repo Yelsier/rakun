@@ -2,6 +2,10 @@ import type { PageOutput } from "@rakun-kit/core/contracts";
 
 export const rakunPreviewMessageType = "rakun:preview:update";
 export const rakunPreviewReadyMessageType = "rakun:preview:ready";
+export const rakunPreviewModuleSelectMessageType =
+  "rakun:preview:select-module";
+export const rakunPreviewInspectorMessageType =
+  "rakun:preview:inspect-mode";
 
 const previewPageConfigSymbol = Symbol.for("rakun.previewPageConfig");
 
@@ -15,6 +19,22 @@ export type RakunPreviewUpdateMessage = {
   path: string;
   token: string;
   tokenParam?: string;
+};
+
+export type RakunPreviewModuleSelectMessage = {
+  type: typeof rakunPreviewModuleSelectMessageType;
+  entryType: "content" | "layout";
+  moduleId: string;
+  moduleType: string;
+  index: number;
+  layoutIndex: number;
+  layoutKey?: string;
+  moduleIndex?: number;
+};
+
+export type RakunPreviewInspectorMessage = {
+  type: typeof rakunPreviewInspectorMessageType;
+  enabled: boolean;
 };
 
 type PageWithPreviewConfig = PageOutput & {

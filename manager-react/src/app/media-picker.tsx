@@ -25,12 +25,10 @@ function DefaultManagerMediaPicker({
 }: ManagerMediaPickerRenderArgs) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
-      <DialogContent className='max-h-[95vh] w-screen max-w-[95vw] overflow-hidden p-4'>
+      <DialogContent className="max-h-[95vh] w-screen max-w-[95vw]! overflow-hidden p-4">
         <DialogHeader>
           <DialogTitle>Media library</DialogTitle>
-          <DialogDescription>
-            Select existing media or upload new files.
-          </DialogDescription>
+          <DialogDescription>Select existing media or upload new files.</DialogDescription>
         </DialogHeader>
 
         <MediaLibrary
@@ -45,10 +43,10 @@ function DefaultManagerMediaPicker({
 
         {isMultipleSelection ? (
           <DialogFooter>
-            <Button type='button' variant='outline' onClick={close}>
+            <Button type="button" variant="outline" onClick={close}>
               Cancel
             </Button>
-            <Button type='button' onClick={confirmMultiple}>
+            <Button type="button" onClick={confirmMultiple}>
               Select {selectedMediaList.length}
             </Button>
           </DialogFooter>
@@ -58,6 +56,6 @@ function DefaultManagerMediaPicker({
   )
 }
 
-export const renderDefaultManagerMediaPicker = (
-  args: ManagerMediaPickerRenderArgs,
-) => <DefaultManagerMediaPicker {...args} />
+export const renderDefaultManagerMediaPicker = (args: ManagerMediaPickerRenderArgs) => (
+  <DefaultManagerMediaPicker {...args} />
+)

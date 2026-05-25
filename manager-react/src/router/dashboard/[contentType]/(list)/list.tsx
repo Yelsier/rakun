@@ -396,8 +396,10 @@ const ListContents: React.FC<{
                 Trash
               </TabsTrigger>
             </TabsList>
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {searchableFields.length > 0 ? (
-              <div className="flex min-w-52 max-w-md flex-1 items-center gap-2 rounded-md border px-3 py-1 sm:flex-none">
+              <div className="flex w-md max-w-md flex-1 items-center gap-2 rounded-md border pl-3 pr-1 py-1 sm:flex-none">
                 <Search className="size-4 text-muted-foreground" />
                 <Input
                   value={search}
@@ -407,8 +409,6 @@ const ListContents: React.FC<{
                 />
               </div>
             ) : null}
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
             {canCreate && (
               <ManagerLink href={`/${contentType}/create`} data-tour="content-list-create">
                 <Button>

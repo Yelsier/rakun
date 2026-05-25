@@ -105,6 +105,8 @@ export const RouteLayoutModuleTabContent = ({
       forceMount
       hidden={activeTab !== `layout:${layoutModule._id}`}
       className='w-full'
+      data-rakun-manager-layout-key={layoutModule.key}
+      data-rakun-manager-tab-panel={`layout:${layoutModule._id}`}
     >
       <div className='mx-auto flex w-full flex-col gap-4'>
         <div>

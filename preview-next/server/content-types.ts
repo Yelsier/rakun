@@ -143,6 +143,21 @@ export const RelationPlayground = new ContentType({
   listFields: ["title", "slug", "existingAuthor.name", "existingLevel2.title"],
 });
 
+export const ImagePlayground = new ContentType({
+  name: "ImagePlayground",
+  menu: {
+    title: "Images playground",
+    icon: "Images",
+    category: "Development",
+  },
+  fields: {
+    title: Fields.string().required(),
+    singleImage: Fields.file().type("Image"),
+    multipleImages: Fields.file().type("Image").multiple(),
+  },
+  listFields: ["title"],
+});
+
 export const ConditionalDemo = new ContentType({
   name: "ConditionalDemo",
   menu: {
@@ -184,5 +199,6 @@ export const previewContentTypes = [
   RelationLevel3,
   RelationLevel2,
   RelationPlayground,
+  ImagePlayground,
   ConditionalDemo,
 ];

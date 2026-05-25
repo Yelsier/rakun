@@ -198,6 +198,24 @@
   white-space: break-spaces;
 }
 
+.rakun-manager-preview-selected {
+  outline: 1px solid var(--primary);
+  outline-offset: -1px;
+  border-radius: 1.5rem;
+  animation: rakun-manager-preview-selected 2.2s ease-out;
+}
+
+@keyframes rakun-manager-preview-selected {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(42, 187, 103, 0);
+  }
+
+  18% {
+    box-shadow: 0 0 0 6px rgba(42, 187, 103, 0.18);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

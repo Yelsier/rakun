@@ -28,6 +28,7 @@ export const EditTabPanels = () => {
           forceMount
           hidden={activeTab !== 'content'}
           className="w-full"
+          data-rakun-manager-tab-panel="content"
           data-tour="content-edit-fields"
         >
           <ContentTypeEdit

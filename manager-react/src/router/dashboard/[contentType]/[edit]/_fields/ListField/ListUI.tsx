@@ -29,6 +29,28 @@ import { useLanguage } from "@/lib/providers/language/LanguageClientProvider";
 
 type ListFieldValues = (ListFieldValueItem<FieldValue> & { uid: string })[];
 
+const getModuleId = (item: ListFieldValues[number]) => {
+  const value = item.value;
+
+  if (!value || typeof value !== "object") return undefined;
+
+  if ("_id" in value && typeof value._id === "string") {
+    return value._id;
+  }
+
+  if (
+    "data" in value &&
+    value.data &&
+    typeof value.data === "object" &&
+    "_id" in value.data &&
+    typeof value.data._id === "string"
+  ) {
+    return value.data._id;
+  }
+
+  return undefined;
+};
+
 const AddListButtons = React.memo(
   ({
     fields,
@@ -215,9 +237,16 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
 
                 const FieldComponent =
                   fieldsMap[fieldConfig?.field.config.type];
+                const moduleId = getModuleId(item);
                 return (
                   <SortableItem key={item.uid} value={item.uid} asChild>
-                    <div className="flex gap-2">
+                    <div
+                      className="flex gap-2"
+                      data-rakun-manager-field-id={id}
+                      data-rakun-manager-module-id={moduleId}
+                      data-rakun-manager-module-index={i}
+                      data-rakun-manager-module-item=""
+                    >
                       <Collapsible
                         defaultOpen={!noModulesToRender}
                         className="w-full"
