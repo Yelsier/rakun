@@ -603,6 +603,14 @@ export const EncodedContentTypeSchema = z.object({
   schemaVersion: z.number().optional(),
   versioning: z.union([z.boolean(), z.object({ maxVersions: z.number().optional() })]).optional(),
   documentVisibility: z.boolean().optional(),
+  routes: z
+    .array(
+      z.object({
+        key: z.string(),
+        hasPage: z.boolean(),
+      }),
+    )
+    .optional(),
   isInternal: z.boolean().optional(),
 });
 

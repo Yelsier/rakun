@@ -4,7 +4,7 @@ import React from 'react'
 
 import type { DatePropsRef } from '.'
 import { useDateFieldValues } from '.'
-import { errorStyle } from '../../edit'
+import { errorStyle } from '../../edit.styles'
 import { FieldWrapper } from '../shared/FieldWrapper'
 
 import { Input } from '@/components/ui/input'

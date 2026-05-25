@@ -3,7 +3,7 @@
 import z from 'zod'
 
 import { useStringFieldValues, type StringPropsRef } from '.'
-import { errorStyle } from '../../edit'
+import { errorStyle } from '../../edit.styles'
 import { FieldWrapper } from '../shared/FieldWrapper'
 
 import { Input } from '@/components/ui/input'

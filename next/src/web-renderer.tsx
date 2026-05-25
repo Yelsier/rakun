@@ -2,6 +2,9 @@ import type { ComponentType, ReactNode } from "react";
 import type { PageModule, PageOutput } from "@rakun-kit/core/contracts";
 import { getPageLayout } from "@rakun-kit/core/web";
 
+import { RakunPreviewBridge } from "./web-preview-bridge";
+import { getRakunPreviewPageConfig } from "./web-preview";
+
 export type RakunPageModuleImport = {
   default?: ComponentType<PageModule>;
   component?: ComponentType<PageModule>;
@@ -38,6 +41,7 @@ export async function RakunPageRenderer({
   ),
 }: RakunPageRendererProps) {
   const layout = getPageLayout(page);
+  const previewConfig = getRakunPreviewPageConfig(page);
   const rendered: ReactNode[] = [];
 
   const renderModule = async (module: PageModule, key: string) => {
@@ -73,5 +77,12 @@ export async function RakunPageRenderer({
     rendered.push(renderContent(children, layoutIndex));
   }
 
-  return <>{rendered}</>;
+  return (
+    <>
+      {previewConfig ? (
+        <RakunPreviewBridge tokenParam={previewConfig.tokenParam} />
+      ) : null}
+      {rendered}
+    </>
+  );
 }

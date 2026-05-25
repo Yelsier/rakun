@@ -49,6 +49,7 @@ import { getVersionHandler } from "../routes/manager/versions/get";
 import { listVersionsHandler } from "../routes/manager/versions/list";
 import { restoreVersionHandler } from "../routes/manager/versions/restore";
 import { translateDocumentHandler } from "../routes/manager/translateDocument";
+import { createPreviewHandler } from "../routes/manager/preview/create";
 
 export const createManagerOperationDefinitions = () => {
   const contracts = createManagerOperationContracts();
@@ -112,6 +113,9 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.translateDocument": {
       resolve: translateDocumentHandler,
+    },
+    "manager.preview.create": {
+      resolve: createPreviewHandler,
     },
     "manager.apiOperations": {
       resolve: ({ ctx }) => apiOperationsHandler({ contracts, implementations, ctx }),

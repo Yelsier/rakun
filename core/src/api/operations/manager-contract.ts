@@ -41,6 +41,8 @@ import {
   logoutOutput,
   prepareUploadInput,
   prepareUploadOutput,
+  createPreviewInput,
+  createPreviewOutput,
   restoreBackupInput,
   restoreBackupOutput,
   restoreVersionInput,
@@ -224,6 +226,14 @@ export const createManagerOperationContracts = () =>
       description: "Translate supported translatable fields for a document",
       input: translateDocumentInput,
       output: translateDocumentOutput,
+      method: "post",
+    }),
+    "manager.preview.create": defineOperationContract({
+      access: "auth",
+      kind: "mutation",
+      description: "Create a temporary live preview snapshot",
+      input: createPreviewInput,
+      output: createPreviewOutput,
       method: "post",
     }),
     "manager.apiOperations": defineOperationContract({

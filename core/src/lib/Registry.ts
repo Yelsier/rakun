@@ -1,5 +1,6 @@
 import type ContentType from "./ContentType";
 import type { AnyField } from "./fields/Field";
+import { getRakunBootstrapOptions } from "../bootstrapState";
 
 type EncodedField = {
   schema: undefined;
@@ -36,6 +37,13 @@ export function getContentTypes() {
 }
 
 export const encodeContentTypeForManager = <T extends ContentType>(ct: T) => {
+  const routes = (getRakunBootstrapOptions()?.routes ?? [])
+    .filter((route) => route.contentType === ct.name)
+    .map((route) => ({
+      key: route.key,
+      hasPage: route.hasPage,
+    }));
+
   return {
     name: ct.name,
     menu: ct.menu,
@@ -45,6 +53,7 @@ export const encodeContentTypeForManager = <T extends ContentType>(ct: T) => {
     schemaVersion: ct.schemaVersion,
     versioning: ct.versioning,
     documentVisibility: ct.documentVisibility,
+    routes,
     isInternal: ct.isInternal,
     fields: Object.fromEntries(
       Object.entries(ct.fields).map(([key, field]) => [

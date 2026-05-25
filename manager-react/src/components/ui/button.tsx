@@ -35,6 +35,7 @@ const buttonVariants = cva(
 )
 
 function Button({
+  children,
   className,
   variant,
   size,
@@ -45,18 +46,52 @@ function Button({
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
     loading?: boolean
-  }) {
+}) {
   const Comp = asChild ? Slot : 'button'
+  const componentProps = asChild ? props : { type: 'button' as const, ...props }
+  const loadingClassName = loading && 'relative text-transparent [&>svg]:invisible'
+  const renderChildren = (content: React.ReactNode) => (
+    <>
+      {loading ? (
+        <span
+          data-slot="button-loading"
+          className="absolute inset-0 flex items-center justify-center"
+        >
+          <LoadingSpinner />
+        </span>
+      ) : null}
+      {content}
+    </>
+  )
 
-  const children = loading ? <LoadingSpinner /> : props.children
+  if (asChild) {
+    const slottedChildren =
+      loading && React.isValidElement<{ children?: React.ReactNode }>(children)
+        ? React.cloneElement(children, {
+            children: renderChildren(children.props.children),
+          })
+        : loading
+          ? <LoadingSpinner />
+          : children
+
+    return (
+      <Comp
+        data-slot="button"
+        className={cn(buttonVariants({ variant, size, className }), loadingClassName)}
+        {...componentProps}
+      >
+        {slottedChildren}
+      </Comp>
+    )
+  }
 
   return (
     <Comp
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
+      className={cn(buttonVariants({ variant, size, className }), loadingClassName)}
+      {...componentProps}
     >
-      {children}
+      {renderChildren(children)}
     </Comp>
   )
 }

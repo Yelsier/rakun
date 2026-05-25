@@ -9,7 +9,7 @@ import { isTranslatableObject } from '@rakun-kit/core/client'
 import { LinkfieldValue } from '@rakun-kit/core/client'
 
 import type { LinkPropsRef } from '.'
-import { errorStyle } from '../../edit'
+import { errorStyle } from '../../edit.styles'
 import { useFieldValues } from '../shared'
 import { FieldWrapper } from '../shared/FieldWrapper'
 
