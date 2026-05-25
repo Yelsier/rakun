@@ -4,7 +4,7 @@ import React from 'react'
 
 import type { StringPropsRef } from '.'
 import { useStringFieldValues } from '.'
-import { errorStyle } from '../../edit'
+import { errorStyle } from '../../edit.styles'
 import { FieldWrapper } from '../shared/FieldWrapper'
 
 import { Textarea } from '@/components/ui/textarea'

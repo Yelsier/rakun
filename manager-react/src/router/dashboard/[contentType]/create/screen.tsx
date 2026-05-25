@@ -3,14 +3,17 @@
 import type { EncodedContentType, Permission } from '@rakun-kit/core/client'
 
 import EditPage from '../[edit]/edit'
+import type { ManagerPreviewConfig } from '@/router/shared/types'
 
 import UnauthorizedMessage from '@/components/unauthorized'
 import { useSession } from '@/state/session'
 
 export const ManagerContentTypeCreateScreen = ({
   contentType,
+  preview,
 }: {
   contentType?: EncodedContentType
+  preview?: ManagerPreviewConfig
 }) => {
   const { hasAnyPermission } = useSession()
 
@@ -29,6 +32,5 @@ export const ManagerContentTypeCreateScreen = ({
     )
   }
 
-  return <EditPage contentType={contentType} />
+  return <EditPage contentType={contentType} preview={preview} />
 }
-

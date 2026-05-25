@@ -30,6 +30,7 @@ import {
   type ManagerMediaPickerRenderArgs,
 } from "@/media";
 import type { ManagerAppOverrides } from "../router";
+import type { ManagerPreviewConfig } from "../router";
 
 type BootstrapState =
   | { status: "loading" }
@@ -60,6 +61,7 @@ export type ManagerRuntimeAppProps = {
   unauthenticatedFallback?: ReactNode;
   errorFallback?: (message: string) => ReactNode;
   overrides?: ManagerAppOverrides;
+  preview?: ManagerPreviewConfig;
   linkComponent?: ManagerLinkComponent;
   renderMediaPicker?: (args: ManagerMediaPickerRenderArgs) => ReactNode;
 };
@@ -82,6 +84,7 @@ export const ManagerRuntimeApp = ({
   unauthenticatedFallback,
   errorFallback,
   overrides,
+  preview,
   linkComponent,
   renderMediaPicker,
 }: ManagerRuntimeAppProps) => {
@@ -180,6 +183,7 @@ export const ManagerRuntimeApp = ({
                         pathname={pathname}
                         basePath={basePath}
                         searchParams={searchParams}
+                        preview={preview}
                         {...overrides}
                       />
                     )}
@@ -198,6 +202,7 @@ export const ManagerRuntimeApp = ({
                         searchParams={searchParams}
                         contentTypes={state.contentTypes}
                         authenticated
+                        preview={preview}
                         {...overrides}
                       />
                     </LanguageProvider>

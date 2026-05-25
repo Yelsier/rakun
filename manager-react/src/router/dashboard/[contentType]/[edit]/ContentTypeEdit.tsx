@@ -26,7 +26,7 @@ import SelectField from './_fields/Select'
 import { FieldValue } from './_fields/shared'
 import { evaluateFieldCondition } from './_fields/shared/condition'
 import { ConditionFieldStateProvider } from './_fields/shared/condition-state'
-import { errorStyle } from './edit'
+import { errorStyle } from './edit.styles'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { decodeCamelCase } from '@/helpers/decodeCamelCase'

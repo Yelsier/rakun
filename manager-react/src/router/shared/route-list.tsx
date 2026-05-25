@@ -191,7 +191,7 @@ export const managerRouteDefinitions = [
     }),
     render: (route, props, contentType) =>
       props.renderContentCreate?.(route, contentType) ?? (
-        <ManagerContentTypeCreateScreen contentType={contentType} />
+        <ManagerContentTypeCreateScreen contentType={contentType} preview={props.preview} />
       ),
   }),
   defineManagerRoute({
@@ -208,7 +208,11 @@ export const managerRouteDefinitions = [
     ),
     render: (route, props, contentType) =>
       props.renderContentEdit?.(route, contentType) ?? (
-        <ManagerContentTypeEditScreen contentType={contentType} id={route.id} />
+        <ManagerContentTypeEditScreen
+          contentType={contentType}
+          id={route.id}
+          preview={props.preview}
+        />
       ),
   }),
   defineManagerRoute({

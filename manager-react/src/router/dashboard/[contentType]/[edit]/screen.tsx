@@ -11,13 +11,16 @@ import ErrorMessage from '@/components/error'
 import Loading from '@/components/loading'
 import UnauthorizedMessage from '@/components/unauthorized'
 import { useSession } from '@/state/session'
+import type { ManagerPreviewConfig } from '@/router/shared/types'
 
 export const ManagerContentTypeEditScreen = ({
   contentType,
   id,
+  preview,
 }: {
   contentType?: EncodedContentType
   id: string
+  preview?: ManagerPreviewConfig
 }) => {
   const { user, hasAnyPermission } = useSession()
   const itemQuery = useManagerQuery({
@@ -78,6 +81,7 @@ export const ManagerContentTypeEditScreen = ({
     <EditPage
       defaultData={defaultData}
       contentType={contentType}
+      preview={preview}
       onAfterRestore={() => itemQuery.refetch()}
     />
   )

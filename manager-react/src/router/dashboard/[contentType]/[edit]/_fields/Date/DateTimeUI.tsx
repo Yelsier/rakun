@@ -1,6 +1,6 @@
 'use client'
 
-import { errorStyle } from '../../edit'
+import { errorStyle } from '../../edit.styles'
 import { FieldWrapper } from '../shared/FieldWrapper'
 import type { DatePropsRef } from '.'
 import { useDateFieldValues } from '.'

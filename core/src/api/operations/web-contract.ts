@@ -6,6 +6,8 @@ import { Language } from "../../internal-content-types";
 import {
   pageInput,
   pageOutput,
+  previewPageInput,
+  previewPageOutput,
   sitemapInput,
   sitemapOutput,
   robotsOutput,
@@ -27,6 +29,14 @@ export const createWebOperationContracts = () =>
       description: "Get page data for a given path",
       input: pageInput,
       output: pageOutput,
+    }),
+    "web.previewPage": defineOperationContract({
+      access: "public",
+      kind: "query",
+      method: "get",
+      description: "Get temporary preview page data for a token",
+      input: previewPageInput,
+      output: previewPageOutput,
     }),
     "web.sitemap": defineOperationContract({
       access: "public",

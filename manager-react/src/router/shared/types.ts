@@ -38,12 +38,18 @@ export type ManagerSearchParams =
   | Record<string, string | string[] | undefined>
   | undefined;
 
+export type ManagerPreviewConfig = {
+  webBaseUrl: string | URL;
+  tokenParam?: string;
+};
+
 export type ManagerRouteRendererProps = {
   authenticated?: boolean;
   route: ManagerResolvedRoute;
   contentTypes?: EncodedContentType[];
   pathname?: string;
   basePath?: string;
+  preview?: ManagerPreviewConfig;
   renderLogin?: () => ReactNode;
   renderMfa?: (
     route: Extract<ManagerResolvedRoute, { kind: "mfa" }>,
@@ -71,7 +77,7 @@ export type ManagerRouteRendererProps = {
 
 export type ManagerAppOverrides = Omit<
   ManagerRouteRendererProps,
-  "route" | "pathname" | "contentTypes"
+  "route" | "pathname" | "contentTypes" | "preview"
 >;
 
 export type ManagerAppProps = Omit<ManagerRouteRendererProps, "route"> & {

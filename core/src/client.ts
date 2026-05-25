@@ -66,6 +66,10 @@ export type {
   TranslateDocumentOutput,
   TranslateDocumentSummary,
 } from "./schemas/manager/translateDocument";
+export type {
+  CreatePreviewInput,
+  CreatePreviewOutput,
+} from "./schemas/manager/preview";
 export type { ListOutput } from "./schemas/manager/list";
 export type { ListLiteralsOutput } from "./schemas/manager/literals/list";
 export type {

@@ -4,6 +4,7 @@ import {
   BackupDocument,
   ContentVersion,
   Migration,
+  PreviewSnapshot,
   SchemaState,
 } from "../internal-content-types";
 import { getContentTypes } from "../lib/Registry";
@@ -53,6 +54,12 @@ export async function createIndexes(db: Db): Promise<void> {
     db
       .collection(Migration.name)
       .createIndex({ contentType: 1, migrationId: 1 }),
+    db
+      .collection(PreviewSnapshot.name)
+      .createIndex({ tokenHash: 1 }, { unique: true }),
+    db
+      .collection(PreviewSnapshot.name)
+      .createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     db
       .collection(SchemaState.name)
       .createIndex({ contentType: 1 }, { unique: true }),

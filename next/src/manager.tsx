@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { ManagerClient } from "@rakun-kit/manager-react/client/request";
+import type { ManagerPreviewConfig } from "@rakun-kit/manager-react";
 
 import { RakunManagerClientPage } from "./manager-client";
 
@@ -28,6 +29,7 @@ export type RakunManagerPageOptions = {
   paramKey?: string;
   loadingFallback?: ReactNode;
   unauthenticatedFallback?: ReactNode;
+  preview?: ManagerPreviewConfig;
 };
 
 const defaultParamKey = "slug";
@@ -82,6 +84,7 @@ export async function RakunManagerPage({
   paramKey = defaultParamKey,
   loadingFallback,
   unauthenticatedFallback,
+  preview,
 }: RakunManagerPageComponentProps) {
   const [resolvedParams, resolvedSearchParams] = await Promise.all([
     params,
@@ -94,6 +97,12 @@ export async function RakunManagerPage({
   const initialSearchParams = createSearchParams(
     resolvedSearchParams,
   ).toString();
+  const normalizedPreview = preview
+    ? {
+        ...preview,
+        webBaseUrl: preview.webBaseUrl.toString(),
+      }
+    : undefined;
 
   return (
     <RakunManagerClientPage
@@ -105,6 +114,7 @@ export async function RakunManagerPage({
       initialSearchParams={initialSearchParams}
       loadingFallback={loadingFallback}
       unauthenticatedFallback={unauthenticatedFallback}
+      preview={normalizedPreview}
     />
   );
 }

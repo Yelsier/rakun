@@ -6,6 +6,8 @@ import type {
   SitemapOutput,
 } from "@rakun-kit/core/contracts";
 
+import { markRakunPreviewPage } from "./web-preview";
+
 export {
   RakunPageRenderer,
   type RakunPageModuleImport,
@@ -34,6 +36,7 @@ export type GetRakunPageOptions = {
   path: string;
   apiBaseUrl?: string | URL;
   search?: string | URLSearchParams | RakunNextPageSearchParams;
+  previewTokenParam?: string;
   headers?: HeadersInit;
   forwardHeaders?: boolean;
   fetchOptions?: RakunNextFetchOptions;
@@ -90,6 +93,7 @@ type RakunMetadataImage = {
 
 const defaultApiBaseUrl = "/api/rakun";
 const defaultParamKey = "slug";
+const defaultPreviewTokenParam = "rakun_preview";
 
 const blockedForwardHeaders = new Set([
   "connection",
@@ -135,6 +139,54 @@ const searchToString = (
 
   const value = searchParams.toString();
   return value ? `?${value}` : undefined;
+};
+
+const searchToURLSearchParams = (
+  search: GetRakunPageOptions["search"],
+): URLSearchParams => {
+  if (!search) return new URLSearchParams();
+
+  if (typeof search === "string") {
+    return new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  }
+
+  if (search instanceof URLSearchParams) {
+    return new URLSearchParams(search);
+  }
+
+  const searchParams = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(search)) {
+    if (typeof value === "undefined") continue;
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        searchParams.append(key, item);
+      }
+      continue;
+    }
+
+    searchParams.set(key, value);
+  }
+
+  return searchParams;
+};
+
+const extractPreviewSearch = (
+  search: GetRakunPageOptions["search"],
+  tokenParam: string,
+) => {
+  const searchParams = searchToURLSearchParams(search);
+  const token = searchParams.get(tokenParam) ?? undefined;
+
+  if (token) {
+    searchParams.delete(tokenParam);
+  }
+
+  return {
+    token,
+    search: searchParams.toString() ? searchParams : undefined,
+  };
 };
 
 const getRequestOrigin = async (): Promise<string> => {
@@ -224,17 +276,23 @@ export const getRakunPage = async ({
   path,
   apiBaseUrl = defaultApiBaseUrl,
   search,
+  previewTokenParam = defaultPreviewTokenParam,
   headers,
   forwardHeaders = true,
   fetchOptions,
   fetch: fetchFn = globalThis.fetch,
 }: GetRakunPageOptions): Promise<PageOutput> => {
   const baseUrl = await resolveApiBaseUrl(apiBaseUrl);
-  const url = new URL(`${baseUrl.pathname.replace(/\/$/, "")}/web/page`, baseUrl);
+  const preview = extractPreviewSearch(search, previewTokenParam);
+  const operationPath = preview.token ? "web/previewPage" : "web/page";
+  const url = new URL(`${baseUrl.pathname.replace(/\/$/, "")}/${operationPath}`, baseUrl);
 
   url.searchParams.set("path", normalizePath(path));
+  if (preview.token) {
+    url.searchParams.set("token", preview.token);
+  }
 
-  const searchValue = searchToString(search);
+  const searchValue = searchToString(preview.search);
   if (searchValue) {
     url.searchParams.set("search", searchValue);
   }
@@ -256,7 +314,11 @@ export const getRakunPage = async ({
     );
   }
 
-  return (await response.json()) as PageOutput;
+  const page = (await response.json()) as PageOutput;
+
+  return preview.token
+    ? markRakunPreviewPage(page, { tokenParam: previewTokenParam })
+    : page;
 };
 
 const isRakunMetadataImage = (value: unknown): value is RakunMetadataImage =>

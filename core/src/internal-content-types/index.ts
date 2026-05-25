@@ -26,3 +26,4 @@ export * from "./Redirect";
 export * from "./RobotsRule";
 export * from "./Page";
 export * from "./HelloWorld";
+export * from "./PreviewSnapshot";

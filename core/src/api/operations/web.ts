@@ -8,6 +8,7 @@ import {
 } from "./custom";
 import { getLanguages } from "../utils/getLanguages";
 import { getPage } from "../routes/web/page";
+import { getPreviewPage } from "../routes/web/previewPage";
 import { getRobots } from "../routes/web/robots";
 import { getSitemap } from "../routes/web/sitemap";
 
@@ -44,6 +45,13 @@ export const createWebOperationDefinitions = () => {
     "web.page": {
       resolve: async ({ input, ctx }) =>
         await getPage({
+          ...input,
+          headers: input.headers ?? getStringHeaders(ctx.req?.headers ?? {}),
+        }),
+    },
+    "web.previewPage": {
+      resolve: async ({ input, ctx }) =>
+        await getPreviewPage({
           ...input,
           headers: input.headers ?? getStringHeaders(ctx.req?.headers ?? {}),
         }),
