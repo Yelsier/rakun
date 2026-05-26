@@ -257,6 +257,7 @@ export {
   PermissionsList,
   type Permission,
 } from "./lib/Permissions";
+export type { LiteralCatalogInput } from "./literals";
 export type { MaybeTranslatableValue, TranslatableValue } from "./lib/types";
 export { getListField } from "./lib/utils/getListField";
 export { getTranslation } from "./lib/utils/getTranslation";
