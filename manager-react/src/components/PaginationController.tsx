@@ -34,9 +34,9 @@ export const PaginationController: React.FC<{
   const firstItem = totalItems === 0 ? 0 : (page - 1) * itemsPerPage + 1
   const lastItem = Math.min(page * itemsPerPage, totalItems)
 
-  const ellipsis = () => {
+  const ellipsis = (className?: string) => {
     return (
-      <PaginationItem>
+      <PaginationItem className={className}>
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="ghost" size={'icon'}>
@@ -69,9 +69,11 @@ export const PaginationController: React.FC<{
     )
   }
 
+  const compactPagination = totalPages <= 3
+
   return (
-    <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <Pagination className="mx-0 w-auto justify-start">
+    <div className="flex w-full flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <Pagination className="mx-0 w-full justify-center sm:w-auto sm:justify-start">
         <PaginationContent>
           <PaginationItem
             className="cursor-pointer select-none"
@@ -79,10 +81,10 @@ export const PaginationController: React.FC<{
           >
             <PaginationPrevious />
           </PaginationItem>
-          {totalPages > 3 && page > 2 && ellipsis()}
+          {totalPages > 3 && page > 2 && ellipsis('hidden sm:block')}
           {page > 1 && (
             <PaginationItem
-              className="cursor-pointer select-none"
+              className={`cursor-pointer select-none ${compactPagination ? '' : 'hidden sm:block'}`}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               <PaginationLink>{page - 1}</PaginationLink>
@@ -93,13 +95,13 @@ export const PaginationController: React.FC<{
           </PaginationItem>
           {page < totalPages && (
             <PaginationItem
-              className="cursor-pointer select-none"
+              className={`cursor-pointer select-none ${compactPagination ? '' : 'hidden sm:block'}`}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             >
               <PaginationLink>{page + 1}</PaginationLink>
             </PaginationItem>
           )}
-          {totalPages > 3 && page < totalPages - 1 && ellipsis()}
+          {totalPages > 3 && page < totalPages - 1 && ellipsis('hidden sm:block')}
           <PaginationItem
             className="cursor-pointer select-none"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
@@ -108,9 +110,10 @@ export const PaginationController: React.FC<{
           </PaginationItem>
         </PaginationContent>
       </Pagination>
-      <div className="flex flex-wrap items-center gap-3 self-end text-muted-foreground text-sm sm:self-auto">
+      <div className="flex w-full flex-wrap items-center justify-center gap-3 text-muted-foreground text-sm sm:w-auto sm:justify-end sm:self-auto">
         <div className="flex items-center gap-2">
-          <span className="whitespace-nowrap">Items per page</span>
+          <span className="whitespace-nowrap sm:hidden">Rows</span>
+          <span className="hidden whitespace-nowrap sm:inline">Items per page</span>
           <Select
             value={String(itemsPerPage)}
             disabled={!setItemsPerPage}

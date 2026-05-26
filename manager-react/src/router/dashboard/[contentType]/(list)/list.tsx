@@ -1,7 +1,7 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
 import type { RowSelectionState } from '@tanstack/react-table'
-import { Archive, Languages, Plus, RotateCcw, Search, Trash } from 'lucide-react'
+import { Archive, Languages, Plus, RotateCcw, Trash } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Permission } from '@rakun-kit/core/client'
 import { toast } from 'sonner'
@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DataTable } from '@/components/ui/data-table'
-import { Input } from '@/components/ui/input'
+import { SearchInput } from '@/components/search-input'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Dialog,
@@ -384,8 +384,8 @@ const ListContents: React.FC<{
         }}
         className="w-full"
       >
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
-          <div className="flex gap-3 items-center">
+        <div className="grid gap-3 border-b pb-3 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
+          <div className="flex items-center gap-3">
             <TabsList variant="line">
               <TabsTrigger value="active">
                 <Archive />
@@ -397,27 +397,28 @@ const ListContents: React.FC<{
               </TabsTrigger>
             </TabsList>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {searchableFields.length > 0 ? (
-              <div className="flex w-md max-w-md flex-1 items-center gap-2 rounded-md border pl-3 pr-1 py-1 sm:flex-none">
-                <Search className="size-4 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  className="h-8 border-0 shadow-none focus-visible:ring-0"
-                  placeholder="Search..."
-                />
-              </div>
-            ) : null}
-            {canCreate && (
-              <ManagerLink href={`/${contentType}/create`} data-tour="content-list-create">
-                <Button>
-                  <Plus />
-                  Create
-                </Button>
-              </ManagerLink>
-            )}
-          </div>
+          {searchableFields.length > 0 ? (
+            <SearchInput
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search..."
+              className="md:w-md md:max-w-md md:justify-self-end"
+            />
+          ) : (
+            <div className="hidden md:block" />
+          )}
+          {canCreate && (
+            <ManagerLink
+              href={`/${contentType}/create`}
+              data-tour="content-list-create"
+              className="justify-self-end"
+            >
+              <Button>
+                <Plus />
+                Create
+              </Button>
+            </ManagerLink>
+          )}
         </div>
       </Tabs>
       <DeleteCT

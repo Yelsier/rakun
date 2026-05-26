@@ -2,11 +2,7 @@
 
 import type { ColumnDef, Row, RowSelectionState, SortingState } from '@tanstack/react-table'
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
-import { cva } from 'class-variance-authority'
 import type { Dispatch, SetStateAction } from 'react'
-
-import { ScrollArea, ScrollBar } from './scroll-area'
-import { useSidebar } from './sidebar'
 
 import {
   Table,
@@ -26,15 +22,6 @@ interface DataTableProps<TData, TValue> {
   setRowSelection?: Dispatch<SetStateAction<RowSelectionState>>
   getRowId?: (originalRow: TData, index: number, parent?: Row<TData>) => string
 }
-
-const tableStyle = cva('flex pb-4', {
-  variants: {
-    open: {
-      true: 'max-w-[calc(100vw-32px)] md:max-w-[calc(100vw-18em)]',
-      false: 'md:max-w-[calc(100vw-32px)]',
-    },
-  },
-})
 
 export function DataTable<TData, TValue>({
   columns,
@@ -60,52 +47,49 @@ export function DataTable<TData, TValue>({
     state,
     getCoreRowModel: getCoreRowModel(),
   })
-
-  const { open } = useSidebar()
+  const rows = table.getRowModel().rows
+  const minTableWidth = `${Math.max(56, table.getAllLeafColumns().length * 10)}rem`
 
   return (
-    <ScrollArea className={tableStyle({ open })}>
-      <div>
-        <div className="overflow-hidden rounded-lg border">
-          <Table className="table-fixed min-w-150">
-            <TableHeader className="bg-muted">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
-                      </TableHead>
-                    )
-                  })}
+    <div className="w-full min-w-0 overflow-x-auto pb-4">
+      <div className="overflow-hidden rounded-lg border" style={{ minWidth: minTableWidth }}>
+        <Table className="table-auto" style={{ minWidth: minTableWidth }}>
+          <TableHeader className="bg-muted">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  )
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {rows?.length ? (
+              rows.map((row) => (
+                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                  {row?.getVisibleCells()?.map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
                 </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                    {row?.getVisibleCells()?.map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
-      <ScrollBar orientation="horizontal" />
-    </ScrollArea>
+    </div>
   )
 }

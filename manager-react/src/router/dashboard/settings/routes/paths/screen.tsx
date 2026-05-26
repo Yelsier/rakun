@@ -1,7 +1,6 @@
 'use client'
 
 import type { SortingState } from '@tanstack/react-table'
-import { Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -14,7 +13,7 @@ import { PaginationController } from '@/components/PaginationController'
 import UnauthorizedMessage from '@/components/unauthorized'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
-import { Input } from '@/components/ui/input'
+import { SearchInput } from '@/components/search-input'
 import {
   Dialog,
   DialogContent,
@@ -98,15 +97,12 @@ export const ManagerSettingsRoutePathsScreen = () => {
   return (
     <div className='container mx-auto flex flex-col items-start gap-4 py-10'>
       <div className='flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-        <div className='flex w-full max-w-md items-center gap-2 rounded-md border px-3 py-1'>
-          <Search className='size-4 text-muted-foreground' />
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            className='border-0 shadow-none focus-visible:ring-0'
-            placeholder='Search path...'
-          />
-        </div>
+        <SearchInput
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder='Search path...'
+          className='max-w-md'
+        />
         {canUpdateRoutes ? (
           <div className='self-end' data-tour='route-paths-regenerate'>
             <Button onClick={() => setConfirmOpen(true)}>Regenerar rutas</Button>

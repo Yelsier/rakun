@@ -1,6 +1,6 @@
 'use client'
 
-import { Folder, Search } from 'lucide-react'
+import { Folder } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import type { ApiOperationsOutput } from '@rakun-kit/core/client'
 
@@ -12,7 +12,7 @@ import { SchemaViewer } from './SchemaViewer'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Input } from '@/components/ui/input'
+import { SearchInput } from '@/components/search-input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useManagerQuery } from '@/client/react'
 
@@ -208,15 +208,10 @@ export default function ApiTest() {
         className="relative h-[calc(100vh-10rem)] overflow-y-auto border-r p-4"
         data-tour="api-routes-list"
       >
-        <div
-          className="bg-card sticky top-0 mb-4 flex items-center gap-2 rounded-md border px-3 py-1"
-          data-tour="api-routes-search"
-        >
-          <Search className="size-4 text-muted-foreground" />
-          <Input
+        <div className="sticky top-0 z-10 mb-4" data-tour="api-routes-search">
+          <SearchInput
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            className="border-0 shadow-none focus-visible:ring-0"
             placeholder="Search..."
           />
         </div>

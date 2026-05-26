@@ -29,6 +29,8 @@ It must remain usable from external adapters. Do not assume it always runs insid
 
 - Use existing components from `src/components/ui` before creating new ones.
 - Use `useManagerQuery` and `useManagerMutation` for manager operations.
+- Avoid concentrating unrelated behavior in one file; keep components, hooks, utilities, and state boundaries focused on a single responsibility.
+- Use local/context providers for shared screen state when it prevents prop drilling.
 - Show loading, empty, and error states when a screen needs them.
 - Respect permissions through `useSession().hasPermissions(...)` and show `UnauthorizedMessage` when applicable.
 - Use confirmation dialogs for destructive actions and `toast` for feedback.
@@ -45,6 +47,7 @@ It must remain usable from external adapters. Do not assume it always runs insid
 
 - Tailwind in `className`; prefer existing tokens/components.
 - Do not add global styles unless they are genuinely shared.
+- After CSS changes, run `bun run -F @rakun-kit/manager-react build:css`.
 - If exported styles change, verify with `bun run --filter @rakun-kit/manager-react build` to regenerate CSS.
 
 ## Build And Verification

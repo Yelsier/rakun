@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronRight, Folder, FolderOpen, Search } from 'lucide-react'
+import { ChevronRight, Folder, FolderOpen } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { Collapsible, CollapsibleContent } from '../../ui/collapsible'
@@ -13,6 +13,7 @@ import {
 import { Skeleton } from '../../ui/skeleton'
 import { useMediaLibrary } from '../contexts/MediaLibraryContext'
 
+import { SearchInput } from '@/components/search-input'
 import { cn } from '@/lib/utils'
 
 type FolderNode = {
@@ -187,16 +188,12 @@ export default function FoldersTree({ isModal = false }: { isModal?: boolean }) 
         isModal ? 'h-[calc(100vh-14rem)]' : ''
       )}
     >
-      <div className="sticky top-0 z-10 mb-3 flex h-9 items-center gap-2 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
-        <Search className="size-4 text-muted-foreground" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-transparent text-sm outline-none"
-          type="text"
-          placeholder="Search folders..."
-        />
-      </div>
+      <SearchInput
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        className="sticky top-0 z-10 mb-3 h-9"
+        placeholder="Search folders..."
+      />
 
       <button
         type="button"

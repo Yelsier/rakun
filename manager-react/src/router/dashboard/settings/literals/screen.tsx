@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { useManagerMutation, useManagerQuery } from "@/client/react";
 import { formatList } from "@/helpers/format-list";
+import { SearchInput } from "@/components/search-input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -259,7 +260,7 @@ export const ManagerSettingsLiteralsScreen = () => {
               ))}
             </SelectContent>
           </Select>
-          <Input
+          <SearchInput
             placeholder="Search by key, description or module"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
