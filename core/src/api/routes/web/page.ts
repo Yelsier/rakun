@@ -21,7 +21,7 @@ import {
   PageModule,
 } from "../../../schemas/web/page";
 import { ProxyOutput } from "../../proxies";
-import { runProxyContext, ProxyContext } from "../../proxies/context";
+import { runProxyContext, type ProxyContext } from "../../proxies/context";
 import { getLanguages } from "../../utils/getLanguages";
 import { populateRelations } from "../../utils/populates/populateRelations";
 import { resolveRedirect } from "../../utils/redirects/resolveRedirect";
