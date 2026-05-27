@@ -95,21 +95,21 @@ export const ManagerSettingsRoutePathsScreen = () => {
   }
 
   return (
-    <div className='container mx-auto flex flex-col items-start gap-4 py-10'>
-      <div className='flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+    <div className="container mx-auto flex flex-col items-start gap-4 py-10">
+      <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <SearchInput
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder='Search path...'
-          className='max-w-md'
+          placeholder="Search path..."
+          className="max-w-md"
         />
         {canUpdateRoutes ? (
-          <div className='self-end' data-tour='route-paths-regenerate'>
+          <div data-tour="route-paths-regenerate">
             <Button onClick={() => setConfirmOpen(true)}>Regenerar rutas</Button>
           </div>
         ) : null}
       </div>
-      <div className='w-full' data-tour='route-paths-table'>
+      <div className="w-full" data-tour="route-paths-table">
         <DataTable
           sorting={sorting}
           setSorting={setSorting}
@@ -125,21 +125,21 @@ export const ManagerSettingsRoutePathsScreen = () => {
         setItemsPerPage={setItemsPerPage}
       />
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent aria-describedby='Confirm action'>
+        <DialogContent aria-describedby="Confirm action">
           <DialogHeader>
             <DialogTitle>Regenerate all routes</DialogTitle>
           </DialogHeader>
           <DialogDescription>
-            Are you sure you want to regenerate all routes? This process can be
-            time-consuming if the number of routes is large.
+            Are you sure you want to regenerate all routes? This process can be time-consuming if
+            the number of routes is large.
           </DialogDescription>
-          <DialogFooter className='flex w-full justify-between gap-2'>
-            <Button variant='ghost' onClick={() => setConfirmOpen(false)}>
+          <DialogFooter className="flex w-full justify-between gap-2">
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
               Cancel
             </Button>
             <Button
               loading={regenerateMutation.isPending}
-              variant='destructive'
+              variant="destructive"
               onClick={() => void handleRegenerate()}
             >
               Yes, regenerate

@@ -193,13 +193,28 @@ export const ensureRakunBootstrap = (options: RakunBootstrapOptions) => {
 };
 
 export type { RakunBootstrapOptions };
-export type {
-  RouteDefinition,
-  RouteKey,
-  RouteKeys,
-} from "./api/utils/routes/routeDefinitions";
 export type { ApiProxies, InputProxy, OutputProxy } from "./api/proxies";
+export {
+  getInputProxy,
+  getOutputProxy,
+  getProxies,
+  ProxyOutput,
+} from "./api/proxies";
+export {
+  getProxyContext,
+  runProxyContext,
+  type ProxyContext,
+} from "./api/proxies/context";
 export { getRakunBootstrapOptions } from "./bootstrapState";
+export {
+  closeDatabase,
+  closeMongoService,
+  createMongoConnection,
+  createMongoService,
+  getMongoService,
+} from "./orm";
+export type { DBMutationOptions, DBService } from "./orm/dbService";
+export type { MongoConfig } from "./orm/database";
 export {
   default as ContentType,
   DocumentVisibility,
@@ -265,6 +280,7 @@ export { encodeContentTypeForManager } from "./lib/Registry";
 export { Id, isId, type Id as IdType } from "./lib/utils/id";
 export { isTranslatableObject } from "./lib/utils/isTranslatableObject";
 export { slugify } from "./lib/utils/slugify";
+export * from "./api/utils";
 export {
   Language,
   ManagerUser,

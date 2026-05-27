@@ -1,6 +1,6 @@
 'use client'
 
-import type { ColumnDef, Row, RowSelectionState, SortingState } from '@tanstack/react-table'
+import type { Column, ColumnDef, Row, RowSelectionState, SortingState } from '@tanstack/react-table'
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
 import type { Dispatch, SetStateAction } from 'react'
 
@@ -21,6 +21,25 @@ interface DataTableProps<TData, TValue> {
   rowSelection?: RowSelectionState
   setRowSelection?: Dispatch<SetStateAction<RowSelectionState>>
   getRowId?: (originalRow: TData, index: number, parent?: Row<TData>) => string
+}
+
+const selectColumnWidth = 44
+const idColumnWidth = 120
+const actionColumnWidth = 56
+const defaultColumnWidth = 176
+
+const getColumnWidth = <TData, TValue>(column: Column<TData, TValue>) => {
+  console.log(column)
+
+  if (column.id === 'select') return selectColumnWidth
+  if (column.id === 'actions' || column.id === 'view') return actionColumnWidth
+  if (column.id === 'id' || column.id === '_id' || column.id.endsWith('Id')) {
+    return idColumnWidth
+  }
+
+  if (column.columnDef.size) return column.columnDef.size
+
+  return defaultColumnWidth
 }
 
 export function DataTable<TData, TValue>({
@@ -48,12 +67,21 @@ export function DataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
   })
   const rows = table.getRowModel().rows
-  const minTableWidth = `${Math.max(56, table.getAllLeafColumns().length * 10)}rem`
+  const leafColumns = table.getAllLeafColumns()
+  const tableWidth = leafColumns.reduce((width, column) => width + getColumnWidth(column), 0)
 
   return (
     <div className="w-full min-w-0 overflow-x-auto pb-4">
-      <div className="overflow-hidden rounded-lg border" style={{ minWidth: minTableWidth }}>
-        <Table className="table-auto" style={{ minWidth: minTableWidth }}>
+      <div className="overflow-hidden rounded-lg border" style={{ minWidth: tableWidth }}>
+        <Table className="table-fixed" style={{ minWidth: tableWidth }}>
+          <colgroup>
+            {leafColumns.map((column) => (
+              <col
+                key={column.id}
+                style={{ minWidth: getColumnWidth(column), width: getColumnWidth(column) }}
+              />
+            ))}
+          </colgroup>
           <TableHeader className="bg-muted">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

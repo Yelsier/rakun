@@ -41,59 +41,53 @@ export const columns = ({
 }): ColumnDef<ManagerRouteRecord>[] => [
   {
     accessorKey: '_id',
-    header: () => <span className='ml-2'>ID</span>,
+    header: () => <span className="ml-2">ID</span>,
     cell: ({ row }) => <IDColumn _id={row.getValue('_id') as string} />,
   },
   {
     accessorKey: 'hasPage',
-    header: () => <span className='ml-2'>Has page</span>,
-    cell: ({ row }) => (
-      <BooleanIndicator value={Boolean(row.getValue('hasPage'))} />
-    ),
+    header: () => <span className="ml-2">Has page</span>,
+    cell: ({ row }) => <BooleanIndicator value={Boolean(row.getValue('hasPage'))} />,
   },
   {
     accessorKey: 'dynamic',
-    header: () => <span className='ml-2'>Dynamic</span>,
-    cell: ({ row }) => (
-      <BooleanIndicator value={Boolean(row.getValue('dynamic'))} />
-    ),
+    header: () => <span className="ml-2">Dynamic</span>,
+    cell: ({ row }) => <BooleanIndicator value={Boolean(row.getValue('dynamic'))} />,
   },
   {
     accessorKey: 'contentType',
-    header: () => <span className='ml-2'>Content Type</span>,
-    cell: ({ row }) => <span className='ml-2'>{row.getValue('contentType')}</span>,
+    header: () => <span className="ml-2">Content Type</span>,
+    cell: ({ row }) => <span className="ml-2">{row.getValue('contentType')}</span>,
   },
   {
     accessorKey: 'field',
-    header: () => <span className='ml-2'>Field</span>,
-    cell: ({ row }) => <span className='ml-2'>{row.getValue('field')}</span>,
+    header: () => <span className="ml-2">Field</span>,
+    cell: ({ row }) => <span className="ml-2">{row.getValue('field')}</span>,
   },
   {
     accessorKey: 'iterator',
-    header: () => <span className='ml-2'>Iterator</span>,
-    cell: ({ row }) => <span className='ml-2'>{row.getValue('iterator')}</span>,
+    header: () => <span className="ml-2">Iterator</span>,
+    cell: ({ row }) => <span className="ml-2">{row.getValue('iterator')}</span>,
   },
   {
     accessorKey: 'basePath',
-    header: () => <span className='ml-2'>Base Path</span>,
+    header: () => <span className="ml-2">Base Path</span>,
     cell: ({ row }) => (
-      <span className='ml-2'>
+      <span className="ml-2">
         {getTranslation(row.original.basePath as MaybeTranslatableValue<string>)}
       </span>
     ),
   },
   {
     accessorKey: 'parent',
-    header: () => <span className='ml-2'>Parent</span>,
+    header: () => <span className="ml-2">Parent</span>,
     cell: ({ row }) =>
       row.original.parent?._id ? <IDColumn _id={row.original.parent._id} /> : null,
   },
   {
     accessorKey: 'parentRelationField',
-    header: () => <span className='ml-2'>Parent Relation Field</span>,
-    cell: ({ row }) => (
-      <span className='ml-2'>{row.original.parentRelationField}</span>
-    ),
+    header: () => <span className="ml-2">Parent Relation Field</span>,
+    cell: ({ row }) => <span className="ml-2">{row.original.parentRelationField}</span>,
   },
   {
     id: 'actions',
@@ -102,28 +96,27 @@ export const columns = ({
         {hasPermissions(['manager.routes.updateAny']) && (
           <DropdownMenuTrigger asChild>
             <Button
-              variant='ghost'
-              className='m-auto flex h-8 w-8 items-center justify-center p-0!'
+              variant="ghost"
+              className="m-auto flex h-8 w-8 items-center justify-center p-0!"
             >
-              <span className='sr-only'>Open menu</span>
+              <span className="sr-only">Open menu</span>
               <MoreHorizontal />
             </Button>
           </DropdownMenuTrigger>
         )}
-        <DropdownMenuContent align='end'>
+        <DropdownMenuContent align="end">
           {hasPermissions(['manager.routes.updateAny']) && (
             <DropdownMenuItem onClick={() => setEdit(row.original)}>
               <Edit />
               Edit
             </DropdownMenuItem>
           )}
-          {hasPermissions(['manager.routes.updateAny']) &&
-            canEditLayoutModules?.(row.original) && (
-              <DropdownMenuItem onClick={() => onEditLayoutModules?.(row.original)}>
-                <Settings />
-                Edit layout modules
-              </DropdownMenuItem>
-            )}
+          {hasPermissions(['manager.routes.updateAny']) && canEditLayoutModules?.(row.original) && (
+            <DropdownMenuItem onClick={() => onEditLayoutModules?.(row.original)}>
+              <Settings />
+              Edit layout modules
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     ),
