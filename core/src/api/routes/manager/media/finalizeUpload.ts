@@ -20,6 +20,7 @@ import {
   FinalizeUploadInput,
   FinalizeUploadOutput,
 } from "../../../../schemas/manager/media/finalizeUpload";
+import { resolveMediaRecordUrls } from "./resolveMediaRecordUrls";
 
 const normalizePath = (value: string): string =>
   value
@@ -256,22 +257,7 @@ export const finalizeUploadHandler = async ({
       input.mime || finalized.mime || "application/octet-stream";
     const resolvedSize = input.size ?? finalized.size;
     const previewKey = input.previewKey;
-    const previewUrl = previewKey
-      ? media.rawAdapter.publicUrl({
-          key: previewKey,
-          access: finalized.access,
-        }) || undefined
-      : undefined;
-    const sizes = input.sizes
-      ?.map((size) => ({
-        ...size,
-        url:
-          media.rawAdapter.publicUrl({
-            key: size.key,
-            access: finalized.access,
-          }) || undefined,
-      }))
-      .filter((size) => size.key);
+    const sizes = input.sizes?.filter((size) => size.key);
     const persistedSizes = sizes?.length ? sizes : undefined;
     const createdMedia = await db.create(Media, {
       _type: "Media",
@@ -283,9 +269,7 @@ export const finalizeUploadHandler = async ({
       extension: fileExtension(resolvedOriginalName),
       size: resolvedSize,
       etag: finalized.etag,
-      url: finalized.publicUrl ?? undefined,
       previewKey,
-      previewUrl,
       previewMime: input.previewMime,
       sizes: persistedSizes,
       width: input.width,
@@ -313,7 +297,7 @@ export const finalizeUploadHandler = async ({
       folderId: folder?._id,
     });
 
-    const mediaOutput: FinalizeUploadOutput["media"] = {
+    const mediaOutputBase: FinalizeUploadOutput["media"] = {
       ...createdMedia,
       sizes: persistedSizes,
       folder: createdMedia.folder
@@ -324,6 +308,7 @@ export const finalizeUploadHandler = async ({
           }
         : undefined,
     };
+    const mediaOutput = await resolveMediaRecordUrls(mediaOutputBase);
 
     return {
       ...finalized,

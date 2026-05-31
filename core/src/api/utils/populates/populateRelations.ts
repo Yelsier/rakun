@@ -206,7 +206,10 @@ export async function populateRelations<T extends ContentType>(
             const originalUrl = resolved?.url || media.url || "";
 
             return {
+              key: media.key,
+              access: media.access,
               url: originalUrl,
+              previewKey: media.previewKey ?? null,
               previewUrl: resolvedPreview?.url || media.previewUrl || null,
               name: media.name || "",
               title: media.title || media.name || "",

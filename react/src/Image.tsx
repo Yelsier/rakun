@@ -12,7 +12,10 @@ export type RakunImageSize = {
 };
 
 export type RakunImageSource = {
+  key?: string | null;
+  access?: "public" | "private" | string | null;
   url?: string | null;
+  previewKey?: string | null;
   previewUrl?: string | null;
   name?: string | null;
   title?: string | null;
@@ -39,24 +42,84 @@ export type RakunImageProps = Omit<
   sizes?: string;
   imageSizes?: RakunImageSize[];
   srcSet?: string | null;
+  mediaBaseUrl?: string | null;
+  mediaPublicPath?: string;
   includeOriginalInSrcSet?: boolean;
+};
+
+const encodeMediaPath = (value: string): string =>
+  value
+    .split("/")
+    .filter(Boolean)
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+
+const joinUrlPath = (baseUrl: string | null | undefined, pathname: string) => {
+  const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
+
+  if (!baseUrl) return normalizedPath;
+
+  return `${baseUrl.replace(/\/$/, "")}${normalizedPath}`;
+};
+
+const resolvePublicMediaUrl = ({
+  key,
+  access,
+  mediaBaseUrl,
+  mediaPublicPath,
+}: {
+  key?: string | null;
+  access?: string | null;
+  mediaBaseUrl?: string | null;
+  mediaPublicPath: string;
+}): string | undefined => {
+  if (!key || access === "private") return undefined;
+
+  const publicKey = key.startsWith("public/")
+    ? key.slice("public/".length)
+    : key;
+  const encodedKey = encodeMediaPath(publicKey);
+
+  if (!encodedKey) return undefined;
+
+  return joinUrlPath(mediaBaseUrl, `${mediaPublicPath}/${encodedKey}`);
 };
 
 const buildSrcSet = ({
   src,
   width,
   sizes,
+  access,
+  mediaBaseUrl,
+  mediaPublicPath,
   includeOriginal,
 }: {
   src?: string | null;
   width?: number | null;
   sizes?: RakunImageSize[];
+  access?: string | null;
+  mediaBaseUrl?: string | null;
+  mediaPublicPath: string;
   includeOriginal: boolean;
 }): string | undefined => {
   const entries = (sizes ?? [])
-    .filter((size) => size.url && Number.isFinite(size.width) && size.width > 0)
     .map((size) => ({
-      url: size.url!,
+      url:
+        size.url ||
+        resolvePublicMediaUrl({
+          key: size.key,
+          access,
+          mediaBaseUrl,
+          mediaPublicPath,
+        }),
+      width: size.width,
+    }))
+    .filter(
+      (size): size is { url: string; width: number } =>
+        !!size.url && Number.isFinite(size.width) && size.width > 0,
+    )
+    .map((size) => ({
+      url: size.url,
       width: Math.round(size.width),
     }));
 
@@ -92,13 +155,29 @@ export function RakunImage({
   sizes = "100vw",
   imageSizes,
   srcSet,
+  mediaBaseUrl,
+  mediaPublicPath = "/media/public",
   includeOriginalInSrcSet = true,
   loading = "lazy",
   decoding = "async",
   ...imgProps
 }: RakunImageProps) {
-  const originalSrc = src ?? image?.url ?? fallbackSrc ?? undefined;
-  const resolvedPreviewSrc = previewSrc ?? image?.previewUrl ?? undefined;
+  const resolvedOriginalFromKey = resolvePublicMediaUrl({
+    key: image?.key,
+    access: image?.access,
+    mediaBaseUrl,
+    mediaPublicPath,
+  });
+  const resolvedPreviewFromKey = resolvePublicMediaUrl({
+    key: image?.previewKey,
+    access: image?.access,
+    mediaBaseUrl,
+    mediaPublicPath,
+  });
+  const originalSrc =
+    src || image?.url || resolvedOriginalFromKey || fallbackSrc || undefined;
+  const resolvedPreviewSrc =
+    previewSrc || image?.previewUrl || resolvedPreviewFromKey || undefined;
   const resolvedSrc = usePreview
     ? (resolvedPreviewSrc ?? originalSrc)
     : originalSrc;
@@ -114,6 +193,9 @@ export function RakunImage({
         src: originalSrc,
         width: numericWidth,
         sizes: imageSizes ?? image?.sizes,
+        access: image?.access,
+        mediaBaseUrl,
+        mediaPublicPath,
         includeOriginal: includeOriginalInSrcSet,
       }));
 

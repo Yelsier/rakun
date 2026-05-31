@@ -58,7 +58,10 @@ const fileRelationSchema = z.object({
 });
 
 const fileOutputSchema = z.object({
+  key: z.string().optional(),
+  access: z.enum(["public", "private"]).optional(),
   url: z.string(),
+  previewKey: z.string().nullable().optional(),
   previewUrl: z.string().nullable(),
   name: z.string(),
   title: z.string().optional(),

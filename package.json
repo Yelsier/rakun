@@ -42,6 +42,7 @@
     "build:openai": "bun run --filter @rakun-kit/openai build",
     "build:react": "bun run --filter @rakun-kit/react build",
     "build:manager-react": "bun run --filter @rakun-kit/manager-react build",
+    "migrate:media-urls": "node scripts/migrate-media-urls.mjs",
     "preview": "bun run --filter @rakun-kit/preview dev",
     "preview:api": "bun run --filter @rakun-kit/preview dev:api",
     "preview:web": "bun run --filter @rakun-kit/preview dev:web",

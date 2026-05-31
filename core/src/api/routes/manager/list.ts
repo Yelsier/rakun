@@ -1,5 +1,6 @@
 import { Logger } from "../../../lib/Logger";
 import { hasPermissions, Permission } from "../../../lib/Permissions";
+import { Media } from "../../../internal-content-types";
 import { getMongoService } from "../../../orm";
 import { RakunRequestContext } from "../../context";
 import { ListInput } from "../../../schemas/manager/list";
@@ -7,6 +8,7 @@ import { checkAnyPermissions } from "../../utils/checkPermissions";
 import { populateRelations } from "../../utils/populates/populateRelations";
 import { requireContentType } from "../../utils/requireContentType";
 import { syncConfiguredRoutes } from "../../utils/routes/syncConfiguredRoutes";
+import { resolveMediaRecordUrls } from "./media/resolveMediaRecordUrls";
 
 export const listHandler = async ({
   input,
@@ -55,13 +57,19 @@ export const listHandler = async ({
     totalItems: raw.totalItems,
   });
 
+  const items = (await Promise.all(
+    raw.items.map((item) => populateRelations(item)),
+  )) as {
+    [x: string]: unknown;
+    _id: string;
+  }[];
+  const resolvedItems =
+    contentType.name === Media.name
+      ? await Promise.all(items.map((item) => resolveMediaRecordUrls(item)))
+      : items;
+
   return {
     totalItems: raw.totalItems,
-    items: (await Promise.all(
-      raw.items.map((item) => populateRelations(item)),
-    )) as {
-      [x: string]: unknown;
-      _id: string;
-    }[],
+    items: resolvedItems,
   };
 };

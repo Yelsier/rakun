@@ -1,11 +1,13 @@
 import { throwAppError } from "../../../lib/errors";
 import { Logger } from "../../../lib/Logger";
+import { Media } from "../../../internal-content-types";
 import { getMongoService } from "../../../orm";
 import { RakunRequestContext } from "../../context";
 import { GetInput } from "../../../schemas/manager/get";
 import { checkOwnership } from "../../utils/checkOwnership";
 import { requireContentType } from "../../utils/requireContentType";
 import { syncConfiguredRoutes } from "../../utils/routes/syncConfiguredRoutes";
+import { resolveMediaRecordUrls } from "./media/resolveMediaRecordUrls";
 
 export const getHandler = async ({
   input,
@@ -32,6 +34,9 @@ export const getHandler = async ({
   try {
     const item = await db.get(contentType, id);
     Logger.addTrace("manager.get: db get success", { found: !!item });
+    if (contentType.name === Media.name) {
+      return resolveMediaRecordUrls(item as Record<string, unknown>);
+    }
     return item;
   } catch (_) {
     throwAppError("NOT_FOUND", {
