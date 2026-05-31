@@ -127,108 +127,6 @@ export const buildPageOutput = async ({
   const { [route.iterator]: modules, ...rest } = populatedTranslated;
 
   const { seo, ...info } = rest;
-  const seoSettingsRaw = await db.find(SeoSettings, {
-    key: "default",
-  });
-  const seoSettings = seoSettingsRaw
-    ? translateObject(
-        await populateRelations(seoSettingsRaw),
-        language,
-        languages,
-      )
-    : null;
-  const seoSettingsRecord = seoSettings as Record<string, unknown> | null;
-  const resolvedSeo = resolveSeo({
-    pageSeo: seo as Record<string, unknown> | undefined,
-    defaultSeo: seoSettingsRecord?.defaultSeo as
-      | Record<string, unknown>
-      | undefined,
-    settings: seoSettingsRecord,
-    path,
-  });
-
-  const layoutModuleSelections = (
-    await db.list(RouteLayoutModule, {
-      filter: { routeId: route._id },
-      options: { limit: "all" },
-    })
-  ).items;
-  const layoutModuleOverrides = (
-    await db.list(RouteLayoutModuleOverride, {
-      filter: {
-        routeId: route._id,
-        contentTypeId,
-      },
-      options: { limit: "all" },
-    })
-  ).items;
-  const layoutModuleOverrideByKey = new Map(
-    layoutModuleOverrides.map((override) => [override.key, override]),
-  );
-
-  const layoutModuleByKey = Object.fromEntries(
-    await Promise.all(
-      layoutModuleSelections.map(async (selection) => {
-        const override = layoutModuleOverrideByKey.get(selection.key);
-        const moduleId = override ? override.moduleId : selection.moduleId;
-
-        if (!moduleId) {
-          return [selection.key, null] as const;
-        }
-
-        const layoutContentType = getContentTypeByName(selection.contentType);
-        if (!layoutContentType) {
-          return [selection.key, null] as const;
-        }
-
-        const layoutData = await db.get(layoutContentType, moduleId);
-        if (!layoutData) {
-          return [selection.key, null] as const;
-        }
-
-        const layoutPopulated = await populateRelations(layoutData);
-        const layoutProxied = await ProxyOutput(layoutPopulated);
-        const layoutTranslated = translateObject(
-          layoutProxied,
-          language,
-          languages,
-        );
-
-        return [
-          selection.key,
-          validateModule(layoutTranslated as PageModule),
-        ] as const;
-      }),
-    ),
-  );
-
-  const contentModules = (
-    (await Promise.all(
-      [
-        ...(modules as IterableContentTypes).map((m) => ({
-          ...m.value,
-        })),
-      ].map(ProxyOutput),
-    )) as PageModule[]
-  ).map(validateModule);
-
-  const layout = [
-    ...layoutModuleSelections
-      .sort((a, b) => a.order - b.order)
-      .map((selection) => ({
-        type: "module" as const,
-        key: selection.key,
-        module: layoutModuleByKey[selection.key] ?? null,
-        order: selection.order,
-      })),
-    {
-      type: "content" as const,
-      modules: contentModules,
-      order: route.layoutContentOrder,
-    },
-  ]
-    .sort((a, b) => a.order - b.order)
-    .map(({ order: _order, ...item }) => item);
 
   return runProxyContext(
     {
@@ -237,6 +135,109 @@ export const buildPageOutput = async ({
       type: contentType.name,
     } as ProxyContext,
     async () => {
+      const seoSettingsRaw = await db.find(SeoSettings, {
+        key: "default",
+      });
+      const seoSettings = seoSettingsRaw
+        ? translateObject(
+            await populateRelations(seoSettingsRaw),
+            language,
+            languages,
+          )
+        : null;
+      const seoSettingsRecord = seoSettings as Record<string, unknown> | null;
+      const resolvedSeo = resolveSeo({
+        pageSeo: seo as Record<string, unknown> | undefined,
+        defaultSeo: seoSettingsRecord?.defaultSeo as
+          | Record<string, unknown>
+          | undefined,
+        settings: seoSettingsRecord,
+        path,
+      });
+
+      const layoutModuleSelections = (
+        await db.list(RouteLayoutModule, {
+          filter: { routeId: route._id },
+          options: { limit: "all" },
+        })
+      ).items;
+      const layoutModuleOverrides = (
+        await db.list(RouteLayoutModuleOverride, {
+          filter: {
+            routeId: route._id,
+            contentTypeId,
+          },
+          options: { limit: "all" },
+        })
+      ).items;
+      const layoutModuleOverrideByKey = new Map(
+        layoutModuleOverrides.map((override) => [override.key, override]),
+      );
+
+      const layoutModuleByKey = Object.fromEntries(
+        await Promise.all(
+          layoutModuleSelections.map(async (selection) => {
+            const override = layoutModuleOverrideByKey.get(selection.key);
+            const moduleId = override ? override.moduleId : selection.moduleId;
+
+            if (!moduleId) {
+              return [selection.key, null] as const;
+            }
+
+            const layoutContentType = getContentTypeByName(selection.contentType);
+            if (!layoutContentType) {
+              return [selection.key, null] as const;
+            }
+
+            const layoutData = await db.get(layoutContentType, moduleId);
+            if (!layoutData) {
+              return [selection.key, null] as const;
+            }
+
+            const layoutPopulated = await populateRelations(layoutData);
+            const layoutProxied = await ProxyOutput(layoutPopulated);
+            const layoutTranslated = translateObject(
+              layoutProxied,
+              language,
+              languages,
+            );
+
+            return [
+              selection.key,
+              validateModule(layoutTranslated as PageModule),
+            ] as const;
+          }),
+        ),
+      );
+
+      const contentModules = (
+        (await Promise.all(
+          [
+            ...(modules as IterableContentTypes).map((m) => ({
+              ...m.value,
+            })),
+          ].map(ProxyOutput),
+        )) as PageModule[]
+      ).map(validateModule);
+
+      const layout = [
+        ...layoutModuleSelections
+          .sort((a, b) => a.order - b.order)
+          .map((selection) => ({
+            type: "module" as const,
+            key: selection.key,
+            module: layoutModuleByKey[selection.key] ?? null,
+            order: selection.order,
+          })),
+        {
+          type: "content" as const,
+          modules: contentModules,
+          order: route.layoutContentOrder,
+        },
+      ]
+        .sort((a, b) => a.order - b.order)
+        .map(({ order: _order, ...item }) => item);
+
       return {
         renderMode: route.dynamic ? "dynamic" : "static",
         ttl: route.dynamic ? undefined : 86400,

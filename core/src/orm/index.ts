@@ -28,23 +28,15 @@ export const createMongoConnection = (config: MongoConfig) => {
   _config = config
 }
 
-export async function createMongoService(
-  config: MongoConfig,
-): Promise<DBService> {
+export async function createMongoService(config: MongoConfig): Promise<DBService> {
   _config = config
   const existing = dbServices.get(config.MONGO_URI)
   if (existing) {
-    if (Logger.isVerbose()) {
-      Logger.addTrace('mongo service cache hit')
-    }
     return existing
   }
 
   const existingPromise = dbServicePromises.get(config.MONGO_URI)
   if (existingPromise) {
-    if (Logger.isVerbose()) {
-      Logger.addTrace('mongo service pending')
-    }
     return await existingPromise
   }
 
@@ -86,9 +78,7 @@ export async function createMongoService(
 export async function getMongoService(config?: MongoConfig): Promise<DBService> {
   const resolvedConfig = config ?? _config
   if (!resolvedConfig) {
-    throw new Error(
-      'MongoDB service not initialized. Call createMongoConnection first.',
-    )
+    throw new Error('MongoDB service not initialized. Call createMongoConnection first.')
   }
   return await createMongoService(resolvedConfig)
 }
