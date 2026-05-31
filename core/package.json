@@ -1,6 +1,6 @@
 {
   "name": "@rakun-kit/core",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "description": "Core Rakun content, routing, media, auth, and manager APIs.",
   "license": "MIT",
   "author": {
@@ -64,6 +64,12 @@
       "import": "./dist/esm/contracts.js",
       "require": "./dist/cjs/contracts.js",
       "default": "./dist/esm/contracts.js"
+    },
+    "./literals": {
+      "types": "./dist/esm/literals/index.d.ts",
+      "import": "./dist/esm/literals/index.js",
+      "require": "./dist/cjs/literals/index.js",
+      "default": "./dist/esm/literals/index.js"
     },
     "./api-utils": {
       "types": "./dist/esm/api/utils/index.d.ts",

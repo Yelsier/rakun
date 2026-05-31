@@ -6,6 +6,21 @@ import type {
   SitemapOutput,
 } from "@rakun-kit/core/contracts";
 
+export {
+  getCurrentPageInfo,
+  getLocaleFromInfo,
+  getLiteralsFromInfo,
+  PageInfoClientSync,
+  PageInfoProvider,
+  runWithPageInfo,
+  tFromInfo,
+  usePageInfo,
+  useT,
+  type PageInfo,
+  type TFromInfoArgs,
+  type TranslationValues,
+} from "./translation";
+
 import { markRakunPreviewPage } from "./web-preview";
 
 export {

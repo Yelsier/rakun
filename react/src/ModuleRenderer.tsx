@@ -18,6 +18,7 @@ import {
 } from "@rakun-kit/core/web";
 import { ModuleErrorBoundary } from "./ErrorBoundary";
 import { LazyViewport } from "./LazyViewport";
+import { runWithPageInfo } from "./pageInfoStore";
 import {
   getRegistryRecord,
   resolveModuleImport,
@@ -37,7 +38,7 @@ export type ModuleRenderContext<TModule extends PageModule = PageModule> = {
 
 export type ModuleRendererProps<TModule extends PageModule = PageModule> = {
   modules?: TModule[];
-  page?: Pick<PageOutput, "layout" | "modules">;
+  page?: Pick<PageOutput, "layout" | "modules" | "info">;
   layout?: PageLayout;
   registry?: RakunModuleRegistry<TModule>;
   loadModule?: (name: string) => Promise<unknown>;
@@ -233,7 +234,7 @@ export function ModuleRenderer<TModule extends PageModule = PageModule>({
     return iteratePageModules(source) as Array<PageModuleEntry & { module: TModule }>;
   }, [layout, modules, page]);
 
-  return (
+  const render = () => (
     <>
       {entries.map((entry) => {
         return (
@@ -257,6 +258,8 @@ export function ModuleRenderer<TModule extends PageModule = PageModule>({
       })}
     </>
   );
+
+  return page ? runWithPageInfo(page.info, render) : render();
 }
 
 export function PageLayoutRenderer<TModule extends PageModule = PageModule>({
@@ -286,7 +289,7 @@ export function PageLayoutRenderer<TModule extends PageModule = PageModule>({
 
   let moduleIndex = 0;
 
-  return (
+  const render = () => (
     <>
       {source.map((item, layoutIndex) => {
         if (item.type === "module") {
@@ -367,4 +370,6 @@ export function PageLayoutRenderer<TModule extends PageModule = PageModule>({
       })}
     </>
   );
+
+  return page ? runWithPageInfo(page.info, render) : render();
 }

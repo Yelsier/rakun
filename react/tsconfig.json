@@ -9,6 +9,7 @@
     "paths": {
       "@rakun-kit/core": ["../core/dist/esm/index.d.ts"],
       "@rakun-kit/core/contracts": ["../core/dist/esm/contracts.d.ts"],
+      "@rakun-kit/core/literals": ["../core/dist/esm/literals/index.d.ts"],
       "@rakun-kit/core/web": ["../core/dist/esm/web/index.d.ts"]
     },
     "declaration": true,

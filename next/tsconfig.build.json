@@ -8,6 +8,7 @@
     "paths": {
       "@rakun-kit/core": ["../core/dist/esm/index.d.ts"],
       "@rakun-kit/core/contracts": ["../core/dist/esm/contracts.d.ts"],
+      "@rakun-kit/core/literals": ["../core/dist/esm/literals/index.d.ts"],
       "@rakun-kit/core/web": ["../core/dist/esm/web/index.d.ts"],
       "@rakun-kit/core/errors": ["../core/dist/esm/lib/errors/index.d.ts"],
       "@rakun-kit/core/logger": ["../core/dist/esm/lib/Logger.d.ts"],
@@ -32,6 +33,7 @@
       ],
       "@rakun-kit/manager-react/link": ["../manager-react/dist/esm/link.d.ts"],
       "@rakun-kit/react": ["../react/dist/esm/index.d.ts"],
+      "@rakun-kit/react/translation": ["../react/dist/esm/translation.d.ts"],
       "@rakun-kit/trpc": ["../trpc/dist/esm/index.d.ts"]
     }
   },

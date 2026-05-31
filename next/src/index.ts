@@ -28,6 +28,7 @@ import {
 } from "./shared";
 
 export * from "@rakun-kit/core";
+export * from "./translation";
 
 export type RakunNextOptions = {
   bootstrap?: RakunBootstrapOptions;

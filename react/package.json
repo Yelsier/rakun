@@ -1,6 +1,6 @@
 {
   "name": "@rakun-kit/react",
-  "version": "1.1.0",
+  "version": "1.2.1",
   "description": "React rendering helpers for Rakun web modules.",
   "license": "MIT",
   "author": {
@@ -51,6 +51,12 @@
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js",
       "default": "./dist/esm/index.js"
+    },
+    "./translation": {
+      "types": "./dist/esm/translation.d.ts",
+      "import": "./dist/esm/translation.js",
+      "require": "./dist/cjs/translation.js",
+      "default": "./dist/esm/translation.js"
     }
   }
 }

@@ -2,6 +2,7 @@ import type { ComponentType, CSSProperties, ReactNode } from "react";
 import type { PageModule, PageOutput } from "@rakun-kit/core/contracts";
 import { getPageLayout } from "@rakun-kit/core/web";
 
+import { PageInfoProvider, runWithPageInfo } from "./translation";
 import { RakunPreviewBridge } from "./web-preview-bridge";
 import { getRakunPreviewPageConfig } from "./web-preview";
 
@@ -52,90 +53,92 @@ export async function RakunPageRenderer({
     <main key={`content:${index}`}>{children}</main>
   ),
 }: RakunPageRendererProps) {
-  const layout = getPageLayout(page);
-  const previewConfig = getRakunPreviewPageConfig(page);
-  const rendered: ReactNode[] = [];
-  let pageModuleIndex = 0;
+  return runWithPageInfo(page.info, async () => {
+    const layout = getPageLayout(page);
+    const previewConfig = getRakunPreviewPageConfig(page);
+    const rendered: ReactNode[] = [];
+    let pageModuleIndex = 0;
 
-  const renderModule = async (
-    module: PageModule,
-    key: string,
-    meta: PreviewModuleRenderMeta,
-  ) => {
-    const Component = resolveModuleComponent(
-      module._type,
-      await loadModule(module._type),
-    );
+    const renderModule = async (
+      module: PageModule,
+      key: string,
+      meta: PreviewModuleRenderMeta,
+    ) => {
+      const Component = resolveModuleComponent(
+        module._type,
+        await loadModule(module._type),
+      );
 
-    const node = <Component key={previewConfig ? undefined : key} {...module} />;
+      const node = <Component key={previewConfig ? undefined : key} {...module} />;
 
-    if (!previewConfig) {
-      return node;
-    }
+      if (!previewConfig) {
+        return node;
+      }
 
-    return (
-      <span
-        key={key}
-        data-rakun-preview-module=""
-        data-rakun-preview-entry-type={meta.entryType}
-        data-rakun-preview-index={meta.index}
-        data-rakun-preview-layout-index={meta.layoutIndex}
-        data-rakun-preview-layout-key={meta.layoutKey}
-        data-rakun-preview-module-id={module._id}
-        data-rakun-preview-module-index={meta.moduleIndex}
-        data-rakun-preview-module-type={module._type}
-        style={previewModuleWrapperStyle}
-        suppressHydrationWarning
-      >
-        {node}
-      </span>
-    );
-  };
+      return (
+        <span
+          key={key}
+          data-rakun-preview-module=""
+          data-rakun-preview-entry-type={meta.entryType}
+          data-rakun-preview-index={meta.index}
+          data-rakun-preview-layout-index={meta.layoutIndex}
+          data-rakun-preview-layout-key={meta.layoutKey}
+          data-rakun-preview-module-id={module._id}
+          data-rakun-preview-module-index={meta.moduleIndex}
+          data-rakun-preview-module-type={module._type}
+          style={previewModuleWrapperStyle}
+          suppressHydrationWarning
+        >
+          {node}
+        </span>
+      );
+    };
 
-  for (const [layoutIndex, item] of layout.entries()) {
-    if (item.type === "module") {
-      if (!item.module) {
+    for (const [layoutIndex, item] of layout.entries()) {
+      if (item.type === "module") {
+        if (!item.module) {
+          continue;
+        }
+
+        const index = pageModuleIndex++;
+        rendered.push(
+          await renderModule(
+            item.module,
+            `layout:${item.key}:${item.module._id}`,
+            {
+              entryType: "layout",
+              index,
+              layoutIndex,
+              layoutKey: item.key,
+            },
+          ),
+        );
         continue;
       }
 
-      const index = pageModuleIndex++;
-      rendered.push(
-        await renderModule(
-          item.module,
-          `layout:${item.key}:${item.module._id}`,
-          {
-            entryType: "layout",
+      const children = await Promise.all(
+        item.modules.map((module, moduleIndex) => {
+          const index = pageModuleIndex++;
+
+          return renderModule(module, `content:${module._id}:${moduleIndex}`, {
+            entryType: "content",
             index,
             layoutIndex,
-            layoutKey: item.key,
-          },
-        ),
+            moduleIndex,
+          });
+        }),
       );
-      continue;
+
+      rendered.push(renderContent(children, layoutIndex));
     }
 
-    const children = await Promise.all(
-      item.modules.map((module, moduleIndex) => {
-        const index = pageModuleIndex++;
-
-        return renderModule(module, `content:${module._id}:${moduleIndex}`, {
-          entryType: "content",
-          index,
-          layoutIndex,
-          moduleIndex,
-        });
-      }),
+    return (
+      <PageInfoProvider value={page.info}>
+        {previewConfig ? (
+          <RakunPreviewBridge tokenParam={previewConfig.tokenParam} />
+        ) : null}
+        {rendered}
+      </PageInfoProvider>
     );
-
-    rendered.push(renderContent(children, layoutIndex));
-  }
-
-  return (
-    <>
-      {previewConfig ? (
-        <RakunPreviewBridge tokenParam={previewConfig.tokenParam} />
-      ) : null}
-      {rendered}
-    </>
-  );
+  });
 }

@@ -22,6 +22,7 @@
     "paths": {
       "@rakun-kit/core": ["../core/src/index.ts"],
       "@rakun-kit/core/contracts": ["../core/src/contracts.ts"],
+      "@rakun-kit/core/literals": ["../core/src/literals/index.ts"],
       "@rakun-kit/core/web": ["../core/src/web/index.ts"],
       "@rakun-kit/core/errors": ["../core/src/lib/errors/index.ts"],
       "@rakun-kit/core/logger": ["../core/src/lib/Logger.ts"],
@@ -43,6 +44,7 @@
       ],
       "@rakun-kit/manager-react/link": ["../manager-react/src/link.tsx"],
       "@rakun-kit/react": ["../react/src/index.ts"],
+      "@rakun-kit/react/translation": ["../react/src/translation.ts"],
       "@rakun-kit/trpc": ["../trpc/src/index.ts"]
     }
   },
