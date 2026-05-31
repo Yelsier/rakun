@@ -2,6 +2,11 @@
 
 import type { ImgHTMLAttributes } from "react";
 
+type ImageFetchPriority = "high" | "low" | "auto";
+type ImageElementProps = ImgHTMLAttributes<HTMLImageElement> & {
+  fetchPriority?: ImageFetchPriority;
+};
+
 export type RakunImageSize = {
   key?: string;
   url?: string | null;
@@ -27,7 +32,7 @@ export type RakunImageSource = {
 };
 
 export type RakunImageProps = Omit<
-  ImgHTMLAttributes<HTMLImageElement>,
+  ImageElementProps,
   "alt" | "height" | "sizes" | "src" | "srcSet" | "title" | "width"
 > & {
   image?: RakunImageSource | null;
@@ -45,6 +50,7 @@ export type RakunImageProps = Omit<
   mediaBaseUrl?: string | null;
   mediaPublicPath?: string;
   includeOriginalInSrcSet?: boolean;
+  priority?: boolean;
 };
 
 const encodeMediaPath = (value: string): string =>
@@ -158,10 +164,15 @@ export function RakunImage({
   mediaBaseUrl,
   mediaPublicPath = "/media/public",
   includeOriginalInSrcSet = true,
+  priority = false,
   loading = "lazy",
   decoding = "async",
   ...imgProps
 }: RakunImageProps) {
+  const resolvedImgProps: ImageElementProps = {
+    ...imgProps,
+    ...(priority ? { fetchPriority: "high" as const } : {}),
+  };
   const resolvedOriginalFromKey = resolvePublicMediaUrl({
     key: image?.key,
     access: image?.access,
@@ -201,7 +212,7 @@ export function RakunImage({
 
   return (
     <img
-      {...imgProps}
+      {...resolvedImgProps}
       src={resolvedSrc}
       srcSet={responsiveSrcSet || undefined}
       sizes={responsiveSrcSet ? sizes : undefined}
@@ -209,7 +220,7 @@ export function RakunImage({
       title={title ?? image?.title ?? undefined}
       width={resolvedWidth ?? undefined}
       height={resolvedHeight ?? undefined}
-      loading={loading}
+      loading={priority ? "eager" : loading}
       decoding={decoding}
     />
   );
