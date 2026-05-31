@@ -31,6 +31,8 @@ export const DocumentVisibility = z.enum([
 
 export type DocumentVisibility = z.infer<typeof DocumentVisibility>;
 
+const DocumentVisibilityBeforeTrash = DocumentVisibility.exclude(["trash"]);
+
 export type VersioningOptions = {
   maxVersions?: number;
 };
@@ -129,72 +131,113 @@ type NonIteratorFields<F extends FieldRecord> = {
     : K]: F[K];
 };
 
-type ContentTypeInputShape<F extends FieldRecord, N extends string> = Simplify<
-  InputFields<F> & {
-    _type: N;
-    _schemaVersion?: number;
-    _visibility?: DocumentVisibility;
-    _visibilityBeforeTrash?: Exclude<DocumentVisibility, "trash">;
-    _trashed?: boolean;
-    _revision?: number;
-    createdBy?: string;
-    updatedBy?: string;
-  }
->;
+type ContentTypeSchema<Shape> = z.ZodType<Shape, Shape>;
 
-type ContentTypeDbShape<F extends FieldRecord, N extends string> = Simplify<
-  DbFields<F> & {
-    _id: string;
-    _type: N;
-    _schemaVersion?: number;
-    _visibility?: DocumentVisibility;
-    _visibilityBeforeTrash?: Exclude<DocumentVisibility, "trash">;
-    _trashed?: boolean;
-    trashedAt?: Date;
-    trashedBy?: string;
-    _revision?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-    createdBy?: string;
-    updatedBy?: string;
-  }
->;
+type ContentTypeShape<Fields, Metadata> = Simplify<Fields & Metadata>;
 
-type ContentTypeOutputShape<F extends FieldRecord, N extends string> = Simplify<
-  OutputFields<F> & {
-    _type: N;
-    _id: string;
-    _schemaVersion?: number;
-    _visibility?: DocumentVisibility;
-    _visibilityBeforeTrash?: Exclude<DocumentVisibility, "trash">;
-    _trashed?: boolean;
-    trashedAt?: Date;
-    _revision?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-  }
->;
+type BaseMetadata<N extends string> = {
+  _type: N;
+  _schemaVersion?: number;
+  _visibility?: DocumentVisibility;
+  _visibilityBeforeTrash?: Exclude<DocumentVisibility, "trash">;
+  _trashed?: boolean;
+  _revision?: number;
+};
+
+type IdMetadata = {
+  _id: string;
+};
+
+type TrashMetadata = {
+  trashedAt?: Date;
+  trashedBy?: string;
+};
+
+type TimestampMetadata = {
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
+type AuthorMetadata = {
+  createdBy?: string;
+  updatedBy?: string;
+};
+
+type ContentTypeInputShape<F extends FieldRecord, N extends string> =
+  ContentTypeShape<InputFields<F>, BaseMetadata<N> & AuthorMetadata>;
+
+type ContentTypeDbShape<F extends FieldRecord, N extends string> =
+  ContentTypeShape<
+    DbFields<F>,
+    BaseMetadata<N> &
+      IdMetadata &
+      TrashMetadata &
+      TimestampMetadata &
+      AuthorMetadata
+  >;
+
+type ContentTypeOutputShape<F extends FieldRecord, N extends string> =
+  ContentTypeShape<
+    OutputFields<F>,
+    BaseMetadata<N> &
+      IdMetadata &
+      Pick<TrashMetadata, "trashedAt"> &
+      TimestampMetadata
+  >;
 
 type ContentTypePopulatedShape<
   F extends FieldRecord,
   N extends string,
-> = Simplify<
-  PopulatedFields<F> & {
-    _type: N;
-    _id: string;
-    _schemaVersion?: number;
-    _visibility?: DocumentVisibility;
-    _visibilityBeforeTrash?: Exclude<DocumentVisibility, "trash">;
-    _trashed?: boolean;
-    trashedAt?: Date;
-    trashedBy?: string;
-    _revision?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-    createdBy?: string;
-    updatedBy?: string;
-  }
->;
+> =
+  ContentTypeShape<
+    PopulatedFields<F>,
+    BaseMetadata<N> &
+      IdMetadata &
+      TrashMetadata &
+      TimestampMetadata &
+      AuthorMetadata
+  >;
+
+type ContentTypeParams<F extends FieldRecord, N extends string> = {
+  name: N;
+  fields: F;
+  menu?: Menu;
+  uniques?: Array<Array<keyof F>>;
+  listFields?: NestedPaths<ContentTypePopulatedShape<F, N>>[];
+  schemaVersion?: number;
+  migrations?: ContentTypeMigration[];
+  versioning?: boolean | VersioningOptions;
+  documentVisibility?: boolean;
+};
+
+type FieldSchemaMode = "input" | "db" | "populated";
+type SchemaShape = Record<string, z.ZodTypeAny>;
+
+const baseMetadataSchema = {
+  _schemaVersion: z.number().optional(),
+  _visibility: DocumentVisibility.optional(),
+  _visibilityBeforeTrash: DocumentVisibilityBeforeTrash.optional(),
+  _trashed: z.boolean().optional(),
+  _revision: z.number().optional(),
+} satisfies SchemaShape;
+
+const idMetadataSchema = {
+  _id: z.string(),
+} satisfies SchemaShape;
+
+const trashMetadataSchema = {
+  trashedAt: z.date().optional(),
+  trashedBy: z.string().optional(),
+} satisfies SchemaShape;
+
+const outputTrashMetadataSchema = {
+  trashedAt: trashMetadataSchema.trashedAt,
+} satisfies SchemaShape;
+
+const authorMetadataSchema = {
+  createdBy: z.string().optional(),
+  updatedBy: z.string().optional(),
+} satisfies SchemaShape;
 
 export type ContentTypeInput<CT> = CT extends ContentType<infer F, infer N>
   ? ContentTypeInputShape<F, N>
@@ -229,17 +272,7 @@ export default class ContentType<
   documentVisibility?: boolean;
   isInternal?: boolean;
 
-  constructor(params: {
-    name: N;
-    fields: F;
-    menu?: Menu;
-    uniques?: Array<Array<keyof F>>;
-    listFields?: NestedPaths<ContentTypePopulatedShape<F, N>>[];
-    schemaVersion?: number;
-    migrations?: ContentTypeMigration[];
-    versioning?: boolean | VersioningOptions;
-    documentVisibility?: boolean;
-  }) {
+  constructor(params: ContentTypeParams<F, N>) {
     this.name = params.name;
     this.fields = this.bindSelfRelations(params.fields) as F;
     this.menu = params.menu;
@@ -252,23 +285,14 @@ export default class ContentType<
   }
 
   getInputSchema() {
-    return this.buildInputSchema(false) as unknown as z.ZodType<
-      ContentTypeInputShape<F, N>,
+    return this.buildInputSchema(false) as unknown as ContentTypeSchema<
       ContentTypeInputShape<F, N>
     >;
   }
 
   private buildInputSchema(partial: boolean) {
-    const schema = z.object({
-      ...this.fieldSchemas("input"),
-      _type: z.literal(this.name),
-      _schemaVersion: z.number().optional(),
-      _visibility: DocumentVisibility.optional(),
-      _visibilityBeforeTrash: DocumentVisibility.exclude(["trash"]).optional(),
-      _trashed: z.boolean().optional(),
-      _revision: z.number().optional(),
-      createdBy: z.string().optional(),
-      updatedBy: z.string().optional(),
+    const schema = this.documentSchema(this.fieldSchemas("input"), {
+      ...authorMetadataSchema,
     });
 
     const inputSchema = partial ? schema.partial() : schema;
@@ -279,78 +303,29 @@ export default class ContentType<
   }
 
   getSchema() {
-    return z.object({
-      ...this.fieldSchemas("db"),
-      _type: z.literal(this.name),
-      _schemaVersion: z.number().optional(),
-      _visibility: DocumentVisibility.optional(),
-      _visibilityBeforeTrash: DocumentVisibility.exclude(["trash"]).optional(),
-      _trashed: z.boolean().optional(),
-      trashedAt: z.date().optional(),
-      trashedBy: z.string().optional(),
-      _revision: z.number().optional(),
-    }) as unknown as z.ZodType<
-      ContentTypeDbShape<F, N>,
-      ContentTypeDbShape<F, N>
-    >;
+    return this.documentSchema(this.fieldSchemas("db"), {
+      ...trashMetadataSchema,
+    }) as unknown as ContentTypeSchema<ContentTypeDbShape<F, N>>;
   }
 
   getPopulatedSchema() {
-    return z.object({
-      ...this.fieldSchemas("populated"),
-      _type: z.literal(this.name),
-      _id: z.string(),
-      _schemaVersion: z.number().optional(),
-      _visibility: DocumentVisibility.optional(),
-      _visibilityBeforeTrash: DocumentVisibility.exclude(["trash"]).optional(),
-      _trashed: z.boolean().optional(),
-      trashedAt: z.date().optional(),
-      trashedBy: z.string().optional(),
-      _revision: z.number().optional(),
-      createdBy: z.string().optional(),
-      updatedBy: z.string().optional(),
-    }) as unknown as z.ZodType<
-      ContentTypePopulatedShape<F, N>,
-      ContentTypePopulatedShape<F, N>
-    >;
+    return this.documentSchema(this.fieldSchemas("populated"), {
+      ...idMetadataSchema,
+      ...trashMetadataSchema,
+      ...authorMetadataSchema,
+    }) as unknown as ContentTypeSchema<ContentTypePopulatedShape<F, N>>;
   }
 
   getOutputSchema() {
-    return z.object({
-      ...this.outputFieldSchemas(this.fields),
-      _type: z.literal(this.name),
-      _id: z.string(),
-      _schemaVersion: z.number().optional(),
-      _visibility: DocumentVisibility.optional(),
-      _visibilityBeforeTrash: DocumentVisibility.exclude(["trash"]).optional(),
-      _trashed: z.boolean().optional(),
-      trashedAt: z.date().optional(),
-      _revision: z.number().optional(),
-    }) as unknown as z.ZodType<
-      ContentTypeOutputShape<F, N>,
+    return this.buildOutputSchema(this.fields) as unknown as ContentTypeSchema<
       ContentTypeOutputShape<F, N>
     >;
   }
 
   getOutputSchemaWithoutIterators() {
-    return z.object({
-      ...this.outputFieldSchemas(
-        Object.fromEntries(
-          Object.entries(this.fields).filter(
-            ([, field]) => field.meta.ui !== "Iterator",
-          ),
-        ) as NonIteratorFields<F>,
-      ),
-      _type: z.literal(this.name),
-      _id: z.string(),
-      _schemaVersion: z.number().optional(),
-      _visibility: DocumentVisibility.optional(),
-      _visibilityBeforeTrash: DocumentVisibility.exclude(["trash"]).optional(),
-      _trashed: z.boolean().optional(),
-      trashedAt: z.date().optional(),
-      _revision: z.number().optional(),
-    }) as unknown as z.ZodType<
-      ContentTypeOutputShape<NonIteratorFields<F>, N>,
+    return this.buildOutputSchema(
+      this.nonIteratorFields(),
+    ) as unknown as ContentTypeSchema<
       ContentTypeOutputShape<NonIteratorFields<F>, N>
     >;
   }
@@ -397,23 +372,7 @@ export default class ContentType<
       (field) => field.apiOnly(),
     ) as unknown as ApiOnlyFields<F>;
 
-    const contentType = new ContentType<ApiOnlyFields<F>, N>({
-      name: this.name,
-      fields,
-      menu: this.menu,
-      uniques: this.uniques as Array<Array<keyof ApiOnlyFields<F>>>,
-      listFields: this.listFields as NestedPaths<
-        ContentTypePopulatedShape<ApiOnlyFields<F>, N>
-      >[],
-    });
-    contentType.isHiddenFromManager = this.isHiddenFromManager;
-    contentType.collapseFields = this.collapseFields;
-    contentType.schemaVersion = this.schemaVersion;
-    contentType.migrations = this.migrations;
-    contentType.versioning = this.versioning;
-    contentType.documentVisibility = this.documentVisibility;
-    contentType.isInternal = this.isInternal;
-    return contentType;
+    return this.cloneWithFields<ApiOnlyFields<F>>(fields);
   }
 
   managerOnly() {
@@ -422,32 +381,62 @@ export default class ContentType<
       (field) => field.managerOnly(),
     ) as unknown as ManagerOnlyFields<F>;
 
-    const contentType = new ContentType<ManagerOnlyFields<F>, N>({
+    return this.cloneWithFields<ManagerOnlyFields<F>>(fields);
+  }
+
+  private documentSchema(fields: SchemaShape, metadata: SchemaShape = {}) {
+    return z.object({
+      ...fields,
+      _type: z.literal(this.name),
+      ...baseMetadataSchema,
+      ...metadata,
+    });
+  }
+
+  private buildOutputSchema<Fields extends FieldRecord>(fields: Fields) {
+    return this.documentSchema(this.outputFieldSchemas(fields), {
+      ...idMetadataSchema,
+      ...outputTrashMetadataSchema,
+    });
+  }
+
+  private nonIteratorFields() {
+    return Object.fromEntries(
+      Object.entries(this.fields).filter(
+        ([, field]) => field.meta.ui !== "Iterator",
+      ),
+    ) as NonIteratorFields<F>;
+  }
+
+  private cloneWithFields<Fields extends FieldRecord>(fields: Fields) {
+    const contentType = new ContentType<Fields, N>({
       name: this.name,
       fields,
       menu: this.menu,
-      uniques: this.uniques as Array<Array<keyof ManagerOnlyFields<F>>>,
+      uniques: this.uniques as Array<Array<keyof Fields>>,
       listFields: this.listFields as NestedPaths<
-        ContentTypePopulatedShape<ManagerOnlyFields<F>, N>
+        ContentTypePopulatedShape<Fields, N>
       >[],
     });
-    contentType.isHiddenFromManager = this.isHiddenFromManager;
-    contentType.collapseFields = this.collapseFields;
-    contentType.schemaVersion = this.schemaVersion;
-    contentType.migrations = this.migrations;
-    contentType.versioning = this.versioning;
-    contentType.documentVisibility = this.documentVisibility;
-    contentType.isInternal = this.isInternal;
-    return contentType;
+
+    return Object.assign(contentType, {
+      isHiddenFromManager: this.isHiddenFromManager,
+      collapseFields: this.collapseFields,
+      schemaVersion: this.schemaVersion,
+      migrations: this.migrations,
+      versioning: this.versioning,
+      documentVisibility: this.documentVisibility,
+      isInternal: this.isInternal,
+    });
   }
 
-  private fieldSchemas(mode: "input" | "db" | "output" | "populated") {
+  private fieldSchemas(mode: FieldSchemaMode) {
     return Object.fromEntries(
       Object.entries(this.fields).map(([key, field]) => [
         key,
         getFieldSchema(field, mode),
       ]),
-    );
+    ) as SchemaShape;
   }
 
   private outputFieldSchemas<Fields extends FieldRecord>(fields: Fields) {
@@ -567,11 +556,10 @@ function evaluateFieldCondition(
 
 function getFieldSchema(
   field: AnyField,
-  mode: "input" | "db" | "output" | "populated",
+  mode: FieldSchemaMode,
 ) {
   if (mode === "input") return field.getInputSchema();
   if (mode === "db") return field.getSchema();
-  if (mode === "output") return field.getOutputSchema();
 
   return "getPopulatedSchema" in field &&
     typeof field.getPopulatedSchema === "function"
