@@ -1,5 +1,3 @@
-"use client";
-
 export {
   createRakunApiClient,
   type CreateRakunApiClientOptions,

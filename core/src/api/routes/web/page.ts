@@ -23,6 +23,7 @@ import {
 import { ProxyOutput } from "../../proxies";
 import { runProxyContext, type ProxyContext } from "../../proxies/context";
 import { getLanguages } from "../../utils/getLanguages";
+import { populateLinks } from "../../utils/populates/populateLinks";
 import { populateRelations } from "../../utils/populates/populateRelations";
 import { resolveRedirect } from "../../utils/redirects/resolveRedirect";
 import { validateModule } from "../../utils/validateModule";
@@ -88,7 +89,12 @@ export const buildPageOutput = async ({
     return NotFoundResponse;
   }
 
-  const populated = await populateRelations(data as DBOutput<ContentType>);
+  const linksPopulated = await populateLinks(data as DBOutput<ContentType>);
+  Logger.addTrace(`${tracePrefix}: links populated`);
+
+  const populated = await populateRelations(
+    linksPopulated as DBOutput<ContentType>,
+  );
   Logger.addTrace(`${tracePrefix}: relations populated`);
 
   const proxied = await ProxyOutput(populated);
@@ -140,7 +146,7 @@ export const buildPageOutput = async ({
       });
       const seoSettings = seoSettingsRaw
         ? translateObject(
-            await populateRelations(seoSettingsRaw),
+            await populateRelations(await populateLinks(seoSettingsRaw)),
             language,
             languages,
           )
@@ -194,7 +200,9 @@ export const buildPageOutput = async ({
               return [selection.key, null] as const;
             }
 
-            const layoutPopulated = await populateRelations(layoutData);
+            const layoutPopulated = await populateRelations(
+              await populateLinks(layoutData),
+            );
             const layoutProxied = await ProxyOutput(layoutPopulated);
             const layoutTranslated = translateObject(
               layoutProxied,

@@ -1,3 +1,5 @@
+"use client";
+
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import type { PageModule } from "@rakun-kit/core/contracts";
 import type { ModuleErrorRenderer } from "./registry";
