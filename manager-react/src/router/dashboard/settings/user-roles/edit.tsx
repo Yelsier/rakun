@@ -116,6 +116,7 @@ export const EditRole = ({
           className='flex flex-col items-start gap-6'
         >
           <Button
+            type='submit'
             loading={createMutation.isPending || updateMutation.isPending}
             className='self-end'
           >

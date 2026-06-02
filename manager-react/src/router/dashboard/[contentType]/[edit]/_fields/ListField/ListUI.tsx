@@ -51,6 +51,28 @@ const getModuleId = (item: ListFieldValues[number]) => {
   return undefined;
 };
 
+const isApiOnlyNewRelationField = (
+  field: ListPropsRef["fields"][number]["field"],
+): field is EncodedRelationField => {
+  if (field.config.type !== "Relation") return false;
+
+  const relationField = field as EncodedRelationField;
+
+  return (
+    relationField.only === "new" &&
+    Object.values(relationField.contentType.fields).every(
+      (field) => field.visibility === "api",
+    )
+  );
+};
+
+const getApiOnlyNewRelationValue = (field: EncodedRelationField) => ({
+  type: "new" as const,
+  data: {
+    _type: field.contentType.name,
+  },
+});
+
 const AddListButtons = React.memo(
   ({
     fields,
@@ -123,10 +145,32 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
     }
 
     return (values as ListFieldValues)
-      .map((field) => ({
-        name: field.name,
-        value: refs.current[field.uid]?.getValue(),
-      }))
+      .map((field) => {
+        const nestedValue = refs.current[field.uid]?.getValue();
+
+        if (nestedValue !== undefined) {
+          return {
+            name: field.name,
+            value: nestedValue,
+          };
+        }
+
+        const fieldConfig = props.fields.find(
+          (config) => config.name === field.name,
+        );
+
+        if (fieldConfig && isApiOnlyNewRelationField(fieldConfig.field)) {
+          return {
+            name: field.name,
+            value: getApiOnlyNewRelationValue(fieldConfig.field),
+          };
+        }
+
+        return {
+          name: field.name,
+          value: nestedValue,
+        };
+      })
       .filter(
         (v) => v.value !== undefined && v.value !== null && v.value !== "",
       );
@@ -228,12 +272,9 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                   return null;
                 }
 
-                const noModulesToRender =
-                  fieldConfig.field.config.type === "Relation" &&
-                  Object.values(
-                    (fieldConfig.field as EncodedRelationField).contentType
-                      .fields,
-                  ).every((f) => f.visibility === "api");
+                const noModulesToRender = isApiOnlyNewRelationField(
+                  fieldConfig.field,
+                );
 
                 const FieldComponent =
                   fieldsMap[fieldConfig?.field.config.type];
