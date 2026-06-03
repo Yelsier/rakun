@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { getCurrentPageInfo } from './pageInfoStore'
-import { PageInfoClientSync } from './PageInfoClientSync'
+import { getCurrentPageInfo, setCurrentPageInfo } from './pageInfoStore'
 
 const pageInfoScriptEscapes: Record<string, string> = {
   '<': '\\u003c',
@@ -23,15 +22,16 @@ export function PageInfoProvider(props: {
 }) {
   const { value, children } = props
   const serializedValue = serializePageInfo(value)
+  setCurrentPageInfo(value)
 
   return (
     <>
-      <script
+      <template
+        data-rakun-page-info=""
         dangerouslySetInnerHTML={{
-          __html: `window.__CMS_PAGE_INFO__ = ${serializedValue};`,
+          __html: serializedValue,
         }}
       />
-      <PageInfoClientSync value={value} />
       {children}
     </>
   )

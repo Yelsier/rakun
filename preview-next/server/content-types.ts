@@ -11,8 +11,10 @@ export const Header = new ContentType({
     brand: Fields.string().required(),
     primaryLinkLabel: Fields.string(),
     primaryLinkHref: Fields.string().type("Url"),
+    internalLinkLabel: Fields.string(),
+    internalLink: Fields.link(),
   },
-  listFields: ["brand", "primaryLinkLabel"],
+  listFields: ["brand", "primaryLinkLabel", "internalLinkLabel"],
 });
 
 export const Footer = new ContentType({
@@ -27,8 +29,10 @@ export const Footer = new ContentType({
     copyright: Fields.string(),
     primaryLinkLabel: Fields.string(),
     primaryLinkHref: Fields.string().type("Url"),
+    internalLinkLabel: Fields.string(),
+    internalLink: Fields.link(),
   },
-  listFields: ["brand", "copyright"],
+  listFields: ["brand", "copyright", "internalLinkLabel"],
 });
 
 export const PageSection = new ContentType({

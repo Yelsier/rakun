@@ -13,6 +13,7 @@ type NodeRequire = (id: string) => unknown
 
 let currentServerPageInfo: PageInfo
 let asyncLocalStore: AsyncLocalStorage<PageInfo> | null | undefined
+const pageInfoTemplateSelector = 'template[data-rakun-page-info]'
 
 type BrowserWindow = Window & {
   __CMS_PAGE_INFO__?: Record<string, unknown>
@@ -98,6 +99,28 @@ const runWithFallbackPageInfo = <T>(info: PageInfo, fn: () => T): T => {
   }
 }
 
+const getTemplatePageInfo = (): PageInfo => {
+  if (typeof document === 'undefined') return undefined
+
+  const template = document.querySelector<HTMLTemplateElement>(
+    pageInfoTemplateSelector,
+  )
+  const raw =
+    template?.content.textContent ?? template?.innerHTML ?? template?.textContent
+
+  if (!raw) return undefined
+
+  try {
+    const parsed = JSON.parse(raw) as unknown
+
+    return parsed && typeof parsed === 'object'
+      ? (parsed as Record<string, unknown>)
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
 export const runWithPageInfo = <T>(info: PageInfo, fn: () => T): T => {
   if (typeof window !== 'undefined') {
     const browserWindow = window as BrowserWindow
@@ -114,9 +137,22 @@ export const runWithPageInfo = <T>(info: PageInfo, fn: () => T): T => {
   return runWithFallbackPageInfo(info, fn)
 }
 
+export const setCurrentPageInfo = (info: PageInfo): void => {
+  if (typeof window !== 'undefined') {
+    ;(window as BrowserWindow).__CMS_PAGE_INFO__ = info
+    return
+  }
+
+  currentServerPageInfo = info
+}
+
 export const getCurrentPageInfo = (): PageInfo => {
   if (typeof window !== 'undefined') {
-    return (window as BrowserWindow).__CMS_PAGE_INFO__ ?? currentServerPageInfo
+    return (
+      (window as BrowserWindow).__CMS_PAGE_INFO__ ??
+      getTemplatePageInfo() ??
+      currentServerPageInfo
+    )
   }
 
   return getAsyncLocalStore()?.getStore() ?? currentServerPageInfo

@@ -1,6 +1,11 @@
 import bcrypt from "bcrypt";
 import { MongoClient, type Db, type Document } from "mongodb";
-import { Page, HelloWorld, Seo } from "@rakun-kit/next/internal-content-types";
+import {
+  Page,
+  HelloWorld,
+  LiteralTranslation,
+  Seo,
+} from "@rakun-kit/next/internal-content-types";
 import { PermissionsList } from "@rakun-kit/next";
 
 import {
@@ -15,10 +20,46 @@ import {
 } from "./content-types";
 
 const now = () => new Date();
-const translatable = (value: string) => ({ _tag: "Translatable", en: value });
+const translatable = (en: string, es = en) => ({
+  _tag: "Translatable",
+  en,
+  es,
+});
 const seedLanguages = [
   { code: "en", name: "English", default: true },
   { code: "es", name: "Spanish", default: false },
+] as const;
+const seedLiteralTranslations = [
+  {
+    key: "demo.welcome",
+    locale: "en",
+    message: "EN literal override: welcome from the database.",
+  },
+  {
+    key: "demo.welcome",
+    locale: "es",
+    message: "ES literal override: bienvenida desde la base de datos.",
+  },
+  {
+    key: "test.hello",
+    locale: "en",
+    message: "EN client literal: hello, {name}.",
+  },
+  {
+    key: "test.hello",
+    locale: "es",
+    message: "ES literal cliente: hola, {name}.",
+  },
+  {
+    key: "test.goodbye",
+    locale: "en",
+    message: "EN server literal: goodbye, {name}.",
+  },
+  {
+    key: "test.goodbye",
+    locale: "es",
+    message: "ES literal servidor: adios, {name}.",
+  },
 ] as const;
 const SEED_LOCKS = "_rakun_preview_seed_locks";
 const SEED_LOCK_ID = "preview";
@@ -67,24 +108,62 @@ const releaseSeedLock = async (db: Db) => {
   await db.collection<SeedLock>(SEED_LOCKS).deleteOne({ _id: SEED_LOCK_ID });
 };
 
-const upsertHomeRouteMap = async ({
+const getTranslatableValue = (value: unknown, languageCode: string) => {
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const localized = record[languageCode] ?? record.en;
+
+    return typeof localized === "string" ? localized : "";
+  }
+
+  return typeof value === "string" ? value : "";
+};
+
+const buildPagePath = ({
+  page,
+  language,
+  home = false,
+}: {
+  page: Document;
+  language: Document;
+  home?: boolean;
+}) => {
+  const code = String(language.code);
+
+  if (home) {
+    return `/${code}/`;
+  }
+
+  const slug = getTranslatableValue(page.slug, code);
+
+  return `/${code}/${slug}/`.replace(/\/\/+/g, "/");
+};
+
+const pageLink = (route: Document, page: Document) => ({
+  routeId: route._id.toString(),
+  contentTypeId: page._id.toString(),
+});
+
+const upsertPageRouteMap = async ({
   db,
   page,
   route,
   language,
+  home = false,
 }: {
   db: Db;
   page: Document;
   route: Document;
   language: Document;
+  home?: boolean;
 }) => {
-  const path = "/en/";
+  const path = buildPagePath({ page, language, home });
   const payload = {
     path,
     contentType: Page.name,
-    contentTypeId: page._id.toString(),
-    routeId: route._id.toString(),
-    languageId: language._id.toString(),
+    contentTypeId: page._id,
+    routeId: route._id,
+    languageId: language._id,
     _type: "RouteMap",
     updatedAt: now(),
   };
@@ -170,25 +249,54 @@ const nestedCallout = ({
   },
 });
 
-const previewSeo = () => ({
+const previewSeo = (title = "Home", description = "page-1") => ({
   type: "new",
   data: {
     _type: Seo.name,
-    title: translatable("Home"),
-    description: translatable("page-1"),
+    title: translatable(title),
+    description: translatable(description),
   },
 });
 
-const previewHelloWorldModule = () => ({
+const previewHelloWorldModule = (
+  enText = "Hello Preview",
+  esText = enText,
+) => ({
   name: HelloWorld.name,
   value: {
     type: "new",
     data: {
       _type: HelloWorld.name,
-      text: translatable("Hello Preview"),
+      text: translatable(enText, esText),
     },
   },
 });
+
+const seedLiterals = async (db: Db) => {
+  await db.collection(LiteralTranslation.name).bulkWrite(
+    seedLiteralTranslations.map((literal) => ({
+      updateOne: {
+        filter: {
+          key: literal.key,
+          locale: literal.locale,
+        },
+        update: {
+          $set: {
+            message: literal.message,
+            updatedAt: now(),
+          },
+          $setOnInsert: {
+            key: literal.key,
+            locale: literal.locale,
+            _type: LiteralTranslation.name,
+            createdAt: now(),
+          },
+        },
+        upsert: true,
+      },
+    })),
+  );
+};
 
 const seedAuthors = async (db: Db) => {
   const timestamp = now();
@@ -258,6 +366,8 @@ export const seedPreviewData = async ({
         { upsert: true },
       );
     }
+
+    await seedLiterals(db);
 
     const language = await db.collection("Language").findOne({ code: "en" });
 
@@ -369,8 +479,8 @@ export const seedPreviewData = async ({
       { "slug.en": "home" },
       {
         $setOnInsert: {
-          title: translatable("Home"),
-          slug: translatable("home"),
+          title: translatable("Home", "Inicio"),
+          slug: translatable("home", "inicio"),
           seo: previewSeo(),
           iterator: [previewHelloWorldModule()],
           _type: Page.name,
@@ -383,6 +493,50 @@ export const seedPreviewData = async ({
 
     if (!page) {
       throw new Error("Failed to create preview page.");
+    }
+
+    const aboutPage = await db.collection(Page.name).findOneAndUpdate(
+      { "slug.en": "about" },
+      {
+        $setOnInsert: {
+          title: translatable("About", "Sobre"),
+          slug: translatable("about", "sobre"),
+          seo: previewSeo("About", "Internal link target page."),
+          iterator: [
+            previewHelloWorldModule("About link target", "Destino Sobre"),
+          ],
+          _type: Page.name,
+          createdAt: now(),
+          updatedAt: now(),
+        },
+      },
+      { upsert: true, returnDocument: "after" },
+    );
+
+    if (!aboutPage) {
+      throw new Error("Failed to create preview about page.");
+    }
+
+    const contactPage = await db.collection(Page.name).findOneAndUpdate(
+      { "slug.en": "contact" },
+      {
+        $setOnInsert: {
+          title: translatable("Contact", "Contacto"),
+          slug: translatable("contact", "contacto"),
+          seo: previewSeo("Contact", "Second internal link target page."),
+          iterator: [
+            previewHelloWorldModule("Contact link target", "Destino Contacto"),
+          ],
+          _type: Page.name,
+          createdAt: now(),
+          updatedAt: now(),
+        },
+      },
+      { upsert: true, returnDocument: "after" },
+    );
+
+    if (!contactPage) {
+      throw new Error("Failed to create preview contact page.");
     }
 
     await db.collection(Page.name).updateOne(
@@ -505,7 +659,53 @@ export const seedPreviewData = async ({
         { upsert: true },
       );
 
-      await upsertHomeRouteMap({ db, page, route, language });
+      const languages = await db.collection("Language").find({}).toArray();
+
+      await Promise.all(
+        languages.flatMap((routeLanguage) => [
+          upsertPageRouteMap({
+            db,
+            page,
+            route,
+            language: routeLanguage,
+            home: true,
+          }),
+          upsertPageRouteMap({
+            db,
+            page: aboutPage,
+            route,
+            language: routeLanguage,
+          }),
+          upsertPageRouteMap({
+            db,
+            page: contactPage,
+            route,
+            language: routeLanguage,
+          }),
+        ]),
+      );
+
+      await db.collection(Header.name).updateOne(
+        { _id: header._id },
+        {
+          $set: {
+            internalLinkLabel: "About",
+            internalLink: pageLink(route, aboutPage),
+            updatedAt: now(),
+          },
+        },
+      );
+
+      await db.collection(Footer.name).updateOne(
+        { _id: footer._id },
+        {
+          $set: {
+            internalLinkLabel: "Contact",
+            internalLink: pageLink(route, contactPage),
+            updatedAt: now(),
+          },
+        },
+      );
     }
 
     const author = await db.collection(Author.name).findOneAndUpdate(

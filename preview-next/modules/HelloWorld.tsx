@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createRakunApiClient } from "@rakun-kit/next/web/client";
+import { useT } from "@rakun-kit/next/web/client";
 
 import type { ApiOperations } from "../server/api-operations";
 
@@ -14,6 +15,7 @@ export default function HelloWorld({
 }: {
   text?: string;
 }) {
+  const t = useT();
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [running, setRunning] = useState(false);
@@ -41,6 +43,9 @@ export default function HelloWorld({
       <h1 className="text-5xl font-semibold tracking-normal text-zinc-950">
         {text}
       </h1>
+      <p className="max-w-2xl text-base font-medium text-emerald-700">
+        {t({ key: "test.hello", values: { name: text } })}
+      </p>
 
       <div className="flex flex-wrap items-center gap-3">
         <button

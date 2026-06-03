@@ -191,4 +191,58 @@ describe("populateLinks", () => {
       },
     });
   });
+
+  it("matches route map languages by string value", async () => {
+    setRouteMaps([
+      makeRouteMap({
+        routeId: "route-about",
+        contentTypeId: "about-id",
+        languageId: {
+          toString: () => "language-es",
+        } as unknown as string,
+        path: "/es/sobre/",
+      }),
+    ]);
+
+    const result = await populateLinks({
+      _id: "page-id",
+      _type: "TestPage",
+      primaryLink: {
+        routeId: "route-about",
+        contentTypeId: "about-id",
+      },
+    } as DBOutput<ContentType>);
+
+    expect(result).toEqual({
+      _id: "page-id",
+      _type: "TestPage",
+      primaryLink: {
+        _tag: "Translatable",
+        es: "/es/sobre/",
+      },
+    });
+  });
+
+  it("keeps the link value when no route map is found", async () => {
+    const list = setRouteMaps([]);
+
+    const result = await populateLinks({
+      _id: "page-id",
+      _type: "TestPage",
+      primaryLink: {
+        routeId: "route-about",
+        contentTypeId: "about-id",
+      },
+    } as DBOutput<ContentType>);
+
+    expect(result).toEqual({
+      _id: "page-id",
+      _type: "TestPage",
+      primaryLink: {
+        routeId: "route-about",
+        contentTypeId: "about-id",
+      },
+    });
+    expect(list).toHaveBeenCalledTimes(1);
+  });
 });

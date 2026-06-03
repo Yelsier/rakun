@@ -11,6 +11,7 @@ export const populateLinks = async <T extends ContentType>(
   const db = await getMongoService();
 
   const languages = await getLanguages();
+  const defaultLanguageCode = languages.find((l) => l.default)?.code || "";
 
   const populateValue = async (value: unknown): Promise<unknown> => {
     // arrays: procesar en paralelo cada elemento
@@ -37,19 +38,21 @@ export const populateLinks = async <T extends ContentType>(
         })
       ).items;
 
+      if (items.length === 0) {
+        return value;
+      }
+
       const populated = Object.fromEntries(
         items
           .map((item) => {
-            const lang = languages.find((l) => l._id === item.languageId);
-            return [
-              lang ? lang.code : languages.find((l) => l.default)?.code || "",
-              item.path,
-            ];
+            const lang = languages.find(
+              (l) => String(l._id) === String(item.languageId),
+            );
+            return [lang ? lang.code : defaultLanguageCode, item.path];
           })
           .concat([["_tag", "Translatable"]]),
       );
 
-      if (!populated) return value;
       return await populateLinks(populated as DBOutput<T>);
     }
 
