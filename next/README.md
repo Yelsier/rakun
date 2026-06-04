@@ -120,6 +120,8 @@ export default async function Page({ params, searchParams }: Props) {
 by default, so they can fetch data and render without client JavaScript. If a
 module needs hooks or browser events, add `"use client"` at the top of that
 module file; Next.js will make only that module a client component.
+When a Rakun page response includes a redirect, the renderer calls the matching
+Next.js redirect helper before rendering modules.
 
 Module files should export either `default` or `component`:
 

@@ -1,4 +1,5 @@
 import type { ComponentType, CSSProperties, ReactNode } from "react";
+import { permanentRedirect, redirect } from "next/navigation";
 import type { PageModule, PageOutput } from "@rakun-kit/core/contracts";
 import { getPageLayout } from "@rakun-kit/core/web";
 
@@ -53,6 +54,14 @@ export async function RakunPageRenderer({
     <main key={`content:${index}`}>{children}</main>
   ),
 }: RakunPageRendererProps) {
+  if (page.redirect) {
+    if (page.redirect.status === 301 || page.redirect.status === 308) {
+      permanentRedirect(page.redirect.to);
+    }
+
+    redirect(page.redirect.to);
+  }
+
   return runWithPageInfo(page.info, async () => {
     const layout = getPageLayout(page);
     const previewConfig = getRakunPreviewPageConfig(page);
