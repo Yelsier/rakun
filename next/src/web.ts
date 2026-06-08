@@ -382,9 +382,15 @@ export const createRakunPageMetadata = (page: PageOutput): Metadata => {
 
   if (seo.title) metadata.title = seo.title;
   if (seo.description) metadata.description = seo.description;
-  if (seo.canonicalUrl) {
+  const alternateLanguages =
+    seo.alternates && Object.keys(seo.alternates).length > 0
+      ? seo.alternates
+      : undefined;
+
+  if (seo.canonicalUrl || alternateLanguages) {
     metadata.alternates = {
       canonical: seo.canonicalUrl,
+      languages: alternateLanguages,
     };
   }
   if (seo.noIndex) {

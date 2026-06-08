@@ -9,7 +9,9 @@ export const SeoSettings = new ContentType({
     key: Fields.string().required(),
     siteName: Fields.string().translatable(),
     siteUrl: Fields.string().type("Url"),
-    titleTemplate: Fields.string(),
+    titleTemplate: Fields.string().description(
+      "Use %s where the page title should appear, for example %s | Site name. Leave empty to use the page title as-is.",
+    ),
     twitterSite: Fields.string(),
     defaultSeo: Fields.relation(Seo, "new"),
   },

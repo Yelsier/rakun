@@ -11,6 +11,7 @@ type ResolveSeoInput = {
     titleTemplate?: unknown;
     twitterSite?: unknown;
   } | null;
+  alternatePaths?: Record<string, string>;
   path: string;
 };
 
@@ -116,10 +117,28 @@ export const resolveSeoUrl = (
   }
 };
 
+const resolveSeoAlternates = (
+  siteUrl: unknown,
+  alternatePaths?: Record<string, string>,
+): Record<string, string> | undefined => {
+  if (!alternatePaths) return undefined;
+
+  const entries = Object.entries(alternatePaths)
+    .map(([language, path]) => {
+      const url = resolveSeoUrl(siteUrl, path);
+      return url ? ([language, url] as const) : null;
+    })
+    .filter((entry): entry is readonly [string, string] => entry !== null)
+    .sort(([a], [b]) => a.localeCompare(b));
+
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+};
+
 export const resolveSeo = ({
   pageSeo,
   defaultSeo,
   settings,
+  alternatePaths,
   path,
 }: ResolveSeoInput): PageSeoOutput | undefined => {
   const merged = mergeSeo(defaultSeo, pageSeo);
@@ -138,6 +157,7 @@ export const resolveSeo = ({
   const description = firstSeoValue<string>(merged.description);
   const canonicalUrl =
     firstSeoValue<string>(merged.canonicalUrl) ?? resolveSeoUrl(siteUrl, path);
+  const alternates = resolveSeoAlternates(siteUrl, alternatePaths);
   const customOpenGraph = merged.customOpenGraph === true;
   const customTwitter = merged.customTwitter === true;
   const image = firstSeoValue(merged.image);
@@ -160,6 +180,7 @@ export const resolveSeo = ({
     title,
     description,
     canonicalUrl,
+    alternates,
     siteName,
     siteUrl,
     twitterSite,

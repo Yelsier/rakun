@@ -95,6 +95,12 @@ const hasNestedError = (value: unknown): boolean => {
   return Object.values(value).some(hasNestedError)
 }
 
+const getFieldDescription = (fieldValue: EncodedFieldUnknown) =>
+  typeof fieldValue.description === 'string' &&
+  fieldValue.description.trim().length > 0
+    ? fieldValue.description
+    : undefined
+
 const ContentTypeEdit = forwardRef<
   FieldRef,
   {
@@ -209,6 +215,7 @@ const ContentTypeEdit = forwardRef<
       <div className='flex flex-1 flex-col gap-8 mx-auto w-full'>
         {allItems.map(([fieldName, fieldValue], i) => {
           const isVisible = visibleFieldNames.has(fieldName)
+          const description = getFieldDescription(fieldValue)
 
           if (!isVisible) {
             return null
@@ -282,10 +289,17 @@ const ContentTypeEdit = forwardRef<
               className={canCollapse ? 'bg-red-600' : undefined}
             >
               {hideTitle ? null : (
-                <CardTitle className='flex justify-between items-center gap-2 mb-4'>
-                  {decodeCamelCase(fieldName)}
-                  <Tags />
-                </CardTitle>
+                <div className='mb-4 space-y-1'>
+                  <CardTitle className='flex justify-between items-center gap-2'>
+                    {decodeCamelCase(fieldName)}
+                    <Tags />
+                  </CardTitle>
+                  {description ? (
+                    <p className='text-sm text-muted-foreground'>
+                      {description}
+                    </p>
+                  ) : null}
+                </div>
               )}
               {field}
             </div>

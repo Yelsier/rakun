@@ -114,6 +114,7 @@ export type FieldState = {
   required: boolean;
   translatable: boolean;
   visibility: Visibility;
+  description?: string;
   condition?: FieldCondition;
 };
 
@@ -121,6 +122,7 @@ export type DefaultFieldState = {
   required: false;
   translatable: false;
   visibility: "all";
+  description?: undefined;
   condition?: undefined;
 };
 
@@ -153,6 +155,13 @@ export type SetCondition<
   Condition extends FieldCondition,
 > = Omit<State, "condition"> & {
   condition: Condition;
+};
+
+export type SetDescription<State extends FieldState> = Omit<
+  State,
+  "description"
+> & {
+  description: string;
 };
 
 export type TranslatableValue<Value> = {
@@ -213,6 +222,7 @@ export type FieldLike<
   getIsRequired: () => State["required"];
   getIsTranslatable: () => State["translatable"];
   getVisibility: () => State["visibility"];
+  getDescription: () => State["description"];
   getCondition: () => State["condition"];
 };
 
@@ -221,6 +231,7 @@ type FieldModifierKeys =
   | "translatable"
   | "apiOnly"
   | "managerOnly"
+  | "description"
   | "condition"
   | "getPopulatedSchema";
 
@@ -287,6 +298,9 @@ export type FieldWithModifiers<F extends AnyFieldLike> = F & {
     F,
     SetVisibility<FieldStateOf<F>, "manager">
   >;
+  description: (
+    description: string,
+  ) => WithFieldState<F, SetDescription<FieldStateOf<F>>>;
   condition: <Condition extends FieldCondition>(
     condition: Condition,
   ) => WithFieldState<F, SetCondition<FieldStateOf<F>, Condition>>;
@@ -301,6 +315,7 @@ export type EncodedField = {
     ui: FieldUIType;
     type: FieldType;
   };
+  description?: string;
   isRequired: boolean;
   isTranslatable: boolean;
   visibility: Visibility;
@@ -380,6 +395,7 @@ export function createField<
     getIsRequired: () => params.state.required,
     getIsTranslatable: () => params.state.translatable,
     getVisibility: () => params.state.visibility,
+    getDescription: () => params.state.description,
     getCondition: () => params.state.condition,
     getInputSchema: () =>
       applyManagerVisibility(
@@ -443,6 +459,11 @@ export function withFieldModifiers<F extends AnyFieldLike>(params: {
         ...field.state,
         visibility: "manager",
       } as SetVisibility<FieldStateOf<F>, "manager">),
+    description: (description) =>
+      rebuild({
+        ...field.state,
+        description,
+      } as SetDescription<FieldStateOf<F>>),
     condition: (condition) =>
       rebuild({
         ...field.state,

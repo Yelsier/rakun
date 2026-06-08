@@ -7,7 +7,12 @@ export const Seo = new ContentType({
   fields: {
     title: Fields.string().translatable(),
     description: Fields.string().type("Textarea").translatable(),
-    canonicalUrl: Fields.string().type("Url").translatable(),
+    canonicalUrl: Fields.string()
+      .type("Url")
+      .translatable()
+      .description(
+        "Leave empty to generate it from the SEO site URL and page route.",
+      ),
     image: Fields.file().type("Image"),
     imageAlt: Fields.string().translatable(),
     noIndex: Fields.boolean(),

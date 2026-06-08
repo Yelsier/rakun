@@ -21,6 +21,7 @@ export const pageSeoOutput = z.intersection(
     siteName: z.string().optional(),
     siteUrl: z.string().optional(),
     twitterSite: z.string().optional(),
+    alternates: z.record(z.string(), z.string()).optional(),
   }),
 );
 

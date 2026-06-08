@@ -65,6 +65,46 @@ type PageContentData = Record<string, unknown> & {
   _visibility?: string;
 };
 
+const getSeoAlternatePaths = async ({
+  contentType,
+  contentTypeId,
+  routeId,
+  languages,
+}: {
+  contentType: string;
+  contentTypeId: string;
+  routeId: string;
+  languages: readonly DBOutput<Language>[];
+}): Promise<Record<string, string> | undefined> => {
+  const db = await getMongoService();
+  const languageCodeById = new Map(
+    languages.map((language) => [String(language._id), language.code]),
+  );
+  const routeMaps = (
+    await db.list(RouteMap, {
+      filter: {
+        contentType,
+        contentTypeId,
+        routeId,
+      },
+      options: {
+        limit: "all",
+        fields: ["path", "languageId"],
+      },
+    })
+  ).items;
+
+  const entries = routeMaps
+    .map((routeMap) => {
+      const code = languageCodeById.get(String(routeMap.languageId));
+      return code ? ([code, routeMap.path] as const) : null;
+    })
+    .filter((entry): entry is readonly [string, string] => entry !== null)
+    .sort(([a], [b]) => a.localeCompare(b));
+
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+};
+
 export const buildPageOutput = async ({
   path,
   route,
@@ -152,12 +192,19 @@ export const buildPageOutput = async ({
           )
         : null;
       const seoSettingsRecord = seoSettings as Record<string, unknown> | null;
+      const alternatePaths = await getSeoAlternatePaths({
+        contentType: contentType.name,
+        contentTypeId,
+        routeId: route._id,
+        languages,
+      });
       const resolvedSeo = resolveSeo({
         pageSeo: seo as Record<string, unknown> | undefined,
         defaultSeo: seoSettingsRecord?.defaultSeo as
           | Record<string, unknown>
           | undefined,
         settings: seoSettingsRecord,
+        alternatePaths,
         path,
       });
 

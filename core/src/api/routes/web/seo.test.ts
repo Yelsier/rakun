@@ -40,12 +40,20 @@ describe("resolveSeo", () => {
         siteUrl: "https://example.com",
         titleTemplate: "%s | Example",
       },
+      alternatePaths: {
+        en: "/en/home/",
+        es: "/es/inicio/",
+      },
       path: "/en/home/",
     });
 
     expect(result?.title).toBe("Home | Example");
     expect(result?.description).toBe("Default description");
     expect(result?.canonicalUrl).toBe("https://example.com/en/home/");
+    expect(result?.alternates).toEqual({
+      en: "https://example.com/en/home/",
+      es: "https://example.com/es/inicio/",
+    });
     expect(result?.openGraphTitle).toBe("Home | Example");
     expect(result?.openGraphSiteName).toBe("Example");
     expect(result?.twitterCard).toBe("summary_large_image");
@@ -114,6 +122,9 @@ describe("resolveSeo", () => {
         description: "Page description",
         image,
       }),
+      alternatePaths: {
+        en: "/",
+      },
       settings: {
         siteName: "Example",
         siteUrl: "https://example.com",

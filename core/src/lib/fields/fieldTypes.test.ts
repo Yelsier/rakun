@@ -81,6 +81,25 @@ describe("field type inference", () => {
     expect(encoded?.fields.enabled.condition).toEqual(condition);
   });
 
+  it("encodes field descriptions for the manager", () => {
+    const DescriptionEncodedCT = new ContentType({
+      name: "DescriptionEncoded",
+      fields: {
+        title: Fields.string().description("Shown below the field label."),
+      },
+    });
+
+    registerContentType(DescriptionEncodedCT);
+
+    const encoded = getContentTypesForManager().find(
+      (contentType) => contentType.name === DescriptionEncodedCT.name,
+    );
+
+    expect(encoded?.fields.title.description).toBe(
+      "Shown below the field label.",
+    );
+  });
+
   it("allows null for required fields when their condition is false", () => {
     const ConditionalRequiredCT = new ContentType({
       name: "ConditionalRequired",

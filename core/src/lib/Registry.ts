@@ -72,6 +72,7 @@ const removeSchemaFromField = (field: AnyField): EncodedField => {
     isRequired: field.getIsRequired(),
     isTranslatable: field.getIsTranslatable(),
     visibility: field.getVisibility(),
+    description: field.getDescription(),
     condition: field.getCondition(),
   } satisfies EncodedField;
 
