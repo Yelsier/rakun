@@ -21,6 +21,8 @@ import ContentType from "../../lib/ContentType";
 import { throwAppError } from "../../lib/errors";
 import { Fields } from "../../lib/fields";
 import { createLogger } from "../../lib/Logger";
+import { encodeContentTypeForManager } from "../../lib/Registry";
+import { ITERATOR_FIELD_NAME, SEO_FIELD_NAME } from "../../lib/systemFields";
 import {
   closeDatabase,
   createMongoService,
@@ -48,14 +50,13 @@ const PreviewPage = new ContentType({
   fields: {
     title: Fields.string().translatable().required(),
     slug: Fields.string().type("Slug").translatable().required(),
-    iterator: Fields.iterator([
-      {
-        contentType: PreviewModule,
-        type: "new",
-      },
-    ]).required(),
-    seo: Fields.relation(Seo, "new").required(),
   },
+  iterator: [
+    {
+      contentType: PreviewModule,
+      type: "new",
+    },
+  ],
 });
 
 const user = {
@@ -103,7 +104,7 @@ const pageData = ({
   _type: PreviewPage.name,
   title: translatable(title),
   slug: translatable(slug),
-  iterator: [
+  [ITERATOR_FIELD_NAME]: [
     {
       name: PreviewModule.name,
       value: {
@@ -115,7 +116,7 @@ const pageData = ({
       },
     },
   ],
-  seo: seo(title),
+  [SEO_FIELD_NAME]: seo(title),
   _visibility: "draft",
 });
 
@@ -138,7 +139,6 @@ describe.serial("preview", () => {
           key: "preview-pages",
           contentType: PreviewPage.name,
           field: "slug",
-          iterator: "iterator",
           hasPage: true,
           dynamic: false,
           defaultBasePath: "",
@@ -210,6 +210,22 @@ describe.serial("preview", () => {
 
     const publicPage = await getPage({ path: result.path });
     expect(publicPage.modules[0]?._type).toBe("NotFound");
+  });
+
+  it("adds optional seo fields and manager flags for routeable content types", () => {
+    const encoded = PreviewPage.getInputSchema().parse({
+      _type: PreviewPage.name,
+      title: translatable("SEO flag"),
+      slug: translatable("seo-flag"),
+      [ITERATOR_FIELD_NAME]: [],
+    });
+
+    expect(PreviewPage.hasIterator).toBe(true);
+    expect(PreviewPage.hasSeo).toBe(true);
+    expect(PreviewPage.fields[SEO_FIELD_NAME]?.getIsRequired()).toBe(false);
+    expect(encodeContentTypeForManager(PreviewPage).hasIterator).toBe(true);
+    expect(encodeContentTypeForManager(PreviewPage).hasSeo).toBe(true);
+    expect((encoded as Record<string, unknown>)[SEO_FIELD_NAME]).toBeUndefined();
   });
 
   it("does not fall back to public content for invalid token or path", async () => {

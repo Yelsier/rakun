@@ -20,7 +20,6 @@ export type ManagerRouteRecord = {
   dynamic?: boolean
   contentType?: string
   field?: string
-  iterator?: string
   basePath?: MaybeTranslatableValue<string>
   parent?: { _id?: string } | null
   parentRelationField?: string
@@ -63,11 +62,6 @@ export const columns = ({
     accessorKey: 'field',
     header: () => <span className="ml-2">Field</span>,
     cell: ({ row }) => <span className="ml-2">{row.getValue('field')}</span>,
-  },
-  {
-    accessorKey: 'iterator',
-    header: () => <span className="ml-2">Iterator</span>,
-    cell: ({ row }) => <span className="ml-2">{row.getValue('iterator')}</span>,
   },
   {
     accessorKey: 'basePath',

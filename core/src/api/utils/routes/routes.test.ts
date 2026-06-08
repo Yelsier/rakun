@@ -12,7 +12,6 @@ import {
   RouteMap,
   Route,
   Language,
-  Seo,
 } from "../../../internal-content-types";
 import { Page } from "../../../internal-content-types/Page";
 import { HelloWorld } from "../../../internal-content-types/HelloWorld";
@@ -20,6 +19,7 @@ import ContentType from "../../../lib/ContentType";
 import { Fields } from "../../../lib/fields";
 import { createLogger } from "../../../lib/Logger";
 import { registerContentType } from "../../../lib/Registry";
+import { ITERATOR_FIELD_NAME } from "../../../lib/systemFields";
 import { DBOutput } from "../../../lib/types";
 
 import {
@@ -39,15 +39,6 @@ const mongoConfig = {
 };
 
 describe.serial("routes", () => {
-  const seo = (title: string) => ({
-    type: "new" as const,
-    data: {
-      _type: Seo.name,
-      title: { en: title, _tag: "Translatable" as const },
-      description: { en: `${title} description`, _tag: "Translatable" as const },
-    },
-  });
-
   beforeAll(async () => {
     createLogger({
       level: "error",
@@ -134,7 +125,6 @@ describe.serial("routes", () => {
       hasPage: true,
       dynamic: false,
       _type: "Route",
-      iterator: "items",
       layoutContentOrder: 0,
     });
 
@@ -189,7 +179,6 @@ describe.serial("routes", () => {
       hasPage: true,
       dynamic: false,
       _type: "Route",
-      iterator: "items",
       layoutContentOrder: 0,
     });
 
@@ -250,23 +239,20 @@ describe.serial("routes", () => {
       hasPage: true,
       dynamic: false,
       _type: "Route",
-      iterator: "iterator",
       layoutContentOrder: 0,
     });
 
     const homePage = await db.create(Page, {
       title: { en: "Home", _tag: "Translatable" },
       slug: { en: "home", _tag: "Translatable" },
-      iterator: [],
-      seo: seo("Home"),
+      [ITERATOR_FIELD_NAME]: [],
       _type: "Page",
     });
 
     const regularPage = await db.create(Page, {
       title: { en: "About", _tag: "Translatable" },
       slug: { en: "about", _tag: "Translatable" },
-      iterator: [],
-      seo: seo("About"),
+      [ITERATOR_FIELD_NAME]: [],
       _type: "Page",
     });
 

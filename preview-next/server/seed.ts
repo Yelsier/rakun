@@ -6,7 +6,11 @@ import {
   LiteralTranslation,
   Seo,
 } from "@rakun-kit/next/internal-content-types";
-import { PermissionsList } from "@rakun-kit/next";
+import {
+  ITERATOR_FIELD_NAME,
+  PermissionsList,
+  SEO_FIELD_NAME,
+} from "@rakun-kit/next";
 
 import {
   Article,
@@ -481,8 +485,8 @@ export const seedPreviewData = async ({
         $setOnInsert: {
           title: translatable("Home", "Inicio"),
           slug: translatable("home", "inicio"),
-          seo: previewSeo(),
-          iterator: [previewHelloWorldModule()],
+          [SEO_FIELD_NAME]: previewSeo(),
+          [ITERATOR_FIELD_NAME]: [previewHelloWorldModule()],
           _type: Page.name,
           createdAt: now(),
           updatedAt: now(),
@@ -501,8 +505,8 @@ export const seedPreviewData = async ({
         $setOnInsert: {
           title: translatable("About", "Sobre"),
           slug: translatable("about", "sobre"),
-          seo: previewSeo("About", "Internal link target page."),
-          iterator: [
+          [SEO_FIELD_NAME]: previewSeo("About", "Internal link target page."),
+          [ITERATOR_FIELD_NAME]: [
             previewHelloWorldModule("About link target", "Destino Sobre"),
           ],
           _type: Page.name,
@@ -523,8 +527,11 @@ export const seedPreviewData = async ({
         $setOnInsert: {
           title: translatable("Contact", "Contacto"),
           slug: translatable("contact", "contacto"),
-          seo: previewSeo("Contact", "Second internal link target page."),
-          iterator: [
+          [SEO_FIELD_NAME]: previewSeo(
+            "Contact",
+            "Second internal link target page.",
+          ),
+          [ITERATOR_FIELD_NAME]: [
             previewHelloWorldModule("Contact link target", "Destino Contacto"),
           ],
           _type: Page.name,
@@ -540,10 +547,10 @@ export const seedPreviewData = async ({
     }
 
     await db.collection(Page.name).updateOne(
-      { _id: page._id, seo: { $exists: false } },
+      { _id: page._id, [SEO_FIELD_NAME]: { $exists: false } },
       {
         $set: {
-          seo: previewSeo(),
+          [SEO_FIELD_NAME]: previewSeo(),
           updatedAt: now(),
         },
       },
@@ -552,12 +559,12 @@ export const seedPreviewData = async ({
     await db.collection(Page.name).updateOne(
       {
         _id: page._id,
-        "seo.type": "new",
-        "seo.data.title": { $exists: false },
+        [`${SEO_FIELD_NAME}.type`]: "new",
+        [`${SEO_FIELD_NAME}.data.title`]: { $exists: false },
       },
       {
         $set: {
-          "seo.data.title": translatable("Home"),
+          [`${SEO_FIELD_NAME}.data.title`]: translatable("Home"),
           updatedAt: now(),
         },
       },
@@ -566,12 +573,12 @@ export const seedPreviewData = async ({
     await db.collection(Page.name).updateOne(
       {
         _id: page._id,
-        "seo.type": "new",
-        "seo.data.title": "Home",
+        [`${SEO_FIELD_NAME}.type`]: "new",
+        [`${SEO_FIELD_NAME}.data.title`]: "Home",
       },
       {
         $set: {
-          "seo.data.title": translatable("Home"),
+          [`${SEO_FIELD_NAME}.data.title`]: translatable("Home"),
           updatedAt: now(),
         },
       },
@@ -580,11 +587,14 @@ export const seedPreviewData = async ({
     await db.collection(Page.name).updateOne(
       {
         _id: page._id,
-        $or: [{ iterator: { $exists: false } }, { iterator: { $size: 0 } }],
+        $or: [
+          { [ITERATOR_FIELD_NAME]: { $exists: false } },
+          { [ITERATOR_FIELD_NAME]: { $size: 0 } },
+        ],
       },
       {
         $set: {
-          iterator: [previewHelloWorldModule()],
+          [ITERATOR_FIELD_NAME]: [previewHelloWorldModule()],
           updatedAt: now(),
         },
       },
@@ -593,12 +603,13 @@ export const seedPreviewData = async ({
     await db.collection(Page.name).updateOne(
       {
         _id: page._id,
-        "iterator.name": HelloWorld.name,
-        "iterator.value.data.text": "Hello Preview",
+        [`${ITERATOR_FIELD_NAME}.name`]: HelloWorld.name,
+        [`${ITERATOR_FIELD_NAME}.value.data.text`]: "Hello Preview",
       },
       {
         $set: {
-          "iterator.$[module].value.data.text": translatable("Hello Preview"),
+          [`${ITERATOR_FIELD_NAME}.$[module].value.data.text`]:
+            translatable("Hello Preview"),
           updatedAt: now(),
         },
       },

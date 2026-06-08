@@ -31,7 +31,6 @@ const buildRoutePayload = ({
     createTranslatableBasePath(definition.defaultBasePath, localeCodes),
   contentType: definition.contentType,
   field: definition.field,
-  iterator: definition.iterator,
   hasPage: definition.hasPage,
   dynamic: definition.dynamic,
   layoutContentOrder: getRouteLayoutContentOrder(definition),

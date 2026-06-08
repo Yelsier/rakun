@@ -11,6 +11,7 @@ import type ContentType from "../../../lib/ContentType";
 import { throwAppError } from "../../../lib/errors";
 import { Logger } from "../../../lib/Logger";
 import { getContentTypeByName } from "../../../lib/Registry";
+import { ITERATOR_FIELD_NAME, SEO_FIELD_NAME } from "../../../lib/systemFields";
 import type { DBOutput } from "../../../lib/types";
 import { translateObject } from "../../../lib/utils/translateObject";
 import { getLiteralDefinitions } from "../../../literals";
@@ -123,11 +124,8 @@ export const buildPageOutput = async ({
   tracePrefix?: string;
 }): Promise<PageOutput> => {
   const db = await getMongoService();
-  const iterator = data[route.iterator];
-
-  if (!iterator || !Array.isArray(iterator)) {
-    return NotFoundResponse;
-  }
+  const iterator = contentType.hasIterator ? data[ITERATOR_FIELD_NAME] : [];
+  const iteratorModules = Array.isArray(iterator) ? iterator : [];
 
   const linksPopulated = await populateLinks(data as DBOutput<ContentType>);
   Logger.addTrace(`${tracePrefix}: links populated`);
@@ -170,9 +168,12 @@ export const buildPageOutput = async ({
     count: Object.keys(literalMap).length,
   });
 
-  const { [route.iterator]: modules, ...rest } = populatedTranslated;
-
-  const { seo, ...info } = rest;
+  const {
+    [ITERATOR_FIELD_NAME]: modules = iteratorModules,
+    [SEO_FIELD_NAME]: seo,
+    ...info
+  } = populatedTranslated;
+  const contentModulesSource = Array.isArray(modules) ? modules : [];
 
   return runProxyContext(
     {
@@ -268,7 +269,7 @@ export const buildPageOutput = async ({
       const contentModules = (
         (await Promise.all(
           [
-            ...(modules as IterableContentTypes).map((m) => ({
+            ...(contentModulesSource as IterableContentTypes).map((m) => ({
               ...m.value,
             })),
           ].map(ProxyOutput),

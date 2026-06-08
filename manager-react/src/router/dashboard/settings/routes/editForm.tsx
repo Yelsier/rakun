@@ -89,10 +89,6 @@ export const EditRouteForm = ({
             <Input value={defaultValues?.field || ''} disabled />
           </div>
           <div className='space-y-2'>
-            <FormLabel>Iterator</FormLabel>
-            <Input value={defaultValues?.iterator || ''} disabled />
-          </div>
-          <div className='space-y-2'>
             <FormLabel>Parent Relation Field</FormLabel>
             <Input value={defaultValues?.parentRelationField || ''} disabled />
           </div>

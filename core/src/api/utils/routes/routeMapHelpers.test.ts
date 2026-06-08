@@ -26,7 +26,6 @@ const makeRoute = (overrides: Partial<DBOutput<Route>> = {}): DBOutput<Route> =>
     basePath: { _tag: 'Translatable', en: '' },
     contentType: 'Article',
     field: 'slug',
-    iterator: 'items',
     hasPage: true,
     dynamic: false,
     layoutContentOrder: 0,

@@ -2,6 +2,7 @@
 
 import type { JSX } from "react";
 
+import { useManagerRuntimeAuth } from "@/app/runtime-auth";
 import { useManagerNavigation } from "@/state/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,9 +28,23 @@ export function ManagerMfaScreen({
   expiresAt,
 }: ManagerMfaScreenProps) {
   const navigation = useManagerNavigation();
+  const { refreshAuth } = useManagerRuntimeAuth();
 
-  const completeAuth = () => {
-    navigation.replacePath?.("/");
+  const navigateToManagerRoot = () => {
+    if (navigation.replacePath) {
+      navigation.replacePath("/");
+      return;
+    }
+
+    navigation.pushPath?.("/");
+  };
+
+  const completeAuth = async () => {
+    const authenticated = await refreshAuth();
+
+    if (authenticated) {
+      navigateToManagerRoot();
+    }
   };
 
   const goToLogin = () => {

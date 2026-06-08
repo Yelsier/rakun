@@ -50,10 +50,8 @@ export const Page = new ContentType({
   fields: {
     title: Fields.string().translatable().required(),
     slug: Fields.string().type("Slug").required().translatable(),
-    modules: Fields.iterator([
-      { contentType: PageSection, type: "existing" },
-    ]),
   },
+  iterator: [{ contentType: PageSection, type: "existing" }],
   menu: {
     title: "Pages",
     icon: "FileText",

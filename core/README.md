@@ -81,7 +81,6 @@ rakunBootstrap({
       key: "pages",
       contentType: "Page",
       field: "slug",
-      iterator: "modules",
       hasPage: true,
       dynamic: false,
       defaultBasePath: "",
@@ -125,16 +124,34 @@ const Post = new ContentType({
 });
 ```
 
+Page-like content types can define ordered page modules with `iterator` outside
+`fields`. Rakun persists this generated field as `_iterator`:
+
+```ts
+const Page = new ContentType({
+  name: "Page",
+  fields: {
+    title: Fields.string().required(),
+    slug: Fields.string().type("Slug").required(),
+  },
+  iterator: [{ contentType: PageSection, type: "existing" }],
+});
+```
+
 Main properties:
 
 - `name`: stable type name. Also used as `_type`.
 - `fields`: field map.
+- `iterator`: page module entries. Generates the reserved `_iterator` field.
 - `menu`: manager metadata.
 - `uniques`: unique field groups.
 - `listFields`: preferred fields in lists and relations.
 - `hideFromManager()`: hides the content type from manager content type lists.
 - `apiOnly()`: applies `.apiOnly()` to every field in the content type.
 - `managerOnly()`: applies `.managerOnly()` to every field in the content type.
+
+When a content type has a configured route with `hasPage: true`, Rakun also
+adds an optional reserved `_seo` relation automatically.
 
 Schema and validation methods:
 
@@ -167,7 +184,6 @@ Fields.contentReference("Post");
 Fields.selfRelation();
 Fields.blocks([{ name: "title", field: Fields.string() }]);
 Fields.array(Fields.string());
-Fields.iterator([...]);
 Fields.link();
 Fields.file();
 ```

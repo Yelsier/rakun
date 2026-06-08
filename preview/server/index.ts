@@ -20,7 +20,6 @@ rakunBootstrap({
       key: "pages",
       contentType: Page.name,
       field: "slug",
-      iterator: "modules",
       hasPage: true,
       dynamic: false,
       defaultBasePath: "",

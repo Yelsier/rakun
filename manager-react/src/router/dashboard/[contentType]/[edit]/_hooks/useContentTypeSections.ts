@@ -1,6 +1,10 @@
 import { useMemo } from 'react'
-import type { EncodedContentType, EncodedField } from '@rakun-kit/core/client'
-import { Seo } from '@rakun-kit/core/internal-content-types'
+import {
+  ITERATOR_FIELD_NAME,
+  SEO_FIELD_NAME,
+  type EncodedContentType,
+  type EncodedField,
+} from '@rakun-kit/core/client'
 
 export type ContentTypeSections = {
   iterables: EncodedContentType
@@ -25,13 +29,13 @@ export const useContentTypeSections = (
     }
     const seo = { ...contentType, fields: {} as Record<string, EncodedField> }
 
+    const hasIterator = Boolean(contentType.hasIterator)
+    const hasSeo = Boolean(contentType.hasSeo)
+
     for (const [fieldName, fieldValue] of Object.entries(contentType.fields)) {
-      if (fieldValue.config.ui === 'Iterator') {
+      if (hasIterator && fieldName === ITERATOR_FIELD_NAME) {
         iterables.fields[fieldName] = fieldValue
-      } else if (
-        'contentType' in fieldValue &&
-        (fieldValue.contentType as EncodedContentType).name === Seo.name
-      ) {
+      } else if (hasSeo && fieldName === SEO_FIELD_NAME) {
         seo.fields[fieldName] = fieldValue
       } else {
         nonIterables.fields[fieldName] = fieldValue
@@ -40,10 +44,10 @@ export const useContentTypeSections = (
 
     return {
       iterables,
-      hasIterables: Object.keys(iterables.fields).length > 0,
+      hasIterables: hasIterator && Object.keys(iterables.fields).length > 0,
       nonIterables,
       hasNonIterables: Object.keys(nonIterables.fields).length > 0,
       seo,
-      hasSeo: Object.keys(seo.fields).length > 0,
+      hasSeo: hasSeo && Object.keys(seo.fields).length > 0,
     }
   }, [contentType])

@@ -9,6 +9,12 @@ import type {
   InferOutput,
   InferPopulated,
 } from "./fields/Field";
+import {
+  iteratorField,
+  type EntryContentType,
+  type IteratorField,
+} from "./fields/Iterator";
+import { ITERATOR_FIELD_NAME, SEO_FIELD_NAME } from "./systemFields";
 import { isNeverOptional } from "./utils/isNeverOptional";
 import type { DBService } from "../orm/dbService";
 
@@ -100,6 +106,19 @@ type Simplify<T> = {
   : never;
 
 type FieldRecord = Record<string, AnyField>;
+
+type IteratorSystemField<
+  I extends readonly EntryContentType[] | undefined,
+> = I extends readonly EntryContentType[]
+  ? {
+      [ITERATOR_FIELD_NAME]: IteratorField<I>;
+    }
+  : {};
+
+type ContentTypeFields<
+  F extends FieldRecord,
+  I extends readonly EntryContentType[] | undefined,
+> = F & IteratorSystemField<I>;
 
 type InputFields<F extends FieldRecord> = Simplify<{
   [K in keyof F]: InferInput<F[K]>;
@@ -198,12 +217,17 @@ type ContentTypePopulatedShape<
       AuthorMetadata
   >;
 
-type ContentTypeParams<F extends FieldRecord, N extends string> = {
+type ContentTypeParams<
+  F extends FieldRecord,
+  N extends string,
+  I extends readonly EntryContentType[] | undefined,
+> = {
   name: N;
   fields: F;
+  iterator?: I;
   menu?: Menu;
-  uniques?: Array<Array<keyof F>>;
-  listFields?: NestedPaths<ContentTypePopulatedShape<F, N>>[];
+  uniques?: Array<Array<keyof ContentTypeFields<F, I>>>;
+  listFields?: NestedPaths<ContentTypePopulatedShape<ContentTypeFields<F, I>, N>>[];
   schemaVersion?: number;
   migrations?: ContentTypeMigration[];
   versioning?: boolean | VersioningOptions;
@@ -239,28 +263,45 @@ const authorMetadataSchema = {
   updatedBy: z.string().optional(),
 } satisfies SchemaShape;
 
-export type ContentTypeInput<CT> = CT extends ContentType<infer F, infer N>
-  ? ContentTypeInputShape<F, N>
+export type ContentTypeInput<CT> = CT extends ContentType<
+  infer F,
+  infer N,
+  infer I
+>
+  ? ContentTypeInputShape<ContentTypeFields<F, I>, N>
   : never;
 
-export type ContentTypeDb<CT> = CT extends ContentType<infer F, infer N>
-  ? ContentTypeDbShape<F, N>
+export type ContentTypeDb<CT> = CT extends ContentType<
+  infer F,
+  infer N,
+  infer I
+>
+  ? ContentTypeDbShape<ContentTypeFields<F, I>, N>
   : never;
 
-export type ContentTypeOutput<CT> = CT extends ContentType<infer F, infer N>
-  ? ContentTypeOutputShape<F, N>
+export type ContentTypeOutput<CT> = CT extends ContentType<
+  infer F,
+  infer N,
+  infer I
+>
+  ? ContentTypeOutputShape<ContentTypeFields<F, I>, N>
   : never;
 
-export type ContentTypePopulated<CT> = CT extends ContentType<infer F, infer N>
-  ? ContentTypePopulatedShape<F, N>
+export type ContentTypePopulated<CT> = CT extends ContentType<
+  infer F,
+  infer N,
+  infer I
+>
+  ? ContentTypePopulatedShape<ContentTypeFields<F, I>, N>
   : never;
 
 export default class ContentType<
   F extends FieldRecord = FieldRecord,
   N extends string = string,
+  I extends readonly EntryContentType[] | undefined = undefined,
 > {
   name: N;
-  fields: F;
+  fields: ContentTypeFields<F, I>;
   menu?: Menu;
   uniques: Array<Array<string>> = [];
   listFields?: string[];
@@ -271,10 +312,18 @@ export default class ContentType<
   versioning?: boolean | VersioningOptions;
   documentVisibility?: boolean;
   isInternal?: boolean;
+  hasIterator = false;
+  hasSeo = false;
 
-  constructor(params: ContentTypeParams<F, N>) {
+  constructor(
+    params: ContentTypeParams<F, N, I>,
+    options?: { allowSystemFields?: boolean },
+  ) {
     this.name = params.name;
-    this.fields = this.bindSelfRelations(params.fields) as F;
+    this.hasIterator = params.iterator !== undefined;
+    this.fields = this.bindSelfRelations(
+      this.buildFields(params, options),
+    ) as ContentTypeFields<F, I>;
     this.menu = params.menu;
     this.listFields = params.listFields as string[];
     this.uniques = (params.uniques as Array<Array<string>>) || [];
@@ -286,7 +335,7 @@ export default class ContentType<
 
   getInputSchema() {
     return this.buildInputSchema(false) as unknown as ContentTypeSchema<
-      ContentTypeInputShape<F, N>
+      ContentTypeInputShape<ContentTypeFields<F, I>, N>
     >;
   }
 
@@ -305,7 +354,9 @@ export default class ContentType<
   getSchema() {
     return this.documentSchema(this.fieldSchemas("db"), {
       ...trashMetadataSchema,
-    }) as unknown as ContentTypeSchema<ContentTypeDbShape<F, N>>;
+    }) as unknown as ContentTypeSchema<
+      ContentTypeDbShape<ContentTypeFields<F, I>, N>
+    >;
   }
 
   getPopulatedSchema() {
@@ -313,12 +364,14 @@ export default class ContentType<
       ...idMetadataSchema,
       ...trashMetadataSchema,
       ...authorMetadataSchema,
-    }) as unknown as ContentTypeSchema<ContentTypePopulatedShape<F, N>>;
+    }) as unknown as ContentTypeSchema<
+      ContentTypePopulatedShape<ContentTypeFields<F, I>, N>
+    >;
   }
 
   getOutputSchema() {
     return this.buildOutputSchema(this.fields) as unknown as ContentTypeSchema<
-      ContentTypeOutputShape<F, N>
+      ContentTypeOutputShape<ContentTypeFields<F, I>, N>
     >;
   }
 
@@ -366,6 +419,18 @@ export default class ContentType<
     return this;
   }
 
+  enableSeoField(field: AnyField) {
+    if (!this.fields[SEO_FIELD_NAME]) {
+      this.fields = {
+        ...this.fields,
+        [SEO_FIELD_NAME]: field,
+      } as ContentTypeFields<F, I>;
+    }
+
+    this.hasSeo = true;
+    return this;
+  }
+
   apiOnly() {
     const fields = mapFields(
       this.fields,
@@ -409,15 +474,18 @@ export default class ContentType<
   }
 
   private cloneWithFields<Fields extends FieldRecord>(fields: Fields) {
-    const contentType = new ContentType<Fields, N>({
-      name: this.name,
-      fields,
-      menu: this.menu,
-      uniques: this.uniques as Array<Array<keyof Fields>>,
-      listFields: this.listFields as NestedPaths<
-        ContentTypePopulatedShape<Fields, N>
-      >[],
-    });
+    const contentType = new ContentType<Fields, N>(
+      {
+        name: this.name,
+        fields,
+        menu: this.menu,
+        uniques: this.uniques as Array<Array<keyof Fields>>,
+        listFields: this.listFields as NestedPaths<
+          ContentTypePopulatedShape<Fields, N>
+        >[],
+      },
+      { allowSystemFields: true },
+    );
 
     return Object.assign(contentType, {
       isHiddenFromManager: this.isHiddenFromManager,
@@ -427,7 +495,53 @@ export default class ContentType<
       versioning: this.versioning,
       documentVisibility: this.documentVisibility,
       isInternal: this.isInternal,
+      hasIterator: this.hasIterator,
+      hasSeo: this.hasSeo,
     });
+  }
+
+  private buildFields(
+    params: {
+      fields: FieldRecord;
+      iterator?: readonly EntryContentType[];
+    },
+    options?: { allowSystemFields?: boolean },
+  ): FieldRecord {
+    if (!options?.allowSystemFields) {
+      this.validatePublicFields(params.fields);
+    }
+
+    const fields = { ...params.fields } as FieldRecord;
+
+    if (params.iterator !== undefined) {
+      fields[ITERATOR_FIELD_NAME] = iteratorField(params.iterator);
+    }
+
+    return fields;
+  }
+
+  private validatePublicFields(fields: FieldRecord) {
+    if (ITERATOR_FIELD_NAME in fields) {
+      throw new Error(
+        `Field ${ITERATOR_FIELD_NAME} is reserved. Use ContentType.iterator instead.`,
+      );
+    }
+
+    if (SEO_FIELD_NAME in fields) {
+      throw new Error(
+        `Field ${SEO_FIELD_NAME} is reserved. SEO is added automatically for routeable content types.`,
+      );
+    }
+
+    const iteratorFieldName = Object.entries(fields).find(
+      ([, field]) => field.meta.ui === "Iterator",
+    )?.[0];
+
+    if (iteratorFieldName) {
+      throw new Error(
+        `Field ${iteratorFieldName} uses Fields.iterator. Use ContentType.iterator instead.`,
+      );
+    }
   }
 
   private fieldSchemas(mode: FieldSchemaMode) {
@@ -447,7 +561,7 @@ export default class ContentType<
     );
   }
 
-  private bindSelfRelations(fields: F): F {
+  private bindSelfRelations<Fields extends FieldRecord>(fields: Fields): Fields {
     return mapFields(fields, (field) => {
       if (
         field.meta.ui === "SelfRelation" &&
@@ -458,7 +572,7 @@ export default class ContentType<
       }
 
       return field;
-    }) as F;
+    }) as Fields;
   }
 
   private refineConditionalRequiredFields(
@@ -591,6 +705,8 @@ export const EncodedContentTypeSchema = z.object({
   schemaVersion: z.number().optional(),
   versioning: z.union([z.boolean(), z.object({ maxVersions: z.number().optional() })]).optional(),
   documentVisibility: z.boolean().optional(),
+  hasIterator: z.boolean().optional(),
+  hasSeo: z.boolean().optional(),
   routes: z
     .array(
       z.object({

@@ -14,7 +14,7 @@ import { useManagerClient } from "@/client/react";
 
 type WebauthnFormProps = {
   challenge: string;
-  onSuccess: () => void;
+  onSuccess: () => void | Promise<void>;
 };
 
 export default function WebauthnForm({
@@ -49,7 +49,7 @@ export default function WebauthnForm({
       )) as { token?: string };
 
       if (verifyResult.token) {
-        onSuccess();
+        await onSuccess();
       } else {
         toast.error("Authentication failed. Please try again.");
       }

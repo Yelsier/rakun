@@ -40,7 +40,6 @@ export const createPreviewBootstrap = () =>
         key: 'page',
         contentType: Page.name,
         field: 'slug',
-        iterator: 'iterator',
         hasPage: true,
         dynamic: false,
         defaultBasePath: '',

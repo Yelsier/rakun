@@ -13,6 +13,7 @@ export * from "./client/request";
 export * from "./app/root-providers";
 export * from "./router";
 export * from "./app/runtime-app";
+export * from "./app/runtime-auth";
 export * from "./state/session";
 export * from "./client/trpc";
 export * from "./link";

@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import { MongoClient, type Db, type Document } from "mongodb";
 
 import { ensureRakunInitialized } from "@rakun-kit/core";
+import { ITERATOR_FIELD_NAME } from "@rakun-kit/core";
 import { PermissionsList } from "@rakun-kit/core";
 
 import {
@@ -306,7 +307,7 @@ export const seedPreviewData = async () => {
         $setOnInsert: {
           title: translatable("Home"),
           slug: translatable("home"),
-          modules: [
+          [ITERATOR_FIELD_NAME]: [
             {
               name: PageSection.name,
               value: {

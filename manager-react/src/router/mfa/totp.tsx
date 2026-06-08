@@ -23,7 +23,7 @@ import {
 
 type TotpFormProps = {
   challenge: string;
-  onSuccess: () => void;
+  onSuccess: () => void | Promise<void>;
   onExpired: () => void;
 };
 
@@ -48,9 +48,9 @@ export default function TotpForm({
 
   const handleSubmit = (data: VerifyTotpInput) => {
     mutate(data, {
-      onSuccess: (result: { token: string } | { error: string }) => {
+      onSuccess: async (result: { token: string } | { error: string }) => {
         if ("token" in result) {
-          onSuccess();
+          await onSuccess();
         }
 
         if ("error" in result) {

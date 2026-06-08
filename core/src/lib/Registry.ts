@@ -53,6 +53,8 @@ export const encodeContentTypeForManager = <T extends ContentType>(ct: T) => {
     schemaVersion: ct.schemaVersion,
     versioning: ct.versioning,
     documentVisibility: ct.documentVisibility,
+    hasIterator: ct.hasIterator,
+    hasSeo: ct.hasSeo,
     routes,
     isInternal: ct.isInternal,
     fields: Object.fromEntries(

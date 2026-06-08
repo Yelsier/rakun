@@ -9,6 +9,7 @@ import { createMongoConnection, getMongoService } from "./orm";
 import { runMigrations } from "./orm/migrations";
 import { createMediaService } from "./media";
 import { createTranslationService } from "./translation";
+import { Fields } from "./lib/fields";
 import {
   getRakunBootstrapOptions,
   hasRakunBootstrapped,
@@ -172,6 +173,7 @@ export const rakunBootstrap = (options: RakunBootstrapOptions) => {
   for (const ct of Object.values(configuredInternalContentTypes)) {
     if (routeableContentTypes.has(ct.name)) {
       ct.enableDocumentVisibility();
+      ct.enableSeoField(Fields.relation(internalContentTypes.Seo, "new"));
     }
     registerInternalContentType(ct, { override: true });
   }
@@ -179,6 +181,7 @@ export const rakunBootstrap = (options: RakunBootstrapOptions) => {
   for (const ct of options.contentTypes) {
     if (routeableContentTypes.has(ct.name)) {
       ct.enableDocumentVisibility();
+      ct.enableSeoField(Fields.relation(internalContentTypes.Seo, "new"));
     }
     registerContentType(ct);
   }
@@ -277,6 +280,7 @@ export type { MaybeTranslatableValue, TranslatableValue } from "./lib/types";
 export { getListField } from "./lib/utils/getListField";
 export { getTranslation } from "./lib/utils/getTranslation";
 export { encodeContentTypeForManager } from "./lib/Registry";
+export { ITERATOR_FIELD_NAME, SEO_FIELD_NAME } from "./lib/systemFields";
 export { Id, isId, type Id as IdType } from "./lib/utils/id";
 export { isTranslatableObject } from "./lib/utils/isTranslatableObject";
 export { slugify } from "./lib/utils/slugify";

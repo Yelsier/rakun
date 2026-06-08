@@ -9,6 +9,7 @@ import { GalleryVerticalEnd } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 
 import { cn } from "../lib/utils";
+import { useManagerRuntimeAuth } from "@/app/runtime-auth";
 import { useManagerNavigation } from "@/state/navigation";
 import { useManagerMutation } from "@/client/react";
 import { Button } from "./ui/button";
@@ -26,6 +27,7 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   const navigation = useManagerNavigation();
+  const { refreshAuth } = useManagerRuntimeAuth();
   const { mutate, isPending } = useManagerMutation("manager.auth.login");
 
   const form = useForm<LoginInput>({
@@ -43,15 +45,28 @@ export function LoginForm({
       form.clearErrors();
     };
 
+  const navigateToManagerRoot = () => {
+    if (navigation.replacePath) {
+      navigation.replacePath("/");
+      return;
+    }
+
+    navigation.pushPath?.("/");
+  };
+
   const onSubmit = (values: LoginInput) => {
     mutate(values, {
-      onSuccess: (result) => {
+      onSuccess: async (result) => {
         if (
           typeof result === "object" &&
           result !== null &&
           "token" in result
         ) {
-          navigation.pushPath?.("/");
+          const authenticated = await refreshAuth();
+
+          if (authenticated) {
+            navigateToManagerRoot();
+          }
         }
 
         if (

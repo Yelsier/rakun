@@ -5,7 +5,6 @@ export type RouteDefinition = {
   key: string;
   contentType: string; // TODO: use enum or literal types
   field: string;
-  iterator: string;
   hasPage: boolean;
   dynamic: boolean;
   layout?: readonly RouteLayoutItemDefinition[];

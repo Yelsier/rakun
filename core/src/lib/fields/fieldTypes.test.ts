@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import ContentType from "../ContentType";
 import { getContentTypesForManager, registerContentType } from "../Registry";
+import { ITERATOR_FIELD_NAME, SEO_FIELD_NAME } from "../systemFields";
 import { Fields } from "./index";
 import type { DataInput } from "../types";
 
@@ -36,6 +37,77 @@ describe("field type inference", () => {
         slug: _singleWrappedSlug,
       }).slug,
     ).toEqual(_singleWrappedSlug);
+  });
+
+  it("adds iterator fields from content type params", () => {
+    const IteratorParamCT = new ContentType({
+      name: "IteratorParam",
+      fields: {
+        title: Fields.string().required(),
+      },
+      iterator: [
+        {
+          contentType: TypeRegressionCT,
+          type: "existing",
+        },
+      ],
+    });
+
+    expect(IteratorParamCT.hasIterator).toBe(true);
+    expect(IteratorParamCT.fields[ITERATOR_FIELD_NAME]?.meta.ui).toBe(
+      "Iterator",
+    );
+
+    expect(
+      IteratorParamCT.validate({
+        _type: "IteratorParam",
+        title: "Page",
+        [ITERATOR_FIELD_NAME]: [
+          {
+            name: TypeRegressionCT.name,
+            value: {
+              type: "existing",
+              _id: "64f0c0000000000000000001",
+              contentType: TypeRegressionCT.name,
+            },
+          },
+        ],
+      })[ITERATOR_FIELD_NAME],
+    ).toHaveLength(1);
+  });
+
+  it("rejects public fields that use reserved system fields", () => {
+    expect(
+      () =>
+        new ContentType({
+          name: "ReservedIterator",
+          fields: {
+            [ITERATOR_FIELD_NAME]: Fields.string(),
+          },
+        }),
+    ).toThrow("reserved");
+
+    expect(
+      () =>
+        new ContentType({
+          name: "ReservedSeo",
+          fields: {
+            [SEO_FIELD_NAME]: Fields.string(),
+          },
+        }),
+    ).toThrow("reserved");
+
+    expect(
+      () =>
+        new ContentType({
+          name: "DirectIterator",
+          fields: {
+            modules: Fields.iterator([
+              { contentType: TypeRegressionCT, type: "existing" },
+            ]),
+          },
+        }),
+    ).toThrow("ContentType.iterator");
   });
 
   it("adds conditions to fields and keeps them through modifiers", () => {

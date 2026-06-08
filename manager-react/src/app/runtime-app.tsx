@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -24,6 +25,10 @@ import { LanguageProvider } from "@/state/language";
 import { ManagerRootProviders } from "@/app/root-providers";
 import { ManagerLoadingFallback } from "@/components/manager-loading-fallback";
 import { ManagerLinkProvider, type ManagerLinkComponent } from "@/link";
+import {
+  ManagerRuntimeAuthProvider,
+  type ManagerRuntimeAuthValue,
+} from "@/app/runtime-auth";
 import { renderDefaultManagerMediaPicker } from "@/app/media-picker";
 import {
   ManagerMediaProvider,
@@ -110,36 +115,73 @@ export const ManagerRuntimeApp = ({
     [basePath, navigation],
   );
   const [state, setState] = useState<BootstrapState>({ status: "loading" });
+  const bootstrapRunRef = useRef(0);
 
-  const bootstrap = useCallback(async () => {
-    const next = await loadManagerBootstrap(client);
+  const bootstrap = useCallback(async (): Promise<boolean> => {
+    const run = bootstrapRunRef.current + 1;
+    bootstrapRunRef.current = run;
+    const isCurrentRun = () => bootstrapRunRef.current === run;
 
-    if (!next.user || !next.initialLanguage) {
-      setState({ status: "unauthenticated" });
-      return;
+    try {
+      const next = await loadManagerBootstrap(client);
+
+      if (!isCurrentRun()) {
+        return false;
+      }
+
+      if (!next.user || !next.initialLanguage) {
+        setState({ status: "unauthenticated" });
+        return false;
+      }
+
+      const contentTypes = (await client.request(
+        "manager.contentTypes",
+      )) as EncodedContentType[];
+
+      if (!isCurrentRun()) {
+        return false;
+      }
+
+      setState({
+        status: "ready",
+        user: next.user,
+        languages: next.languages,
+        initialLanguage: next.initialLanguage,
+        contentTypes,
+      });
+
+      return true;
+    } catch (error) {
+      if (!isCurrentRun()) {
+        return false;
+      }
+
+      throw error;
     }
-
-    const contentTypes = (await client.request(
-      "manager.contentTypes",
-    )) as EncodedContentType[];
-
-    setState({
-      status: "ready",
-      user: next.user,
-      languages: next.languages,
-      initialLanguage: next.initialLanguage,
-      contentTypes,
-    });
   }, [client]);
 
-  useEffect(() => {
-    void bootstrap().catch((error) => {
+  const refreshAuth = useCallback(async () => {
+    try {
+      return await bootstrap();
+    } catch (error) {
       setState({
         status: "error",
         message: error instanceof Error ? error.message : "Unknown error",
       });
-    });
+      return false;
+    }
   }, [bootstrap]);
+
+  const runtimeAuth = useMemo<ManagerRuntimeAuthValue>(
+    () => ({
+      refreshAuth,
+    }),
+    [refreshAuth],
+  );
+
+  useEffect(() => {
+    void refreshAuth();
+  }, [refreshAuth]);
 
   useEffect(() => {
     if (state.status !== "unauthenticated") {
@@ -155,62 +197,64 @@ export const ManagerRuntimeApp = ({
     <ManagerRootProviders>
       <QueryClientProvider client={queryClient}>
         <ManagerProvider client={client}>
-          <ManagerNavigationProvider navigation={scopedNavigation}>
-            <ManagerLinkProvider component={linkComponent}>
-              <ManagerMediaProvider
-                renderPicker={
-                  renderMediaPicker ?? renderDefaultManagerMediaPicker
-                }
-              >
-                {state.status === "loading" ? (
-                  <>{loadingFallback ?? <ManagerLoadingFallback />}</>
-                ) : null}
+          <ManagerRuntimeAuthProvider value={runtimeAuth}>
+            <ManagerNavigationProvider navigation={scopedNavigation}>
+              <ManagerLinkProvider component={linkComponent}>
+                <ManagerMediaProvider
+                  renderPicker={
+                    renderMediaPicker ?? renderDefaultManagerMediaPicker
+                  }
+                >
+                  {state.status === "loading" ? (
+                    <>{loadingFallback ?? <ManagerLoadingFallback />}</>
+                  ) : null}
 
-                {state.status === "error" ? (
-                  <>
-                    {errorFallback?.(state.message) ?? (
-                      <div className="p-6">
-                        Bootstrap failed: {state.message}
-                      </div>
-                    )}
-                  </>
-                ) : null}
+                  {state.status === "error" ? (
+                    <>
+                      {errorFallback?.(state.message) ?? (
+                        <div className="p-6">
+                          Bootstrap failed: {state.message}
+                        </div>
+                      )}
+                    </>
+                  ) : null}
 
-                {state.status === "unauthenticated" ? (
-                  <>
-                    {unauthenticatedFallback ?? (
-                      <ManagerApp
-                        pathname={pathname}
-                        basePath={basePath}
-                        searchParams={searchParams}
-                        preview={preview}
-                        {...overrides}
-                      />
-                    )}
-                  </>
-                ) : null}
+                  {state.status === "unauthenticated" ? (
+                    <>
+                      {unauthenticatedFallback ?? (
+                        <ManagerApp
+                          pathname={pathname}
+                          basePath={basePath}
+                          searchParams={searchParams}
+                          preview={preview}
+                          {...overrides}
+                        />
+                      )}
+                    </>
+                  ) : null}
 
-                {state.status === "ready" ? (
-                  <SessionProvider initialUser={state.user}>
-                    <LanguageProvider
-                      languages={state.languages}
-                      initialLanguage={state.initialLanguage}
-                    >
-                      <ManagerApp
-                        pathname={pathname}
-                        basePath={basePath}
-                        searchParams={searchParams}
-                        contentTypes={state.contentTypes}
-                        authenticated
-                        preview={preview}
-                        {...overrides}
-                      />
-                    </LanguageProvider>
-                  </SessionProvider>
-                ) : null}
-              </ManagerMediaProvider>
-            </ManagerLinkProvider>
-          </ManagerNavigationProvider>
+                  {state.status === "ready" ? (
+                    <SessionProvider initialUser={state.user}>
+                      <LanguageProvider
+                        languages={state.languages}
+                        initialLanguage={state.initialLanguage}
+                      >
+                        <ManagerApp
+                          pathname={pathname}
+                          basePath={basePath}
+                          searchParams={searchParams}
+                          contentTypes={state.contentTypes}
+                          authenticated
+                          preview={preview}
+                          {...overrides}
+                        />
+                      </LanguageProvider>
+                    </SessionProvider>
+                  ) : null}
+                </ManagerMediaProvider>
+              </ManagerLinkProvider>
+            </ManagerNavigationProvider>
+          </ManagerRuntimeAuthProvider>
         </ManagerProvider>
       </QueryClientProvider>
     </ManagerRootProviders>
