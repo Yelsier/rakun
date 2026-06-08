@@ -28,6 +28,11 @@
     "preview",
     "preview-next"
   ],
+  "overrides": {
+    "next": "16.2.6",
+    "postcss": "8.5.14",
+    "qs": "6.15.2"
+  },
   "scripts": {
     "clean": "rm -rf core/dist trpc/dist express/dist next/dist s3/dist openai/dist react/dist manager-react/dist",
     "test": "bun run --filter @rakun-kit/core test",

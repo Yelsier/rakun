@@ -20,7 +20,9 @@ export const updateTutorialPreferencesHandler = async ({
     createTutorialPreferencesUpdate(input),
   );
 
-  return await populateRelations<ManagerUser>(updated);
+  return await populateRelations<ManagerUser>(updated, {
+    exposePrivateMedia: true,
+  });
 };
 
 export const createTutorialPreferencesUpdate = (

@@ -1,4 +1,6 @@
-import { throwAppError } from "../../../../lib/errors";
+import { isAppError, throwAppError } from "../../../../lib/errors";
+import { Media } from "../../../../internal-content-types";
+import { hasPermissions } from "../../../../lib/Permissions";
 import {
   MediaErrorInvalidData,
   MediaErrorNotFound,
@@ -6,6 +8,7 @@ import {
   GetMediaUrlOutput,
   getMediaService,
 } from "../../../../media";
+import { getMongoService } from "../../../../orm";
 import { RakunRequestContext } from "../../../context";
 import { checkAnyPermissions } from "../../../utils/checkPermissions";
 
@@ -39,9 +42,44 @@ export const getMediaUrlHandler = async ({
   checkAnyPermissions(user, ["content.Media.readAny", "content.Media.own"]);
 
   try {
+    const db = await getMongoService();
+    const mediaRecord = await db.find(Media, {
+      key: input.key,
+    });
+
+    if (!mediaRecord) {
+      throwAppError("NOT_FOUND", {
+        resource: "Media",
+      });
+    }
+
+    if (input.access && input.access !== mediaRecord.access) {
+      throwAppError("VALIDATION", {
+        errors: [{ message: "Media access does not match stored record" }],
+      });
+    }
+
+    if (
+      !hasPermissions(user, ["content.Media.readAny"]) &&
+      mediaRecord.createdBy !== user._id
+    ) {
+      throwAppError("FORBIDDEN", {
+        reason: "You do not have access to this media",
+      });
+    }
+
     const media = getMediaService();
-    return await media.getMediaUrl(input);
+    return await media.getMediaUrl({
+      ...input,
+      access: mediaRecord.access,
+      expiresInSeconds: input.expiresInSeconds
+        ? Math.min(input.expiresInSeconds, 60 * 60)
+        : undefined,
+    });
   } catch (error) {
+    if (isAppError(error)) {
+      throw error;
+    }
     return mapMediaError(error);
   }
 };

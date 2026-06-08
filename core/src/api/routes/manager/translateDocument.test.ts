@@ -108,7 +108,7 @@ describe("translateDocumentHandler", () => {
           _type: "ManagerUser",
           user: "Yago",
           email: "yago@example.com",
-          role: { permissions: [] },
+          role: { permissions: ["content.TranslateHandlerPage.own"] },
         }),
       },
     } as never);

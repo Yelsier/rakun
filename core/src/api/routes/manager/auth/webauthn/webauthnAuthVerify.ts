@@ -12,6 +12,11 @@ import {
 } from "../../../../../internal-content-types";
 import { throwAppError } from "../../../../../lib/errors";
 import { getMongoService } from "../../../../../orm";
+import { SESSION_MAX_AGE_MS } from "../../../../sessionCookie";
+import {
+  assertAuthRateLimit,
+  resetAuthRateLimit,
+} from "../../../../utils/authRateLimit";
 
 export const webauthnAuthVerifyHandler = async ({
   input,
@@ -19,6 +24,13 @@ export const webauthnAuthVerifyHandler = async ({
   input: { challengeToken: string; response: AuthenticationResponseJSON };
 }) => {
   const db = await getMongoService();
+  const rateLimitKey = `mfa:webauthn:${input.challengeToken}`;
+
+  assertAuthRateLimit({
+    key: rateLimitKey,
+    limit: 8,
+    windowMs: 5 * 60 * 1000,
+  });
 
   const ch = await db.find(MfaChallenge, { token: input.challengeToken });
   if (!ch) throw new Error("CHALLENGE_NOT_FOUND");
@@ -78,6 +90,7 @@ export const webauthnAuthVerifyHandler = async ({
       message: "Authentication failed",
     });
   }
+  resetAuthRateLimit(rateLimitKey);
 
   // actualiza counter
   await db.update(WebAuthnCredential, cred._id, {
@@ -88,7 +101,7 @@ export const webauthnAuthVerifyHandler = async ({
   await db.update(MfaChallenge, ch._id, { consumedAt: new Date() });
 
   const token = crypto.randomUUID();
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24); // 1 day
+  const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_MS);
 
   await db.create(Session, {
     token,
@@ -103,5 +116,6 @@ export const webauthnAuthVerifyHandler = async ({
 
   return {
     token,
+    expiresAt: expiresAt.toISOString(),
   };
 };

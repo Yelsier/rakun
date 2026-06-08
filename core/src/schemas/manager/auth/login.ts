@@ -8,6 +8,7 @@ export const loginInput = z.object({
 export const loginOutput = z
   .object({
     token: z.string(),
+    expiresAt: z.string(),
   })
   .or(
     z.object({

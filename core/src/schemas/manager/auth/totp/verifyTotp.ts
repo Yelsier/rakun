@@ -11,6 +11,7 @@ export const verifyTotpInput = z.object({
 export const verifyTotpOutput = z
   .object({
     token: z.string(),
+    expiresAt: z.string(),
   })
   .or(
     z.object({

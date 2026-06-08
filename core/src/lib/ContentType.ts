@@ -43,6 +43,20 @@ export type VersioningOptions = {
   maxVersions?: number;
 };
 
+export type ContentTypePermissionAction =
+  | "own"
+  | "readAny"
+  | "updateAny"
+  | "deleteAny";
+
+export type ContentTypePermissions =
+  | false
+  | string
+  | {
+      resource: string;
+      actions?: ContentTypePermissionAction[];
+    };
+
 export type ContentTypeMigrationContext = {
   db: DBService;
   rawDB: unknown;
@@ -232,6 +246,7 @@ type ContentTypeParams<
   migrations?: ContentTypeMigration[];
   versioning?: boolean | VersioningOptions;
   documentVisibility?: boolean;
+  permissions?: ContentTypePermissions;
 };
 
 type FieldSchemaMode = "input" | "db" | "populated";
@@ -311,6 +326,7 @@ export default class ContentType<
   migrations: ContentTypeMigration[] = [];
   versioning?: boolean | VersioningOptions;
   documentVisibility?: boolean;
+  permissions?: ContentTypePermissions;
   isInternal?: boolean;
   hasIterator = false;
   hasSeo = false;
@@ -331,6 +347,7 @@ export default class ContentType<
     this.migrations = params.migrations || [];
     this.versioning = params.versioning;
     this.documentVisibility = params.documentVisibility;
+    this.permissions = params.permissions;
   }
 
   getInputSchema() {
@@ -483,6 +500,7 @@ export default class ContentType<
         listFields: this.listFields as NestedPaths<
           ContentTypePopulatedShape<Fields, N>
         >[],
+        permissions: this.permissions,
       },
       { allowSystemFields: true },
     );
@@ -494,6 +512,7 @@ export default class ContentType<
       migrations: this.migrations,
       versioning: this.versioning,
       documentVisibility: this.documentVisibility,
+      permissions: this.permissions,
       isInternal: this.isInternal,
       hasIterator: this.hasIterator,
       hasSeo: this.hasSeo,
@@ -705,6 +724,18 @@ export const EncodedContentTypeSchema = z.object({
   schemaVersion: z.number().optional(),
   versioning: z.union([z.boolean(), z.object({ maxVersions: z.number().optional() })]).optional(),
   documentVisibility: z.boolean().optional(),
+  permissions: z
+    .union([
+      z.literal(false),
+      z.string(),
+      z.object({
+        resource: z.string(),
+        actions: z
+          .array(z.enum(["own", "readAny", "updateAny", "deleteAny"]))
+          .optional(),
+      }),
+    ])
+    .optional(),
   hasIterator: z.boolean().optional(),
   hasSeo: z.boolean().optional(),
   routes: z

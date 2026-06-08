@@ -7,6 +7,7 @@ import { GetInput } from "../../../schemas/manager/get";
 import { checkOwnership } from "../../utils/checkOwnership";
 import { requireContentType } from "../../utils/requireContentType";
 import { syncConfiguredRoutes } from "../../utils/routes/syncConfiguredRoutes";
+import { sanitizeManagerOutput } from "../../utils/sanitizeManagerOutput";
 import { resolveMediaRecordUrls } from "./media/resolveMediaRecordUrls";
 
 export const getHandler = async ({
@@ -35,9 +36,12 @@ export const getHandler = async ({
     const item = await db.get(contentType, id);
     Logger.addTrace("manager.get: db get success", { found: !!item });
     if (contentType.name === Media.name) {
-      return resolveMediaRecordUrls(item as Record<string, unknown>);
+      return sanitizeManagerOutput(
+        await resolveMediaRecordUrls(item as Record<string, unknown>),
+        contentType,
+      );
     }
-    return item;
+    return sanitizeManagerOutput(item, contentType);
   } catch (_) {
     throwAppError("NOT_FOUND", {
       resource: contentTypeName,

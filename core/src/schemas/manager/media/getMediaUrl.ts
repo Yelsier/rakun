@@ -5,7 +5,7 @@ import { mediaAccessSchema } from './prepareUpload'
 export const getMediaUrlInput = z.object({
   key: z.string().min(1),
   access: mediaAccessSchema.optional(),
-  expiresInSeconds: z.number().int().positive().optional(),
+  expiresInSeconds: z.number().int().positive().max(60 * 60).optional(),
 })
 
 export const getMediaUrlOutput = z.object({

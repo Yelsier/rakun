@@ -10,6 +10,8 @@ import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
 import { Permission } from "../../../lib/Permissions";
 import { getInputProxy } from "../../proxies";
+import { prepareManagerUserCreateData } from "../../utils/managerUserPassword";
+import { sanitizeManagerOutput } from "../../utils/sanitizeManagerOutput";
 
 export const createHandler = async ({
   input,
@@ -19,10 +21,14 @@ export const createHandler = async ({
   ctx: RakunRequestContext;
 }) => {
   const db = await getMongoService();
-  const { contentType: contentTypeName, data } = input;
+  const { contentType: contentTypeName } = input;
   const user = ctx.getUser();
 
   const contentType = requireContentType(contentTypeName);
+  const data = prepareManagerUserCreateData(
+    contentType,
+    input.data,
+  ) as Record<string, unknown>;
 
   checkPermissions(user, [`content.${contentTypeName}.own` as Permission]);
 
@@ -61,7 +67,7 @@ export const createHandler = async ({
       operation: "create",
     });
 
-    return created;
+    return sanitizeManagerOutput(created, contentType);
   } catch (error) {
     if (error instanceof z.ZodError || error instanceof DbErrorInvalidData) {
       throwAppError("VALIDATION", {

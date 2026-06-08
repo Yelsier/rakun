@@ -8,6 +8,8 @@ import { checkAnyPermissions } from "../../utils/checkPermissions";
 import { populateRelations } from "../../utils/populates/populateRelations";
 import { requireContentType } from "../../utils/requireContentType";
 import { syncConfiguredRoutes } from "../../utils/routes/syncConfiguredRoutes";
+import { parseSafeManagerQuery } from "../../utils/safeManagerQuery";
+import { sanitizeManagerOutput } from "../../utils/sanitizeManagerOutput";
 import { resolveMediaRecordUrls } from "./media/resolveMediaRecordUrls";
 
 export const listHandler = async ({
@@ -18,8 +20,9 @@ export const listHandler = async ({
   ctx: RakunRequestContext;
 }) => {
   const db = await getMongoService();
-  const { contentType: contentTypeName, query } = input;
+  const { contentType: contentTypeName } = input;
   const contentType = requireContentType(contentTypeName);
+  const query = parseSafeManagerQuery(contentType, input.query);
   const user = ctx.getUser();
 
   checkAnyPermissions(user, [
@@ -58,7 +61,9 @@ export const listHandler = async ({
   });
 
   const items = (await Promise.all(
-    raw.items.map((item) => populateRelations(item)),
+    raw.items.map((item) =>
+      populateRelations(item, { exposePrivateMedia: true }),
+    ),
   )) as {
     [x: string]: unknown;
     _id: string;
@@ -70,6 +75,6 @@ export const listHandler = async ({
 
   return {
     totalItems: raw.totalItems,
-    items: resolvedItems,
+    items: sanitizeManagerOutput(resolvedItems, contentType),
   };
 };

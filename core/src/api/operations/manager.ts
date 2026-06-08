@@ -151,7 +151,9 @@ export const createManagerOperationDefinitions = () => {
       resolve: loginHandler,
       onSuccess: ({ ctx, result }) => {
         if ("token" in result) {
-          setSessionCookie(ctx, result.token);
+          setSessionCookie(ctx, result.token, {
+            maxAge: Math.max(0, Date.parse(result.expiresAt) - Date.now()),
+          });
         }
       },
     },
@@ -189,7 +191,9 @@ export const createManagerOperationDefinitions = () => {
       resolve: verifyTotpHandler,
       onSuccess: ({ ctx, result }) => {
         if ("token" in result) {
-          setSessionCookie(ctx, result.token);
+          setSessionCookie(ctx, result.token, {
+            maxAge: Math.max(0, Date.parse(result.expiresAt) - Date.now()),
+          });
         }
       },
     },
@@ -206,7 +210,9 @@ export const createManagerOperationDefinitions = () => {
       resolve: webauthnAuthVerifyHandler,
       onSuccess: ({ ctx, result }) => {
         if ("token" in result) {
-          setSessionCookie(ctx, result.token);
+          setSessionCookie(ctx, result.token, {
+            maxAge: Math.max(0, Date.parse(result.expiresAt) - Date.now()),
+          });
         }
       },
     },

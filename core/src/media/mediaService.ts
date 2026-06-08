@@ -65,11 +65,13 @@ export type PrepareUploadInput = {
 
 export type PrepareUploadOutput = PresignedPut & {
   access: MediaAccess;
+  uploadToken?: string;
 };
 
 export type FinalizeUploadInput = {
   key: string;
   access?: MediaAccess;
+  uploadToken?: string;
 };
 
 export type FinalizeUploadOutput = {
@@ -123,6 +125,8 @@ const getExtension = (fileName: string): string => {
   const maybeExt = parts[parts.length - 1]?.toLowerCase() || "";
   return maybeExt.replace(/[^a-z0-9]/g, "");
 };
+
+const MAX_GET_EXPIRES_IN_SECONDS = 60 * 60;
 
 const ensureValidInput = (input: PrepareUploadInput): void => {
   if (!input.fileName?.trim()) {
@@ -227,8 +231,10 @@ export function createMediaServiceFromAdapter(
         const signed = await input.adapter.createPresignedGet({
           key: getInput.key,
           access,
-          expiresInSeconds:
+          expiresInSeconds: Math.min(
             getInput.expiresInSeconds ?? defaultGetExpiresInSeconds,
+            MAX_GET_EXPIRES_IN_SECONDS,
+          ),
         });
 
         return {

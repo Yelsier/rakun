@@ -4,6 +4,7 @@ import type { DataFront, DBOutput } from "../lib/types";
 
 export const RouteMap = new ContentType({
   name: "RouteMap",
+  permissions: false,
   fields: {
     path: Fields.string().required(),
     contentType: Fields.string().required(),

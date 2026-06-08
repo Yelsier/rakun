@@ -70,6 +70,16 @@ export const { GET, POST, PUT } = rakunNext({
 The tRPC integration creates a Rakun request context from Fetch API headers,
 cookies, and response headers.
 
+## Security Headers
+
+When serving the manager and preview on known origins, configure your host to
+send a `Content-Security-Policy` with a narrow `frame-ancestors` directive, for
+example:
+
+```txt
+Content-Security-Policy: frame-ancestors 'self' https://manager.example.com
+```
+
 ## Web Pages
 
 Fetch Rakun page data from a Next Server Component with `@rakun-kit/next/web`:

@@ -7,6 +7,7 @@ export const webauthnAuthVerifyInput = z.object({
 
 export const webauthnAuthVerifyOutput = z.object({
   token: z.string(),
+  expiresAt: z.string(),
 })
 
 export type WebauthnAuthVerifyInput = z.infer<typeof webauthnAuthVerifyInput>

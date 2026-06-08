@@ -8,6 +8,7 @@ import {
   getAppErrorShape,
   getAppErrorStatusCode,
   isAppError,
+  throwAppError,
 } from "@rakun-kit/core/errors";
 
 import type { RakunNextIntegration } from "./shared";
@@ -60,6 +61,49 @@ const readJsonBody = async (request: Request) => {
   return JSON.parse(rawBody);
 };
 
+const getAllowedOrigins = () =>
+  (process.env.MANAGER_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+const assertAllowedMutationOrigin = (
+  operation: AnyRakunOperation,
+  request: Request,
+) => {
+  if (operation.kind !== "mutation") return;
+
+  const origin = request.headers.get("origin");
+  if (!origin) return;
+
+  if (getAllowedOrigins().includes(origin)) return;
+
+  let originUrl: URL;
+  try {
+    originUrl = new URL(origin);
+  } catch {
+    throwAppError("FORBIDDEN", { reason: "INVALID_ORIGIN" });
+  }
+
+  const allowedHosts = [
+    request.headers.get("host"),
+    request.headers.get("x-forwarded-host"),
+  ].filter(Boolean);
+
+  if (allowedHosts.includes(originUrl.host)) return;
+
+  const baseDomain = process.env.BASE_DOMAIN;
+  if (
+    baseDomain &&
+    (originUrl.hostname === baseDomain ||
+      originUrl.hostname.endsWith(`.${baseDomain}`))
+  ) {
+    return;
+  }
+
+  throwAppError("FORBIDDEN", { reason: "INVALID_ORIGIN" });
+};
+
 const getOperationInput = async (
   operation: AnyRakunOperation,
   request: Request,
@@ -79,12 +123,16 @@ const createOperationResponse = async (
   operation: AnyRakunOperation,
   request: Request,
 ) => {
+  assertAllowedMutationOrigin(operation, request);
   const headers = new Headers();
   const ctx = await createRequestContext({
     headers: headersToObject(request.headers),
     cookies: parseCookieHeader(request.headers.get("cookie") ?? undefined),
     res: createResponseHeaderAdapter(headers),
   });
+  if (operation.access === "auth") {
+    ctx.getUser();
+  }
   const input = await getOperationInput(operation, request);
   const result = operation.output.parse(
     await operation.resolve({

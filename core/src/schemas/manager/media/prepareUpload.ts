@@ -18,6 +18,7 @@ export const prepareUploadOutput = z.object({
   headers: z.record(z.string(), z.string()).optional(),
   key: z.string(),
   access: mediaAccessSchema,
+  uploadToken: z.string().min(1),
 })
 
 export type PrepareUploadInput = z.infer<typeof prepareUploadInput>

@@ -20,6 +20,10 @@ type ResolvedMediaSizeRecord = MediaSizeRecord & {
   url: string;
 };
 
+type PopulateRelationsOptions = {
+  exposePrivateMedia?: boolean;
+};
+
 const toMediaSizeRecords = (value: unknown): MediaSizeRecord[] => {
   if (!Array.isArray(value)) return [];
 
@@ -103,18 +107,21 @@ const buildSrcSet = (
  */
 export function populateRelations<T extends ContentType>(
   data: DBOutput<T>,
+  options?: PopulateRelationsOptions,
 ): Promise<DataPopulated<T>>;
 export function populateRelations<T extends ContentType>(
   data: DBOutput<T>[],
+  options?: PopulateRelationsOptions,
 ): Promise<DataPopulated<T>[]>;
 export async function populateRelations<T extends ContentType>(
   data: DBOutput<T> | DBOutput<T>[],
+  options: PopulateRelationsOptions = {},
 ): Promise<DataPopulated<T> | DataPopulated<T>[]> {
   const db = await getMongoService();
   const { ObjectId } = getMongoDB();
 
   if (Array.isArray(data)) {
-    return Promise.all(data.map((item) => populateRelations(item)));
+    return Promise.all(data.map((item) => populateRelations(item, options)));
   }
 
   const currentContentType =
@@ -162,6 +169,25 @@ export async function populateRelations<T extends ContentType>(
         if (isFileField && contentTypeName === "Media") {
           try {
             const media = await db.get(Media, _id);
+            if (media.access === "private" && !options.exposePrivateMedia) {
+              return {
+                key: media.key,
+                access: media.access,
+                url: "",
+                previewKey: media.previewKey ?? null,
+                previewUrl: null,
+                name: media.name || "",
+                title: media.title || media.name || "",
+                alt: media.alt || null,
+                mime: media.mime || "",
+                width: media.width ?? null,
+                height: media.height ?? null,
+                size: media.size ?? 0,
+                orientation: media.orientation ?? null,
+                sizes: undefined,
+                srcSet: null,
+              };
+            }
             const mediaService = getMediaService();
             const mediaSizes = toMediaSizeRecords(
               (media as { sizes?: unknown }).sizes,
@@ -249,6 +275,7 @@ export async function populateRelations<T extends ContentType>(
             if (!populated) return Promise.resolve(value);
             return populateRelations(
               populated as DBOutput<T>,
+              options,
             ) as Promise<unknown>;
           });
       }
@@ -257,7 +284,7 @@ export async function populateRelations<T extends ContentType>(
       if (value.type === "new" && "data" in value) {
         const data = value.data as DBOutput<T>;
         return {
-          ...(await populateRelations(data)),
+          ...(await populateRelations(data, options)),
           _id: new ObjectId().toString(),
         };
       }

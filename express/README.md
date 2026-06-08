@@ -86,6 +86,16 @@ app.use(
 The tRPC integration creates a Rakun request context from Express headers,
 cookies, and response.
 
+## Security Headers
+
+When serving the manager and preview on known origins, configure your reverse
+proxy or Express app to send a `Content-Security-Policy` with a narrow
+`frame-ancestors` directive, for example:
+
+```txt
+Content-Security-Policy: frame-ancestors 'self' https://manager.example.com
+```
+
 ## Local Media
 
 Use `createLocalMediaServiceConfig` from `@rakun-kit/express/media` in bootstrap

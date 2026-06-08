@@ -1,11 +1,16 @@
 import z from "zod";
-import { getAppErrorStatusCode, isAppError } from "../../../../lib/errors";
+import {
+  getAppErrorStatusCode,
+  isAppError,
+  throwAppError,
+} from "../../../../lib/errors";
 import { Logger } from "../../../../lib/Logger";
 import { getMediaService } from "../../../../media";
 import { optimizeImageUpload } from "../../../../media/imageOptimization";
 import { createRequestContext } from "../../../context";
 import { checkPermissions } from "../../../utils/checkPermissions";
 import type { CookieOptions } from "../../../context";
+import { verifyMediaUploadToken } from "../../../utils/mediaUploadToken";
 
 const uploadHeadersSchema = z.object({
   key: z.string().min(1),
@@ -14,6 +19,7 @@ const uploadHeadersSchema = z.object({
   mime: z.string().min(1).optional(),
   optimizeRaw: z.string().optional(),
   purpose: z.enum(["profileAvatar"]).optional(),
+  uploadToken: z.string().min(1),
 });
 
 const parseCookieHeader = (cookieHeader: string | undefined) => {
@@ -57,12 +63,20 @@ const getHeader = (
 
 const readBodyBuffer = async (
   req: NodeJS.ReadableStream,
+  maxBytes: number,
 ): Promise<Buffer> => {
   const chunks: Buffer[] = [];
+  let total = 0;
 
   await new Promise<void>((resolve, reject) => {
     req.on("data", (chunk: Buffer | string) => {
-      chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+      const buffer = typeof chunk === "string" ? Buffer.from(chunk) : chunk;
+      total += buffer.length;
+      if (total > maxBytes) {
+        reject(new Error("Upload body exceeds signed size"));
+        return;
+      }
+      chunks.push(buffer);
     });
     req.on("end", () => resolve());
     req.on("error", (error) => reject(error));
@@ -74,6 +88,26 @@ const readBodyBuffer = async (
 const sanitizeMime = (value: string | undefined): string => {
   if (!value) return "application/octet-stream";
   return value.split(";")[0]?.trim() || "application/octet-stream";
+};
+
+const assertObjectDoesNotExist = async ({
+  key,
+  access,
+}: {
+  key: string;
+  access: "public" | "private";
+}) => {
+  const media = getMediaService();
+  try {
+    await media.rawAdapter.headObject({ key, access });
+  } catch {
+    return;
+  }
+
+  throwAppError("CONFLICT", {
+    message: "Media object already exists",
+    key,
+  });
 };
 
 const sendJson = (
@@ -105,7 +139,33 @@ export async function handleMediaBinaryUpload(
       mime: getHeader(req, "x-cms-upload-mime") || undefined,
       optimizeRaw: getHeader(req, "x-cms-upload-optimize") || undefined,
       purpose: getHeader(req, "x-cms-upload-purpose") || undefined,
+      uploadToken: getHeader(req, "x-cms-upload-token"),
     });
+    const tokenPayload = verifyMediaUploadToken(parsedHeaders.uploadToken);
+    if (!tokenPayload) {
+      sendJson(res, 403, {
+        message: "Invalid or expired upload token",
+      });
+      return;
+    }
+
+    const mime = sanitizeMime(
+      parsedHeaders.mime || getHeader(req, "content-type") || undefined,
+    );
+    if (
+      tokenPayload.userId !== user._id ||
+      tokenPayload.key !== parsedHeaders.key ||
+      tokenPayload.access !== parsedHeaders.access ||
+      tokenPayload.mime !== mime ||
+      (tokenPayload.purpose ?? undefined) !==
+        (parsedHeaders.purpose ?? undefined)
+    ) {
+      sendJson(res, 403, {
+        message: "Upload token does not match upload metadata",
+      });
+      return;
+    }
+
     Logger.addTrace("manager.media.uploadBinary: headers parsed", {
       key: parsedHeaders.key,
       access: parsedHeaders.access,
@@ -114,13 +174,19 @@ export async function handleMediaBinaryUpload(
       optimize: Boolean(parsedHeaders.optimizeRaw),
     });
 
-    const rawBody = await readBodyBuffer(req);
+    const rawBody = await readBodyBuffer(req, tokenPayload.size);
     Logger.addTrace("manager.media.uploadBinary: body read", {
       size: rawBody.length,
     });
     if (rawBody.length === 0) {
       sendJson(res, 400, {
         message: "Empty upload body",
+      });
+      return;
+    }
+    if (rawBody.length !== tokenPayload.size) {
+      sendJson(res, 400, {
+        message: "Upload size does not match signed size",
       });
       return;
     }
@@ -140,9 +206,6 @@ export async function handleMediaBinaryUpload(
           }
         })()
       : undefined;
-    const mime = sanitizeMime(
-      parsedHeaders.mime || getHeader(req, "content-type") || undefined,
-    );
     if (parsedHeaders.purpose === "profileAvatar") {
       if (!mime.startsWith("image/")) {
         sendJson(res, 400, {
@@ -171,6 +234,10 @@ export async function handleMediaBinaryUpload(
 
     const media = getMediaService();
     Logger.addTrace("manager.media.uploadBinary: media service ready");
+    await assertObjectDoesNotExist({
+      key: optimized.key,
+      access: parsedHeaders.access,
+    });
     await media.rawAdapter.putObject({
       key: optimized.key,
       access: parsedHeaders.access,
@@ -184,6 +251,10 @@ export async function handleMediaBinaryUpload(
     });
 
     if (optimized.preview) {
+      await assertObjectDoesNotExist({
+        key: optimized.preview.key,
+        access: parsedHeaders.access,
+      });
       await media.rawAdapter.putObject({
         key: optimized.preview.key,
         access: parsedHeaders.access,
@@ -198,6 +269,14 @@ export async function handleMediaBinaryUpload(
     }
 
     if (optimized.sizes?.length) {
+      await Promise.all(
+        optimized.sizes.map((size) =>
+          assertObjectDoesNotExist({
+            key: size.key,
+            access: parsedHeaders.access,
+          }),
+        ),
+      );
       await Promise.all(
         optimized.sizes.map((size) =>
           media.rawAdapter.putObject({
@@ -249,6 +328,16 @@ export async function handleMediaBinaryUpload(
       sendJson(res, 400, {
         message: "Invalid upload headers",
         issues: error.issues,
+      });
+      return;
+    }
+
+    if (
+      error instanceof Error &&
+      error.message === "Upload body exceeds signed size"
+    ) {
+      sendJson(res, 413, {
+        message: error.message,
       });
       return;
     }

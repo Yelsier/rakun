@@ -29,5 +29,7 @@ export const updateAccountHandler = async ({
     avatarPreviewUrl: avatar?.previewUrl ?? user.avatarPreviewUrl,
   });
 
-  return await populateRelations<ManagerUser>(updated);
+  return await populateRelations<ManagerUser>(updated, {
+    exposePrivateMedia: true,
+  });
 };

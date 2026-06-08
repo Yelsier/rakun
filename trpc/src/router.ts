@@ -178,6 +178,54 @@ const setNestedValue = (
   setNestedValue(target[head] as Record<string, any>, rest, value);
 };
 
+const getHeaderValue = (
+  value: string | string[] | undefined,
+): string | undefined => (Array.isArray(value) ? value[0] : value);
+
+const getAllowedOrigins = () =>
+  (process.env.MANAGER_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+const assertAllowedMutationOrigin = (
+  operation: AnyRakunOperation,
+  ctx: TrpcContext,
+) => {
+  if (operation.kind !== "mutation") return;
+
+  const headers = ctx.req?.headers ?? {};
+  const origin = getHeaderValue(headers.origin);
+  if (!origin) return;
+
+  if (getAllowedOrigins().includes(origin)) return;
+
+  let originUrl: URL;
+  try {
+    originUrl = new URL(origin);
+  } catch {
+    throwAppError("FORBIDDEN", { reason: "INVALID_ORIGIN" });
+  }
+
+  const allowedHosts = [
+    getHeaderValue(headers.host),
+    getHeaderValue(headers["x-forwarded-host"]),
+  ].filter(Boolean);
+
+  if (allowedHosts.includes(originUrl.host)) return;
+
+  const baseDomain = process.env.BASE_DOMAIN;
+  if (
+    baseDomain &&
+    (originUrl.hostname === baseDomain ||
+      originUrl.hostname.endsWith(`.${baseDomain}`))
+  ) {
+    return;
+  }
+
+  throwAppError("FORBIDDEN", { reason: "INVALID_ORIGIN" });
+};
+
 const createProcedureFromOperation = <
   TOperation extends AnyRakunOperation,
 >(
@@ -197,6 +245,8 @@ const createProcedureFromOperation = <
   procedure = procedure.output(operation.output as any);
 
   const execute = async ({ ctx, input }: { ctx: TrpcContext; input: any }) => {
+    assertAllowedMutationOrigin(operation, ctx);
+
     const result = await operation.resolve({
       ctx,
       input,

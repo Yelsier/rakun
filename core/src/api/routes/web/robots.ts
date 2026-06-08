@@ -14,14 +14,17 @@ type RobotsRuleRecord = {
 };
 
 const normalizeUserAgent = (value?: string) => {
-  const userAgent = value?.trim();
+  const userAgent = value?.replace(/[\r\n]+/g, " ").trim();
   return userAgent && userAgent.length > 0 ? userAgent : "*";
 };
 
 const normalizePath = (value?: string) => {
-  const path = value?.trim();
+  const path = value?.replace(/[\r\n]+/g, " ").trim();
   return path && path.length > 0 ? path : "/";
 };
+
+const normalizeLineValue = (value?: string) =>
+  value?.replace(/[\r\n]+/g, " ").trim();
 
 const renderAgentGroup = (userAgent: string, rules: RobotsRuleRecord[]) => {
   const lines = [`User-agent: ${userAgent}`];
@@ -79,14 +82,16 @@ export const getRobots = async (): Promise<RobotsOutput> => {
     renderAgentGroup(userAgent, group),
   );
   const globalLines = rules.flatMap((rule) => {
-    if (rule.directive === "sitemap" && rule.value?.trim()) {
-      return [`Sitemap: ${rule.value.trim()}`];
+    const value = normalizeLineValue(rule.value);
+
+    if (rule.directive === "sitemap" && value) {
+      return [`Sitemap: ${value}`];
     }
-    if (rule.directive === "host" && rule.value?.trim()) {
-      return [`Host: ${rule.value.trim()}`];
+    if (rule.directive === "host" && value) {
+      return [`Host: ${value}`];
     }
-    if (rule.directive === "comment" && rule.value?.trim()) {
-      return [`# ${rule.value.trim()}`];
+    if (rule.directive === "comment" && value) {
+      return [`# ${value}`];
     }
     return [];
   });

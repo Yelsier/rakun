@@ -4,6 +4,7 @@ import type { DataFront } from "../lib/types";
 
 export const RobotsRule = new ContentType({
   name: "RobotsRule",
+  permissions: "RobotsRule",
   fields: {
     name: Fields.string().required(),
     enabled: Fields.boolean().required(),

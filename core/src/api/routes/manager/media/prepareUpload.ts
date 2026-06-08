@@ -4,11 +4,12 @@ import {
   MediaErrorInvalidData,
   MediaErrorNotFound,
   PrepareUploadInput,
-  PrepareUploadOutput,
   getMediaService,
 } from "../../../../media";
+import type { PrepareUploadOutput } from "../../../../schemas/manager/media/prepareUpload";
 import { RakunRequestContext } from "../../../context";
 import { checkPermissions } from "../../../utils/checkPermissions";
+import { createMediaUploadToken } from "../../../utils/mediaUploadToken";
 
 const mapMediaError = (error: unknown): never => {
   Logger.error("manager.media.prepareUpload failed", {
@@ -61,7 +62,17 @@ export const prepareUploadHandler = async ({
       access: prepared.access,
       hasUrl: Boolean(prepared.url),
     });
-    return prepared;
+    return {
+      ...prepared,
+      uploadToken: createMediaUploadToken({
+        key: prepared.key,
+        access: prepared.access,
+        mime: input.mime,
+        size: input.size,
+        userId: user._id,
+        purpose: input.purpose,
+      }),
+    };
   } catch (error) {
     Logger.addTrace("manager.media.prepareUpload: handler failed");
     return mapMediaError(error);

@@ -4,6 +4,7 @@ import type { DataFront } from "../lib/types";
 
 export const Redirect = new ContentType({
   name: "Redirect",
+  permissions: "Redirect",
   fields: {
     name: Fields.string().required(),
     enabled: Fields.boolean().required(),

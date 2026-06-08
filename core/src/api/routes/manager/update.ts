@@ -7,8 +7,10 @@ import { DbErrorInvalidData, DbErrorConflict } from "../../../orm/dbService";
 import { RakunRequestContext } from "../../context";
 import { getInputProxy } from "../../proxies";
 import { checkOwnership } from "../../utils/checkOwnership";
+import { prepareManagerUserUpdateData } from "../../utils/managerUserPassword";
 import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
+import { sanitizeManagerOutput } from "../../utils/sanitizeManagerOutput";
 
 export const updateHandler = async ({
   input,
@@ -18,10 +20,14 @@ export const updateHandler = async ({
   ctx: RakunRequestContext;
 }) => {
   const db = await getMongoService();
-  const { contentType: contentTypeName, id, data } = input;
+  const { contentType: contentTypeName, id } = input;
   const user = ctx.getUser();
 
   const contentType = requireContentType(contentTypeName);
+  const data = prepareManagerUserUpdateData(
+    contentType,
+    input.data,
+  ) as Record<string, unknown>;
 
   await checkOwnership({
     ctx,
@@ -76,7 +82,7 @@ export const updateHandler = async ({
       operation: "update",
     });
 
-    return updated;
+    return sanitizeManagerOutput(updated, contentType);
   } catch (error) {
     if (error instanceof z.ZodError || error instanceof DbErrorInvalidData) {
       throwAppError("VALIDATION", {

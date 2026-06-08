@@ -16,9 +16,16 @@ export const getUser = async (ctx: RakunRequestContext) => {
 
   if (!session) return null;
 
+  if (new Date(session.expiresAt).getTime() <= Date.now()) {
+    await db.delete(Session, { token });
+    return null;
+  }
+
   const user = await db.find(ManagerUser, { _id: session.user._id });
 
   if (!user) return null;
 
-  return await populateRelations<ManagerUser>(user);
+  return await populateRelations<ManagerUser>(user, {
+    exposePrivateMedia: true,
+  });
 };

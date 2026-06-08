@@ -139,6 +139,7 @@ export async function uploadFileToPresignedUrl(params: {
       "x-cms-upload-mime": params.file.type || "application/octet-stream",
       "x-cms-upload-key": params.prepared.key,
       "x-cms-upload-access": params.prepared.access,
+      "x-cms-upload-token": params.prepared.uploadToken,
       "x-cms-upload-file-name":
         params.file instanceof File ? params.file.name : "upload.bin",
       ...(params.optimizeOptions
@@ -247,6 +248,7 @@ export async function uploadMediaFile(
     {
       key: uploaded.key,
       access: uploaded.access,
+      uploadToken: prepared.uploadToken,
       fileName: uploaded.fileName,
       mime: uploaded.mime,
       size: uploaded.size,

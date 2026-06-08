@@ -65,8 +65,6 @@ const getContentRowId = (row: object, index: number) => {
   return typeof id === 'string' ? id : String(index)
 }
 
-const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-
 const ContentListTableSkeleton = ({
   fieldsCount,
   showVisibility,
@@ -155,8 +153,7 @@ const ListContents: React.FC<{
     if (trimmedSearch && searchableFields.length > 0) {
       filter.$or = searchableFields.map((field) => ({
         [field]: {
-          $regex: escapeRegExp(trimmedSearch),
-          $options: 'i',
+          $contains: trimmedSearch,
         },
       }))
     }

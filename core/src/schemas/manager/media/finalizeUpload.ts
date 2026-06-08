@@ -66,6 +66,7 @@ export const mediaRecordOutput = z.object({
 export const finalizeUploadInput = z.object({
   key: z.string().min(1),
   access: mediaAccessSchema.optional(),
+  uploadToken: z.string().min(1),
   fileName: z.string().min(1).optional(),
   name: z.string().min(1).optional(),
   mime: z.string().min(1).optional(),

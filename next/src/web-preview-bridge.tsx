@@ -22,9 +22,20 @@ export const RakunPreviewBridge = ({
   const selectMessageType = ${serializeScriptValue(rakunPreviewModuleSelectMessageType)};
   const inspectorMessageType = ${serializeScriptValue(rakunPreviewInspectorMessageType)};
   const defaultTokenParam = ${serializeScriptValue(tokenParam)};
+  const getParentOrigin = () => {
+    try {
+      return document.referrer ? new URL(document.referrer).origin : window.location.origin;
+    } catch {
+      return window.location.origin;
+    }
+  };
+  const parentOrigin = getParentOrigin();
+  const postToParent = (message) => {
+    window.parent?.postMessage(message, parentOrigin);
+  };
 
   if (window[bridgeKey]) {
-    window.parent?.postMessage({ type: readyMessageType }, "*");
+    postToParent({ type: readyMessageType });
     return;
   }
 
@@ -213,7 +224,7 @@ export const RakunPreviewBridge = ({
     event.preventDefault();
     event.stopPropagation();
     showOverlay(module);
-    window.parent?.postMessage(buildSelectMessage(module), "*");
+    postToParent(buildSelectMessage(module));
   };
 
   const handleViewportChange = () => {
@@ -273,6 +284,7 @@ export const RakunPreviewBridge = ({
 
   window.addEventListener("message", (event) => {
     if (event.source !== window.parent) return;
+    if (event.origin !== parentOrigin) return;
 
     if (isPreviewInspectorMessage(event.data)) {
       setInspectEnabled(event.data.enabled);
@@ -291,7 +303,7 @@ export const RakunPreviewBridge = ({
     window.location.replace(nextHref);
   });
 
-  window.parent?.postMessage({ type: readyMessageType }, "*");
+  postToParent({ type: readyMessageType });
 })();
 `;
 

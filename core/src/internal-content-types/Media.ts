@@ -5,6 +5,7 @@ import { MediaFolder } from "./MediaFolder";
 
 export const Media = new ContentType({
   name: "Media",
+  permissions: "Media",
   fields: {
     name: Fields.string().required(),
     title: Fields.string(),

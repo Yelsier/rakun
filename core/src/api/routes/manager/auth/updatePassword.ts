@@ -1,8 +1,10 @@
-import { ManagerUser } from "../../../../internal-content-types";
+import { ManagerUser, Session } from "../../../../internal-content-types";
+import { throwAppError } from "../../../../lib/errors";
 import { getMongoService } from "../../../../orm";
 import { RakunRequestContext } from "../../../context";
+import { getSessionCookie } from "../../../sessionCookie";
 import { UpdatePasswordInput } from "../../../../schemas/manager/updatePassword";
-import { verifyPassword, hashPassword } from "../../../utils/passwords";
+import { verifyStoredPassword, hashPassword } from "../../../utils/passwords";
 
 export const updatePasswordHandler = async ({
   input,
@@ -15,13 +17,21 @@ export const updatePasswordHandler = async ({
   const user = ctx.getUser();
   const password = (await db.get(ManagerUser, user._id, ["password"])).password;
 
-  if (!verifyPassword(input.currentPassword, password)) {
-    throw new Error("Current password is incorrect");
+  if (!verifyStoredPassword(input.currentPassword, password).valid) {
+    throwAppError("FORBIDDEN", {
+      reason: "INVALID_CREDENTIALS",
+    });
   }
 
   await db.update(ManagerUser, user._id, {
     password: hashPassword(input.newPassword),
   });
+  await db.delete(Session, {
+    "user._id": user._id,
+    ...(getSessionCookie(ctx)
+      ? { token: { $ne: getSessionCookie(ctx) } }
+      : {}),
+  } as never);
 
   return { ok: true };
 };

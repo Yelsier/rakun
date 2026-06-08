@@ -4,6 +4,7 @@ import type { DataFront, DBOutput } from "../lib/types";
 
 export const MediaFolder = new ContentType({
   name: "MediaFolder",
+  permissions: "Media",
   fields: {
     name: Fields.string().required(),
     slug: Fields.string().type("Slug").required(),

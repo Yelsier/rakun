@@ -5,7 +5,12 @@ export { getLanguages } from "./getLanguages";
 export { getLink, getTranslatedLink } from "./getLink";
 export { getUser } from "./getUser";
 export { parseId } from "./parseId";
-export { hashPassword, verifyPassword } from "./passwords";
+export {
+  hashPassword,
+  isBcryptHash,
+  verifyPassword,
+  verifyStoredPassword,
+} from "./passwords";
 export { parsePreviewData, serializePreviewData } from "./previewData";
 export { hashPreviewToken } from "./previewToken";
 export { requireContentType } from "./requireContentType";

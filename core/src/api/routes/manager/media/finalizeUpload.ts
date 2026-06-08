@@ -15,6 +15,7 @@ import {
 } from "../../../../orm/dbService";
 import { RakunRequestContext } from "../../../context";
 import { checkPermissions } from "../../../utils/checkPermissions";
+import { verifyMediaUploadToken } from "../../../utils/mediaUploadToken";
 import { slugify } from "../../../../lib/utils/slugify";
 import {
   FinalizeUploadInput,
@@ -182,6 +183,24 @@ export const finalizeUploadHandler = async ({
   const user = ctx.getUser();
 
   try {
+    const tokenPayload = verifyMediaUploadToken(input.uploadToken);
+    if (!tokenPayload) {
+      throwAppError("FORBIDDEN", {
+        reason: "INVALID_UPLOAD_TOKEN",
+      });
+    }
+
+    if (
+      tokenPayload.userId !== user._id ||
+      tokenPayload.key !== input.key ||
+      (input.access && tokenPayload.access !== input.access) ||
+      (tokenPayload.purpose ?? undefined) !== (input.purpose ?? undefined)
+    ) {
+      throwAppError("FORBIDDEN", {
+        reason: "UPLOAD_TOKEN_MISMATCH",
+      });
+    }
+
     if (input.purpose === "profileAvatar") {
       if (input.mime && !input.mime.startsWith("image/")) {
         throwAppError("VALIDATION", {
@@ -199,7 +218,10 @@ export const finalizeUploadHandler = async ({
 
     const media = getMediaService();
     Logger.addTrace("manager.media.finalizeUpload: media service ready");
-    const finalized = await media.finalizeUpload(input);
+    const finalized = await media.finalizeUpload({
+      key: input.key,
+      access: tokenPayload.access,
+    });
     Logger.addTrace("manager.media.finalizeUpload: storage finalized", {
       key: finalized.key,
       access: finalized.access,
@@ -226,6 +248,11 @@ export const finalizeUploadHandler = async ({
         throwAppError("NOT_FOUND", {
           resource: "MediaFolder",
           id: input.folderId,
+        });
+      }
+      if (!canReadAny && existingFolder.createdBy !== user._id) {
+        throwAppError("FORBIDDEN", {
+          reason: "You do not have access to the requested folder",
         });
       }
 

@@ -1,4 +1,15 @@
 import { ManagerUserSchema } from "../internal-content-types/ManagerUser";
+import type ContentType from "./ContentType";
+import { getContentTypes } from "./Registry";
+
+type ContentPermissionAction = "own" | "readAny" | "updateAny" | "deleteAny";
+
+const contentPermissionActions: ContentPermissionAction[] = [
+  "readAny",
+  "own",
+  "updateAny",
+  "deleteAny",
+];
 
 const createContentPermission = <T extends string>(permission: T) =>
   [
@@ -27,15 +38,72 @@ export const PermissionsList = [
   "manager.versions.readAny",
   "manager.versions.updateAny",
   "manager.apiOperations.readAny",
-  ...createContentPermission(`content.Media`),
-  ...createContentPermission(`content.Redirect`),
   "manager.literals.readAny",
   "manager.literals.updateAny",
 ] as const;
 
-export type Permission = (typeof PermissionsList)[number];
+export type Permission = string;
 
-export const getPermissionList = () => PermissionsList as unknown as string[];
+const getContentPermissionConfig = (contentType: ContentType) => {
+  const config = contentType.permissions;
+
+  if (config === false) return null;
+
+  if (typeof config === "string") {
+    return {
+      resource: config,
+      actions: contentPermissionActions,
+    };
+  }
+
+  if (config && typeof config === "object") {
+    return {
+      resource: config.resource,
+      actions: config.actions?.length
+        ? config.actions
+        : contentPermissionActions,
+    };
+  }
+
+  if (contentType.isInternal) return null;
+
+  return {
+    resource: contentType.name,
+    actions: contentPermissionActions,
+  };
+};
+
+export const getContentPermissionResource = (contentType: ContentType) => {
+  const config = getContentPermissionConfig(contentType);
+  return config ? `content.${config.resource}` : null;
+};
+
+export const getContentPermission = (
+  contentType: ContentType,
+  action: ContentPermissionAction,
+): Permission | null => {
+  const config = getContentPermissionConfig(contentType);
+  if (!config || !config.actions.includes(action)) return null;
+  return `content.${config.resource}.${action}`;
+};
+
+const getDynamicContentPermissions = () =>
+  getContentTypes().flatMap((contentType) => {
+    const config = getContentPermissionConfig(contentType);
+    if (!config) return [];
+
+    return config.actions.map(
+      (action) => `content.${config.resource}.${action}`,
+    );
+  });
+
+export const getPermissionList = () =>
+  Array.from(
+    new Set([
+      ...(PermissionsList as unknown as string[]),
+      ...getDynamicContentPermissions(),
+    ]),
+  );
 
 const managerPermissionMap: Record<string, Permission[]> = {
   "content.ManagerUser.own": ["manager.users.readAny"],
@@ -77,16 +145,34 @@ const managerPermissionMap: Record<string, Permission[]> = {
   "content.Language.deleteAny": ["manager.languages.deleteAny"],
 };
 
-const isKnownPermission = (permission: string) =>
-  getPermissionList().includes(permission);
+const mapContentTypePermission = (permission: string): string[] | null => {
+  const match = /^content\.([^.]+)\.(own|readAny|updateAny|deleteAny)$/.exec(
+    permission,
+  );
 
-const isDynamicContentPermission = (permission: string) =>
-  permission.startsWith("content.") && !permission.startsWith("content.Manager");
+  if (!match) return null;
+
+  const [, contentTypeName, action] = match;
+  const contentType = getContentTypes().find(
+    (item) => item.name === contentTypeName,
+  );
+
+  if (!contentType) return [permission];
+
+  const mapped = getContentPermission(
+    contentType,
+    action as ContentPermissionAction,
+  );
+
+  return mapped ? [mapped] : [permission];
+};
 
 export const mapPermissions = (permissions: string[]): Permission[] => {
   return permissions.flatMap((permission) => {
     const mapped = managerPermissionMap[permission];
-    return mapped ? mapped : permission;
+    if (mapped) return mapped;
+
+    return mapContentTypePermission(permission) ?? permission;
   }) as Permission[];
 };
 
@@ -99,16 +185,12 @@ export const hasPermissions = (
   const mappedPermissions = mapPermissions(permissions);
 
   for (const permission of mappedPermissions) {
-    if (!allPermissions.includes(permission) && !isDynamicContentPermission(permission)) {
+    if (!allPermissions.includes(permission)) {
       return false;
     }
   }
 
   return mappedPermissions.every((permission) => {
-    if (!isKnownPermission(permission) && isDynamicContentPermission(permission)) {
-      return true;
-    }
-
     return user.role.permissions.includes(permission);
   });
 };

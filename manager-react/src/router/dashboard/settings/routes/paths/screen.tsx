@@ -43,8 +43,7 @@ export const ManagerSettingsRoutePathsScreen = () => {
         filter: trimmedSearch
           ? {
               path: {
-                $regex: trimmedSearch,
-                $options: 'i',
+                $contains: trimmedSearch,
               },
             }
           : undefined,

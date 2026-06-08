@@ -135,13 +135,13 @@ export default function Previews() {
 
     switch (mediaType) {
       case 'image':
-        return { ...folderFilter, mime: { $regex: '^image/' } }
+        return { ...folderFilter, mime: { $contains: 'image/' } }
       case 'video':
-        return { ...folderFilter, mime: { $regex: '^video/' } }
+        return { ...folderFilter, mime: { $contains: 'video/' } }
       case 'document':
         return {
           ...folderFilter,
-          $or: [{ mime: { $regex: '^application/' } }, { mime: { $regex: '^text/' } }],
+          $or: [{ mime: { $contains: 'application/' } }, { mime: { $contains: 'text/' } }],
         }
       default:
         return folderFilter
