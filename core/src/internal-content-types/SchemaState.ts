@@ -4,6 +4,10 @@ import type { DBOutput } from "../lib/types";
 
 export const SchemaState = new ContentType({
   name: "SchemaState",
+  permissions: {
+    resource: "Migration",
+    actions: ["readAny"],
+  },
   fields: {
     contentType: Fields.string().required(),
     version: Fields.number().required(),

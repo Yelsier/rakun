@@ -4,6 +4,7 @@ import type { DataFront, DataInput, DBOutput } from "../lib/types";
 
 export const Route = new ContentType({
   name: "Route",
+  permissions: "Route",
   fields: {
     basePath: Fields.string().type("Slug").required().translatable(),
     contentType: Fields.string().required(),

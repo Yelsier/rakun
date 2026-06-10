@@ -32,8 +32,8 @@ export const ManagerSettingsRoutePathsScreen = () => {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const canReadRoutes = hasPermissions(['manager.routes.readAny'])
-  const canUpdateRoutes = hasPermissions(['manager.routes.updateAny'])
+  const canReadRoutes = hasPermissions(['content.Route.readAny'])
+  const canUpdateRoutes = hasPermissions(['content.Route.updateAny'])
   const trimmedSearch = debouncedSearch.trim()
   const listQuery = useManagerQuery({
     name: 'manager.list',
@@ -71,7 +71,7 @@ export const ManagerSettingsRoutePathsScreen = () => {
   }, [search])
 
   if (!canReadRoutes) {
-    return <UnauthorizedMessage neededPermission={['manager.routes.readAny']} />
+    return <UnauthorizedMessage neededPermission={['content.Route.readAny']} />
   }
 
   if (!listQuery.data) {

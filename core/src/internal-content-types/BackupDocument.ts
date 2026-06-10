@@ -4,6 +4,7 @@ import type { DBOutput } from "../lib/types";
 
 export const BackupDocument = new ContentType({
   name: "BackupDocument",
+  permissions: false,
   fields: {
     backupId: Fields.string().type("Id").required(),
     contentType: Fields.string().required(),

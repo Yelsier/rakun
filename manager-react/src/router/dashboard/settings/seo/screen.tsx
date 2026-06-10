@@ -52,8 +52,8 @@ const createSeoSettingsEditContentType = (): EncodedContentType => {
 export const ManagerSettingsSeoScreen = () => {
   const formRef = useRef<FieldRef>(null)
   const { hasPermissions } = useSession()
-  const canRead = hasPermissions(['manager.seo.readAny' as Permission])
-  const canUpdate = hasPermissions(['manager.seo.updateAny' as Permission])
+  const canRead = hasPermissions(['content.SeoSettings.readAny' as Permission])
+  const canUpdate = hasPermissions(['content.SeoSettings.updateAny' as Permission])
   const contentType = useMemo(createSeoSettingsEditContentType, [])
   const settingsListQuery = useManagerQuery({
     name: 'manager.list',
@@ -131,7 +131,7 @@ export const ManagerSettingsSeoScreen = () => {
   if (!canRead) {
     return (
       <UnauthorizedMessage
-        neededPermission={['manager.seo.readAny' as Permission]}
+        neededPermission={['content.SeoSettings.readAny' as Permission]}
       />
     )
   }
@@ -169,7 +169,7 @@ export const ManagerSettingsSeoScreen = () => {
             </Button>
           ) : (
             <UnauthorizedMessage
-              neededPermission={['manager.seo.updateAny' as Permission]}
+              neededPermission={['content.SeoSettings.updateAny' as Permission]}
             />
           )}
         </CardContent>

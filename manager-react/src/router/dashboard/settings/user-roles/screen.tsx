@@ -32,7 +32,7 @@ export const ManagerSettingsUserRolesScreen = () => {
 
   return (
     <div className='container mx-auto flex flex-col items-start gap-6 py-10'>
-      {hasPermissions(['manager.roles.updateAny']) && (
+      {hasPermissions(['content.ManagerRole.updateAny']) && (
         <Button asChild className='self-end'>
           <ManagerLink href='/settings/user-roles/create'>
             Add Role

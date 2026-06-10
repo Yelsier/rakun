@@ -9,7 +9,7 @@ export const listMigrationsHandler = async ({
   ctx: RakunRequestContext;
 }): Promise<ListMigrationsOutput> => {
   const user = ctx.getUser();
-  checkPermissions(user, ["manager.migrations.readAny"]);
+  checkPermissions(user, ["content.Migration.readAny"]);
   const db = await getMongoService();
   return db.migrations.list();
 };

@@ -1,9 +1,11 @@
 import bcrypt from "bcrypt";
 import { MongoClient, type Db, type Document } from "mongodb";
 
-import { ensureRakunInitialized } from "@rakun-kit/core";
-import { ITERATOR_FIELD_NAME } from "@rakun-kit/core";
-import { PermissionsList } from "@rakun-kit/core";
+import {
+  ensureRakunInitialized,
+  getPermissionList,
+  ITERATOR_FIELD_NAME,
+} from "@rakun-kit/core";
 
 import {
   Article,
@@ -205,15 +207,18 @@ export const seedPreviewData = async () => {
 
     await ensureRakunInitialized();
 
+    const adminPermissions = getPermissionList();
     const role = await db.collection("ManagerRole").findOneAndUpdate(
       { name: "Preview Admin" },
       {
+        $set: {
+          permissions: adminPermissions,
+          updatedAt: now(),
+        },
         $setOnInsert: {
           name: "Preview Admin",
-          permissions: [...PermissionsList],
           _type: "ManagerRole",
           createdAt: now(),
-          updatedAt: now(),
         },
       },
       { upsert: true, returnDocument: "after" },

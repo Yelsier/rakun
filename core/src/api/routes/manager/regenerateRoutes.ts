@@ -8,7 +8,7 @@ export const regenerateRoutesHandler = async ({
   ctx: RakunRequestContext;
 }) => {
   const user = ctx.getUser();
-  checkPermissions(user, ["manager.routes.updateAny"]);
+  checkPermissions(user, ["content.Route.updateAny"]);
 
   await regenerateAllRoutesMap();
   return { ok: true };

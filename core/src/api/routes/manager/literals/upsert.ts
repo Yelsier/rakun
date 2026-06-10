@@ -23,7 +23,7 @@ export const upsertLiteralHandler = async ({
 
   const user = ctx.getUser();
 
-  checkPermissions(user, ["manager.literals.updateAny"]);
+  checkPermissions(user, ["content.LiteralTranslation.updateAny"]);
 
   const literalDefinition = getLiteralDefinition(input.key);
   if (!literalDefinition) {

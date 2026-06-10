@@ -14,7 +14,7 @@ export const createBackupHandler = async ({
   ctx: RakunRequestContext;
 }): Promise<BackupRecord> => {
   const user = ctx.getUser();
-  checkPermissions(user, ["manager.backups.updateAny"]);
+  checkPermissions(user, ["content.Backup.updateAny"]);
   const db = await getMongoService();
   return db.backups.create({
     ...input,

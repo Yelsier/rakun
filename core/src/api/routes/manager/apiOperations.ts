@@ -25,7 +25,7 @@ export const apiOperationsHandler = async <
   ctx: RakunRequestContext;
 }): Promise<ApiOperationsOutput> => {
   const user = ctx.getUser();
-  checkPermissions(user, ["manager.apiOperations.readAny"]);
+  checkPermissions(user, ["content.ApiOperation.readAny"]);
 
   const managerOperations = mergeOperationMaps(
     mergeOperationContracts(contracts, implementations),

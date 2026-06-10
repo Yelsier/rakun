@@ -70,8 +70,8 @@ export const columns = ({
       return (
         <DropdownMenu>
           {hasAnyPermission([
-            'manager.users.updateAny',
-            'manager.users.deleteAny',
+            'content.ManagerUser.updateAny',
+            'content.ManagerUser.deleteAny',
           ]) && (
             <DropdownMenuTrigger asChild>
               <Button
@@ -84,7 +84,7 @@ export const columns = ({
             </DropdownMenuTrigger>
           )}
           <DropdownMenuContent align='end'>
-            {hasPermissions(['manager.users.deleteAny']) && (
+            {hasPermissions(['content.ManagerUser.deleteAny']) && (
               <DropdownMenuItem
                 className='text-destructive'
                 onClick={() => setDeleteUser(user)}
@@ -93,7 +93,7 @@ export const columns = ({
                 Delete {user.user}
               </DropdownMenuItem>
             )}
-            {hasPermissions(['manager.users.updateAny']) && (
+            {hasPermissions(['content.ManagerUser.updateAny']) && (
               <DropdownMenuItem onClick={() => setEdit(user)}>
                 <Edit />
                 Edit {user.user}

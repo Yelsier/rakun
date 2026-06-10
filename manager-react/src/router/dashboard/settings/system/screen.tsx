@@ -68,12 +68,12 @@ const formatDateTime = (value: string | Date) =>
 export const ManagerSettingsSystemScreen = () => {
   const { hasPermissions, hasAnyPermission } = useSession();
   const [restoreTarget, setRestoreTarget] = useState<BackupRecord | null>(null);
-  const canReadBackups = hasPermissions(["manager.backups.readAny"]);
-  const canUpdateBackups = hasPermissions(["manager.backups.updateAny"]);
-  const canReadMigrations = hasPermissions(["manager.migrations.readAny"]);
+  const canReadBackups = hasPermissions(["content.Backup.readAny"]);
+  const canUpdateBackups = hasPermissions(["content.Backup.updateAny"]);
+  const canReadMigrations = hasPermissions(["content.Migration.readAny"]);
   const canReadSystem = hasAnyPermission([
-    "manager.backups.readAny",
-    "manager.migrations.readAny",
+    "content.Backup.readAny",
+    "content.Migration.readAny",
   ]);
   const backupsQuery = useManagerQuery({
     name: "manager.backups.list",
@@ -113,8 +113,8 @@ export const ManagerSettingsSystemScreen = () => {
       <UnauthorizedMessage
         anyPermission
         neededPermission={[
-          "manager.backups.readAny",
-          "manager.migrations.readAny",
+          "content.Backup.readAny",
+          "content.Migration.readAny",
         ]}
       />
     );

@@ -49,7 +49,7 @@ export const ManagerSettingsLanguagesScreen = () => {
 
   return (
     <div className='container mx-auto flex flex-col items-start gap-6 px-4 py-10'>
-      {hasPermissions(['manager.languages.updateAny']) ? (
+      {hasPermissions(['content.Language.updateAny']) ? (
         <div className='self-end'>
           <CreateLanguage refetch={() => void listQuery.refetch()} />
         </div>

@@ -1,5 +1,20 @@
-import { describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "bun:test";
 
+import {
+  ApiOperation,
+  Backup,
+  ContentVersion,
+  Language,
+  LiteralTranslation,
+  ManagerRole,
+  ManagerUser,
+  Migration,
+  Page,
+  Route,
+  RouteLayoutModule,
+  RouteMap,
+  SeoSettings,
+} from "../internal-content-types";
 import type { ManagerUserSchema } from "../internal-content-types/ManagerUser";
 import ContentType from "./ContentType";
 import { Fields } from "./fields";
@@ -9,7 +24,7 @@ import {
   mapPermissions,
   type Permission,
 } from "./Permissions";
-import { registerContentType } from "./Registry";
+import { registerContentType, registerInternalContentType } from "./Registry";
 
 const makeUser = (permissions: Permission[]) =>
   ({
@@ -19,6 +34,22 @@ const makeUser = (permissions: Permission[]) =>
   }) as ManagerUserSchema;
 
 describe("permissions", () => {
+  beforeAll(() => {
+    registerInternalContentType(Route, { override: true });
+    registerInternalContentType(RouteLayoutModule, { override: true });
+    registerInternalContentType(RouteMap, { override: true });
+    registerInternalContentType(Page, { override: true });
+    registerInternalContentType(ManagerUser, { override: true });
+    registerInternalContentType(ManagerRole, { override: true });
+    registerInternalContentType(Language, { override: true });
+    registerInternalContentType(SeoSettings, { override: true });
+    registerInternalContentType(Backup, { override: true });
+    registerInternalContentType(ContentVersion, { override: true });
+    registerInternalContentType(LiteralTranslation, { override: true });
+    registerInternalContentType(Migration, { override: true });
+    registerInternalContentType(ApiOperation, { override: true });
+  });
+
   it("denies unknown manager permissions", () => {
     const user = makeUser([]);
 
@@ -79,14 +110,52 @@ describe("permissions", () => {
     );
   });
 
-  it("maps internal manager content permissions to manager permissions", () => {
-    const user = makeUser(["manager.routes.updateAny"]);
+  it("maps grouped route content permissions from content type definitions", () => {
+    const user = makeUser(["content.Route.readAny", "content.Route.updateAny"]);
 
     expect(
-      hasPermissions(user, ["content.RouteMap.updateAny" as Permission]),
+      hasPermissions(user, [
+        "content.RouteLayoutModule.updateAny" as Permission,
+      ]),
     ).toBe(true);
-    expect(mapPermissions(["content.RouteMap.updateAny"])).toEqual([
-      "manager.routes.updateAny",
+    expect(hasPermissions(user, ["content.Page.readAny" as Permission])).toBe(
+      true,
+    );
+    expect(hasPermissions(user, ["content.RouteMap.readAny" as Permission])).toBe(
+      true,
+    );
+    expect(
+      hasPermissions(user, ["content.RouteMap.updateAny" as Permission]),
+    ).toBe(false);
+    expect(mapPermissions(["content.RouteLayoutModule.updateAny"])).toEqual([
+      "content.Route.updateAny",
     ]);
+  });
+
+  it("uses content type permissions for internal manager resources", () => {
+    expect(getPermissionList()).toContain("content.Route.readAny");
+    expect(getPermissionList()).toContain("content.ManagerUser.readAny");
+    expect(getPermissionList()).toContain("content.ManagerRole.updateAny");
+    expect(getPermissionList()).toContain("content.Language.updateAny");
+    expect(getPermissionList()).toContain("content.SeoSettings.readAny");
+    expect(getPermissionList()).toContain("content.Backup.updateAny");
+    expect(getPermissionList()).toContain("content.ContentVersion.readAny");
+    expect(getPermissionList()).toContain(
+      "content.LiteralTranslation.updateAny",
+    );
+    expect(getPermissionList()).toContain("content.Migration.readAny");
+    expect(getPermissionList()).toContain("content.ApiOperation.readAny");
+    expect(getPermissionList()).not.toContain("manager.routes.readAny");
+    expect(getPermissionList()).not.toContain("manager.users.readAny");
+    expect(getPermissionList()).not.toContain("manager.roles.updateAny");
+    expect(getPermissionList()).not.toContain("manager.languages.updateAny");
+    expect(getPermissionList()).not.toContain("manager.seo.readAny");
+    expect(getPermissionList().some((permission) => permission.startsWith("manager."))).toBe(false);
+
+    const user = makeUser(["content.ManagerRole.updateAny"]);
+
+    expect(
+      hasPermissions(user, ["content.ManagerRole.updateAny" as Permission]),
+    ).toBe(true);
   });
 });

@@ -30,7 +30,7 @@ export const listLiteralsHandler = async ({
   ctx: RakunRequestContext;
 }): Promise<ListLiteralsOutput> => {
   const user = ctx.getUser();
-  checkAnyPermissions(user, ["manager.literals.readAny"]);
+  checkAnyPermissions(user, ["content.LiteralTranslation.readAny"]);
 
   const db = await getMongoService();
 

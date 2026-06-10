@@ -272,7 +272,6 @@ export {
   getPermissionList,
   hasPermissions,
   mapPermissions,
-  PermissionsList,
   type Permission,
 } from "./lib/Permissions";
 export type { LiteralCatalogInput } from "./literals";

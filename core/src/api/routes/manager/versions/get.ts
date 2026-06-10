@@ -14,7 +14,7 @@ export const getVersionHandler = async ({
   ctx: RakunRequestContext;
 }): Promise<ContentVersionRecord | null> => {
   const user = ctx.getUser();
-  checkPermissions(user, ["manager.versions.readAny"]);
+  checkPermissions(user, ["content.ContentVersion.readAny"]);
   const db = await getMongoService();
   return db.versions.get(input.versionId);
 };

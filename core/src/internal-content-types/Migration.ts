@@ -4,6 +4,10 @@ import type { DBOutput } from "../lib/types";
 
 export const Migration = new ContentType({
   name: "Migration",
+  permissions: {
+    resource: "Migration",
+    actions: ["readAny"],
+  },
   fields: {
     contentType: Fields.string().required(),
     migrationId: Fields.string().required(),

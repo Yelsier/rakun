@@ -4,6 +4,7 @@ import type { DataFront, DataInput, DBOutput } from "../lib/types";
 
 export const Language = new ContentType({
   name: "Language",
+  permissions: "Language",
   fields: {
     code: Fields.string().required().min(2),
     name: Fields.string().required(),

@@ -5,6 +5,7 @@ import { Seo } from "./Seo";
 
 export const SeoSettings = new ContentType({
   name: "SeoSettings",
+  permissions: "SeoSettings",
   fields: {
     key: Fields.string().required(),
     siteName: Fields.string().translatable(),

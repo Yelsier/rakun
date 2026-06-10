@@ -4,6 +4,7 @@ import type { DBOutput } from "../lib/types";
 
 export const Backup = new ContentType({
   name: "Backup",
+  permissions: "Backup",
   fields: {
     reason: Fields.string().type("Textarea"),
     contentTypes: Fields.array(Fields.string()).required(),

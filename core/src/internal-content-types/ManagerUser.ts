@@ -5,6 +5,7 @@ import { ManagerRole } from "./ManagerRole";
 
 export const ManagerUser = new ContentType({
   name: "ManagerUser",
+  permissions: "ManagerUser",
   fields: {
     user: Fields.string().required(),
     email: Fields.string().type("Email").required(),

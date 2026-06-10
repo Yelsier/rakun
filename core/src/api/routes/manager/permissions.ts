@@ -8,7 +8,7 @@ export const permissionsHandler = async ({
   ctx: RakunRequestContext;
 }) => {
   const user = ctx.getUser();
-  checkAnyPermissions(user, ["manager.permissions.readAny", "manager.roles.updateAny"]);
+  checkAnyPermissions(user, ["content.ManagerRole.updateAny"]);
 
   return getPermissionList();
 };

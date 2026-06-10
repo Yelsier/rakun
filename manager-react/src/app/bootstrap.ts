@@ -12,10 +12,17 @@ export type ManagerBootstrapData = {
 export const loadManagerBootstrap = async (
   client: ManagerClient,
 ): Promise<ManagerBootstrapData> => {
-  const [user, languages] = await Promise.all([
-    client.request("manager.auth.getSession"),
-    client.request("manager.languages"),
-  ]);
+  const user = await client.request("manager.auth.getSession");
+
+  if (!user) {
+    return {
+      user,
+      languages: [fallbackLanguage],
+      initialLanguage: fallbackLanguage,
+    };
+  }
+
+  const languages = await client.request("manager.languages");
 
   if (languages.length === 0) {
     languages.push(fallbackLanguage);

@@ -144,8 +144,8 @@ export const EditPageProvider = ({
   const sections = useContentTypeSections(contentType)
   const contentTypeId = (defaultData as { _id?: string } | undefined)?._id
   const hasVisibility = Boolean(contentType.documentVisibility)
-  const canReadVersions = hasPermissions(['manager.versions.readAny'])
-  const canRestoreVersions = hasPermissions(['manager.versions.updateAny'])
+  const canReadVersions = hasPermissions(['content.ContentVersion.readAny'])
+  const canRestoreVersions = hasPermissions(['content.ContentVersion.updateAny'])
   const hasVersioning = Boolean(contentType.versioning) && canReadVersions
   const isTrashed =
     (defaultData as { _trashed?: boolean } | undefined)?._trashed === true ||

@@ -8,12 +8,11 @@ import { useSession } from '@/state/session'
 export const ManagerSettingsUserRoleCreateScreen = () => {
   const { hasPermissions } = useSession()
 
-  if (!hasPermissions(['manager.roles.updateAny'])) {
+  if (!hasPermissions(['content.ManagerRole.updateAny'])) {
     return (
-      <UnauthorizedMessage neededPermission={['manager.roles.updateAny']} />
+      <UnauthorizedMessage neededPermission={['content.ManagerRole.updateAny']} />
     )
   }
 
   return <EditRole />
 }
-

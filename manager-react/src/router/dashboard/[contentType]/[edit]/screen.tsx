@@ -1,7 +1,6 @@
 'use client'
 
 import type { EncodedContentType, Permission } from '@rakun-kit/core/client'
-import { hasPermissions } from '@rakun-kit/core/client'
 
 import EditPage from './edit'
 import type { FieldValue } from './_fields/shared'
@@ -22,7 +21,7 @@ export const ManagerContentTypeEditScreen = ({
   id: string
   preview?: ManagerPreviewConfig
 }) => {
-  const { user, hasAnyPermission } = useSession()
+  const { user, hasAnyPermission, hasPermissions } = useSession()
   const itemQuery = useManagerQuery({
     name: 'manager.get',
     input: contentType
@@ -67,7 +66,7 @@ export const ManagerContentTypeEditScreen = ({
 
   if (
     defaultData.createdBy !== user?._id &&
-    !hasPermissions(user, [`content.${contentType.name}.updateAny` as Permission])
+    !hasPermissions([`content.${contentType.name}.updateAny` as Permission])
   ) {
     return (
       <UnauthorizedMessage

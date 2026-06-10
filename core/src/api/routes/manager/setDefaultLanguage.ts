@@ -17,7 +17,7 @@ export const setDefaultLanguageHandler = async ({
   const user = ctx.getUser();
   const language = await db.find(Language, { code: languageCode });
 
-  checkPermissions(user, ["manager.languages.updateAny"]);
+  checkPermissions(user, ["content.Language.updateAny"]);
 
   if (!language) {
     throwAppError("NOT_FOUND", {

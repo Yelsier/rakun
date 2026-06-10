@@ -4,6 +4,7 @@ import type { DataFront, DataInput, DBOutput } from "../lib/types";
 
 export const RouteLayoutModuleOverride = new ContentType({
   name: "RouteLayoutModuleOverride",
+  permissions: "Route",
   fields: {
     routeId: Fields.string().type("Id").required(),
     routeKey: Fields.string().required(),

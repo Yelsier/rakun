@@ -19,9 +19,9 @@ export const ManagerSettingsUserRoleEditScreen = ({ id }: { id: string }) => {
     },
   })
 
-  if (!hasPermissions(['manager.roles.updateAny'])) {
+  if (!hasPermissions(['content.ManagerRole.updateAny'])) {
     return (
-      <UnauthorizedMessage neededPermission={['manager.roles.updateAny']} />
+      <UnauthorizedMessage neededPermission={['content.ManagerRole.updateAny']} />
     )
   }
 
@@ -40,4 +40,3 @@ export const ManagerSettingsUserRoleEditScreen = ({ id }: { id: string }) => {
 
   return <EditRole defaultValues={roleQuery.data as ManagerRoleRecord} />
 }
-

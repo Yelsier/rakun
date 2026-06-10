@@ -5,6 +5,7 @@ import { Page } from "./Page";
 
 export const RouteSettings = new ContentType({
   name: "RouteSettings",
+  permissions: "Route",
   fields: {
     key: Fields.string().required(),
     homePage: Fields.relation(Page, "existing"),

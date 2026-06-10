@@ -9,7 +9,7 @@ export const listBackupsHandler = async ({
   ctx: RakunRequestContext;
 }): Promise<ListBackupsOutput> => {
   const user = ctx.getUser();
-  checkPermissions(user, ["manager.backups.readAny"]);
+  checkPermissions(user, ["content.Backup.readAny"]);
   const db = await getMongoService();
   return db.backups.list();
 };

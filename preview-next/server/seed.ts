@@ -8,7 +8,7 @@ import {
 } from "@rakun-kit/next/internal-content-types";
 import {
   ITERATOR_FIELD_NAME,
-  PermissionsList,
+  getPermissionList,
   SEO_FIELD_NAME,
 } from "@rakun-kit/next";
 
@@ -379,15 +379,18 @@ export const seedPreviewData = async ({
       throw new Error("Failed to create preview language.");
     }
 
+    const adminPermissions = getPermissionList();
     const role = await db.collection("ManagerRole").findOneAndUpdate(
       { name: "Preview Admin" },
       {
+        $set: {
+          permissions: adminPermissions,
+          updatedAt: now(),
+        },
         $setOnInsert: {
           name: "Preview Admin",
-          permissions: [...PermissionsList],
           _type: "ManagerRole",
           createdAt: now(),
-          updatedAt: now(),
         },
       },
       { upsert: true, returnDocument: "after" },

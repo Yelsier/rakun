@@ -8,9 +8,9 @@ import ApiTest from './ApiTest'
 export function ManagerApiRoutesScreen() {
   const { hasPermissions } = useSession()
 
-  if (!hasPermissions(['manager.apiOperations.readAny'])) {
+  if (!hasPermissions(['content.ApiOperation.readAny'])) {
     return (
-      <UnauthorizedMessage neededPermission={['manager.apiOperations.readAny']} />
+      <UnauthorizedMessage neededPermission={['content.ApiOperation.readAny']} />
     )
   }
 

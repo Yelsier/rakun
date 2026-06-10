@@ -4,6 +4,7 @@ import type { DBOutput } from "../lib/types";
 
 export const ContentVersion = new ContentType({
   name: "ContentVersion",
+  permissions: "ContentVersion",
   fields: {
     contentType: Fields.string().required(),
     documentId: Fields.string().type("Id").required(),

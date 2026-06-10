@@ -4,6 +4,7 @@ import type { DBOutput } from "../lib/types";
 
 export const MigrationLock = new ContentType({
   name: "MigrationLock",
+  permissions: false,
   fields: {
     acquiredAt: Fields.date().type("DateTime").required(),
   },

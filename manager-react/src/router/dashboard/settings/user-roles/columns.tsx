@@ -46,8 +46,8 @@ export const columns = ({
       return (
         <DropdownMenu>
           {hasAnyPermission([
-            'manager.roles.updateAny',
-            'manager.roles.deleteAny',
+            'content.ManagerRole.updateAny',
+            'content.ManagerRole.deleteAny',
           ]) && (
             <DropdownMenuTrigger asChild>
               <Button
@@ -60,7 +60,7 @@ export const columns = ({
             </DropdownMenuTrigger>
           )}
           <DropdownMenuContent align='end'>
-            {hasPermissions(['manager.roles.deleteAny']) && (
+            {hasPermissions(['content.ManagerRole.deleteAny']) && (
               <DropdownMenuItem
                 className='text-destructive'
                 onClick={() => setDelete(role)}
@@ -69,7 +69,7 @@ export const columns = ({
                 Delete {role.name}
               </DropdownMenuItem>
             )}
-            {hasPermissions(['manager.roles.updateAny']) && (
+            {hasPermissions(['content.ManagerRole.updateAny']) && (
               <DropdownMenuItem asChild>
                 <ManagerLink href={`/settings/user-roles/${role._id}`}>
                   <Edit />

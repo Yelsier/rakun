@@ -200,9 +200,9 @@ export const ManagerSettingsLiteralsScreen = () => {
     );
   }, [selectedLiteral]);
 
-  if (!hasPermissions(["manager.literals.readAny"])) {
+  if (!hasPermissions(["content.LiteralTranslation.readAny"])) {
     return (
-      <UnauthorizedMessage neededPermission={["manager.literals.readAny"]} />
+      <UnauthorizedMessage neededPermission={["content.LiteralTranslation.readAny"]} />
     );
   }
 
@@ -450,12 +450,12 @@ export const ManagerSettingsLiteralsScreen = () => {
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Translation</p>
                   <Textarea
-                    disabled={!hasPermissions(["manager.literals.updateAny"])}
+                    disabled={!hasPermissions(["content.LiteralTranslation.updateAny"])}
                     value={messageDraft}
                     onChange={(event) => setMessageDraft(event.target.value)}
                     className="min-h-28 font-mono text-xs"
                   />
-                  {!hasPermissions(["manager.literals.updateAny"]) ? (
+                  {!hasPermissions(["content.LiteralTranslation.updateAny"]) ? (
                     <p className="flex items-center gap-2 text-muted-foreground text-sm">
                       <Info className="size-4" />
                       You don't have permissions to edit literals
@@ -497,7 +497,7 @@ export const ManagerSettingsLiteralsScreen = () => {
                   </div>
                 ) : null}
 
-                {hasPermissions(["manager.literals.updateAny"]) ? (
+                {hasPermissions(["content.LiteralTranslation.updateAny"]) ? (
                   <div className="flex justify-end gap-2">
                     <Button
                       variant="secondary"

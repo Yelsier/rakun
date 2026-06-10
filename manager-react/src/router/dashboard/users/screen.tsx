@@ -28,8 +28,8 @@ export function ManagerUsersScreen() {
   })
   const { hasPermissions, hasAnyPermission } = useSession()
 
-  if (!hasPermissions(['manager.users.readAny'])) {
-    return <UnauthorizedMessage neededPermission={['manager.users.readAny']} />
+  if (!hasPermissions(['content.ManagerUser.readAny'])) {
+    return <UnauthorizedMessage neededPermission={['content.ManagerUser.readAny']} />
   }
 
   if (!listQuery.data) {
@@ -38,7 +38,7 @@ export function ManagerUsersScreen() {
 
   return (
     <div className='container mx-auto flex flex-col items-start gap-6 px-4 py-10'>
-      {hasPermissions(['manager.users.updateAny']) ? (
+      {hasPermissions(['content.ManagerUser.updateAny']) ? (
         <div className='self-end' data-tour='users-create'>
           <CreateUser refetch={() => void listQuery.refetch()} />
         </div>

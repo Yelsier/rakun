@@ -234,7 +234,10 @@ export const ManagerRuntimeApp = ({
                   ) : null}
 
                   {state.status === "ready" ? (
-                    <SessionProvider initialUser={state.user}>
+                    <SessionProvider
+                      initialUser={state.user}
+                      contentTypes={state.contentTypes}
+                    >
                       <LanguageProvider
                         languages={state.languages}
                         initialLanguage={state.initialLanguage}

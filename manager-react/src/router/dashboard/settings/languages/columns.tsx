@@ -76,7 +76,7 @@ export const columns = ({
 
       return (
         <DropdownMenu>
-          {hasAnyPermission(['manager.languages.updateAny', 'manager.languages.deleteAny']) && (
+          {hasAnyPermission(['content.Language.updateAny', 'content.Language.deleteAny']) && (
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
@@ -88,14 +88,14 @@ export const columns = ({
             </DropdownMenuTrigger>
           )}
           <DropdownMenuContent align="end">
-            {hasPermissions(['manager.languages.updateAny']) && (
+            {hasPermissions(['content.Language.updateAny']) && (
               <DropdownMenuItem onClick={() => handleSetDefault(language.code)}>
                 <Star />
                 Set as default
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            {hasPermissions(['manager.languages.deleteAny']) && (
+            {hasPermissions(['content.Language.deleteAny']) && (
               <DropdownMenuItem
                 className="text-destructive"
                 onClick={() => setDeleteLanguage(language)}
@@ -104,7 +104,7 @@ export const columns = ({
                 Delete {language.name} ({language.code})
               </DropdownMenuItem>
             )}
-            {hasPermissions(['manager.languages.updateAny']) && (
+            {hasPermissions(['content.Language.updateAny']) && (
               <DropdownMenuItem onClick={() => setEdit(language)}>
                 <Edit />
                 Edit {language.name} ({language.code})

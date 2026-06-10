@@ -4,6 +4,7 @@ import type { DataFront, DBOutput } from "../lib/types";
 
 export const LiteralTranslation = new ContentType({
   name: "LiteralTranslation",
+  permissions: "LiteralTranslation",
   fields: {
     key: Fields.string().required(),
     locale: Fields.string().required().min(2),

@@ -87,7 +87,7 @@ export const columns = ({
     id: 'actions',
     cell: ({ row }) => (
       <DropdownMenu>
-        {hasPermissions(['manager.routes.updateAny']) && (
+        {hasPermissions(['content.Route.updateAny']) && (
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
@@ -99,13 +99,13 @@ export const columns = ({
           </DropdownMenuTrigger>
         )}
         <DropdownMenuContent align="end">
-          {hasPermissions(['manager.routes.updateAny']) && (
+          {hasPermissions(['content.Route.updateAny']) && (
             <DropdownMenuItem onClick={() => setEdit(row.original)}>
               <Edit />
               Edit
             </DropdownMenuItem>
           )}
-          {hasPermissions(['manager.routes.updateAny']) && canEditLayoutModules?.(row.original) && (
+          {hasPermissions(['content.Route.updateAny']) && canEditLayoutModules?.(row.original) && (
             <DropdownMenuItem onClick={() => onEditLayoutModules?.(row.original)}>
               <Settings />
               Edit layout modules

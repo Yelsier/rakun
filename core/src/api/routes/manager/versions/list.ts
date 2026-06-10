@@ -12,7 +12,7 @@ export const listVersionsHandler = async ({
   ctx: RakunRequestContext
 }): Promise<ListVersionsOutput> => {
   const user = ctx.getUser()
-  checkPermissions(user, ['manager.versions.readAny'])
+  checkPermissions(user, ['content.ContentVersion.readAny'])
   const db = await getMongoService()
   return db.versions.list(input)
 }
