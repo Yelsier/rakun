@@ -181,7 +181,14 @@ Dynamic data turns a content type into a reusable layout. The manager can bind
 enabled fields to another content item field, or to a generated `href` when a
 source content type has a page route. Source content types are hidden by default;
 set `dynamicDataSource: true` on content types that should appear in the
-manager source selector:
+manager source selector.
+
+Source field selectors are type-aware. A string target only offers string-like
+source paths, number targets only offer numbers, and boolean targets only offer
+booleans. Object-like source fields are traversed so nested leaf fields can be
+selected, while reserved SEO metadata is omitted from dynamic data mappings.
+The generated `href` source is only shown for content types that have a
+configured route with `hasPage: true`.
 
 ```ts
 const Project = new ContentType({
@@ -211,6 +218,10 @@ const Carousel = new ContentType({
   },
 });
 ```
+
+List bindings append dynamic items to manually stored items instead of replacing
+the list. If the same stable item id appears in both sources, the dynamically
+resolved item wins and the duplicate manual copy is skipped.
 
 Schema and validation methods:
 
