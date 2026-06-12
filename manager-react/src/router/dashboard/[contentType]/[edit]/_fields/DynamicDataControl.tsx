@@ -47,6 +47,23 @@ type FilterState = {
   operator: FilterOperator
   value: string
 }
+type SourceFieldKind =
+  | 'string'
+  | 'richText'
+  | 'number'
+  | 'boolean'
+  | 'date'
+  | 'object'
+  | 'array'
+  | 'unknown'
+type SourceFieldOption = {
+  label: string
+  value: string
+  kind: SourceFieldKind
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === 'object' && !Array.isArray(value)
 
 const isListField = (field: EncodedFieldUnknown) =>
   field.config.ui === 'List' || field.config.ui === 'Iterator'
@@ -65,18 +82,145 @@ export const isDynamicFieldEnabled = (
     : (dynamicData.fields ?? []).includes(fieldName)
 }
 
-const sourceFieldOptions = (contentType?: EncodedContentType) => {
+const getFieldKind = (field: EncodedFieldUnknown): SourceFieldKind => {
+  if (field.config.type === 'String') {
+    return field.config.ui === 'RichText' ? 'richText' : 'string'
+  }
+  if (field.config.type === 'Link') return 'string'
+  if (field.config.type === 'Number') return 'number'
+  if (field.config.type === 'Boolean') return 'boolean'
+  if (field.config.type === 'Date') {
+    return field.config.ui === 'Time' ? 'string' : 'date'
+  }
+  if (field.config.type === 'Select') {
+    return (field as { isMultiple?: boolean }).isMultiple ? 'array' : 'string'
+  }
+  if (field.config.type === 'ContentReference') {
+    return (field as { isMultiple?: boolean }).isMultiple ? 'array' : 'string'
+  }
+  if (field.config.type === 'File') {
+    return (field as { isMultiple?: boolean }).isMultiple ? 'array' : 'object'
+  }
+  if (field.config.type === 'Relation') return 'object'
+  if (isListField(field)) return 'array'
+
+  return 'unknown'
+}
+
+const isCompatibleSourceKind = (
+  sourceKind: SourceFieldKind,
+  targetField?: EncodedFieldUnknown,
+) => {
+  if (!targetField) return sourceKind !== 'object' && sourceKind !== 'array'
+
+  return sourceKind === getFieldKind(targetField)
+}
+
+const fieldLabel = (path: string) =>
+  path.startsWith('_seo.') ? `seo.${path.slice('_seo.'.length)}` : path
+
+const isSeoPath = (path: string) =>
+  path === '_seo' ||
+  path === 'seo' ||
+  path.startsWith('_seo.') ||
+  path.startsWith('seo.')
+
+const fileFieldOptions = (
+  path: string,
+  targetField?: EncodedFieldUnknown,
+): SourceFieldOption[] => {
+  const options: SourceFieldOption[] = [
+    { label: fieldLabel(`${path}.url`), value: `${path}.url`, kind: 'string' },
+    {
+      label: fieldLabel(`${path}.previewUrl`),
+      value: `${path}.previewUrl`,
+      kind: 'string',
+    },
+    { label: fieldLabel(`${path}.name`), value: `${path}.name`, kind: 'string' },
+    {
+      label: fieldLabel(`${path}.title`),
+      value: `${path}.title`,
+      kind: 'string',
+    },
+    { label: fieldLabel(`${path}.alt`), value: `${path}.alt`, kind: 'string' },
+    { label: fieldLabel(`${path}.mime`), value: `${path}.mime`, kind: 'string' },
+    {
+      label: fieldLabel(`${path}.srcSet`),
+      value: `${path}.srcSet`,
+      kind: 'string',
+    },
+    { label: fieldLabel(`${path}.width`), value: `${path}.width`, kind: 'number' },
+    {
+      label: fieldLabel(`${path}.height`),
+      value: `${path}.height`,
+      kind: 'number',
+    },
+    { label: fieldLabel(`${path}.size`), value: `${path}.size`, kind: 'number' },
+  ]
+
+  return options.filter((option) =>
+    isCompatibleSourceKind(option.kind, targetField),
+  )
+}
+
+const nestedSourceFieldOptions = ({
+  contentType,
+  prefix = '',
+  targetField,
+  depth = 0,
+}: {
+  contentType: EncodedContentType
+  prefix?: string
+  targetField?: EncodedFieldUnknown
+  depth?: number
+}): SourceFieldOption[] =>
+  Object.entries(contentType.fields).flatMap(([name, field]) => {
+    if (field.visibility !== 'all') return []
+
+    const path = prefix ? `${prefix}.${name}` : name
+    const kind = getFieldKind(field)
+
+    if (isSeoPath(path)) return []
+
+    if (field.config.type === 'Relation' && depth < 3) {
+      const relationContentType = (field as EncodedRelationField).contentType
+
+      return nestedSourceFieldOptions({
+        contentType: relationContentType,
+        prefix: path,
+        targetField,
+        depth: depth + 1,
+      })
+    }
+
+    if (field.config.type === 'File') {
+      return fileFieldOptions(path, targetField)
+    }
+
+    if (!isCompatibleSourceKind(kind, targetField)) return []
+
+    return [
+      {
+        label: fieldLabel(path),
+        value: path,
+        kind,
+      },
+    ]
+  })
+
+const sourceFieldOptions = (
+  contentType?: EncodedContentType,
+  targetField?: EncodedFieldUnknown,
+) => {
   if (!contentType) return []
 
-  const fields = Object.entries(contentType.fields)
-    .filter(([, field]) => field.visibility === 'all')
-    .map(([name]) => ({
-      label: name,
-      value: name,
-    }))
+  const fields = nestedSourceFieldOptions({ contentType, targetField })
+  const includeHref =
+    contentType.routes?.some((route) => route.hasPage) &&
+    isCompatibleSourceKind('string', targetField)
 
-  return contentType.routes?.some((route) => route.hasPage)
-    ? [{ label: 'href', value: '$href' }, ...fields]
+  return includeHref
+    ? [{ label: 'href', value: '$href', kind: 'string' }, ...fields]
     : fields
 }
 
@@ -93,7 +237,7 @@ const sourceValue = (source?: DynamicBindingSource) =>
   source?.virtual === 'href' ? '$href' : source?.path || ''
 
 const sourceLabel = (source?: DynamicBindingSource) =>
-  source?.virtual === 'href' ? 'href' : source?.path || ''
+  source?.virtual === 'href' ? 'href' : fieldLabel(source?.path || '')
 
 const getSourceContentTypes = (
   contentType: EncodedContentType,
@@ -105,9 +249,6 @@ const getSourceContentTypes = (
       sourceContentType,
     ),
   )
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  !!value && typeof value === 'object' && !Array.isArray(value)
 
 const readFilterState = (
   filter: Record<string, unknown> | undefined,
@@ -197,10 +338,12 @@ const PanelSection = ({
 
 const FieldBindingEditor = ({
   contentTypes,
+  targetField,
   binding,
   onChange,
 }: {
   contentTypes: EncodedContentType[]
+  targetField: EncodedFieldUnknown
   binding: FieldBinding
   onChange: (binding: FieldBinding) => void
 }) => {
@@ -307,11 +450,13 @@ const FieldBindingEditor = ({
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {sourceFieldOptions(selectedContentType).map((field) => (
-                  <SelectItem key={field.value} value={field.value}>
-                    {field.label}
-                  </SelectItem>
-                ))}
+                {sourceFieldOptions(selectedContentType, targetField).map(
+                  (field) => (
+                    <SelectItem key={field.value} value={field.value}>
+                      {field.label}
+                    </SelectItem>
+                  ),
+                )}
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -589,7 +734,7 @@ const ListBindingEditor = ({
 
       <PanelSection title='Mapping'>
         <div className='grid gap-2'>
-          {targetFields.map(([targetField]) => {
+          {targetFields.map(([targetField, targetFieldConfig]) => {
             const source = binding?.map?.[targetField]
 
             return (
@@ -619,11 +764,13 @@ const ListBindingEditor = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {sourceFieldOptions(selectedSource).map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
+                      {sourceFieldOptions(selectedSource, targetFieldConfig).map(
+                        (item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ),
+                      )}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -763,6 +910,7 @@ export const DynamicDataControl = ({
   ) : (
     <FieldBindingEditor
       contentTypes={sourceContentTypes}
+      targetField={field}
       binding={fieldBinding}
       onChange={updateFieldBinding}
     />

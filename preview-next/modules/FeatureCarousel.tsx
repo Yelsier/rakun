@@ -32,8 +32,6 @@ export default function FeatureCarousel({
 }: FeatureCarouselProps) {
   const resolvedItems = items.map(unwrapItem)
 
-  console.log(resolvedItems)
-
   return (
     <section className="border-y border-zinc-200 bg-zinc-950 px-6 py-16 text-white">
       <div className="mx-auto max-w-5xl">
