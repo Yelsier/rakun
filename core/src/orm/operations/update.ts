@@ -10,6 +10,7 @@ import {
   DbErrorNotFound,
   DbErrorUnknown,
 } from "../dbService";
+import type { DBService } from "../dbService";
 import { recordContentVersion } from "../versions";
 import { parseId } from "../utils/parseId";
 import { transformObjectIdsToStrings } from "../utils/transformObjectIdsToStrings";
@@ -18,9 +19,14 @@ import { deepDeleteNulls } from "../utils/deepDeleteNulls";
 import ContentType from "../../lib/ContentType";
 import { DataInput, DBOutput } from "../../lib/types";
 import { Id } from "../../lib/utils/id";
+import {
+  hasContentHooks,
+  runAfterUpdateHook,
+  runBeforeUpdateHook,
+} from "../../api/hooks/runContentHooks";
 
 export const updateHandler =
-  (db: Db) =>
+  (db: Db, getService: () => DBService) =>
   async <T extends ContentType>(
     contentType: T,
     id: Id,
@@ -28,9 +34,29 @@ export const updateHandler =
     options?: DBMutationOptions,
   ): Promise<DBOutput<T>> => {
     checkFailureCase("UpdateError");
+    const hookDb = getService();
+    const parsedId = parseId(id);
+    const versioned = !!contentType.versioning && !options?.skipVersioning;
+    const needsPrevious =
+      versioned ||
+      hasContentHooks(contentType, ["beforeUpdate", "afterUpdate"]);
+    const rawBefore = needsPrevious
+      ? await db.collection(contentType.name).findOne({ _id: parsedId })
+      : null;
+    const current = rawBefore
+      ? (transformObjectIdsToStrings(rawBefore) as unknown as DBOutput<T>)
+      : undefined;
+    const effectiveData = await runBeforeUpdateHook({
+      db: hookDb,
+      contentType,
+      id: String(id),
+      data,
+      current,
+      options,
+    });
 
     try {
-      contentType.partialValidate(data);
+      contentType.partialValidate(effectiveData);
     } catch (error) {
       if (error instanceof ZodError) {
         throw new DbErrorInvalidData("Invalid data for creation", error.issues);
@@ -40,7 +66,9 @@ export const updateHandler =
 
     if (
       contentType.uniques?.length &&
-      contentType.uniques.some((fields) => fields.some((f) => f in data))
+      contentType.uniques.some((fields) =>
+        fields.some((f) => f in effectiveData),
+      )
     ) {
       try {
         const filter: Record<string, unknown> = {
@@ -50,8 +78,10 @@ export const updateHandler =
               $or: contentType.uniques!.map((fields) => {
                 const subFilter: Record<string, unknown> = {};
                 fields.forEach((field) => {
-                  if (field in data) {
-                    const fieldValue = (data as Record<string, unknown>)[field];
+                  if (field in effectiveData) {
+                    const fieldValue = (
+                      effectiveData as Record<string, unknown>
+                    )[field];
                     const fieldSchema = contentType.fields[field];
 
                     // Si el campo es translatable, necesitamos comparar cada idioma
@@ -102,18 +132,13 @@ export const updateHandler =
       }
     }
 
-    const noNullData = deepDeleteNulls(data) as Partial<DataInput<T>>;
-    const versioned = !!contentType.versioning && !options?.skipVersioning;
-    const parsedId = parseId(id);
-    const before = versioned
-      ? await db.collection(contentType.name).findOne({ _id: parsedId })
-      : null;
     const nextRevision = versioned
-      ? Number(before?._revision ?? 0) + 1
+      ? Number(rawBefore?._revision ?? 0) + 1
       : undefined;
+    const noNullData = deepDeleteNulls(effectiveData) as Partial<DataInput<T>>;
 
     const nullData = Object.fromEntries(
-      Object.entries(data).filter(([_, value]) => value === null),
+      Object.entries(effectiveData).filter(([_, value]) => value === null),
     ) as Partial<DataInput<T>>;
 
     const rawResult = await db.collection(contentType.name).findOneAndUpdate(
@@ -143,11 +168,21 @@ export const updateHandler =
         operation: "update",
         actorId: options?.actorId,
         reason: options?.reason,
-        before,
+        before: rawBefore,
         after: rawResult,
         revision: nextRevision,
       });
     }
+
+    await runAfterUpdateHook({
+      db: hookDb,
+      contentType,
+      id: String(id),
+      document: result,
+      previous: current,
+      input: effectiveData,
+      options,
+    });
 
     return result;
   };

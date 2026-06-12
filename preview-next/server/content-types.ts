@@ -1,4 +1,5 @@
 import { ContentType, Fields } from "@rakun-kit/next";
+import { HelloWorld } from "@rakun-kit/next/internal-content-types";
 
 export const Header = new ContentType({
   name: "Header",
@@ -47,6 +48,85 @@ export const PageSection = new ContentType({
     body: Fields.string().type("RichText").translatable(),
   },
   listFields: ["title"],
+});
+
+export const Project = new ContentType({
+  name: "Project",
+  dynamicDataSource: true,
+  menu: {
+    title: "Projects",
+    icon: "FolderKanban",
+    category: "Dynamic data",
+  },
+  fields: {
+    title: Fields.string().required(),
+    slug: Fields.string().type("Slug").required(),
+    excerpt: Fields.string().type("Textarea"),
+    featured: Fields.boolean(),
+  },
+  uniques: [["slug"]],
+  listFields: ["title", "slug", "featured"],
+});
+
+export const FeatureCarouselItem = new ContentType({
+  name: "FeatureCarouselItem",
+  fields: {
+    title: Fields.string().required(),
+    summary: Fields.string().type("Textarea"),
+    href: Fields.string(),
+  },
+}).hideFromManager();
+
+export const FeatureCarousel = new ContentType({
+  name: "FeatureCarousel",
+  menu: {
+    title: "Feature carousels",
+    icon: "GalleryHorizontalEnd",
+    category: "Dynamic data",
+  },
+  fields: {
+    eyebrow: Fields.string(),
+    title: Fields.string().required(),
+    items: Fields.blocks([
+      {
+        name: FeatureCarouselItem.name,
+        field: Fields.relation(FeatureCarouselItem, "new"),
+      },
+    ]),
+  },
+  listFields: ["title", "eyebrow"],
+  dynamicData: {
+    fields: ["title"],
+    lists: ["items"],
+    sources: [Project.name],
+  },
+});
+
+export const PreviewPage = new ContentType({
+  name: "Page",
+  permissions: "Route",
+  fields: {
+    title: Fields.string().translatable().required(),
+    slug: Fields.string().type("Slug").required().translatable(),
+  },
+  iterator: [
+    {
+      contentType: HelloWorld,
+      type: "new",
+    },
+    {
+      contentType: FeatureCarousel,
+      type: "new",
+    },
+  ],
+  menu: {
+    title: "Pages",
+  },
+  listFields: ["title", "slug"],
+  uniques: [["slug"]],
+  versioning: {
+    maxVersions: 5,
+  },
 });
 
 export const Author = new ContentType({
@@ -198,6 +278,9 @@ export const previewContentTypes = [
   Header,
   Footer,
   PageSection,
+  Project,
+  FeatureCarouselItem,
+  FeatureCarousel,
   Author,
   Article,
   RelationLevel3,

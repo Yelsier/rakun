@@ -12,6 +12,7 @@ import {
   createWebOperationDefinitions,
   type RakunOperationDefinition,
   type RakunRequestContext,
+  runContentHookContext,
 } from "@rakun-kit/core";
 import {
   ErrorCatalog,
@@ -247,17 +248,19 @@ const createProcedureFromOperation = <
   const execute = async ({ ctx, input }: { ctx: TrpcContext; input: any }) => {
     assertAllowedMutationOrigin(operation, ctx);
 
-    const result = await operation.resolve({
-      ctx,
-      input,
-    });
+    return await runContentHookContext({ requestContext: ctx }, async () => {
+      const result = await operation.resolve({
+        ctx,
+        input,
+      });
 
-    await operation.onSuccess?.({
-      ctx,
-      result,
-    });
+      await operation.onSuccess?.({
+        ctx,
+        result,
+      });
 
-    return result;
+      return result;
+    });
   };
 
   return (operation.kind === "query"

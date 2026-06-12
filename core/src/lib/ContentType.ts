@@ -17,6 +17,14 @@ import {
 import { ITERATOR_FIELD_NAME, SEO_FIELD_NAME } from "./systemFields";
 import { isNeverOptional } from "./utils/isNeverOptional";
 import type { DBService } from "../orm/dbService";
+import {
+  DYNAMIC_BINDINGS_FIELD_NAME,
+  DynamicDataOptionsSchema,
+  DynamicDocumentBindingsSchema,
+  getDynamicDocumentBindings,
+  type DynamicDataOptions,
+} from "./dynamicData";
+import type { ContentTypeHooks } from "./hooks";
 
 export const Menu = z
   .object({
@@ -247,6 +255,9 @@ type ContentTypeParams<
   versioning?: boolean | VersioningOptions;
   documentVisibility?: boolean;
   permissions?: ContentTypePermissions;
+  hooks?: ContentTypeHooks;
+  dynamicData?: DynamicDataOptions;
+  dynamicDataSource?: boolean;
 };
 
 type FieldSchemaMode = "input" | "db" | "populated";
@@ -276,6 +287,10 @@ const outputTrashMetadataSchema = {
 const authorMetadataSchema = {
   createdBy: z.string().optional(),
   updatedBy: z.string().optional(),
+} satisfies SchemaShape;
+
+const dynamicBindingsMetadataSchema = {
+  [DYNAMIC_BINDINGS_FIELD_NAME]: DynamicDocumentBindingsSchema.optional(),
 } satisfies SchemaShape;
 
 export type ContentTypeInput<CT> = CT extends ContentType<
@@ -327,6 +342,9 @@ export default class ContentType<
   versioning?: boolean | VersioningOptions;
   documentVisibility?: boolean;
   permissions?: ContentTypePermissions;
+  hooks?: ContentTypeHooks;
+  dynamicData?: DynamicDataOptions;
+  dynamicDataSource?: boolean;
   isInternal?: boolean;
   hasIterator = false;
   hasSeo = false;
@@ -348,6 +366,9 @@ export default class ContentType<
     this.versioning = params.versioning;
     this.documentVisibility = params.documentVisibility;
     this.permissions = params.permissions;
+    this.hooks = params.hooks;
+    this.dynamicData = params.dynamicData;
+    this.dynamicDataSource = params.dynamicDataSource;
   }
 
   getInputSchema() {
@@ -359,6 +380,7 @@ export default class ContentType<
   private buildInputSchema(partial: boolean) {
     const schema = this.documentSchema(this.fieldSchemas("input"), {
       ...authorMetadataSchema,
+      ...this.dynamicBindingsMetadataSchema(),
     });
 
     const inputSchema = partial ? schema.partial() : schema;
@@ -371,6 +393,7 @@ export default class ContentType<
   getSchema() {
     return this.documentSchema(this.fieldSchemas("db"), {
       ...trashMetadataSchema,
+      ...this.dynamicBindingsMetadataSchema(),
     }) as unknown as ContentTypeSchema<
       ContentTypeDbShape<ContentTypeFields<F, I>, N>
     >;
@@ -381,6 +404,7 @@ export default class ContentType<
       ...idMetadataSchema,
       ...trashMetadataSchema,
       ...authorMetadataSchema,
+      ...this.dynamicBindingsMetadataSchema(),
     }) as unknown as ContentTypeSchema<
       ContentTypePopulatedShape<ContentTypeFields<F, I>, N>
     >;
@@ -431,6 +455,21 @@ export default class ContentType<
     return this;
   }
 
+  withHooks(hooks: ContentTypeHooks) {
+    this.hooks = hooks;
+    return this;
+  }
+
+  enableDynamicData(options: DynamicDataOptions = true) {
+    this.dynamicData = options;
+    return this;
+  }
+
+  enableDynamicDataSource() {
+    this.dynamicDataSource = true;
+    return this;
+  }
+
   enableDocumentVisibility() {
     this.documentVisibility = true;
     return this;
@@ -475,6 +514,10 @@ export default class ContentType<
     });
   }
 
+  private dynamicBindingsMetadataSchema() {
+    return this.dynamicData ? dynamicBindingsMetadataSchema : {};
+  }
+
   private buildOutputSchema<Fields extends FieldRecord>(fields: Fields) {
     return this.documentSchema(this.outputFieldSchemas(fields), {
       ...idMetadataSchema,
@@ -501,6 +544,9 @@ export default class ContentType<
           ContentTypePopulatedShape<Fields, N>
         >[],
         permissions: this.permissions,
+        hooks: this.hooks,
+        dynamicData: this.dynamicData,
+        dynamicDataSource: this.dynamicDataSource,
       },
       { allowSystemFields: true },
     );
@@ -513,6 +559,9 @@ export default class ContentType<
       versioning: this.versioning,
       documentVisibility: this.documentVisibility,
       permissions: this.permissions,
+      hooks: this.hooks,
+      dynamicData: this.dynamicData,
+      dynamicDataSource: this.dynamicDataSource,
       isInternal: this.isInternal,
       hasIterator: this.hasIterator,
       hasSeo: this.hasSeo,
@@ -552,6 +601,12 @@ export default class ContentType<
       );
     }
 
+    if (DYNAMIC_BINDINGS_FIELD_NAME in fields) {
+      throw new Error(
+        `Field ${DYNAMIC_BINDINGS_FIELD_NAME} is reserved for dynamic data bindings.`,
+      );
+    }
+
     const iteratorFieldName = Object.entries(fields).find(
       ([, field]) => field.meta.ui === "Iterator",
     )?.[0];
@@ -565,10 +620,17 @@ export default class ContentType<
 
   private fieldSchemas(mode: FieldSchemaMode) {
     return Object.fromEntries(
-      Object.entries(this.fields).map(([key, field]) => [
-        key,
-        getFieldSchema(field, mode),
-      ]),
+      Object.entries(this.fields).map(([key, field]) => {
+        const schema = getFieldSchema(field, mode);
+
+        return [
+          key,
+          this.allowsDynamicBindingForField(key, field) &&
+          mode !== "populated"
+            ? schema.nullish()
+            : schema,
+        ];
+      }),
     ) as SchemaShape;
   }
 
@@ -617,6 +679,10 @@ export default class ContentType<
       const value = data[key];
 
       if (value === null || value === undefined) {
+        if (this.hasDynamicBindingForField(data, key, field)) {
+          continue;
+        }
+
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Required conditional field is missing",
@@ -624,6 +690,39 @@ export default class ContentType<
         });
       }
     }
+  }
+
+  private allowsDynamicBindingForField(key: string, field: AnyField) {
+    const dynamicData = this.dynamicData;
+    if (!dynamicData) return false;
+    if (field.getVisibility() !== "all") return false;
+
+    if (dynamicData === true) return true;
+
+    const ui = field.getConfig().ui;
+    if (ui === "List" || ui === "Iterator") {
+      return dynamicData.lists?.includes(key) ?? false;
+    }
+
+    return dynamicData.fields?.includes(key) ?? false;
+  }
+
+  private hasDynamicBindingForField(
+    data: Record<string, unknown>,
+    key: string,
+    field: AnyField,
+  ) {
+    if (!this.allowsDynamicBindingForField(key, field)) return false;
+
+    const bindings = getDynamicDocumentBindings(
+      data[DYNAMIC_BINDINGS_FIELD_NAME],
+    );
+    if (!bindings) return false;
+
+    const ui = field.getConfig().ui;
+    return ui === "List" || ui === "Iterator"
+      ? !!bindings.lists?.[key]
+      : !!bindings.fields?.[key];
   }
 }
 
@@ -724,6 +823,8 @@ export const EncodedContentTypeSchema = z.object({
   schemaVersion: z.number().optional(),
   versioning: z.union([z.boolean(), z.object({ maxVersions: z.number().optional() })]).optional(),
   documentVisibility: z.boolean().optional(),
+  dynamicData: DynamicDataOptionsSchema.optional(),
+  dynamicDataSource: z.boolean().optional(),
   permissions: z
     .union([
       z.literal(false),

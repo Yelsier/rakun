@@ -1,6 +1,7 @@
 'use client'
 
 import { ChevronsUpDown, Languages, Shield } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import {
   forwardRef,
   useCallback,
@@ -9,7 +10,10 @@ import {
   useRef,
   useState,
 } from 'react'
-import type { EncodedContentType } from '@rakun-kit/core/client'
+import type {
+  DynamicDocumentBindings,
+  EncodedContentType,
+} from '@rakun-kit/core/client'
 import { EncodedFieldUnknown, FieldType } from '@rakun-kit/core/client'
 import { EncodedRelationField } from '@rakun-kit/core/client'
 
@@ -38,6 +42,11 @@ import {
 } from '@/components/ui/collapsible'
 import { Button } from '@/components/ui/button'
 import { deepEqual } from '@/helpers/deepEqual'
+import { useTRPC } from '@/components/trpc-provider'
+import {
+  DynamicDataControl,
+  isDynamicFieldEnabled,
+} from './_fields/DynamicDataControl'
 
 const defaultDataExtractor = (
   fieldName: string,
@@ -101,6 +110,34 @@ const getFieldDescription = (fieldValue: EncodedFieldUnknown) =>
     ? fieldValue.description
     : undefined
 
+const getDefaultBindings = (
+  defaultData?: Record<string, FieldValue>,
+): DynamicDocumentBindings | undefined =>
+  defaultData && '_bindings' in defaultData
+    ? (defaultData._bindings as DynamicDocumentBindings)
+    : undefined
+
+const cleanBindings = (
+  bindings: DynamicDocumentBindings | undefined,
+): DynamicDocumentBindings | undefined => {
+  if (!bindings) return undefined
+
+  const fields =
+    bindings.fields &&
+    typeof bindings.fields === 'object' &&
+    Object.keys(bindings.fields).length > 0
+      ? bindings.fields
+      : undefined
+  const lists =
+    bindings.lists &&
+    typeof bindings.lists === 'object' &&
+    Object.keys(bindings.lists).length > 0
+      ? bindings.lists
+      : undefined
+
+  return fields || lists ? { fields, lists } : undefined
+}
+
 const ContentTypeEdit = forwardRef<
   FieldRef,
   {
@@ -112,6 +149,10 @@ const ContentTypeEdit = forwardRef<
   }
 >((props, ref) => {
   const { contentType, id, collapsible, hideTitle } = props
+  const trpc = useTRPC()
+  const { data: contentTypesData } = useQuery(
+    trpc.manager.contentTypes.queryOptions(),
+  )
 
   const { refs, setRef } = useArrayRefs<FieldRef>()
   const errors = useEditErrorStore((state) => state.errors)
@@ -127,6 +168,9 @@ const ContentTypeEdit = forwardRef<
     [contentType.fields, props.defaultData],
   )
   const [formState, setFormState] = useState(formStateInitialValue)
+  const [dynamicBindings, setDynamicBindings] = useState<
+    DynamicDocumentBindings | undefined
+  >(getDefaultBindings(props.defaultData))
   const allItems = useMemo(
     () =>
       Object.entries(contentType.fields).filter(
@@ -190,7 +234,13 @@ const ContentTypeEdit = forwardRef<
           return { _error }
         }
 
-        return { ...values, _type: contentType.name }
+        const bindings = cleanBindings(dynamicBindings)
+
+        return {
+          ...values,
+          ...(bindings ? { _bindings: bindings } : {}),
+          _type: contentType.name,
+        }
       },
       getState: () => {
         const states = Object.fromEntries(
@@ -202,10 +252,19 @@ const ContentTypeEdit = forwardRef<
             return [fieldName, refs.current[i]?.getState()]
           }),
         )
-        return states
+        const bindings = cleanBindings(dynamicBindings)
+        return bindings ? { ...states, _bindings: bindings } : states
       },
     }),
-    [addError, allItems, contentType.name, formState, id, visibleFieldNames],
+    [
+      addError,
+      allItems,
+      contentType.name,
+      dynamicBindings,
+      formState,
+      id,
+      visibleFieldNames,
+    ],
   )
 
   return (
@@ -222,6 +281,11 @@ const ContentTypeEdit = forwardRef<
           }
 
           const error = errors.find((e) => e.id === id + '.' + fieldName)?.error
+          const showDynamicData = isDynamicFieldEnabled(
+            contentType,
+            fieldName,
+            fieldValue,
+          )
           const FieldComponent = fieldsMap[
             fieldValue.config.type
           ] as FieldComponent
@@ -268,7 +332,21 @@ const ContentTypeEdit = forwardRef<
                           </Button>
                           {decodeCamelCase(fieldName)}
                         </CardTitle>
-                        <Tags />
+                        <div className='flex items-center gap-2'>
+                          {showDynamicData && (
+                            <DynamicDataControl
+                              contentType={contentType}
+                              fieldName={fieldName}
+                              field={fieldValue}
+                              contentTypes={
+                                (contentTypesData ?? []) as EncodedContentType[]
+                              }
+                              bindings={dynamicBindings}
+                              onChange={setDynamicBindings}
+                            />
+                          )}
+                          <Tags />
+                        </div>
                       </div>
                     </CollapsibleTrigger>
                   </CardHeader>
@@ -292,7 +370,21 @@ const ContentTypeEdit = forwardRef<
                 <div className='mb-4 space-y-1'>
                   <CardTitle className='flex justify-between items-center gap-2'>
                     {decodeCamelCase(fieldName)}
-                    <Tags />
+                    <div className='flex items-center gap-2'>
+                      {showDynamicData && (
+                        <DynamicDataControl
+                          contentType={contentType}
+                          fieldName={fieldName}
+                          field={fieldValue}
+                          contentTypes={
+                            (contentTypesData ?? []) as EncodedContentType[]
+                          }
+                          bindings={dynamicBindings}
+                          onChange={setDynamicBindings}
+                        />
+                      )}
+                      <Tags />
+                    </div>
                   </CardTitle>
                   {description ? (
                     <p className='text-sm text-muted-foreground'>

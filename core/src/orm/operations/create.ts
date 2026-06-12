@@ -10,24 +10,36 @@ import {
   DbErrorNotFound,
   DbErrorUnknown,
 } from "../dbService";
+import type { DBService } from "../dbService";
 import { recordContentVersion } from "../versions";
 import { transformStringToObjectIds } from "../utils/transformStringToObjectIds";
 import { transformObjectIdsToStrings } from "../utils/transformObjectIdsToStrings";
 import { deepDeleteNulls } from "../utils/deepDeleteNulls";
 import ContentType from "../../lib/ContentType";
 import { DataInput, DBOutput } from "../../lib/types";
+import {
+  runAfterInsertHook,
+  runBeforeInsertHook,
+} from "../../api/hooks/runContentHooks";
 
 export const createHandler =
-  (db: Db) =>
+  (db: Db, getService: () => DBService) =>
   async <T extends ContentType>(
     contentType: T,
     data: DataInput<T>,
     options?: DBMutationOptions,
   ): Promise<DBOutput<T>> => {
     checkFailureCase("CreationError");
+    const hookDb = getService();
+    const effectiveData = await runBeforeInsertHook({
+      db: hookDb,
+      contentType,
+      data,
+      options,
+    });
 
     try {
-      contentType.validate(data);
+      contentType.validate(effectiveData);
     } catch (error) {
       if (error instanceof ZodError) {
         throw new DbErrorInvalidData("Invalid data for creation", error.issues);
@@ -41,7 +53,9 @@ export const createHandler =
           $or: contentType.uniques!.map((fields) => {
             const subFilter: Record<string, unknown> = {};
             fields.forEach((field) => {
-              const fieldValue = (data as Record<string, unknown>)[field];
+              const fieldValue = (effectiveData as Record<string, unknown>)[
+                field
+              ];
               const fieldSchema = contentType.fields[field];
 
               // Si el campo es translatable, necesitamos comparar cada idioma
@@ -93,13 +107,13 @@ export const createHandler =
       ...(contentType.documentVisibility
         ? {
             _visibility:
-              (data as Record<string, unknown>)._visibility ?? "draft",
+              (effectiveData as Record<string, unknown>)._visibility ?? "draft",
           }
         : {}),
       ...(versioned ? { _revision: 1 } : {}),
     };
     const noNullData = deepDeleteNulls({
-      ...data,
+      ...effectiveData,
       ...metadata,
     }) as DataInput<T>;
 
@@ -137,6 +151,14 @@ export const createHandler =
         revision: 1,
       });
     }
+
+    await runAfterInsertHook({
+      db: hookDb,
+      contentType,
+      document,
+      input: effectiveData,
+      options,
+    });
 
     return document;
   };

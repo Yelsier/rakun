@@ -5,7 +5,6 @@ import type { MediaServiceConfig } from "./media";
 import type { TranslationServiceConfig } from "./translation";
 import type { MongoConfig } from "./orm/database";
 import type { RouteDefinition } from "./api/utils/routes/routeDefinitions";
-import type { ApiProxies } from "./api/proxies";
 import type { RakunOperationMap } from "./api/operations/types";
 
 export interface RakunBootstrapOptions {
@@ -15,7 +14,6 @@ export interface RakunBootstrapOptions {
     Page?: RakunContentType;
   };
   routes?: readonly RouteDefinition[];
-  proxies?: ApiProxies;
   apiOperations?: RakunOperationMap;
   mongo?: MongoConfig;
   media?: MediaServiceConfig;

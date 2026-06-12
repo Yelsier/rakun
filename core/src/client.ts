@@ -5,6 +5,18 @@ export {
   type Permission,
 } from "./lib/Permissions";
 export type { MaybeTranslatableValue, TranslatableValue } from "./lib/types";
+export type {
+  DynamicBindingSource,
+  DynamicDataOptions,
+  DynamicDocumentBindings,
+  DynamicListBinding,
+} from "./lib/dynamicData";
+export {
+  DYNAMIC_BINDINGS_FIELD_NAME,
+  DynamicDocumentBindingsSchema,
+  isDynamicDataSourceAllowed,
+  isDynamicDataSourceContentTypeAllowed,
+} from "./lib/dynamicData";
 export { Fields } from "./lib/fields";
 export * from "./lib/fields/Boolean";
 export * from "./lib/fields/ContentReference";

@@ -9,23 +9,36 @@ import {
   DbErrorInvalidData,
   DbErrorUnknown,
 } from "../dbService";
+import type { DBService } from "../dbService";
 import { transformObjectIdsToStrings } from "../utils/transformObjectIdsToStrings";
 import { transformStringToObjectIds } from "../utils/transformStringToObjectIds";
 import ContentType from "../../lib/ContentType";
 import { DataInput, Filter } from "../../lib/types";
+import {
+  runAfterUpdateManyHook,
+  runBeforeUpdateManyHook,
+} from "../../api/hooks/runContentHooks";
 
 export const updateManyHandler =
-  (db: Db) =>
+  (db: Db, getService: () => DBService) =>
   async <T extends ContentType>(
     contentType: T,
     filter: Filter<T>,
     data: Partial<DataInput<T>>,
-    _options?: DBMutationOptions,
+    options?: DBMutationOptions,
   ): Promise<{ updatedCount: number }> => {
     checkFailureCase("UpdateError");
+    const hookDb = getService();
+    const effectiveData = await runBeforeUpdateManyHook({
+      db: hookDb,
+      contentType,
+      filter,
+      data,
+      options,
+    });
 
     try {
-      contentType.partialValidate(data);
+      contentType.partialValidate(effectiveData);
     } catch (error) {
       if (error instanceof ZodError) {
         throw new DbErrorInvalidData("Invalid data for creation", error.issues);
@@ -35,7 +48,9 @@ export const updateManyHandler =
 
     if (
       contentType.uniques?.length &&
-      contentType.uniques.some((fields) => fields.some((f) => f in data))
+      contentType.uniques.some((fields) =>
+        fields.some((f) => f in effectiveData),
+      )
     ) {
       try {
         const fullFilter: Record<string, unknown> = {
@@ -46,8 +61,10 @@ export const updateManyHandler =
               $or: contentType.uniques!.map((fields) => {
                 const subFilter: Record<string, unknown> = {};
                 fields.forEach((field) => {
-                  if (field in data) {
-                    const fieldValue = (data as Record<string, unknown>)[field];
+                  if (field in effectiveData) {
+                    const fieldValue = (
+                      effectiveData as Record<string, unknown>
+                    )[field];
                     const fieldSchema = contentType.fields[field];
 
                     // Si el campo es translatable, necesitamos comparar cada idioma
@@ -99,11 +116,11 @@ export const updateManyHandler =
     }
 
     const noNullData = Object.fromEntries(
-      Object.entries(data).filter(([_, value]) => value !== null),
+      Object.entries(effectiveData).filter(([_, value]) => value !== null),
     ) as Partial<DataInput<T>>;
 
     const nullData = Object.fromEntries(
-      Object.entries(data).filter(([_, value]) => value === null),
+      Object.entries(effectiveData).filter(([_, value]) => value === null),
     ) as Partial<DataInput<T>>;
 
     const result = transformObjectIdsToStrings(
@@ -117,6 +134,15 @@ export const updateManyHandler =
           $unset: nullData,
         }),
     );
+
+    await runAfterUpdateManyHook({
+      db: hookDb,
+      contentType,
+      filter,
+      data: effectiveData,
+      updatedCount: result.modifiedCount,
+      options,
+    });
 
     return { updatedCount: result.modifiedCount };
   };

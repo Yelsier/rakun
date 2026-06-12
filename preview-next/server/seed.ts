@@ -1,7 +1,6 @@
 import bcrypt from "bcrypt";
 import { MongoClient, type Db, type Document } from "mongodb";
 import {
-  Page,
   HelloWorld,
   LiteralTranslation,
   Seo,
@@ -16,7 +15,11 @@ import {
   Article,
   Author,
   Footer,
+  FeatureCarousel,
+  FeatureCarouselItem,
   Header,
+  PreviewPage as Page,
+  Project,
   PageSection,
   RelationLevel2,
   RelationLevel3,
@@ -143,6 +146,19 @@ const buildPagePath = ({
   return `/${code}/${slug}/`.replace(/\/\/+/g, "/");
 };
 
+const buildProjectPath = ({
+  project,
+  language,
+}: {
+  project: Document;
+  language: Document;
+}) => {
+  const code = String(language.code);
+  const slug = getTranslatableValue(project.slug, code);
+
+  return `/${code}/projects/${slug}/`.replace(/\/\/+/g, "/");
+};
+
 const pageLink = (route: Document, page: Document) => ({
   routeId: route._id.toString(),
   contentTypeId: page._id.toString(),
@@ -166,6 +182,48 @@ const upsertPageRouteMap = async ({
     path,
     contentType: Page.name,
     contentTypeId: page._id,
+    routeId: route._id,
+    languageId: language._id,
+    _type: "RouteMap",
+    updatedAt: now(),
+  };
+
+  try {
+    await db.collection("RouteMap").updateOne(
+      { path },
+      {
+        $set: payload,
+        $setOnInsert: {
+          createdAt: now(),
+        },
+      },
+      { upsert: true },
+    );
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) {
+      throw error;
+    }
+
+    await db.collection("RouteMap").updateOne({ path }, { $set: payload });
+  }
+};
+
+const upsertProjectRouteMap = async ({
+  db,
+  project,
+  route,
+  language,
+}: {
+  db: Db;
+  project: Document;
+  route: Document;
+  language: Document;
+}) => {
+  const path = buildProjectPath({ project, language });
+  const payload = {
+    path,
+    contentType: Project.name,
+    contentTypeId: project._id,
     routeId: route._id,
     languageId: language._id,
     _type: "RouteMap",
@@ -272,6 +330,60 @@ const previewHelloWorldModule = (
     data: {
       _type: HelloWorld.name,
       text: translatable(enText, esText),
+    },
+  },
+});
+
+const previewFeatureCarouselModule = (featuredProject: Document) => ({
+  name: FeatureCarousel.name,
+  value: {
+    type: "new",
+    data: {
+      _type: FeatureCarousel.name,
+      eyebrow: "Dynamic data module",
+      title: "Fallback carousel title",
+      items: [],
+      _bindings: {
+        fields: {
+          title: {
+            contentType: Project.name,
+            id: featuredProject._id.toString(),
+            path: "title",
+          },
+        },
+        lists: {
+          items: {
+            contentType: Project.name,
+            itemName: FeatureCarouselItem.name,
+            query: {
+              filter: {
+                featured: true,
+              },
+              options: {
+                limit: 3,
+                sort: {
+                  title: "asc",
+                },
+              },
+            },
+            map: {
+              title: {
+                contentType: Project.name,
+                path: "title",
+              },
+              summary: {
+                contentType: Project.name,
+                path: "excerpt",
+              },
+              href: {
+                contentType: Project.name,
+                virtual: "href",
+                routeKey: "project",
+              },
+            },
+          },
+        },
+      },
     },
   },
 });
@@ -482,6 +594,61 @@ export const seedPreviewData = async ({
       throw new Error("Failed to create preview page section.");
     }
 
+    const seededProjects = await Promise.all(
+      [
+        {
+          title: "Aurora launch",
+          slug: "aurora-launch",
+          excerpt: "Routeable source item used by the dynamic carousel title.",
+          featured: true,
+        },
+        {
+          title: "Borealis workspace",
+          slug: "borealis-workspace",
+          excerpt: "Featured project mapped into carousel item summary.",
+          featured: true,
+        },
+        {
+          title: "Canopy studio",
+          slug: "canopy-studio",
+          excerpt: "Third featured project for list binding limits and hrefs.",
+          featured: true,
+        },
+        {
+          title: "Draft lab",
+          slug: "draft-lab",
+          excerpt: "Non-featured project kept out by the binding filter.",
+          featured: false,
+        },
+      ].map((project) =>
+        db.collection(Project.name).findOneAndUpdate(
+          { slug: project.slug },
+          {
+            $set: {
+              title: project.title,
+              excerpt: project.excerpt,
+              featured: project.featured,
+              updatedAt: now(),
+            },
+            $setOnInsert: {
+              slug: project.slug,
+              _type: Project.name,
+              createdAt: now(),
+            },
+          },
+          { upsert: true, returnDocument: "after" },
+        ),
+      ),
+    );
+    const projects = seededProjects.filter(Boolean) as Array<
+      NonNullable<(typeof seededProjects)[number]>
+    >;
+    const featuredProject = projects[0];
+
+    if (!featuredProject || projects.length !== seededProjects.length) {
+      throw new Error("Failed to create preview projects.");
+    }
+
     const page = await db.collection(Page.name).findOneAndUpdate(
       { "slug.en": "home" },
       {
@@ -489,7 +656,10 @@ export const seedPreviewData = async ({
           title: translatable("Home", "Inicio"),
           slug: translatable("home", "inicio"),
           [SEO_FIELD_NAME]: previewSeo(),
-          [ITERATOR_FIELD_NAME]: [previewHelloWorldModule()],
+          [ITERATOR_FIELD_NAME]: [
+            previewHelloWorldModule(),
+            previewFeatureCarouselModule(featuredProject),
+          ],
           _type: Page.name,
           createdAt: now(),
           updatedAt: now(),
@@ -627,8 +797,48 @@ export const seedPreviewData = async ({
       },
     );
 
+    await db.collection(Page.name).updateOne(
+      {
+        _id: page._id,
+        [`${ITERATOR_FIELD_NAME}.name`]: { $ne: FeatureCarousel.name },
+      },
+      {
+        $push: {
+          [ITERATOR_FIELD_NAME]: previewFeatureCarouselModule(featuredProject),
+        },
+        $set: {
+          updatedAt: now(),
+        },
+      } as Document,
+    );
+
+    await db.collection(Page.name).updateOne(
+      {
+        _id: page._id,
+        [`${ITERATOR_FIELD_NAME}.name`]: FeatureCarousel.name,
+      },
+      {
+        $set: {
+          [`${ITERATOR_FIELD_NAME}.$[module].value`]:
+            previewFeatureCarouselModule(featuredProject).value,
+          updatedAt: now(),
+        },
+      },
+      {
+        arrayFilters: [
+          {
+            "module.name": FeatureCarousel.name,
+          },
+        ],
+      },
+    );
+
     const route = await db.collection("Route").findOne({
       contentType: Page.name,
+      field: "slug",
+    });
+    const projectRoute = await db.collection("Route").findOne({
+      contentType: Project.name,
       field: "slug",
     });
 
@@ -696,8 +906,40 @@ export const seedPreviewData = async ({
             route,
             language: routeLanguage,
           }),
+          ...(projectRoute
+            ? projects.map((project) =>
+                upsertProjectRouteMap({
+                  db,
+                  project,
+                  route: projectRoute,
+                  language: routeLanguage,
+                }),
+              )
+            : []),
         ]),
       );
+
+      if (projectRoute) {
+        await db.collection("RouteLayoutModule").updateOne(
+          { routeId: projectRoute._id, key: "header" },
+          {
+            $set: {
+              moduleId: header._id.toString(),
+              updatedAt: now(),
+            },
+          },
+        );
+
+        await db.collection("RouteLayoutModule").updateOne(
+          { routeId: projectRoute._id, key: "footer" },
+          {
+            $set: {
+              moduleId: footer._id.toString(),
+              updatedAt: now(),
+            },
+          },
+        );
+      }
 
       await db.collection(Header.name).updateOne(
         { _id: header._id },

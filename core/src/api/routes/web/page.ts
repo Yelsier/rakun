@@ -21,8 +21,8 @@ import {
   PageInput,
   PageModule,
 } from "../../../schemas/web/page";
-import { ProxyOutput } from "../../proxies";
-import { runProxyContext, type ProxyContext } from "../../proxies/context";
+import { runContentHookContext } from "../../hooks/context";
+import { resolveContentOutput } from "../../utils/dynamicData";
 import { getLanguages } from "../../utils/getLanguages";
 import { populateLinks } from "../../utils/populates/populateLinks";
 import { populateRelations } from "../../utils/populates/populateRelations";
@@ -124,189 +124,234 @@ export const buildPageOutput = async ({
   tracePrefix?: string;
 }): Promise<PageOutput> => {
   const db = await getMongoService();
+  const surface = tracePrefix === "web.previewPage" ? "preview" : "web";
+  const localeCode = language.code || "en";
   const iterator = contentType.hasIterator ? data[ITERATOR_FIELD_NAME] : [];
   const iteratorModules = Array.isArray(iterator) ? iterator : [];
 
-  const linksPopulated = await populateLinks(data as DBOutput<ContentType>);
-  Logger.addTrace(`${tracePrefix}: links populated`);
-
-  const populated = await populateRelations(
-    linksPopulated as DBOutput<ContentType>,
-  );
-  Logger.addTrace(`${tracePrefix}: relations populated`);
-
-  const proxied = await ProxyOutput(populated);
-
-  Logger.addTrace(`${tracePrefix}: output proxied`);
-
-  const languages = await getLanguages();
-  const populatedTranslated = translateObject(proxied, language, languages);
-  Logger.addTrace(`${tracePrefix}: content translated`);
-
-  const localeCode = language.code || "en";
-  const literalDefinitions = getLiteralDefinitions();
-  const literalDefaults = Object.fromEntries(
-    literalDefinitions.map((literal) => [
-      literal.key,
-      literal.defaultMessage,
-    ]),
-  );
-
-  const literalTranslations = await db.list(LiteralTranslation, {
-    filter: { locale: localeCode },
-    options: { limit: "all" },
-  });
-
-  const literalMap = {
-    ...literalDefaults,
-    ...Object.fromEntries(
-      literalTranslations.items.map((item) => [item.key, item.message]),
-    ),
-  };
-  Logger.addTrace(`${tracePrefix}: literals resolved`, {
-    locale: localeCode,
-    count: Object.keys(literalMap).length,
-  });
-
-  const {
-    [ITERATOR_FIELD_NAME]: modules = iteratorModules,
-    [SEO_FIELD_NAME]: seo,
-    ...info
-  } = populatedTranslated;
-  const contentModulesSource = Array.isArray(modules) ? modules : [];
-
-  return runProxyContext(
+  return runContentHookContext(
     {
-      info,
       locale: localeCode,
-      type: contentType.name,
-    } as ProxyContext,
-    async () => {
-      const seoSettingsRaw = await db.find(SeoSettings, {
-        key: "default",
-      });
-      const seoSettings = seoSettingsRaw
-        ? translateObject(
-            await populateRelations(await populateLinks(seoSettingsRaw)),
-            language,
-            languages,
-          )
-        : null;
-      const seoSettingsRecord = seoSettings as Record<string, unknown> | null;
-      const alternatePaths = await getSeoAlternatePaths({
-        contentType: contentType.name,
-        contentTypeId,
-        routeId: route._id,
-        languages,
-      });
-      const resolvedSeo = resolveSeo({
-        pageSeo: seo as Record<string, unknown> | undefined,
-        defaultSeo: seoSettingsRecord?.defaultSeo as
-          | Record<string, unknown>
-          | undefined,
-        settings: seoSettingsRecord,
-        alternatePaths,
+      surface,
+      route: {
         path,
+        routeId: route._id,
+        contentTypeId,
+        type: contentType.name,
+      },
+    },
+    async () => {
+      const linksPopulated = await populateLinks(data as DBOutput<ContentType>);
+      Logger.addTrace(`${tracePrefix}: links populated`);
+
+      const populated = await populateRelations(
+        linksPopulated as DBOutput<ContentType>,
+      );
+      Logger.addTrace(`${tracePrefix}: relations populated`);
+
+      const output = await resolveContentOutput({
+        db,
+        contentType,
+        data: populated as never,
+        surface,
+      });
+      Logger.addTrace(`${tracePrefix}: output resolved`);
+
+      const languages = await getLanguages();
+      const populatedTranslated = translateObject(output, language, languages);
+      Logger.addTrace(`${tracePrefix}: content translated`);
+
+      const literalDefinitions = getLiteralDefinitions();
+      const literalDefaults = Object.fromEntries(
+        literalDefinitions.map((literal) => [
+          literal.key,
+          literal.defaultMessage,
+        ]),
+      );
+
+      const literalTranslations = await db.list(LiteralTranslation, {
+        filter: { locale: localeCode },
+        options: { limit: "all" },
       });
 
-      const layoutModuleSelections = (
-        await db.list(RouteLayoutModule, {
-          filter: { routeId: route._id },
-          options: { limit: "all" },
-        })
-      ).items;
-      const layoutModuleOverrides = (
-        await db.list(RouteLayoutModuleOverride, {
-          filter: {
+      const literalMap = {
+        ...literalDefaults,
+        ...Object.fromEntries(
+          literalTranslations.items.map((item) => [item.key, item.message]),
+        ),
+      };
+      Logger.addTrace(`${tracePrefix}: literals resolved`, {
+        locale: localeCode,
+        count: Object.keys(literalMap).length,
+      });
+
+      const {
+        [ITERATOR_FIELD_NAME]: modules = iteratorModules,
+        [SEO_FIELD_NAME]: seo,
+        ...info
+      } = populatedTranslated;
+      const contentModulesSource = Array.isArray(modules) ? modules : [];
+
+      return runContentHookContext(
+        {
+          locale: localeCode,
+          surface,
+          route: {
+            path,
             routeId: route._id,
             contentTypeId,
+            type: contentType.name,
+            info: info as Record<string, unknown>,
           },
-          options: { limit: "all" },
-        })
-      ).items;
-      const layoutModuleOverrideByKey = new Map(
-        layoutModuleOverrides.map((override) => [override.key, override]),
-      );
-
-      const layoutModuleByKey = Object.fromEntries(
-        await Promise.all(
-          layoutModuleSelections.map(async (selection) => {
-            const override = layoutModuleOverrideByKey.get(selection.key);
-            const moduleId = override ? override.moduleId : selection.moduleId;
-
-            if (!moduleId) {
-              return [selection.key, null] as const;
-            }
-
-            const layoutContentType = getContentTypeByName(selection.contentType);
-            if (!layoutContentType) {
-              return [selection.key, null] as const;
-            }
-
-            const layoutData = await db.get(layoutContentType, moduleId);
-            if (!layoutData) {
-              return [selection.key, null] as const;
-            }
-
-            const layoutPopulated = await populateRelations(
-              await populateLinks(layoutData),
-            );
-            const layoutProxied = await ProxyOutput(layoutPopulated);
-            const layoutTranslated = translateObject(
-              layoutProxied,
-              language,
-              languages,
-            );
-
-            return [
-              selection.key,
-              validateModule(layoutTranslated as PageModule),
-            ] as const;
-          }),
-        ),
-      );
-
-      const contentModules = (
-        (await Promise.all(
-          [
-            ...(contentModulesSource as IterableContentTypes).map((m) => ({
-              ...m.value,
-            })),
-          ].map(ProxyOutput),
-        )) as PageModule[]
-      ).map(validateModule);
-
-      const layout = [
-        ...layoutModuleSelections
-          .sort((a, b) => a.order - b.order)
-          .map((selection) => ({
-            type: "module" as const,
-            key: selection.key,
-            module: layoutModuleByKey[selection.key] ?? null,
-            order: selection.order,
-          })),
-        {
-          type: "content" as const,
-          modules: contentModules,
-          order: route.layoutContentOrder,
         },
-      ]
-        .sort((a, b) => a.order - b.order)
-        .map(({ order: _order, ...item }) => item);
+        async () => {
+          const seoSettingsRaw = await db.find(SeoSettings, {
+            key: "default",
+          });
+          const seoSettings = seoSettingsRaw
+            ? translateObject(
+                await populateRelations(await populateLinks(seoSettingsRaw)),
+                language,
+                languages,
+              )
+            : null;
+          const seoSettingsRecord =
+            seoSettings as Record<string, unknown> | null;
+          const alternatePaths = await getSeoAlternatePaths({
+            contentType: contentType.name,
+            contentTypeId,
+            routeId: route._id,
+            languages,
+          });
+          const resolvedSeo = resolveSeo({
+            pageSeo: seo as Record<string, unknown> | undefined,
+            defaultSeo: seoSettingsRecord?.defaultSeo as
+              | Record<string, unknown>
+              | undefined,
+            settings: seoSettingsRecord,
+            alternatePaths,
+            path,
+          });
 
-      return {
-        renderMode: route.dynamic ? "dynamic" : "static",
-        ttl: route.dynamic ? undefined : 86400,
-        modules: contentModules,
-        language,
-        seo: resolvedSeo,
-        layout,
-        info: {
-          ...info,
-          locale: localeCode,
-          literals: literalMap,
+          const layoutModuleSelections = (
+            await db.list(RouteLayoutModule, {
+              filter: { routeId: route._id },
+              options: { limit: "all" },
+            })
+          ).items;
+          const layoutModuleOverrides = (
+            await db.list(RouteLayoutModuleOverride, {
+              filter: {
+                routeId: route._id,
+                contentTypeId,
+              },
+              options: { limit: "all" },
+            })
+          ).items;
+          const layoutModuleOverrideByKey = new Map(
+            layoutModuleOverrides.map((override) => [override.key, override]),
+          );
+
+          const layoutModuleByKey = Object.fromEntries(
+            await Promise.all(
+              layoutModuleSelections.map(async (selection) => {
+                const override = layoutModuleOverrideByKey.get(selection.key);
+                const moduleId = override
+                  ? override.moduleId
+                  : selection.moduleId;
+
+                if (!moduleId) {
+                  return [selection.key, null] as const;
+                }
+
+                const layoutContentType = getContentTypeByName(
+                  selection.contentType,
+                );
+                if (!layoutContentType) {
+                  return [selection.key, null] as const;
+                }
+
+                const layoutData = await db.get(layoutContentType, moduleId);
+                if (!layoutData) {
+                  return [selection.key, null] as const;
+                }
+
+                const layoutPopulated = await populateRelations(
+                  await populateLinks(layoutData),
+                );
+                const layoutResolved = await resolveContentOutput({
+                  db,
+                  contentType: layoutContentType,
+                  data: layoutPopulated as never,
+                  surface,
+                });
+                const layoutTranslated = translateObject(
+                  layoutResolved,
+                  language,
+                  languages,
+                );
+
+                return [
+                  selection.key,
+                  validateModule(layoutTranslated as PageModule),
+                ] as const;
+              }),
+            ),
+          );
+
+          const contentModules = (
+            (await Promise.all(
+              [
+                ...(contentModulesSource as IterableContentTypes).map((m) => ({
+                  ...m.value,
+                })),
+              ].map(async (item) => {
+                const moduleContentType = getContentTypeByName(item._type);
+                if (!moduleContentType) return item;
+
+                return await resolveContentOutput({
+                  db,
+                  contentType: moduleContentType,
+                  data: item as never,
+                  surface,
+                });
+              }),
+            )) as PageModule[]
+          ).map(validateModule);
+
+          const layout = [
+            ...layoutModuleSelections
+              .sort((a, b) => a.order - b.order)
+              .map((selection) => ({
+                type: "module" as const,
+                key: selection.key,
+                module: layoutModuleByKey[selection.key] ?? null,
+                order: selection.order,
+              })),
+            {
+              type: "content" as const,
+              modules: contentModules,
+              order: route.layoutContentOrder,
+            },
+          ]
+            .sort((a, b) => a.order - b.order)
+            .map(({ order: _order, ...item }) => item);
+
+          return {
+            renderMode: route.dynamic ? "dynamic" : "static",
+            ttl: route.dynamic ? undefined : 86400,
+            modules: contentModules,
+            language,
+            seo: resolvedSeo,
+            layout,
+            info: {
+              ...info,
+              locale: localeCode,
+              literals: literalMap,
+            },
+          };
         },
-      };
+      );
     },
   );
 };
