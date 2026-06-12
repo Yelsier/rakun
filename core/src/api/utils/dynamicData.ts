@@ -181,6 +181,49 @@ const resolveListBinding = async ({
   );
 };
 
+const getListItemStableKey = (item: unknown): string | undefined => {
+  if (!isRecord(item)) return undefined;
+
+  const name = typeof item.name === "string" ? item.name : "";
+  const value = item.value;
+
+  if (isRecord(value) && typeof value._id === "string") {
+    return `${name}:${value._id}`;
+  }
+
+  if (
+    isRecord(value) &&
+    isRecord(value.data) &&
+    typeof value.data._id === "string"
+  ) {
+    return `${name}:${value.data._id}`;
+  }
+
+  return undefined;
+};
+
+export const mergeDynamicListItems = (
+  currentValue: unknown,
+  resolvedValue: unknown,
+) => {
+  const currentItems = Array.isArray(currentValue) ? currentValue : [];
+  const resolvedItems = Array.isArray(resolvedValue) ? resolvedValue : [];
+  const seen = new Set<string>();
+  const merged: unknown[] = [];
+
+  for (const item of [...resolvedItems, ...currentItems]) {
+    const key = getListItemStableKey(item);
+    if (key) {
+      if (seen.has(key)) continue;
+      seen.add(key);
+    }
+
+    merged.push(item);
+  }
+
+  return merged;
+};
+
 const resolveRecordBindings = async ({
   db,
   contentType,
@@ -220,7 +263,7 @@ const resolveRecordBindings = async ({
         binding,
       });
       if (resolved !== undefined) {
-        next[field] = resolved;
+        next[field] = mergeDynamicListItems(next[field], resolved);
       }
     } catch (error) {
       Logger.error("dynamicData: list binding failed", error as Error);

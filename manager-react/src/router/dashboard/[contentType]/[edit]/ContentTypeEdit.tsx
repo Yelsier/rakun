@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import type { ReactNode } from 'react'
 import type {
   DynamicDocumentBindings,
   EncodedContentType,
@@ -171,6 +172,9 @@ const ContentTypeEdit = forwardRef<
   const [dynamicBindings, setDynamicBindings] = useState<
     DynamicDocumentBindings | undefined
   >(getDefaultBindings(props.defaultData))
+  const [dynamicEditorOpen, setDynamicEditorOpen] = useState<string | null>(
+    null,
+  )
   const allItems = useMemo(
     () =>
       Object.entries(contentType.fields).filter(
@@ -298,9 +302,39 @@ const ContentTypeEdit = forwardRef<
               parentContentType={contentType}
             />
           )
+          const dynamicOpen = dynamicEditorOpen === fieldName
+          const setDynamicOpen = (open: boolean) =>
+            setDynamicEditorOpen(open ? fieldName : null)
+          const dynamicTrigger = showDynamicData ? (
+            <DynamicDataControl
+              contentType={contentType}
+              fieldName={fieldName}
+              field={fieldValue}
+              contentTypes={(contentTypesData ?? []) as EncodedContentType[]}
+              bindings={dynamicBindings}
+              onChange={setDynamicBindings}
+              open={dynamicOpen}
+              onOpenChange={setDynamicOpen}
+              mode='trigger'
+            />
+          ) : null
+          const dynamicDialog = showDynamicData ? (
+            <DynamicDataControl
+              contentType={contentType}
+              fieldName={fieldName}
+              field={fieldValue}
+              contentTypes={(contentTypesData ?? []) as EncodedContentType[]}
+              bindings={dynamicBindings}
+              onChange={setDynamicBindings}
+              open={dynamicOpen}
+              onOpenChange={setDynamicOpen}
+              mode='dialog'
+            />
+          ) : null
 
-          const Tags = () => (
-            <div className='flex items-center gap-2'>
+          const Tags = ({ children }: { children?: ReactNode }) => (
+            <div className='flex min-w-0 items-center gap-2'>
+              {children}
               {fieldValue.isTranslatable && <Languages size={16} />}
               {fieldValue.isRequired && <Shield size={16} />}
             </div>
@@ -316,39 +350,33 @@ const ContentTypeEdit = forwardRef<
               <Collapsible defaultOpen key={fieldName}>
                 <Card className={errorStyle({ error: !!error })}>
                   <CardHeader className='gap-0'>
-                    <CollapsibleTrigger>
-                      <div className='flex justify-between items-center cursor-pointer'>
-                        <CardTitle className='flex items-center gap-2 '>
-                          <Button
-                            variant='ghost'
-                            size='icon'
-                            className='size-8'
-                            asChild
-                          >
-                            <div>
-                              <ChevronsUpDown />
-                              <span className='sr-only'>Toggle</span>
-                            </div>
-                          </Button>
-                          {decodeCamelCase(fieldName)}
-                        </CardTitle>
-                        <div className='flex items-center gap-2'>
-                          {showDynamicData && (
-                            <DynamicDataControl
-                              contentType={contentType}
-                              fieldName={fieldName}
-                              field={fieldValue}
-                              contentTypes={
-                                (contentTypesData ?? []) as EncodedContentType[]
-                              }
-                              bindings={dynamicBindings}
-                              onChange={setDynamicBindings}
-                            />
-                          )}
-                          <Tags />
-                        </div>
-                      </div>
-                    </CollapsibleTrigger>
+                    <div className='flex items-center justify-between gap-3'>
+                      <CollapsibleTrigger asChild>
+                        <button
+                          type='button'
+                          className='min-w-0 flex-1 cursor-pointer text-left'
+                        >
+                          <CardTitle className='flex min-w-0 items-center gap-2'>
+                            <Button
+                              variant='ghost'
+                              size='icon'
+                              className='size-8'
+                              asChild
+                            >
+                              <span>
+                                <ChevronsUpDown />
+                                <span className='sr-only'>Toggle</span>
+                              </span>
+                            </Button>
+                            <span className='truncate'>
+                              {decodeCamelCase(fieldName)}
+                            </span>
+                          </CardTitle>
+                        </button>
+                      </CollapsibleTrigger>
+                      <Tags>{dynamicTrigger}</Tags>
+                    </div>
+                    {dynamicDialog}
                   </CardHeader>
                   <CollapsibleContent
                     forceMount
@@ -368,29 +396,18 @@ const ContentTypeEdit = forwardRef<
             >
               {hideTitle ? null : (
                 <div className='mb-4 space-y-1'>
-                  <CardTitle className='flex justify-between items-center gap-2'>
-                    {decodeCamelCase(fieldName)}
-                    <div className='flex items-center gap-2'>
-                      {showDynamicData && (
-                        <DynamicDataControl
-                          contentType={contentType}
-                          fieldName={fieldName}
-                          field={fieldValue}
-                          contentTypes={
-                            (contentTypesData ?? []) as EncodedContentType[]
-                          }
-                          bindings={dynamicBindings}
-                          onChange={setDynamicBindings}
-                        />
-                      )}
-                      <Tags />
-                    </div>
+                  <CardTitle className='flex items-center justify-between gap-3'>
+                    <span className='min-w-0 truncate'>
+                      {decodeCamelCase(fieldName)}
+                    </span>
+                    <Tags>{dynamicTrigger}</Tags>
                   </CardTitle>
                   {description ? (
                     <p className='text-sm text-muted-foreground'>
                       {description}
                     </p>
                   ) : null}
+                  {dynamicDialog}
                 </div>
               )}
               {field}
