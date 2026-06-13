@@ -3,6 +3,7 @@ import {
   createRakunOperationDefinitions,
   createRequestContext,
   parseCookieHeader,
+  runContentHookContext,
 } from "@rakun-kit/core";
 import {
   getAppErrorShape,
@@ -133,18 +134,25 @@ const createOperationResponse = async (
   if (operation.access === "auth") {
     ctx.getUser();
   }
-  const input = await getOperationInput(operation, request);
-  const result = operation.output.parse(
-    await operation.resolve({
-      ctx,
-      input,
-    }),
-  );
+  const result = await runContentHookContext(
+    { requestContext: ctx },
+    async () => {
+      const input = await getOperationInput(operation, request);
+      const parsedResult = operation.output.parse(
+        await operation.resolve({
+          ctx,
+          input,
+        }),
+      );
 
-  await operation.onSuccess?.({
-    ctx,
-    result,
-  });
+      await operation.onSuccess?.({
+        ctx,
+        result: parsedResult,
+      });
+
+      return parsedResult;
+    },
+  );
 
   return jsonResponse(200, result, headers);
 };

@@ -8,6 +8,7 @@ import { apiOperationsHandler } from "../routes/manager/apiOperations";
 import { createBackupHandler } from "../routes/manager/backups/create";
 import { listBackupsHandler } from "../routes/manager/backups/list";
 import { restoreBackupHandler } from "../routes/manager/backups/restore";
+import { contentTypeHandler } from "../routes/manager/contentType";
 import { contentTypesHandler } from "../routes/manager/contentTypes";
 import { createHandler } from "../routes/manager/create";
 import { deleteHandler } from "../routes/manager/delete";
@@ -56,6 +57,9 @@ export const createManagerOperationDefinitions = () => {
   const implementations: RakunOperationImplementationMap<typeof contracts> = {
     "manager.contentTypes": {
       resolve: contentTypesHandler,
+    },
+    "manager.contentType": {
+      resolve: contentTypeHandler,
     },
     "manager.languages": {
       resolve: languagesHandler,

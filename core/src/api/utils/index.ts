@@ -1,6 +1,11 @@
 export { checkFailureCase } from "./checkFailureCase";
 export { checkAnyPermissions, checkPermissions } from "./checkPermissions";
 export { checkOwnership } from "./checkOwnership";
+export {
+  resolveContentOutput,
+  resolveDynamicData,
+  stripDynamicBindings,
+} from "./dynamicData";
 export { getLanguages } from "./getLanguages";
 export { getLink, getTranslatedLink } from "./getLink";
 export { getUser } from "./getUser";

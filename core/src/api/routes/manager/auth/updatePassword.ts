@@ -4,7 +4,7 @@ import { getMongoService } from "../../../../orm";
 import { RakunRequestContext } from "../../../context";
 import { getSessionCookie } from "../../../sessionCookie";
 import { UpdatePasswordInput } from "../../../../schemas/manager/updatePassword";
-import { verifyStoredPassword, hashPassword } from "../../../utils/passwords";
+import { verifyStoredPassword } from "../../../utils/passwords";
 
 export const updatePasswordHandler = async ({
   input,
@@ -24,7 +24,7 @@ export const updatePasswordHandler = async ({
   }
 
   await db.update(ManagerUser, user._id, {
-    password: hashPassword(input.newPassword),
+    password: input.newPassword,
   });
   await db.delete(Session, {
     "user._id": user._id,

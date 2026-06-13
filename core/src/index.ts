@@ -4,6 +4,7 @@ import {
 } from "./lib/Registry";
 import { createLogger, Logger } from "./lib/Logger";
 import * as internalContentTypes from "./internal-content-types";
+import { applyManagerUserHooks } from "./internal-content-types/ManagerUserHooks";
 import { syncConfiguredRoutes } from "./api/utils/routes/syncConfiguredRoutes";
 import { createMongoConnection, getMongoService } from "./orm";
 import { runMigrations } from "./orm/migrations";
@@ -164,6 +165,7 @@ export const rakunBootstrap = (options: RakunBootstrapOptions) => {
     ...internalContentTypes,
     ...options.internalContentTypes,
   };
+  applyManagerUserHooks(configuredInternalContentTypes.ManagerUser);
   const routeableContentTypes = new Set(
     (options.routes ?? [])
       .filter((route) => route.hasPage)
@@ -196,18 +198,31 @@ export const ensureRakunBootstrap = (options: RakunBootstrapOptions) => {
 };
 
 export type { RakunBootstrapOptions };
-export type { ApiProxies, InputProxy, OutputProxy } from "./api/proxies";
 export {
-  getInputProxy,
-  getOutputProxy,
-  getProxies,
-  ProxyOutput,
-} from "./api/proxies";
+  getContentHookContext,
+  runContentHookContext,
+} from "./api/hooks/context";
+export type {
+  ContentHookContext,
+  ContentHookContextStorage,
+  ContentHookOperation,
+  ContentHookRouteContext,
+  ContentHookSurface,
+  ContentTypeHooks,
+} from "./lib/hooks";
+export type {
+  DynamicBindingSource,
+  DynamicDataOptions,
+  DynamicDocumentBindings,
+  DynamicListBinding,
+} from "./lib/dynamicData";
 export {
-  getProxyContext,
-  runProxyContext,
-  type ProxyContext,
-} from "./api/proxies/context";
+  DYNAMIC_BINDINGS_FIELD_NAME,
+  DynamicDataOptionsSchema,
+  DynamicDocumentBindingsSchema,
+  isDynamicDataSourceAllowed,
+  isDynamicDataSourceContentTypeAllowed,
+} from "./lib/dynamicData";
 export { getRakunBootstrapOptions } from "./bootstrapState";
 export {
   closeDatabase,

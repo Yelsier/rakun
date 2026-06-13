@@ -1,4 +1,5 @@
 export * from "./schemas/manager/create";
+export * from "./schemas/manager/contentType";
 export * from "./schemas/manager/duplicate";
 export * from "./schemas/manager/update";
 export * from "./schemas/manager/delete";

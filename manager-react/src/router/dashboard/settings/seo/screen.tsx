@@ -1,11 +1,6 @@
 'use client'
 
-import { SeoSettings } from '@rakun-kit/core/internal-content-types'
-import {
-  encodeContentTypeForManager,
-  type EncodedContentType,
-  type Permission,
-} from '@rakun-kit/core/client'
+import type { EncodedContentType, Permission } from '@rakun-kit/core/client'
 import { Search } from 'lucide-react'
 import { useMemo, useRef } from 'react'
 import { toast } from 'sonner'
@@ -28,19 +23,22 @@ import {
 } from '@/components/ui/card'
 import { useSession } from '@/state/session'
 
+const SEO_SETTINGS_CONTENT_TYPE = 'SeoSettings'
+
 type SeoSettingsRecord = Record<string, FieldValue> & {
   _id?: string
-  _type: typeof SeoSettings.name
+  _type: typeof SEO_SETTINGS_CONTENT_TYPE
   key: string
 }
 
 const defaultSeoSettingsData: SeoSettingsRecord = {
-  _type: SeoSettings.name,
+  _type: SEO_SETTINGS_CONTENT_TYPE,
   key: 'default',
 }
 
-const createSeoSettingsEditContentType = (): EncodedContentType => {
-  const encoded = encodeContentTypeForManager(SeoSettings)
+const createSeoSettingsEditContentType = (
+  encoded: EncodedContentType,
+): EncodedContentType => {
   const { key: _key, ...fields } = encoded.fields
 
   return {
@@ -54,11 +52,26 @@ export const ManagerSettingsSeoScreen = () => {
   const { hasPermissions } = useSession()
   const canRead = hasPermissions(['content.SeoSettings.readAny' as Permission])
   const canUpdate = hasPermissions(['content.SeoSettings.updateAny' as Permission])
-  const contentType = useMemo(createSeoSettingsEditContentType, [])
+  const contentTypeQuery = useManagerQuery({
+    name: 'manager.contentType',
+    input: {
+      contentType: SEO_SETTINGS_CONTENT_TYPE,
+    },
+    enabled: canRead,
+  })
+  const contentType = useMemo(
+    () =>
+      contentTypeQuery.data
+        ? createSeoSettingsEditContentType(
+            contentTypeQuery.data as EncodedContentType,
+          )
+        : null,
+    [contentTypeQuery.data],
+  )
   const settingsListQuery = useManagerQuery({
     name: 'manager.list',
     input: {
-      contentType: SeoSettings.name,
+      contentType: SEO_SETTINGS_CONTENT_TYPE,
       query: {
         filter: { key: 'default' },
         options: { limit: 1, fields: ['key'] },
@@ -72,7 +85,7 @@ export const ManagerSettingsSeoScreen = () => {
   const settingsQuery = useManagerQuery({
     name: 'manager.get',
     input: {
-      contentType: SeoSettings.name,
+      contentType: SEO_SETTINGS_CONTENT_TYPE,
       id: settingsId ?? '',
     },
     enabled: canRead && Boolean(settingsId),
@@ -82,6 +95,7 @@ export const ManagerSettingsSeoScreen = () => {
   const defaultData = (settingsQuery.data ??
     defaultSeoSettingsData) as SeoSettingsRecord
   const isLoading =
+    contentTypeQuery.isLoading ||
     settingsListQuery.isLoading ||
     (Boolean(settingsId) && settingsQuery.isLoading)
   const isSaving = createMutation.isPending || updateMutation.isPending
@@ -98,20 +112,20 @@ export const ManagerSettingsSeoScreen = () => {
 
     const data = {
       ...value,
-      _type: SeoSettings.name,
+      _type: SEO_SETTINGS_CONTENT_TYPE,
       key: 'default',
     }
 
     try {
       if (settingsId) {
         await updateMutation.mutateAsync({
-          contentType: SeoSettings.name,
+          contentType: SEO_SETTINGS_CONTENT_TYPE,
           id: settingsId,
           data,
         })
       } else {
         await createMutation.mutateAsync({
-          contentType: SeoSettings.name,
+          contentType: SEO_SETTINGS_CONTENT_TYPE,
           data,
         })
       }
@@ -138,6 +152,8 @@ export const ManagerSettingsSeoScreen = () => {
 
   if (isLoading) return <Loading />
 
+  if (!contentType) return null
+
   return (
     <div className='container mx-auto flex flex-col gap-6 px-4 py-10'>
       <Card>
@@ -153,7 +169,7 @@ export const ManagerSettingsSeoScreen = () => {
         <CardContent className='flex flex-col gap-8'>
           <ContentTypeEdit
             key={settingsId ?? 'new'}
-            id={SeoSettings.name}
+            id={SEO_SETTINGS_CONTENT_TYPE}
             ref={formRef}
             contentType={contentType}
             defaultData={defaultData}

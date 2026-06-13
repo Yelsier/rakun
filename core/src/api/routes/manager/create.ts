@@ -9,8 +9,6 @@ import { checkPermissions } from "../../utils/checkPermissions";
 import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
 import { Permission } from "../../../lib/Permissions";
-import { getInputProxy } from "../../proxies";
-import { prepareManagerUserCreateData } from "../../utils/managerUserPassword";
 import { sanitizeManagerOutput } from "../../utils/sanitizeManagerOutput";
 
 export const createHandler = async ({
@@ -25,10 +23,7 @@ export const createHandler = async ({
   const user = ctx.getUser();
 
   const contentType = requireContentType(contentTypeName);
-  const data = prepareManagerUserCreateData(
-    contentType,
-    input.data,
-  ) as Record<string, unknown>;
+  const data = input.data as Record<string, unknown>;
 
   checkPermissions(user, [`content.${contentTypeName}.own` as Permission]);
 
@@ -47,16 +42,7 @@ export const createHandler = async ({
     });
     Logger.addTrace("manager.create: input validated");
 
-    const inputProxy = getInputProxy(contentType.name);
-
-    let proxied = parsedInput;
-
-    if (inputProxy) {
-      proxied = await inputProxy(parsedInput);
-      Logger.addTrace("manager.create: input proxied");
-    }
-
-    const created = await db.create(contentType, proxied, {
+    const created = await db.create(contentType, parsedInput, {
       actorId: user._id,
     });
     Logger.addTrace("manager.create: db create success", { id: created._id });

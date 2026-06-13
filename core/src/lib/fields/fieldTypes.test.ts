@@ -76,6 +76,58 @@ describe("field type inference", () => {
     ).toHaveLength(1);
   });
 
+  it("allows required fields to be supplied by dynamic bindings", () => {
+    const DynamicBindingCT = new ContentType({
+      name: "DynamicBindingCT",
+      fields: {
+        title: Fields.string().required(),
+      },
+      dynamicData: {
+        fields: ["title"],
+      },
+    });
+
+    expect(
+      DynamicBindingCT.validate({
+        _type: "DynamicBindingCT",
+        _bindings: {
+          fields: {
+            title: {
+              contentType: "Article",
+              id: "64f0c0000000000000000001",
+              path: "title",
+            },
+          },
+        },
+      })._bindings?.fields?.title?.path,
+    ).toBe("title");
+  });
+
+  it("strips dynamic bindings when dynamic data is not enabled", () => {
+    const ClosedBindingCT = new ContentType({
+      name: "ClosedBindingCT",
+      fields: {
+        title: Fields.string().required(),
+      },
+    });
+
+    const parsed = ClosedBindingCT.validate({
+      _type: "ClosedBindingCT",
+      title: "Manual",
+      _bindings: {
+        fields: {
+          title: {
+            contentType: "Article",
+            id: "64f0c0000000000000000001",
+            path: "title",
+          },
+        },
+      },
+    });
+
+    expect("_bindings" in parsed).toBe(false);
+  });
+
   it("rejects public fields that use reserved system fields", () => {
     expect(
       () =>

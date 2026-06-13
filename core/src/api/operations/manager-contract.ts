@@ -12,6 +12,7 @@ import {
   createFolderInput,
   createFolderOutput,
   contentVersionRecord,
+  contentTypeInput,
   deleteFolderInput,
   deleteFolderOutput,
   createInput,
@@ -79,6 +80,14 @@ export const createManagerOperationContracts = () =>
       description: "Get all content types without schema",
       output: z.array(EncodedContentTypeSchema),
       method: "get",
+    }),
+    "manager.contentType": defineOperationContract({
+      access: "auth",
+      kind: "query",
+      description: "Get one encoded content type by name",
+      input: contentTypeInput,
+      output: EncodedContentTypeSchema.nullable(),
+      method: "post",
     }),
     "manager.languages": defineOperationContract({
       access: "auth",

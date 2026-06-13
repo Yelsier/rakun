@@ -44,21 +44,22 @@ export async function createMongoService(config: MongoConfig): Promise<DBService
     Logger.addTrace('mongo service connect start')
     const { db } = await connectDatabase(config)
 
-    const dbService = {
+    let dbService: DBService
+    dbService = {
       rawDB: db,
       backups: createMongoBackupAdapter(db),
       migrations: createMongoMigrationAdapter(db),
       versions: createMongoVersionAdapter(db),
       get: getHandler(db),
       list: listhandler(db),
-      create: createHandler(db),
-      update: updateHandler(db),
-      delete: deleteHandler(db),
+      create: createHandler(db, () => dbService),
+      update: updateHandler(db, () => dbService),
+      delete: deleteHandler(db, () => dbService),
       find: findHandler(db),
       clear: clearHandler(db),
-      updateMany: updateManyHandler(db),
+      updateMany: updateManyHandler(db, () => dbService),
       findDependencies: findDependenciesHandler(db),
-      upsert: upsertHandler(db),
+      upsert: upsertHandler(db, () => dbService),
       getAll: getAllHandler(db),
     }
     dbServices.set(config.MONGO_URI, dbService)

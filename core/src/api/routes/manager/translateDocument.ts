@@ -14,7 +14,6 @@ import type {
   TranslateDocumentOutput,
 } from "../../../schemas/manager/translateDocument";
 import type { RakunRequestContext } from "../../context";
-import { getInputProxy } from "../../proxies";
 import { checkOwnership } from "../../utils/checkOwnership";
 import { getLanguages } from "../../utils/getLanguages";
 import { requireContentType } from "../../utils/requireContentType";
@@ -115,16 +114,7 @@ export const translateDocumentHandler = async ({
     const parsedUpdate = contentType.partialValidate(data);
     Logger.addTrace("manager.translateDocument: input validated");
 
-    const inputProxy = getInputProxy(contentType.name);
-    const proxied = inputProxy
-      ? await inputProxy(parsedUpdate)
-      : parsedUpdate;
-
-    if (inputProxy) {
-      Logger.addTrace("manager.translateDocument: input proxied");
-    }
-
-    const updated = await db.update(contentType, input.id, proxied, {
+    const updated = await db.update(contentType, input.id, parsedUpdate, {
       actorId: user._id,
       reason: "manager translate",
     });

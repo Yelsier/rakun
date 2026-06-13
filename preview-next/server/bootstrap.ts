@@ -1,7 +1,6 @@
-import { Page } from '@rakun-kit/next/internal-content-types'
 import { createLocalMediaServiceConfig, type RakunBootstrapOptions } from '@rakun-kit/next'
 
-import { Footer, Header, previewContentTypes } from './content-types'
+import { Footer, Header, PreviewPage, Project, previewContentTypes } from './content-types'
 import { apiOperations } from './api-operations'
 import { createOpenAITranslationServiceConfig } from '@rakun-kit/openai'
 
@@ -35,15 +34,32 @@ export const createPreviewBootstrap = () =>
       },
     },
     contentTypes: previewContentTypes,
+    internalContentTypes: {
+      Page: PreviewPage,
+    },
     routes: [
       {
         key: 'page',
-        contentType: Page.name,
+        contentType: PreviewPage.name,
         field: 'slug',
         hasPage: true,
         dynamic: false,
         defaultBasePath: '',
-        infoSchema: Page.getPopulatedSchema(),
+        infoSchema: PreviewPage.getPopulatedSchema(),
+        layout: [
+          { type: 'module', key: 'header', contentType: Header.name },
+          { type: 'content' },
+          { type: 'module', key: 'footer', contentType: Footer.name },
+        ],
+      },
+      {
+        key: 'project',
+        contentType: Project.name,
+        field: 'slug',
+        hasPage: true,
+        dynamic: false,
+        defaultBasePath: 'projects',
+        infoSchema: Project.getPopulatedSchema(),
         layout: [
           { type: 'module', key: 'header', contentType: Header.name },
           { type: 'content' },

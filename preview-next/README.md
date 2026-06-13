@@ -41,6 +41,8 @@ The API route seeds preview data on first request when `SEED_PREVIEW` is not
 - `Header` and `Footer` layout modules
 - home, about, and contact `Page` records
 - inline `HelloWorld` modules in the seeded page `_iterator`
+- a `FeatureCarousel` module that demonstrates dynamic data bindings from
+  `Project`
 - populated `Fields.link()` examples in header and footer modules
 - `Author` and `Article`
 - route settings and route maps for `/en/`, `/es/`, `/en/about/`, `/es/sobre/`,
@@ -48,6 +50,11 @@ The API route seeds preview data on first request when `SEED_PREVIEW` is not
 
 The seed is idempotent and also repairs the seeded home `_iterator` so
 `HelloWorld` stays present after local database reuse.
+
+The seeded `FeatureCarousel` is a reusable layout module. Its title can be bound
+to a selected `Project`, and its item list can be populated from filtered
+`Project` records. The manager stores those bindings in `_bindings`; manually
+added carousel items are kept and merged with the dynamic list output.
 
 ## Custom API Operation
 

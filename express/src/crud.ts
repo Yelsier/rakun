@@ -6,6 +6,7 @@ import {
   createRequestContext,
   parseCookieHeader,
   RakunOperationHttpMethod,
+  runContentHookContext,
 } from "@rakun-kit/core";
 import {
   getAppErrorShape,
@@ -106,18 +107,25 @@ const createHandler =
       if (operation.access === "auth") {
         ctx.getUser();
       }
-      const input = getOperationInput(operation, req);
-      const result = operation.output.parse(
-        await operation.resolve({
-          ctx,
-          input,
-        }),
-      );
+      const result = await runContentHookContext(
+        { requestContext: ctx },
+        async () => {
+          const input = getOperationInput(operation, req);
+          const parsedResult = operation.output.parse(
+            await operation.resolve({
+              ctx,
+              input,
+            }),
+          );
 
-      await operation.onSuccess?.({
-        ctx,
-        result,
-      });
+          await operation.onSuccess?.({
+            ctx,
+            result: parsedResult,
+          });
+
+          return parsedResult;
+        },
+      );
 
       res.status(200).json(result);
     } catch (error) {

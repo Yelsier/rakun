@@ -42,7 +42,6 @@ rakunBootstrap({
   literals,
   contentTypes: [Page, Post],
   routes,
-  proxies,
   apiOperations,
   mongo: {
     MONGO_URI: process.env.MONGO_URI!,
@@ -63,12 +62,14 @@ Options:
 - `contentTypes`: application content types.
 - `internalContentTypes`: optional overrides for Rakun internal content types, currently `Page`.
 - `routes`: configured routes used to resolve pages.
-- `proxies`: API input/output extensions.
 - `apiOperations`: custom API operations added to the Rakun operation registry.
 - `mongo`: MongoDB connection. Required before serving Rakun requests.
 - `media`: media adapter/configuration. Optional.
 - `logger`: logger configuration. If omitted, an `info` logger with `prettify` is created.
 - `syncRoutes`: syncs configured routes during initialization. Enabled by default.
+
+Content types can define lifecycle `hooks` and opt into manager-selected
+`dynamicData` sources.
 
 Routes can define fixed layout module slots. Rakun syncs those slots and the
 manager lets users select an existing entry for each route:
@@ -149,9 +150,78 @@ Main properties:
 - `hideFromManager()`: hides the content type from manager content type lists.
 - `apiOnly()`: applies `.apiOnly()` to every field in the content type.
 - `managerOnly()`: applies `.managerOnly()` to every field in the content type.
+- `withHooks()`: attaches lifecycle hooks such as `beforeInsert`, `beforeUpdate`, and `onGet`.
+- `enableDynamicData()`: lets selected fields store manager-defined bindings in `_bindings`.
 
 When a content type has a configured route with `hasPage: true`, Rakun also
 adds an optional reserved `_seo` relation automatically.
+
+Hooks run around DB mutations and public output resolution:
+
+```ts
+const User = new ContentType({
+  name: "User",
+  fields: {
+    email: Fields.string().type("Email").required(),
+    password: Fields.string().type("Password").required().managerOnly(),
+  },
+}).withHooks({
+  beforeInsert: ({ data }) => ({
+    ...data,
+    password: hashPassword(String(data.password)),
+  }),
+  onGet: ({ data }) => ({
+    ...data,
+    displayName: String(data.email).split("@")[0],
+  }),
+});
+```
+
+Dynamic data turns a content type into a reusable layout. The manager can bind
+enabled fields to another content item field, or to a generated `href` when a
+source content type has a page route. Source content types are hidden by default;
+set `dynamicDataSource: true` on content types that should appear in the
+manager source selector.
+
+Source field selectors are type-aware. A string target only offers string-like
+source paths, number targets only offer numbers, and boolean targets only offer
+booleans. Object-like source fields are traversed so nested leaf fields can be
+selected, while reserved SEO metadata is omitted from dynamic data mappings.
+The generated `href` source is only shown for content types that have a
+configured route with `hasPage: true`.
+
+```ts
+const Project = new ContentType({
+  name: "Project",
+  dynamicDataSource: true,
+  fields: {
+    title: Fields.string().required(),
+    slug: Fields.string().type("Slug").required(),
+  },
+});
+
+const Carousel = new ContentType({
+  name: "Carousel",
+  fields: {
+    title: Fields.string().required(),
+    items: Fields.list([
+      {
+        name: "CarouselItem",
+        field: Fields.relation(CarouselItem, "new"),
+      },
+    ]),
+  },
+  dynamicData: {
+    fields: ["title"],
+    lists: ["items"],
+    sources: ["Project"],
+  },
+});
+```
+
+List bindings append dynamic items to manually stored items instead of replacing
+the list. If the same stable item id appears in both sources, the dynamically
+resolved item wins and the duplicate manual copy is skipped.
 
 Schema and validation methods:
 

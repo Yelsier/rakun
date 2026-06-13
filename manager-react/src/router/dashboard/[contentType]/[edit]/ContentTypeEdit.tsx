@@ -1,6 +1,7 @@
 'use client'
 
 import { ChevronsUpDown, Languages, Shield } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import {
   forwardRef,
   useCallback,
@@ -9,7 +10,11 @@ import {
   useRef,
   useState,
 } from 'react'
-import type { EncodedContentType } from '@rakun-kit/core/client'
+import type { ReactNode } from 'react'
+import type {
+  DynamicDocumentBindings,
+  EncodedContentType,
+} from '@rakun-kit/core/client'
 import { EncodedFieldUnknown, FieldType } from '@rakun-kit/core/client'
 import { EncodedRelationField } from '@rakun-kit/core/client'
 
@@ -38,6 +43,11 @@ import {
 } from '@/components/ui/collapsible'
 import { Button } from '@/components/ui/button'
 import { deepEqual } from '@/helpers/deepEqual'
+import { useTRPC } from '@/components/trpc-provider'
+import {
+  DynamicDataControl,
+  isDynamicFieldEnabled,
+} from './_fields/DynamicDataControl'
 
 const defaultDataExtractor = (
   fieldName: string,
@@ -101,6 +111,34 @@ const getFieldDescription = (fieldValue: EncodedFieldUnknown) =>
     ? fieldValue.description
     : undefined
 
+const getDefaultBindings = (
+  defaultData?: Record<string, FieldValue>,
+): DynamicDocumentBindings | undefined =>
+  defaultData && '_bindings' in defaultData
+    ? (defaultData._bindings as DynamicDocumentBindings)
+    : undefined
+
+const cleanBindings = (
+  bindings: DynamicDocumentBindings | undefined,
+): DynamicDocumentBindings | undefined => {
+  if (!bindings) return undefined
+
+  const fields =
+    bindings.fields &&
+    typeof bindings.fields === 'object' &&
+    Object.keys(bindings.fields).length > 0
+      ? bindings.fields
+      : undefined
+  const lists =
+    bindings.lists &&
+    typeof bindings.lists === 'object' &&
+    Object.keys(bindings.lists).length > 0
+      ? bindings.lists
+      : undefined
+
+  return fields || lists ? { fields, lists } : undefined
+}
+
 const ContentTypeEdit = forwardRef<
   FieldRef,
   {
@@ -112,6 +150,10 @@ const ContentTypeEdit = forwardRef<
   }
 >((props, ref) => {
   const { contentType, id, collapsible, hideTitle } = props
+  const trpc = useTRPC()
+  const { data: contentTypesData } = useQuery(
+    trpc.manager.contentTypes.queryOptions(),
+  )
 
   const { refs, setRef } = useArrayRefs<FieldRef>()
   const errors = useEditErrorStore((state) => state.errors)
@@ -127,6 +169,12 @@ const ContentTypeEdit = forwardRef<
     [contentType.fields, props.defaultData],
   )
   const [formState, setFormState] = useState(formStateInitialValue)
+  const [dynamicBindings, setDynamicBindings] = useState<
+    DynamicDocumentBindings | undefined
+  >(getDefaultBindings(props.defaultData))
+  const [dynamicEditorOpen, setDynamicEditorOpen] = useState<string | null>(
+    null,
+  )
   const allItems = useMemo(
     () =>
       Object.entries(contentType.fields).filter(
@@ -190,7 +238,13 @@ const ContentTypeEdit = forwardRef<
           return { _error }
         }
 
-        return { ...values, _type: contentType.name }
+        const bindings = cleanBindings(dynamicBindings)
+
+        return {
+          ...values,
+          ...(bindings ? { _bindings: bindings } : {}),
+          _type: contentType.name,
+        }
       },
       getState: () => {
         const states = Object.fromEntries(
@@ -202,10 +256,19 @@ const ContentTypeEdit = forwardRef<
             return [fieldName, refs.current[i]?.getState()]
           }),
         )
-        return states
+        const bindings = cleanBindings(dynamicBindings)
+        return bindings ? { ...states, _bindings: bindings } : states
       },
     }),
-    [addError, allItems, contentType.name, formState, id, visibleFieldNames],
+    [
+      addError,
+      allItems,
+      contentType.name,
+      dynamicBindings,
+      formState,
+      id,
+      visibleFieldNames,
+    ],
   )
 
   return (
@@ -222,6 +285,11 @@ const ContentTypeEdit = forwardRef<
           }
 
           const error = errors.find((e) => e.id === id + '.' + fieldName)?.error
+          const showDynamicData = isDynamicFieldEnabled(
+            contentType,
+            fieldName,
+            fieldValue,
+          )
           const FieldComponent = fieldsMap[
             fieldValue.config.type
           ] as FieldComponent
@@ -234,9 +302,39 @@ const ContentTypeEdit = forwardRef<
               parentContentType={contentType}
             />
           )
+          const dynamicOpen = dynamicEditorOpen === fieldName
+          const setDynamicOpen = (open: boolean) =>
+            setDynamicEditorOpen(open ? fieldName : null)
+          const dynamicTrigger = showDynamicData ? (
+            <DynamicDataControl
+              contentType={contentType}
+              fieldName={fieldName}
+              field={fieldValue}
+              contentTypes={(contentTypesData ?? []) as EncodedContentType[]}
+              bindings={dynamicBindings}
+              onChange={setDynamicBindings}
+              open={dynamicOpen}
+              onOpenChange={setDynamicOpen}
+              mode='trigger'
+            />
+          ) : null
+          const dynamicDialog = showDynamicData ? (
+            <DynamicDataControl
+              contentType={contentType}
+              fieldName={fieldName}
+              field={fieldValue}
+              contentTypes={(contentTypesData ?? []) as EncodedContentType[]}
+              bindings={dynamicBindings}
+              onChange={setDynamicBindings}
+              open={dynamicOpen}
+              onOpenChange={setDynamicOpen}
+              mode='dialog'
+            />
+          ) : null
 
-          const Tags = () => (
-            <div className='flex items-center gap-2'>
+          const Tags = ({ children }: { children?: ReactNode }) => (
+            <div className='flex min-w-0 items-center gap-2'>
+              {children}
               {fieldValue.isTranslatable && <Languages size={16} />}
               {fieldValue.isRequired && <Shield size={16} />}
             </div>
@@ -252,25 +350,33 @@ const ContentTypeEdit = forwardRef<
               <Collapsible defaultOpen key={fieldName}>
                 <Card className={errorStyle({ error: !!error })}>
                   <CardHeader className='gap-0'>
-                    <CollapsibleTrigger>
-                      <div className='flex justify-between items-center cursor-pointer'>
-                        <CardTitle className='flex items-center gap-2 '>
-                          <Button
-                            variant='ghost'
-                            size='icon'
-                            className='size-8'
-                            asChild
-                          >
-                            <div>
-                              <ChevronsUpDown />
-                              <span className='sr-only'>Toggle</span>
-                            </div>
-                          </Button>
-                          {decodeCamelCase(fieldName)}
-                        </CardTitle>
-                        <Tags />
-                      </div>
-                    </CollapsibleTrigger>
+                    <div className='flex items-center justify-between gap-3'>
+                      <CollapsibleTrigger asChild>
+                        <button
+                          type='button'
+                          className='min-w-0 flex-1 cursor-pointer text-left'
+                        >
+                          <CardTitle className='flex min-w-0 items-center gap-2'>
+                            <Button
+                              variant='ghost'
+                              size='icon'
+                              className='size-8'
+                              asChild
+                            >
+                              <span>
+                                <ChevronsUpDown />
+                                <span className='sr-only'>Toggle</span>
+                              </span>
+                            </Button>
+                            <span className='truncate'>
+                              {decodeCamelCase(fieldName)}
+                            </span>
+                          </CardTitle>
+                        </button>
+                      </CollapsibleTrigger>
+                      <Tags>{dynamicTrigger}</Tags>
+                    </div>
+                    {dynamicDialog}
                   </CardHeader>
                   <CollapsibleContent
                     forceMount
@@ -290,15 +396,18 @@ const ContentTypeEdit = forwardRef<
             >
               {hideTitle ? null : (
                 <div className='mb-4 space-y-1'>
-                  <CardTitle className='flex justify-between items-center gap-2'>
-                    {decodeCamelCase(fieldName)}
-                    <Tags />
+                  <CardTitle className='flex items-center justify-between gap-3'>
+                    <span className='min-w-0 truncate'>
+                      {decodeCamelCase(fieldName)}
+                    </span>
+                    <Tags>{dynamicTrigger}</Tags>
                   </CardTitle>
                   {description ? (
                     <p className='text-sm text-muted-foreground'>
                       {description}
                     </p>
                   ) : null}
+                  {dynamicDialog}
                 </div>
               )}
               {field}
