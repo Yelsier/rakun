@@ -1,12 +1,11 @@
 'use client'
 
-import type { ManagerRoleManager, ManagerUserInput } from '@rakun-kit/core/internal-content-types'
-import { ManagerUser } from '@rakun-kit/core/internal-content-types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { X } from 'lucide-react'
+import { z } from 'zod'
 
 import type { ManagerUserRecord } from './columns'
 
@@ -36,6 +35,28 @@ type Props = {
   setOpen: (open: boolean) => void
 }
 
+const managerUserRoleInput = z.object({
+  contentType: z.literal('ManagerRole'),
+  _id: z.string(),
+  type: z.literal('existing'),
+})
+
+const managerUserInput = z.object({
+  email: z.string().email(),
+  password: z.string(),
+  user: z.string().min(1),
+  role: managerUserRoleInput.nullable().optional(),
+  _type: z.literal('ManagerUser'),
+  twoFactorEnabled: z.boolean(),
+})
+
+type ManagerUserInput = z.infer<typeof managerUserInput>
+
+type ManagerRoleRecord = {
+  _id: string
+  name?: string
+}
+
 export function EditUserForm({ defaultValues, refetch, setOpen }: Props) {
   const rolesQuery = useManagerQuery({
     name: 'manager.list',
@@ -48,7 +69,7 @@ export function EditUserForm({ defaultValues, refetch, setOpen }: Props) {
   const updateMutation = useManagerMutation('manager.update')
 
   const form = useForm<ManagerUserInput>({
-    resolver: zodResolver(ManagerUser.getInputSchema()),
+    resolver: zodResolver(managerUserInput),
     defaultValues: {
       email: defaultValues?.email || '',
       password: '',
@@ -190,7 +211,7 @@ export function EditUserForm({ defaultValues, refetch, setOpen }: Props) {
                       <SelectValue placeholder='Select role' />
                     </SelectTrigger>
                     <SelectContent>
-                      {(rolesQuery.data?.items as ManagerRoleManager[] | undefined)?.map(
+                      {(rolesQuery.data?.items as ManagerRoleRecord[] | undefined)?.map(
                         (role) => (
                           <SelectItem key={role._id} value={role._id}>
                             <span>{role.name}</span>

@@ -1,10 +1,12 @@
 import {
   type AnyRakunOperationContract,
-  createOperationManifest,
   type RakunOperationHttpMethod,
   type RakunOperationKind,
 } from "./api/operations/types";
-import { createManagerOperationContracts } from "./api/operations/manager-contract";
+import type { createManagerOperationContracts } from "./api/operations/manager-contract";
+import { managerOperationManifest } from "./api/operations/manager-manifest";
+
+export { managerOperationManifest };
 
 export type ManagerOperationContracts = ReturnType<
   typeof createManagerOperationContracts
@@ -68,14 +70,6 @@ export type ManagerOperationMeta = {
 export const toManagerOperationPath = (name: string) =>
   `/${name.split(".").join("/")}`;
 
-const managerOperationContracts = createManagerOperationContracts();
-
-export { managerOperationContracts };
-
-export const managerOperationManifest = createOperationManifest(
-  managerOperationContracts,
-);
-
 type ManagerManifest = typeof managerOperationManifest;
 
 export type ManagerQueryOperationName = {
@@ -93,7 +87,3 @@ export type ManagerMutationOperationName = {
 export const getManagerOperationMeta = <TName extends ManagerOperationName>(
   name: TName,
 ) => managerOperationManifest[name];
-
-export const getManagerOperationContract = <TName extends ManagerOperationName>(
-  name: TName,
-) => managerOperationContracts[name];
