@@ -48,6 +48,8 @@ export {
   EncodedContentTypeSchema,
   DocumentVisibility,
   type DocumentVisibility as DocumentVisibilityType,
+  ModulePicker,
+  type ModulePicker as ModulePickerMetadata,
 } from "./lib/ContentType";
 export type { FileOptimizeOptions } from "./lib/fields/File";
 export { loginInput, type LoginInput } from "./schemas/manager/auth/login";

@@ -47,6 +47,7 @@ export const encodeContentTypeForManager = <T extends ContentType>(ct: T) => {
   return {
     name: ct.name,
     menu: ct.menu,
+    modulePicker: ct.modulePicker,
     uniques: ct.uniques,
     listFields: ct.listFields,
     isHiddenFromManager: ct.isHiddenFromManager,

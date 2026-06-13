@@ -224,6 +224,36 @@ describe("field type inference", () => {
     );
   });
 
+  it("encodes module picker metadata for the manager", () => {
+    const ModulePickerEncodedCT = new ContentType({
+      name: "ModulePickerEncoded",
+      modulePicker: {
+        title: "Hero section",
+        description: "Large intro block with heading, copy, and CTA.",
+        category: "Marketing",
+        icon: "PanelTop",
+        keywords: ["banner", "cover"],
+      },
+      fields: {
+        title: Fields.string(),
+      },
+    });
+
+    registerContentType(ModulePickerEncodedCT);
+
+    const encoded = getContentTypesForManager().find(
+      (contentType) => contentType.name === ModulePickerEncodedCT.name,
+    );
+
+    expect(encoded?.modulePicker).toEqual({
+      title: "Hero section",
+      description: "Large intro block with heading, copy, and CTA.",
+      category: "Marketing",
+      icon: "PanelTop",
+      keywords: ["banner", "cover"],
+    });
+  });
+
   it("allows null for required fields when their condition is false", () => {
     const ConditionalRequiredCT = new ContentType({
       name: "ConditionalRequired",

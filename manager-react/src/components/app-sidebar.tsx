@@ -2,11 +2,10 @@ import {
   Command,
   HelpCircle,
   Images,
-  type LucideIcon,
   Network,
   Settings,
   User,
-  icons,
+  type LucideIcon,
 } from 'lucide-react'
 import type { EncodedContentType } from '@rakun-kit/core/client'
 import * as React from 'react'
@@ -21,6 +20,7 @@ import { NavMain } from './nav-main'
 import { NavSecondary } from './nav-secondary'
 import { NavUser } from './nav-user'
 import { useManagerHelp } from '@/help/manager-help'
+import { resolveLucideIcon } from '@/helpers/resolve-lucide-icon'
 import {
   Sidebar,
   SidebarContent,
@@ -39,32 +39,6 @@ export type ManagerSidebarItem = {
   disabled?: boolean
   onClick?: () => void
   items?: ManagerSidebarItem[]
-}
-
-const lucideIconByName = icons as Record<string, LucideIcon | undefined>
-
-const toPascalCase = (value: string) =>
-  value
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .split(/[\s_-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join('')
-
-const resolveLucideIcon = (name?: string): LucideIcon | undefined => {
-  if (!name) return undefined
-
-  const candidates = [
-    name,
-    `${name}Icon`,
-    toPascalCase(name),
-    `${toPascalCase(name)}Icon`,
-  ]
-
-  for (const candidate of candidates) {
-    const icon = lucideIconByName[candidate]
-    if (icon) return icon
-  }
 }
 
 const cleanPathname = (path: string) => {

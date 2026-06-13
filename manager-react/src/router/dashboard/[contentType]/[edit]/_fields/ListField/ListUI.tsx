@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronsUpDown, GripVertical, Plus, Trash } from "lucide-react";
+import { Box, ChevronsUpDown, GripVertical, Plus, Trash } from "lucide-react";
 import React, { useCallback, useEffect, useRef } from "react";
 import type {
   EncodedRelationField,
@@ -26,6 +26,10 @@ import {
   SortableItemHandle,
 } from "@/components/ui/sortable";
 import { useLanguage } from "@/lib/providers/language/LanguageClientProvider";
+import {
+  getIteratorModuleDisplay,
+  IteratorModulePickerDialog,
+} from "./IteratorModulePicker";
 
 type ListFieldValues = (ListFieldValueItem<FieldValue> & { uid: string })[];
 
@@ -260,7 +264,14 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
         getState={getStateWithNested}
         ref={ref}
       >
-        <AddListButtons fields={props.fields} onAdd={handleAddItem} />
+        {props.config.ui === "Iterator" ? (
+          <IteratorModulePickerDialog
+            fields={props.fields}
+            onAdd={handleAddItem}
+          />
+        ) : (
+          <AddListButtons fields={props.fields} onAdd={handleAddItem} />
+        )}
         <SortableContent>
           {value.length > 0 && (
             <div className="flex flex-col gap-4 mt-6">
@@ -279,6 +290,11 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                 const FieldComponent =
                   fieldsMap[fieldConfig?.field.config.type];
                 const moduleId = getModuleId(item);
+                const moduleDisplay =
+                  props.config.ui === "Iterator"
+                    ? getIteratorModuleDisplay(fieldConfig)
+                    : undefined;
+                const ModuleIcon = moduleDisplay?.icon ?? Box;
                 return (
                   <SortableItem key={item.uid} value={item.uid} asChild>
                     <div
@@ -298,9 +314,9 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                               asChild
                               disabled={noModulesToRender}
                             >
-                              <div className="flex justify-between items-center cursor-pointer">
-                                <CardTitle className="flex items-center gap-2 ">
-                                  <div className="flex items-center gap-2">
+                              <div className="flex items-center justify-between gap-2 cursor-pointer">
+                                <CardTitle className="flex min-w-0 items-center gap-2">
+                                  <div className="flex shrink-0 items-center gap-2">
                                     <SortableItemHandle asChild>
                                       <Button
                                         variant="ghost"
@@ -326,7 +342,16 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                       </Button>
                                     ) : null}
                                   </div>
-                                  {item.name}
+                                  {moduleDisplay ? (
+                                    <div className="flex min-w-0 items-center gap-2">
+                                      <ModuleIcon className="size-4 shrink-0 text-muted-foreground" />
+                                      <span className="truncate">
+                                        {moduleDisplay.title}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    item.name
+                                  )}
                                 </CardTitle>
                                 <Button
                                   size={"icon"}

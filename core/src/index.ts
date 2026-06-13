@@ -236,8 +236,10 @@ export type { MongoConfig } from "./orm/database";
 export {
   default as ContentType,
   DocumentVisibility,
+  ModulePicker,
   type ContentTypeMigration,
   type ContentTypeMigrationContext,
+  type ModulePicker as ModulePickerMetadata,
   type VersioningOptions,
 } from "./lib/ContentType";
 export * from "./lib/fields";

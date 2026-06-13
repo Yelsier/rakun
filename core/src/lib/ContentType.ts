@@ -36,6 +36,18 @@ export const Menu = z
 
 export type Menu = z.infer<typeof Menu>;
 
+export const ModulePicker = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    category: z.string().optional(),
+    icon: z.string().optional(),
+    keywords: z.array(z.string()).optional(),
+  })
+  .optional();
+
+export type ModulePicker = z.infer<typeof ModulePicker>;
+
 export const DocumentVisibility = z.enum([
   "draft",
   "hidden",
@@ -248,6 +260,7 @@ type ContentTypeParams<
   fields: F;
   iterator?: I;
   menu?: Menu;
+  modulePicker?: ModulePicker;
   uniques?: Array<Array<keyof ContentTypeFields<F, I>>>;
   listFields?: NestedPaths<ContentTypePopulatedShape<ContentTypeFields<F, I>, N>>[];
   schemaVersion?: number;
@@ -333,6 +346,7 @@ export default class ContentType<
   name: N;
   fields: ContentTypeFields<F, I>;
   menu?: Menu;
+  modulePicker?: ModulePicker;
   uniques: Array<Array<string>> = [];
   listFields?: string[];
   collapseFields?: string[];
@@ -359,6 +373,7 @@ export default class ContentType<
       this.buildFields(params, options),
     ) as ContentTypeFields<F, I>;
     this.menu = params.menu;
+    this.modulePicker = params.modulePicker;
     this.listFields = params.listFields as string[];
     this.uniques = (params.uniques as Array<Array<string>>) || [];
     this.schemaVersion = params.schemaVersion;
@@ -539,6 +554,7 @@ export default class ContentType<
         name: this.name,
         fields,
         menu: this.menu,
+        modulePicker: this.modulePicker,
         uniques: this.uniques as Array<Array<keyof Fields>>,
         listFields: this.listFields as NestedPaths<
           ContentTypePopulatedShape<Fields, N>
@@ -562,6 +578,7 @@ export default class ContentType<
       hooks: this.hooks,
       dynamicData: this.dynamicData,
       dynamicDataSource: this.dynamicDataSource,
+      modulePicker: this.modulePicker,
       isInternal: this.isInternal,
       hasIterator: this.hasIterator,
       hasSeo: this.hasSeo,
@@ -817,6 +834,7 @@ export const EncodedContentTypeSchema = z.object({
   name: z.string(),
   fields: z.record(z.string(), z.unknown()),
   menu: Menu,
+  modulePicker: ModulePicker,
   uniques: z.array(z.array(z.string())),
   listFields: z.array(z.string()).optional(),
   isHiddenFromManager: z.boolean().optional(),
