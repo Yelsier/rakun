@@ -1,6 +1,7 @@
 import type { RefAttributes } from 'react'
 import type { EncodedListField } from '@rakun-kit/core/client'
 import type { EncodedSimpleListField } from '@rakun-kit/core/client'
+import type { EncodedContentType } from '@rakun-kit/core/client'
 
 import type { FieldRef } from '../../ContentTypeEdit'
 import MissingUI from '../Missing'
@@ -11,6 +12,7 @@ import SimpleListUI from './SimpleListUI'
 export type ListProps = EncodedListField & {
   id: string
   defaultData?: FieldValue
+  parentContentType?: EncodedContentType
 }
 
 export type ListPropsRef = ListProps & RefAttributes<FieldRef>

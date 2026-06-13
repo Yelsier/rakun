@@ -14,7 +14,6 @@ export type {
 export {
   DYNAMIC_BINDINGS_FIELD_NAME,
   DynamicDocumentBindingsSchema,
-  isDynamicDataSourceAllowed,
   isDynamicDataSourceContentTypeAllowed,
 } from "./lib/dynamicData";
 export { Fields } from "./lib/fields";

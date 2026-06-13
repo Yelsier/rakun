@@ -145,11 +145,13 @@ const ContentTypeEdit = forwardRef<
     contentType: EncodedContentType
     id: string
     defaultData?: { [key: string]: FieldValue }
+    parentContentType?: EncodedContentType
     collapsible?: boolean
     hideTitle?: boolean
   }
 >((props, ref) => {
   const { contentType, id, collapsible, hideTitle } = props
+  const dynamicSourceContentType = props.parentContentType ?? contentType
   const trpc = useTRPC()
   const { data: contentTypesData } = useQuery(
     trpc.manager.contentTypes.queryOptions(),
@@ -287,7 +289,6 @@ const ContentTypeEdit = forwardRef<
           const error = errors.find((e) => e.id === id + '.' + fieldName)?.error
           const showDynamicData = isDynamicFieldEnabled(
             contentType,
-            fieldName,
             fieldValue,
           )
           const FieldComponent = fieldsMap[
@@ -299,7 +300,7 @@ const ContentTypeEdit = forwardRef<
               ref={setRef(i)}
               {...fieldValue}
               defaultData={defaultDataExtractor(fieldName, props.defaultData)}
-              parentContentType={contentType}
+              parentContentType={dynamicSourceContentType}
             />
           )
           const dynamicOpen = dynamicEditorOpen === fieldName
@@ -308,6 +309,7 @@ const ContentTypeEdit = forwardRef<
           const dynamicTrigger = showDynamicData ? (
             <DynamicDataControl
               contentType={contentType}
+              documentContentType={dynamicSourceContentType}
               fieldName={fieldName}
               field={fieldValue}
               contentTypes={(contentTypesData ?? []) as EncodedContentType[]}
@@ -321,6 +323,7 @@ const ContentTypeEdit = forwardRef<
           const dynamicDialog = showDynamicData ? (
             <DynamicDataControl
               contentType={contentType}
+              documentContentType={dynamicSourceContentType}
               fieldName={fieldName}
               field={fieldValue}
               contentTypes={(contentTypesData ?? []) as EncodedContentType[]}

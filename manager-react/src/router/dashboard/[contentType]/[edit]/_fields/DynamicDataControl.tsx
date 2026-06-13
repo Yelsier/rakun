@@ -62,24 +62,25 @@ type SourceFieldOption = {
   kind: SourceFieldKind
 }
 
+const CURRENT_DOCUMENT_ID = '__rakun_current_document__'
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
 
 const isListField = (field: EncodedFieldUnknown) =>
   field.config.ui === 'List' || field.config.ui === 'Iterator'
 
+const isDynamicVisibleField = (field: EncodedFieldUnknown) =>
+  (field.visibility ?? 'all') === 'all' && field.isDynamic !== false
+
 export const isDynamicFieldEnabled = (
   contentType: EncodedContentType,
-  fieldName: string,
   field: EncodedFieldUnknown,
 ) => {
-  const dynamicData = contentType.dynamicData
-  if (!dynamicData || field.visibility !== 'all') return false
-  if (dynamicData === true) return true
-
-  return isListField(field)
-    ? (dynamicData.lists ?? []).includes(fieldName)
-    : (dynamicData.fields ?? []).includes(fieldName)
+  return (
+    contentType.dynamicData !== false &&
+    isDynamicVisibleField(field)
+  )
 }
 
 const getFieldKind = (field: EncodedFieldUnknown): SourceFieldKind => {
@@ -175,7 +176,7 @@ const nestedSourceFieldOptions = ({
   depth?: number
 }): SourceFieldOption[] =>
   Object.entries(contentType.fields).flatMap(([name, field]) => {
-    if (field.visibility !== 'all') return []
+    if (!isDynamicVisibleField(field)) return []
 
     const path = prefix ? `${prefix}.${name}` : name
     const kind = getFieldKind(field)
@@ -239,15 +240,19 @@ const sourceValue = (source?: DynamicBindingSource) =>
 const sourceLabel = (source?: DynamicBindingSource) =>
   source?.virtual === 'href' ? 'href' : fieldLabel(source?.path || '')
 
+const sourceContentTypeLabel = (
+  source: DynamicBindingSource,
+  documentContentTypeName: string,
+) =>
+  source.contentType === documentContentTypeName && !source.id
+    ? 'Current document'
+    : source.contentType
+
 const getSourceContentTypes = (
-  contentType: EncodedContentType,
   contentTypes: EncodedContentType[],
 ) =>
   contentTypes.filter((sourceContentType) =>
-    isDynamicDataSourceContentTypeAllowed(
-      contentType.dynamicData,
-      sourceContentType,
-    ),
+    isDynamicDataSourceContentTypeAllowed(sourceContentType),
   )
 
 const readFilterState = (
@@ -296,10 +301,12 @@ const bindingSummary = ({
   list,
   fieldBinding,
   listBinding,
+  documentContentTypeName,
 }: {
   list: boolean
   fieldBinding?: DynamicBindingSource
   listBinding?: DynamicListBinding
+  documentContentTypeName: string
 }) => {
   if (list) {
     if (!listBinding) return ''
@@ -318,7 +325,10 @@ const bindingSummary = ({
 
   if (!fieldBinding) return ''
 
-  return `${fieldBinding.contentType} -> ${sourceLabel(fieldBinding)}`
+  return `${sourceContentTypeLabel(
+    fieldBinding,
+    documentContentTypeName,
+  )} -> ${sourceLabel(fieldBinding)}`
 }
 
 const PanelSection = ({
@@ -338,20 +348,35 @@ const PanelSection = ({
 
 const FieldBindingEditor = ({
   contentTypes,
+  documentContentType,
+  currentDocumentSourceEnabled,
   targetField,
   binding,
   onChange,
 }: {
   contentTypes: EncodedContentType[]
+  documentContentType: EncodedContentType
+  currentDocumentSourceEnabled: boolean
   targetField: EncodedFieldUnknown
   binding: FieldBinding
   onChange: (binding: FieldBinding) => void
 }) => {
   const { language } = useLanguage()
   const [sourceType, setSourceType] = useState(binding?.contentType || '')
-  const [sourceId, setSourceId] = useState(binding?.id || '')
+  const [sourceId, setSourceId] = useState(
+    binding &&
+      currentDocumentSourceEnabled &&
+      binding.contentType === documentContentType.name &&
+      !binding.id
+      ? CURRENT_DOCUMENT_ID
+      : binding?.id || '',
+  )
   const [fieldPath, setFieldPath] = useState(sourceValue(binding))
-  const selectedContentType = contentTypes.find((ct) => ct.name === sourceType)
+  const usesCurrentDocumentSource =
+    currentDocumentSourceEnabled && sourceType === documentContentType.name
+  const selectedContentType = usesCurrentDocumentSource
+    ? documentContentType
+    : contentTypes.find((ct) => ct.name === sourceType)
   const sourceItemsQuery = useManagerQuery({
     name: 'manager.list',
     input: {
@@ -362,19 +387,27 @@ const FieldBindingEditor = ({
         },
       },
     },
-    enabled: !!sourceType,
+    enabled:
+      !!sourceType &&
+      !usesCurrentDocumentSource &&
+      selectedContentType?.dynamicDataSource === true,
   })
   const items = ((sourceItemsQuery.data as
     | { items?: Array<Record<string, unknown> & { _id: string }> }
     | undefined)?.items ?? []) as Array<Record<string, unknown> & { _id: string }>
 
   const emit = (nextType = sourceType, nextId = sourceId, nextPath = fieldPath) => {
-    if (!nextType || !nextId || !nextPath) {
+    const usesCurrentDocument =
+      currentDocumentSourceEnabled &&
+      nextType === documentContentType.name &&
+      nextId === CURRENT_DOCUMENT_ID
+
+    if (!nextType || !nextPath || (!usesCurrentDocument && !nextId)) {
       onChange(undefined)
       return
     }
 
-    onChange(createSource(nextType, nextPath, nextId))
+    onChange(createSource(nextType, nextPath, usesCurrentDocument ? undefined : nextId))
   }
 
   return (
@@ -385,8 +418,14 @@ const FieldBindingEditor = ({
           <Select
             value={sourceType}
             onValueChange={(value) => {
+              const nextId =
+                currentDocumentSourceEnabled &&
+                value === documentContentType.name
+                  ? CURRENT_DOCUMENT_ID
+                  : ''
+
               setSourceType(value)
-              setSourceId('')
+              setSourceId(nextId)
               setFieldPath('')
               onChange(undefined)
             }}
@@ -398,7 +437,10 @@ const FieldBindingEditor = ({
               <SelectGroup>
                 {contentTypes.map((ct) => (
                   <SelectItem key={ct.name} value={ct.name}>
-                    {ct.name}
+                    {currentDocumentSourceEnabled &&
+                    ct.name === documentContentType.name
+                      ? `${ct.name} (current document)`
+                      : ct.name}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -408,6 +450,7 @@ const FieldBindingEditor = ({
         <Label className='grid gap-1.5'>
           Item
           <Select
+            disabled={!sourceType}
             value={sourceId}
             onValueChange={(value) => {
               setSourceId(value)
@@ -419,6 +462,12 @@ const FieldBindingEditor = ({
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
+                {currentDocumentSourceEnabled &&
+                sourceType === documentContentType.name ? (
+                  <SelectItem value={CURRENT_DOCUMENT_ID}>
+                    Current document
+                  </SelectItem>
+                ) : null}
                 {items.map((item) => {
                   const label = selectedContentType
                     ? getListField(item, selectedContentType.listFields ?? [])
@@ -439,6 +488,7 @@ const FieldBindingEditor = ({
         <Label className='grid gap-1.5'>
           Field
           <Select
+            disabled={!sourceType || !sourceId}
             value={fieldPath}
             onValueChange={(value) => {
               setFieldPath(value)
@@ -500,7 +550,7 @@ const ListBindingEditor = ({
     () =>
       targetContentType
         ? Object.entries(targetContentType.fields).filter(
-            ([, targetField]) => targetField.visibility === 'all',
+            ([, targetField]) => isDynamicVisibleField(targetField),
           )
         : [],
     [targetContentType],
@@ -563,6 +613,7 @@ const ListBindingEditor = ({
           <Label className='grid gap-1.5'>
             Item
             <Select
+              disabled={!sourceType}
               value={itemName}
               onValueChange={(value) => {
                 setItemName(value)
@@ -610,6 +661,7 @@ const ListBindingEditor = ({
           <Label className='grid gap-1.5'>
             Sort
             <Select
+              disabled={!selectedSource}
               value={Object.keys(binding?.query?.options?.sort ?? {})[0] ?? ''}
               onValueChange={(value) =>
                 emit({
@@ -655,6 +707,7 @@ const ListBindingEditor = ({
             </div>
             <div className='grid gap-2 sm:grid-cols-[1fr_0.9fr_1fr]'>
               <Select
+                disabled={!selectedSource}
                 value={filterState?.field || ''}
                 onValueChange={(value) =>
                   updateFilter(
@@ -684,6 +737,7 @@ const ListBindingEditor = ({
                 </SelectContent>
               </Select>
               <Select
+                disabled={!filterState?.field}
                 value={filterState?.operator || 'equals'}
                 onValueChange={(value) =>
                   filterState
@@ -749,6 +803,7 @@ const ListBindingEditor = ({
                   {'->'}
                 </span>
                 <Select
+                  disabled={!selectedSource}
                   value={sourceValue(source)}
                   onValueChange={(value) =>
                     emit({
@@ -785,6 +840,7 @@ const ListBindingEditor = ({
 
 export const DynamicDataControl = ({
   contentType,
+  documentContentType,
   fieldName,
   field,
   contentTypes,
@@ -795,6 +851,7 @@ export const DynamicDataControl = ({
   mode = 'full',
 }: {
   contentType: EncodedContentType
+  documentContentType?: EncodedContentType
   fieldName: string
   field: EncodedFieldUnknown
   contentTypes: EncodedContentType[]
@@ -806,7 +863,7 @@ export const DynamicDataControl = ({
 }) => {
   const [internalOpen, setInternalOpen] = useState(false)
 
-  if (!isDynamicFieldEnabled(contentType, fieldName, field)) return null
+  if (!isDynamicFieldEnabled(contentType, field)) return null
 
   const isOpen = open ?? internalOpen
   const setOpen = (next: boolean | ((current: boolean) => boolean)) => {
@@ -820,11 +877,30 @@ export const DynamicDataControl = ({
     setInternalOpen(value)
   }
   const list = isListField(field)
-  const sourceContentTypes = getSourceContentTypes(contentType, contentTypes)
+  const sourceContentTypes = getSourceContentTypes(contentTypes)
+  const currentDocumentContentType = documentContentType ?? contentType
+  const currentDocumentSourceEnabled =
+    currentDocumentContentType.name !== contentType.name
+  const fieldSourceContentTypes = currentDocumentSourceEnabled
+    ? [
+        currentDocumentContentType,
+        ...sourceContentTypes.filter(
+          (sourceContentType) =>
+            sourceContentType.name !== currentDocumentContentType.name,
+        ),
+      ]
+    : sourceContentTypes.filter(
+        (sourceContentType) => sourceContentType.name !== contentType.name,
+      )
   const fieldBinding = bindings?.fields?.[fieldName]
   const listBinding = bindings?.lists?.[fieldName]
   const bound = list ? !!listBinding : !!fieldBinding
-  const summary = bindingSummary({ list, fieldBinding, listBinding })
+  const summary = bindingSummary({
+    list,
+    fieldBinding,
+    listBinding,
+    documentContentTypeName: currentDocumentContentType.name,
+  })
   const updateFieldBinding = (binding: FieldBinding) => {
     const fields = { ...(bindings?.fields ?? {}) }
     if (binding) fields[fieldName] = binding
@@ -909,7 +985,9 @@ export const DynamicDataControl = ({
     />
   ) : (
     <FieldBindingEditor
-      contentTypes={sourceContentTypes}
+      contentTypes={fieldSourceContentTypes}
+      documentContentType={currentDocumentContentType}
+      currentDocumentSourceEnabled={currentDocumentSourceEnabled}
       targetField={field}
       binding={fieldBinding}
       onChange={updateFieldBinding}

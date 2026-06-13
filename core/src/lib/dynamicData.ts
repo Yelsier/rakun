@@ -7,7 +7,6 @@ export const DynamicDataOptionsSchema = z.union([
   z.object({
     fields: z.array(z.string()).optional(),
     lists: z.array(z.string()).optional(),
-    sources: z.array(z.string()).optional(),
   }),
 ]);
 
@@ -67,22 +66,6 @@ export const getDynamicDocumentBindings = (
   return parsed.success ? parsed.data : undefined;
 };
 
-export const isDynamicDataSourceAllowed = (
-  options: DynamicDataOptions | undefined,
-  sourceContentType: string,
-) => {
-  if (!options) return false;
-  if (options === true) return true;
-  if (!options.sources) return true;
-
-  return options.sources.includes(sourceContentType);
-};
-
 export const isDynamicDataSourceContentTypeAllowed = (
-  options: DynamicDataOptions | undefined,
   sourceContentType: DynamicDataSourceDescriptor | undefined,
-) => {
-  if (!sourceContentType?.dynamicDataSource) return false;
-
-  return isDynamicDataSourceAllowed(options, sourceContentType.name);
-};
+) => sourceContentType?.dynamicDataSource === true;

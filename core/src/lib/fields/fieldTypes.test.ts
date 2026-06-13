@@ -82,9 +82,6 @@ describe("field type inference", () => {
       fields: {
         title: Fields.string().required(),
       },
-      dynamicData: {
-        fields: ["title"],
-      },
     });
 
     expect(
@@ -103,11 +100,26 @@ describe("field type inference", () => {
     ).toBe("title");
   });
 
-  it("strips dynamic bindings when dynamic data is not enabled", () => {
+  it("keeps dynamic required fields required without a binding", () => {
+    const DynamicRequiredCT = new ContentType({
+      name: "DynamicRequiredCT",
+      fields: {
+        title: Fields.string().required(),
+      },
+    });
+
+    expect(() =>
+      DynamicRequiredCT.validate({
+        _type: "DynamicRequiredCT",
+      }),
+    ).toThrow("Required field is missing");
+  });
+
+  it("strips dynamic bindings when fields opt out", () => {
     const ClosedBindingCT = new ContentType({
       name: "ClosedBindingCT",
       fields: {
-        title: Fields.string().required(),
+        title: Fields.string().required().noDynamic(),
       },
     });
 
@@ -181,8 +193,14 @@ describe("field type inference", () => {
 
     for (const field of fields) {
       expect(
-        field.condition(condition).required().translatable().getCondition(),
+        field
+          .condition(condition)
+          .required()
+          .translatable()
+          .noDynamic()
+          .getCondition(),
       ).toEqual(condition);
+      expect(field.noDynamic().getIsDynamic()).toBe(false);
     }
   });
 
@@ -222,6 +240,23 @@ describe("field type inference", () => {
     expect(encoded?.fields.title.description).toBe(
       "Shown below the field label.",
     );
+  });
+
+  it("encodes dynamic opt-out for the manager", () => {
+    const DynamicOptOutEncodedCT = new ContentType({
+      name: "DynamicOptOutEncoded",
+      fields: {
+        title: Fields.string().noDynamic(),
+      },
+    });
+
+    registerContentType(DynamicOptOutEncodedCT);
+
+    const encoded = getContentTypesForManager().find(
+      (contentType) => contentType.name === DynamicOptOutEncodedCT.name,
+    );
+
+    expect(encoded?.fields.title.isDynamic).toBe(false);
   });
 
   it("encodes module picker metadata for the manager", () => {

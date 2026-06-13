@@ -1,49 +1,17 @@
 import { describe, expect, it } from "bun:test";
 
-import {
-  isDynamicDataSourceAllowed,
-  isDynamicDataSourceContentTypeAllowed,
-} from "./dynamicData";
+import { isDynamicDataSourceContentTypeAllowed } from "./dynamicData";
 
 describe("dynamic data", () => {
-  it("filters dynamic data sources when an allowlist is configured", () => {
-    expect(isDynamicDataSourceAllowed(true, "Project")).toBe(true);
-    expect(isDynamicDataSourceAllowed(undefined, "Project")).toBe(false);
+  it("hides content types from source selectors until they opt in to export", () => {
     expect(
-      isDynamicDataSourceAllowed({ fields: ["title"] }, "Project"),
-    ).toBe(true);
-    expect(
-      isDynamicDataSourceAllowed(
-        { fields: ["title"], sources: ["Project"] },
-        "Project",
-      ),
-    ).toBe(true);
-    expect(
-      isDynamicDataSourceAllowed(
-        { fields: ["title"], sources: ["Project"] },
-        "Article",
-      ),
-    ).toBe(false);
-  });
-
-  it("hides content types from source selectors until they opt in", () => {
-    expect(
-      isDynamicDataSourceContentTypeAllowed(
-        { fields: ["title"] },
-        { name: "Project" },
-      ),
+      isDynamicDataSourceContentTypeAllowed({ name: "Project" }),
     ).toBe(false);
     expect(
-      isDynamicDataSourceContentTypeAllowed(
-        { fields: ["title"] },
-        { name: "Project", dynamicDataSource: true },
-      ),
+      isDynamicDataSourceContentTypeAllowed({
+        name: "Project",
+        dynamicDataSource: true,
+      }),
     ).toBe(true);
-    expect(
-      isDynamicDataSourceContentTypeAllowed(
-        { fields: ["title"], sources: ["Article"] },
-        { name: "Project", dynamicDataSource: true },
-      ),
-    ).toBe(false);
   });
 });

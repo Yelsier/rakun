@@ -151,7 +151,8 @@ Main properties:
 - `apiOnly()`: applies `.apiOnly()` to every field in the content type.
 - `managerOnly()`: applies `.managerOnly()` to every field in the content type.
 - `withHooks()`: attaches lifecycle hooks such as `beforeInsert`, `beforeUpdate`, and `onGet`.
-- `enableDynamicData()`: lets selected fields store manager-defined bindings in `_bindings`.
+- Dynamic data bindings are available on manager-visible fields by default; use
+  field-level `.noDynamic()` to opt out.
 
 When a content type has a configured route with `hasPage: true`, Rakun also
 adds an optional reserved `_seo` relation automatically.
@@ -178,10 +179,13 @@ const User = new ContentType({
 ```
 
 Dynamic data turns a content type into a reusable layout. The manager can bind
-enabled fields to another content item field, or to a generated `href` when a
-source content type has a page route. Source content types are hidden by default;
-set `dynamicDataSource: true` on content types that should appear in the
-manager source selector.
+manager-visible fields to another content item field, or to a generated `href`
+when a source content type has a page route. Fields are dynamic by default; call
+`.noDynamic()` on fields that should not accept bindings or be exported as
+source paths. Source content types are hidden by default; set
+`dynamicDataSource: true` on content types that should appear in the manager
+source selector. Field bindings can also select `Current document` to read values
+from the document being edited without marking its content type as a source.
 
 Source field selectors are type-aware. A string target only offers string-like
 source paths, number targets only offer numbers, and boolean targets only offer
@@ -204,17 +208,13 @@ const Carousel = new ContentType({
   name: "Carousel",
   fields: {
     title: Fields.string().required(),
-    items: Fields.list([
+    internalNote: Fields.string().noDynamic(),
+    items: Fields.blocks([
       {
         name: "CarouselItem",
         field: Fields.relation(CarouselItem, "new"),
       },
     ]),
-  },
-  dynamicData: {
-    fields: ["title"],
-    lists: ["items"],
-    sources: ["Project"],
   },
 });
 ```

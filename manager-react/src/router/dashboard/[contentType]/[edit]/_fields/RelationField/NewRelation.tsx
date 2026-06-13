@@ -39,6 +39,7 @@ const NewRelation: React.FC<RelationPropsRef> = ({ ref, ...props }) => {
         id={props.id}
         ref={innerRef}
         contentType={props.contentType}
+        parentContentType={props.parentContentType}
         collapsible={props.collapsible}
       />
     </FieldWrapper>

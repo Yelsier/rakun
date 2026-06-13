@@ -114,6 +114,7 @@ export type FieldState = {
   required: boolean;
   translatable: boolean;
   visibility: Visibility;
+  dynamic: boolean;
   description?: string;
   condition?: FieldCondition;
 };
@@ -122,6 +123,7 @@ export type DefaultFieldState = {
   required: false;
   translatable: false;
   visibility: "all";
+  dynamic: true;
   description?: undefined;
   condition?: undefined;
 };
@@ -130,6 +132,7 @@ export const defaultFieldState: DefaultFieldState = {
   required: false,
   translatable: false,
   visibility: "all",
+  dynamic: true,
 };
 
 export type SetRequired<State extends FieldState> = Omit<State, "required"> & {
@@ -162,6 +165,13 @@ export type SetDescription<State extends FieldState> = Omit<
   "description"
 > & {
   description: string;
+};
+
+export type SetDynamic<
+  State extends FieldState,
+  Dynamic extends boolean,
+> = Omit<State, "dynamic"> & {
+  dynamic: Dynamic;
 };
 
 export type TranslatableValue<Value> = {
@@ -222,6 +232,7 @@ export type FieldLike<
   getIsRequired: () => State["required"];
   getIsTranslatable: () => State["translatable"];
   getVisibility: () => State["visibility"];
+  getIsDynamic: () => State["dynamic"];
   getDescription: () => State["description"];
   getCondition: () => State["condition"];
 };
@@ -231,6 +242,7 @@ type FieldModifierKeys =
   | "translatable"
   | "apiOnly"
   | "managerOnly"
+  | "noDynamic"
   | "description"
   | "condition"
   | "getPopulatedSchema";
@@ -298,6 +310,7 @@ export type FieldWithModifiers<F extends AnyFieldLike> = F & {
     F,
     SetVisibility<FieldStateOf<F>, "manager">
   >;
+  noDynamic: () => WithFieldState<F, SetDynamic<FieldStateOf<F>, false>>;
   description: (
     description: string,
   ) => WithFieldState<F, SetDescription<FieldStateOf<F>>>;
@@ -319,6 +332,7 @@ export type EncodedField = {
   isRequired: boolean;
   isTranslatable: boolean;
   visibility: Visibility;
+  isDynamic: boolean;
   condition?: FieldCondition;
 };
 
@@ -395,6 +409,7 @@ export function createField<
     getIsRequired: () => params.state.required,
     getIsTranslatable: () => params.state.translatable,
     getVisibility: () => params.state.visibility,
+    getIsDynamic: () => params.state.dynamic,
     getDescription: () => params.state.description,
     getCondition: () => params.state.condition,
     getInputSchema: () =>
@@ -459,6 +474,11 @@ export function withFieldModifiers<F extends AnyFieldLike>(params: {
         ...field.state,
         visibility: "manager",
       } as SetVisibility<FieldStateOf<F>, "manager">),
+    noDynamic: () =>
+      rebuild({
+        ...field.state,
+        dynamic: false,
+      } as SetDynamic<FieldStateOf<F>, false>),
     description: (description) =>
       rebuild({
         ...field.state,

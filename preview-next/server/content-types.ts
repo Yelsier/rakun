@@ -1,88 +1,88 @@
-import { ContentType, Fields } from "@rakun-kit/next";
-import { HelloWorld } from "@rakun-kit/next/internal-content-types";
+import { ContentType, Fields } from '@rakun-kit/next'
+import { HelloWorld } from '@rakun-kit/next/internal-content-types'
 
 export const Header = new ContentType({
-  name: "Header",
+  name: 'Header',
   menu: {
-    title: "Headers",
-    icon: "PanelTop",
-    category: "Layout",
+    title: 'Headers',
+    icon: 'PanelTop',
+    category: 'Layout',
   },
   fields: {
     brand: Fields.string().required(),
     primaryLinkLabel: Fields.string(),
-    primaryLinkHref: Fields.string().type("Url"),
+    primaryLinkHref: Fields.string().type('Url'),
     internalLinkLabel: Fields.string(),
     internalLink: Fields.link(),
   },
-  listFields: ["brand", "primaryLinkLabel", "internalLinkLabel"],
-});
+  listFields: ['brand', 'primaryLinkLabel', 'internalLinkLabel'],
+})
 
 export const Footer = new ContentType({
-  name: "Footer",
+  name: 'Footer',
   menu: {
-    title: "Footers",
-    icon: "panel-bottom",
-    category: "Layout",
+    title: 'Footers',
+    icon: 'panel-bottom',
+    category: 'Layout',
   },
   fields: {
     brand: Fields.string().required(),
     copyright: Fields.string(),
     primaryLinkLabel: Fields.string(),
-    primaryLinkHref: Fields.string().type("Url"),
+    primaryLinkHref: Fields.string().type('Url'),
     internalLinkLabel: Fields.string(),
     internalLink: Fields.link(),
   },
-  listFields: ["brand", "copyright", "internalLinkLabel"],
-});
+  listFields: ['brand', 'copyright', 'internalLinkLabel'],
+})
 
 export const PageSection = new ContentType({
-  name: "PageSection",
+  name: 'PageSection',
   menu: {
-    title: "Page sections",
-    icon: "LayoutTemplate",
-    category: "Blocks",
+    title: 'Page sections',
+    icon: 'LayoutTemplate',
+    category: 'Blocks',
   },
   fields: {
     title: Fields.string().required().translatable(),
-    body: Fields.string().type("RichText").translatable(),
+    body: Fields.string().type('RichText').translatable(),
   },
-  listFields: ["title"],
-});
+  listFields: ['title'],
+})
 
 export const Project = new ContentType({
-  name: "Project",
+  name: 'Project',
   dynamicDataSource: true,
   menu: {
-    title: "Projects",
-    icon: "FolderKanban",
-    category: "Dynamic data",
+    title: 'Projects',
+    icon: 'FolderKanban',
+    category: 'Dynamic data',
   },
   fields: {
     title: Fields.string().required(),
-    slug: Fields.string().type("Slug").required(),
-    excerpt: Fields.string().type("Textarea"),
+    slug: Fields.string().type('Slug').required(),
+    excerpt: Fields.string().type('Textarea'),
     featured: Fields.boolean(),
   },
-  uniques: [["slug"]],
-  listFields: ["title", "slug", "featured"],
-});
+  uniques: [['slug']],
+  listFields: ['title', 'slug', 'featured'],
+})
 
 export const FeatureCarouselItem = new ContentType({
-  name: "FeatureCarouselItem",
+  name: 'FeatureCarouselItem',
   fields: {
     title: Fields.string().required(),
-    summary: Fields.string().type("Textarea"),
+    summary: Fields.string().type('Textarea'),
     href: Fields.string(),
   },
-}).hideFromManager();
+}).hideFromManager()
 
 export const FeatureCarousel = new ContentType({
-  name: "FeatureCarousel",
+  name: 'FeatureCarousel',
   menu: {
-    title: "Feature carousels",
-    icon: "GalleryHorizontalEnd",
-    category: "Dynamic data",
+    title: 'Feature carousels',
+    icon: 'GalleryHorizontalEnd',
+    category: 'Dynamic data',
   },
   fields: {
     eyebrow: Fields.string(),
@@ -90,189 +90,186 @@ export const FeatureCarousel = new ContentType({
     items: Fields.blocks([
       {
         name: FeatureCarouselItem.name,
-        field: Fields.relation(FeatureCarouselItem, "new"),
+        field: Fields.relation(FeatureCarouselItem, 'new'),
       },
     ]),
   },
-  listFields: ["title", "eyebrow"],
-  dynamicData: {
-    fields: ["title"],
-    lists: ["items"],
-    sources: [Project.name],
-  },
-});
+  listFields: ['title', 'eyebrow'],
+})
 
 export const PreviewPage = new ContentType({
-  name: "Page",
-  permissions: "Route",
+  name: 'Page',
+  permissions: 'Route',
   fields: {
     title: Fields.string().translatable().required(),
-    slug: Fields.string().type("Slug").required().translatable(),
+    slug: Fields.string().type('Slug').required().translatable(),
   },
   iterator: [
     {
       contentType: HelloWorld,
-      type: "new",
+      type: 'new',
     },
     {
       contentType: FeatureCarousel,
-      type: "new",
+      type: 'new',
     },
   ],
   menu: {
-    title: "Pages",
+    title: 'Pages',
   },
-  listFields: ["title", "slug"],
-  uniques: [["slug"]],
+  listFields: ['title', 'slug'],
+  uniques: [['slug']],
   versioning: {
     maxVersions: 5,
   },
-});
+})
 
 export const Author = new ContentType({
-  name: "Author",
+  name: 'Author',
   menu: {
-    title: "Authors",
-    icon: "user-round",
-    category: "Editorial",
+    title: 'Authors',
+    icon: 'user-round',
+    category: 'Editorial',
   },
   fields: {
     name: Fields.string().required(),
-    email: Fields.string().type("Email"),
-    bio: Fields.string().type("Textarea"),
+    email: Fields.string().type('Email'),
+    bio: Fields.string().type('Textarea'),
   },
-  listFields: ["name", "email"],
-});
+  listFields: ['name', 'email'],
+})
 
 export const Article = new ContentType({
-  name: "Article",
+  name: 'Article',
   menu: {
-    title: "Articles",
-    icon: "newspaper",
-    category: "Editorial",
+    title: 'Articles',
+    icon: 'newspaper',
+    category: 'Editorial',
   },
   fields: {
     title: Fields.string().required(),
-    slug: Fields.string().type("Slug").required(),
-    excerpt: Fields.string().type("Textarea"),
+    slug: Fields.string().type('Slug').required(),
+    excerpt: Fields.string().type('Textarea'),
     published: Fields.boolean(),
     author: Fields.relation(Author),
-    body: Fields.string().type("RichText"),
+    body: Fields.string().type('RichText'),
     tags: Fields.array(Fields.string()),
   },
-  uniques: [["slug"]],
-  listFields: ["title", "slug", "published", "author.name"],
-});
+  uniques: [['slug']],
+  listFields: ['title', 'slug', 'published', 'author.name'],
+})
 
 export const RelationLevel3 = new ContentType({
-  name: "RelationLevel3",
+  name: 'RelationLevel3',
   fields: {
     title: Fields.string().required(),
-    existingArticle: Fields.relation(Article, "existing"),
+    existingArticle: Fields.relation(Article, 'existing'),
     flexibleArticle: Fields.relation(Article),
-    authors: Fields.relation(Author, "existing").multiple(),
+    authors: Fields.relation(Author, 'existing').multiple(),
   },
-  listFields: ["title", "existingArticle.title", "flexibleArticle.title"],
-}).hideFromManager();
+  listFields: ['title', 'existingArticle.title', 'flexibleArticle.title'],
+}).hideFromManager()
 
 export const RelationLevel2 = new ContentType({
-  name: "RelationLevel2",
+  name: 'RelationLevel2',
   menu: {
-    title: "Relations level 2",
-    icon: "PanelsTopLeft",
-    category: "Development",
+    title: 'Relations level 2',
+    icon: 'PanelsTopLeft',
+    category: 'Development',
   },
   fields: {
     title: Fields.string().required(),
-    existingArticle: Fields.relation(Article, "existing").required(),
+    existingArticle: Fields.relation(Article, 'existing').required(),
     flexibleArticle: Fields.relation(Article),
-    existingArticles: Fields.relation(Article, "existing").multiple(),
+    existingArticles: Fields.relation(Article, 'existing').multiple(),
     self: Fields.selfRelation(),
-    inlineItems: Fields.relation(RelationLevel3, "new").multiple(),
+    inlineItems: Fields.relation(RelationLevel3, 'new').multiple(),
   },
-  listFields: ["title", "existingArticle.title", "flexibleArticle.title"],
-});
+  listFields: ['title', 'existingArticle.title', 'flexibleArticle.title'],
+})
 
 export const RelationPlayground = new ContentType({
-  name: "RelationPlayground",
+  name: 'RelationPlayground',
   menu: {
-    title: "Relations playground",
-    icon: "Network",
-    category: "Development",
+    title: 'Relations playground',
+    icon: 'Network',
+    category: 'Development',
   },
   fields: {
     title: Fields.string().required(),
-    slug: Fields.string().type("Slug").required(),
-    existingAuthor: Fields.relation(Author, "existing").required(),
+    slug: Fields.string().type('Slug').required(),
+    existingAuthor: Fields.relation(Author, 'existing').required(),
     flexibleArticle: Fields.relation(Article),
-    existingLevel2: Fields.relation(RelationLevel2, "existing"),
-    existingLevel2List: Fields.relation(RelationLevel2, "existing").multiple(),
-    inlineLevel3: Fields.relation(RelationLevel3, "new"),
+    existingLevel2: Fields.relation(RelationLevel2, 'existing'),
+    existingLevel2List: Fields.relation(RelationLevel2, 'existing').multiple(),
+    inlineLevel3: Fields.relation(RelationLevel3, 'new'),
     sections: Fields.blocks([
       {
-        name: "level2",
-        field: Fields.relation(RelationLevel2, "existing"),
+        name: 'level2',
+        field: Fields.relation(RelationLevel2, 'existing'),
       },
       {
-        name: "article",
-        field: Fields.relation(Article, "existing"),
+        name: 'article',
+        field: Fields.relation(Article, 'existing'),
       },
       {
-        name: "level3",
-        field: Fields.relation(RelationLevel3, "new"),
+        name: 'level3',
+        field: Fields.relation(RelationLevel3, 'new'),
       },
     ]),
   },
-  uniques: [["slug"]],
-  listFields: ["title", "slug", "existingAuthor.name", "existingLevel2.title"],
-});
+  uniques: [['slug']],
+  listFields: ['title', 'slug', 'existingAuthor.name', 'existingLevel2.title'],
+})
 
 export const ImagePlayground = new ContentType({
-  name: "ImagePlayground",
+  name: 'ImagePlayground',
   menu: {
-    title: "Images playground",
-    icon: "Images",
-    category: "Development",
+    title: 'Images playground',
+    icon: 'Images',
+    category: 'Development',
   },
   fields: {
     title: Fields.string().required(),
-    singleImage: Fields.file().type("Image"),
-    multipleImages: Fields.file().type("Image").multiple(),
+    singleImage: Fields.file().type('Image'),
+    multipleImages: Fields.file().type('Image').multiple(),
   },
-  listFields: ["title"],
-});
+  listFields: ['title'],
+})
 
 export const ConditionalDemo = new ContentType({
-  name: "ConditionalDemo",
+  name: 'ConditionalDemo',
   menu: {
-    title: "Conditional demos",
-    icon: "ListChecks",
-    category: "Development",
+    title: 'Conditional demos',
+    icon: 'ListChecks',
+    category: 'Development',
   },
   fields: {
     title: Fields.string().required(),
-    intent: Fields.select(["basic", "advanced", "experimental"] as const).required(),
+    intent: Fields.select(['basic', 'advanced', 'experimental'] as const).required(),
     advancedEnabled: Fields.boolean().condition({
-      field: "intent",
-      equals: "advanced",
+      field: 'intent',
+      equals: 'advanced',
     }),
     priority: Fields.number(),
-    priorityNotes: Fields.string().type("Textarea").condition({
-      field: "priority",
+    priorityNotes: Fields.string().type('Textarea').condition({
+      field: 'priority',
       gte: 5,
     }),
-    flags: Fields.select(["featured", "sponsored", "archived"] as const).multiple(),
+    flags: Fields.select(['featured', 'sponsored', 'archived'] as const).multiple(),
     featuredLabel: Fields.string().condition({
-      field: "flags",
-      includes: "featured",
+      field: 'flags',
+      includes: 'featured',
     }),
-    multiFlagSummary: Fields.string().type("Textarea").condition({
-      field: "flags",
-      length: { gte: 2 },
-    }),
+    multiFlagSummary: Fields.string()
+      .type('Textarea')
+      .condition({
+        field: 'flags',
+        length: { gte: 2 },
+      }),
   },
-  listFields: ["title", "intent", "priority"],
-});
+  listFields: ['title', 'intent', 'priority'],
+})
 
 export const previewContentTypes = [
   Header,
@@ -288,4 +285,4 @@ export const previewContentTypes = [
   RelationPlayground,
   ImagePlayground,
   ConditionalDemo,
-];
+]

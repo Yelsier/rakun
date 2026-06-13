@@ -8,6 +8,7 @@ type EncodedField = {
   isRequired: ReturnType<AnyField["getIsRequired"]>;
   isTranslatable: ReturnType<AnyField["getIsTranslatable"]>;
   visibility: ReturnType<AnyField["getVisibility"]>;
+  isDynamic: ReturnType<AnyField["getIsDynamic"]>;
   condition: ReturnType<AnyField["getCondition"]>;
 } & Record<string, unknown>;
 
@@ -78,6 +79,7 @@ const removeSchemaFromField = (field: AnyField): EncodedField => {
     isRequired: field.getIsRequired(),
     isTranslatable: field.getIsTranslatable(),
     visibility: field.getVisibility(),
+    isDynamic: field.getIsDynamic(),
     description: field.getDescription(),
     condition: field.getCondition(),
   } satisfies EncodedField;

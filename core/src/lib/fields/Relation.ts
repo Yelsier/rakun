@@ -202,6 +202,10 @@ function makeRelationField<
         list = (list as SimpleListField).managerOnly();
       }
 
+      if (this.state.dynamic === false) {
+        list = (list as SimpleListField).noDynamic();
+      }
+
       return list as SimpleListField<
         RelationField<CT, Only, SetRequired<DefaultFieldState>>,
         FieldStateOf<TThis>

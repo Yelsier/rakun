@@ -11,6 +11,7 @@ export const EditTabPanels = () => {
   const {
     activeTab,
     canRestoreVersions,
+    contentType,
     contentTypeId,
     contentTypeName,
     form,
@@ -36,6 +37,7 @@ export const EditTabPanels = () => {
             defaultData={form.draft.current}
             ref={form.iterablesRef}
             contentType={sections.iterables}
+            parentContentType={contentType}
             id={contentTypeName}
             collapsible
             hideTitle

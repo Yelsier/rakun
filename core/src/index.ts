@@ -220,7 +220,6 @@ export {
   DYNAMIC_BINDINGS_FIELD_NAME,
   DynamicDataOptionsSchema,
   DynamicDocumentBindingsSchema,
-  isDynamicDataSourceAllowed,
   isDynamicDataSourceContentTypeAllowed,
 } from "./lib/dynamicData";
 export { getRakunBootstrapOptions } from "./bootstrapState";

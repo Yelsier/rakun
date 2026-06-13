@@ -401,6 +401,7 @@ export default class ContentType<
     const inputSchema = partial ? schema.partial() : schema;
 
     return inputSchema.superRefine((value, ctx) => {
+      this.refineRequiredDynamicFields(value, ctx, partial);
       this.refineConditionalRequiredFields(value, ctx, partial);
     });
   }
@@ -530,7 +531,7 @@ export default class ContentType<
   }
 
   private dynamicBindingsMetadataSchema() {
-    return this.dynamicData ? dynamicBindingsMetadataSchema : {};
+    return this.hasDynamicBindableFields() ? dynamicBindingsMetadataSchema : {};
   }
 
   private buildOutputSchema<Fields extends FieldRecord>(fields: Fields) {
@@ -642,7 +643,7 @@ export default class ContentType<
 
         return [
           key,
-          this.allowsDynamicBindingForField(key, field) &&
+          this.allowsDynamicBindingForFieldEntry(key, field) &&
           mode !== "populated"
             ? schema.nullish()
             : schema,
@@ -709,19 +710,58 @@ export default class ContentType<
     }
   }
 
-  private allowsDynamicBindingForField(key: string, field: AnyField) {
-    const dynamicData = this.dynamicData;
-    if (!dynamicData) return false;
-    if (field.getVisibility() !== "all") return false;
+  private refineRequiredDynamicFields(
+    data: Record<string, unknown>,
+    ctx: z.RefinementCtx,
+    partial: boolean,
+  ) {
+    for (const [key, field] of Object.entries(this.fields)) {
+      if (!field.getIsRequired() || field.getCondition()) {
+        continue;
+      }
 
-    if (dynamicData === true) return true;
+      if (!this.allowsDynamicBindingForFieldEntry(key, field)) {
+        continue;
+      }
 
-    const ui = field.getConfig().ui;
-    if (ui === "List" || ui === "Iterator") {
-      return dynamicData.lists?.includes(key) ?? false;
+      if (partial && !(key in data)) {
+        continue;
+      }
+
+      const value = data[key];
+
+      if (
+        (value === null || value === undefined) &&
+        !this.hasDynamicBindingForField(data, key, field)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Required field is missing",
+          path: [key],
+        });
+      }
     }
+  }
 
-    return dynamicData.fields?.includes(key) ?? false;
+  hasDynamicBindableFields() {
+    return Object.entries(this.fields).some(([key, field]) =>
+      this.allowsDynamicBindingForFieldEntry(key, field),
+    );
+  }
+
+  allowsDynamicBindingForField(key: string) {
+    const field = this.fields[key];
+    if (!field) return false;
+
+    return this.allowsDynamicBindingForFieldEntry(key, field);
+  }
+
+  private allowsDynamicBindingForFieldEntry(key: string, field: AnyField) {
+    if (this.dynamicData === false) return false;
+    if (field.getVisibility() !== "all") return false;
+    if (field.getIsDynamic() === false) return false;
+
+    return key in this.fields;
   }
 
   private hasDynamicBindingForField(
@@ -729,7 +769,7 @@ export default class ContentType<
     key: string,
     field: AnyField,
   ) {
-    if (!this.allowsDynamicBindingForField(key, field)) return false;
+    if (!this.allowsDynamicBindingForFieldEntry(key, field)) return false;
 
     const bindings = getDynamicDocumentBindings(
       data[DYNAMIC_BINDINGS_FIELD_NAME],

@@ -20,6 +20,10 @@ import { parseSafeManagerQuery } from "./safeManagerQuery";
 type ResolveOptions = {
   db: DBService;
   contentType?: ContentType;
+  contextSource?: {
+    contentType: ContentType;
+    value: Record<string, unknown>;
+  };
   surface: "web" | "preview";
 };
 
@@ -40,14 +44,60 @@ const isPublicDocument = (value: Record<string, unknown>) =>
   value._visibility !== "draft" &&
   value._visibility !== "trash";
 
-const isSourceContentTypeAllowed = (
-  ownerContentType: ContentType,
-  sourceContentTypeName: string,
-) =>
-  isDynamicDataSourceContentTypeAllowed(
-    ownerContentType.dynamicData,
-    getContentTypeByName(sourceContentTypeName),
-  );
+const getAllowedSourceContentType = (sourceContentTypeName: string) => {
+  const contentType = getContentTypeByName(sourceContentTypeName);
+
+  return isDynamicDataSourceContentTypeAllowed(contentType)
+    ? contentType
+    : undefined;
+};
+
+const fileSourcePaths = new Set([
+  "url",
+  "previewUrl",
+  "name",
+  "title",
+  "alt",
+  "mime",
+  "srcSet",
+  "width",
+  "height",
+  "size",
+]);
+
+const isDynamicSourcePathAllowed = (
+  contentType: ContentType,
+  path: string | undefined,
+  depth = 0,
+): boolean => {
+  if (!path) return false;
+
+  const [fieldName, ...rest] = path.split(".");
+  const field = contentType.fields[fieldName];
+  if (!field || !contentType.allowsDynamicBindingForField(fieldName)) {
+    return false;
+  }
+
+  if (rest.length === 0) return true;
+
+  if (
+    field.meta.type === "Relation" &&
+    "contentType" in field &&
+    depth < 3
+  ) {
+    return isDynamicSourcePathAllowed(
+      field.contentType as ContentType,
+      rest.join("."),
+      depth + 1,
+    );
+  }
+
+  if (field.meta.type === "File") {
+    return rest.length === 1 && fileSourcePaths.has(rest[0]);
+  }
+
+  return false;
+};
 
 const getRouteKeyForSource = (
   contentTypeName: string,
@@ -91,27 +141,51 @@ const loadSourceDocument = async (
 
 const resolveSourceValue = async ({
   db,
-  ownerContentType,
   source,
   currentSource,
+  currentContentType,
+  allowCurrentSource,
+  contextSource,
 }: {
   db: DBService;
-  ownerContentType: ContentType;
   source: DynamicBindingSource;
   currentSource?: Record<string, unknown>;
+  currentContentType?: ContentType;
+  allowCurrentSource?: boolean;
+  contextSource?: ResolveOptions["contextSource"];
 }) => {
-  if (!isSourceContentTypeAllowed(ownerContentType, source.contentType)) {
+  const usesCurrentRecord =
+    allowCurrentSource === true &&
+    !source.id &&
+    !!currentSource &&
+    source.contentType === currentContentType?.name;
+  const usesContextDocument =
+    !source.id && source.contentType === contextSource?.contentType.name;
+  const sourceContentType = usesCurrentRecord
+    ? currentContentType
+    : usesContextDocument
+      ? contextSource?.contentType
+    : getAllowedSourceContentType(source.contentType);
+  if (!sourceContentType) {
     return undefined;
   }
 
   const sourceDocument =
-    currentSource ?? (await loadSourceDocument(db, source));
+    usesCurrentRecord
+      ? currentSource
+      : usesContextDocument
+        ? contextSource?.value
+        : await loadSourceDocument(db, source);
   if (!sourceDocument) return undefined;
 
   if (source.virtual === "href") {
     const sourceId =
       typeof sourceDocument._id === "string" ? sourceDocument._id : source.id;
     return sourceId ? await resolveHref(source, sourceId) : undefined;
+  }
+
+  if (!isDynamicSourcePathAllowed(sourceContentType, source.path)) {
+    return undefined;
   }
 
   return getAtPath(sourceDocument, source.path);
@@ -128,19 +202,17 @@ const addPublicContentFilter = (query: Query): Query => ({
 
 const resolveListBinding = async ({
   db,
-  ownerContentType,
   binding,
+  contextSource,
 }: {
   db: DBService;
-  ownerContentType: ContentType;
   binding: DynamicListBinding;
+  contextSource?: ResolveOptions["contextSource"];
 }) => {
-  if (!isSourceContentTypeAllowed(ownerContentType, binding.contentType)) {
+  const sourceContentType = getAllowedSourceContentType(binding.contentType);
+  if (!sourceContentType) {
     return undefined;
   }
-
-  const sourceContentType = getContentTypeByName(binding.contentType);
-  if (!sourceContentType) return undefined;
 
   const query = addPublicContentFilter(
     parseSafeManagerQuery(sourceContentType, binding.query ?? {}),
@@ -158,9 +230,11 @@ const resolveListBinding = async ({
             targetField,
             await resolveSourceValue({
               db,
-              ownerContentType,
               source,
               currentSource: populated,
+              currentContentType: sourceContentType,
+              allowCurrentSource: true,
+              contextSource,
             }),
           ]),
         ),
@@ -179,6 +253,51 @@ const resolveListBinding = async ({
       };
     }),
   );
+};
+
+const getListTargetContentType = (
+  field: ContentType["fields"][string] | undefined,
+  itemName: string,
+) => {
+  if (!field || (field.meta.ui !== "List" && field.meta.ui !== "Iterator")) {
+    return undefined;
+  }
+
+  if (!("fields" in field) || !Array.isArray(field.fields)) {
+    return undefined;
+  }
+
+  const entry = field.fields.find((item) => item.name === itemName);
+  if (
+    !entry ||
+    entry.field.meta.type !== "Relation" ||
+    !("contentType" in entry.field)
+  ) {
+    return undefined;
+  }
+
+  return entry.field.contentType as ContentType;
+};
+
+const filterListBindingMap = (
+  contentType: ContentType,
+  fieldName: string,
+  binding: DynamicListBinding,
+): DynamicListBinding => {
+  const targetContentType = getListTargetContentType(
+    contentType.fields[fieldName],
+    binding.itemName,
+  );
+  if (!targetContentType) return binding;
+
+  return {
+    ...binding,
+    map: Object.fromEntries(
+      Object.entries(binding.map).filter(([targetField]) =>
+        targetContentType.allowsDynamicBindingForField(targetField),
+      ),
+    ),
+  };
 };
 
 const getListItemStableKey = (item: unknown): string | undefined => {
@@ -228,10 +347,12 @@ const resolveRecordBindings = async ({
   db,
   contentType,
   value,
+  contextSource,
 }: {
   db: DBService;
   contentType: ContentType;
   value: Record<string, unknown>;
+  contextSource?: ResolveOptions["contextSource"];
 }) => {
   const bindings = getDynamicDocumentBindings(
     value[DYNAMIC_BINDINGS_FIELD_NAME],
@@ -241,11 +362,15 @@ const resolveRecordBindings = async ({
   const next = { ...value };
 
   for (const [field, source] of Object.entries(bindings.fields ?? {})) {
+    if (!contentType.allowsDynamicBindingForField(field)) continue;
+
     try {
       const resolved = await resolveSourceValue({
         db,
-        ownerContentType: contentType,
         source,
+        currentSource: value,
+        currentContentType: contentType,
+        contextSource,
       });
       if (resolved !== undefined) {
         next[field] = resolved;
@@ -256,11 +381,14 @@ const resolveRecordBindings = async ({
   }
 
   for (const [field, binding] of Object.entries(bindings.lists ?? {})) {
+    if (!contentType.allowsDynamicBindingForField(field)) continue;
+
     try {
+      const filteredBinding = filterListBindingMap(contentType, field, binding);
       const resolved = await resolveListBinding({
         db,
-        ownerContentType: contentType,
-        binding,
+        binding: filteredBinding,
+        contextSource,
       });
       if (resolved !== undefined) {
         next[field] = mergeDynamicListItems(next[field], resolved);
@@ -290,19 +418,29 @@ export const resolveDynamicData = async <T>(
     (typeof value._type === "string"
       ? getContentTypeByName(value._type)
       : undefined);
-  const boundValue = contentType?.dynamicData
+  const boundValue = contentType
     ? await resolveRecordBindings({
         db: options.db,
         contentType,
         value,
+        contextSource: options.contextSource,
       })
     : value;
+  const contextSource =
+    options.contextSource ??
+    (contentType
+      ? {
+          contentType,
+          value: boundValue,
+        }
+      : undefined);
 
   const entries = await Promise.all(
     Object.entries(boundValue).map(async ([key, item]) => [
       key,
       await resolveDynamicData(item, {
         ...options,
+        contextSource,
         contentType: undefined,
       }),
     ]),

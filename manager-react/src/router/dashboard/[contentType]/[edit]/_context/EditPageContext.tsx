@@ -100,6 +100,7 @@ type EditPageContextValue = {
   activeTab: EditPageTab
   canPreview: boolean
   canRestoreVersions: boolean
+  contentType: EditPageProps['contentType']
   contentTypeId?: string
   contentTypeName: string
   documentActions: ReturnType<typeof useContentDocumentActions>
@@ -273,6 +274,7 @@ export const EditPageProvider = ({
         activeTab,
         canPreview,
         canRestoreVersions,
+        contentType,
         contentTypeId,
         contentTypeName: contentType.name,
         documentActions,

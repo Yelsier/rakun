@@ -376,6 +376,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                   ref={setRef(item.uid)}
                                   collapsible
                                   defaultData={value[i]?.value}
+                                  parentContentType={props.parentContentType}
                                   {...fieldConfig.field}
                                 />
                               </CardContent>
