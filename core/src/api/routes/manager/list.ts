@@ -1,5 +1,5 @@
 import { Logger } from "../../../lib/Logger";
-import { hasPermissions, Permission } from "../../../lib/Permissions";
+import { getContentPermission, hasPermissions } from "../../../lib/Permissions";
 import { Media } from "../../../internal-content-types";
 import { getMongoService } from "../../../orm";
 import { RakunRequestContext } from "../../context";
@@ -25,13 +25,19 @@ export const listHandler = async ({
   const query = parseSafeManagerQuery(contentType, input.query);
   const user = ctx.getUser();
 
-  checkAnyPermissions(user, [
-    `content.${contentTypeName}.own` as Permission,
-    `content.${contentTypeName}.readAny` as Permission,
-  ]);
+  const ownPermission = getContentPermission(contentType, "own");
+  const readAnyPermission = getContentPermission(contentType, "readAny");
+  const readPermissions = [ownPermission, readAnyPermission].filter(
+    (permission): permission is string => Boolean(permission),
+  );
+
+  if (readPermissions.length > 0) {
+    checkAnyPermissions(user, readPermissions);
+  }
 
   if (
-    !hasPermissions(user, [`content.${contentTypeName}.readAny` as Permission])
+    ownPermission &&
+    (!readAnyPermission || !hasPermissions(user, [readAnyPermission]))
   ) {
     Logger.addTrace("manager.list: applying own filter");
     query.filter = {

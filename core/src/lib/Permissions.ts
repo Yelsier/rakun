@@ -34,7 +34,7 @@ const getContentPermissionConfig = (contentType: ContentType) => {
     };
   }
 
-  if (contentType.isInternal) return null;
+  if (contentType.isInternal || contentType.isHiddenFromManager) return null;
 
   return {
     resource: contentType.name,

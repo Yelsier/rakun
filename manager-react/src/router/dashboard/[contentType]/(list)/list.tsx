@@ -39,26 +39,7 @@ import { useLanguage } from '@/state/language'
 import { useTRPC } from '@/components/trpc-provider'
 import { useSession } from '@/state/session'
 import { useManagerMutation } from '@/client/react'
-
-const getActionErrorMessage = (error: unknown) => {
-  if (error instanceof Error && error.message) return error.message
-
-  if (!error || typeof error !== 'object') {
-    return 'Action failed'
-  }
-
-  const cause = (error as { cause?: unknown }).cause
-
-  if (cause && typeof cause === 'object') {
-    const message = (cause as { message?: unknown; reason?: unknown }).message
-    const reason = (cause as { message?: unknown; reason?: unknown }).reason
-
-    if (typeof message === 'string') return message
-    if (typeof reason === 'string') return reason
-  }
-
-  return 'Action failed'
-}
+import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 
 const getContentRowId = (row: object, index: number) => {
   const id = (row as { _id?: unknown })._id

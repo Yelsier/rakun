@@ -56,6 +56,7 @@ import PreviewsViewLoader from './views/PreviewsViewLoader'
 import type { MediaRecord } from '@/lib/media'
 import type { FolderItem } from '@/components/media/contexts/MediaLibraryContext'
 import { useMedia } from '@/media'
+import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 
 type ViewMode = 'list' | 'grid-sm' | 'grid-lg'
 type DeleteTarget = {
@@ -77,9 +78,6 @@ const ROOT_FOLDER_VALUE = '__root__'
 
 const isMediaRecord = (item: MediaRecord | FolderItem): item is MediaRecord =>
   '_type' in item && item._type === 'Media'
-
-const getActionErrorMessage = (error: unknown) =>
-  error instanceof Error && error.message ? error.message : 'Action failed'
 
 export default function Previews() {
   const managerClient = useManagerClient()

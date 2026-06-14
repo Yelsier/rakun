@@ -15,6 +15,7 @@ import {
   type WithFieldState,
   withFieldModifiers,
 } from "./Field";
+import { Id } from "../utils/id";
 
 export type Entry<
   Name extends string = string,
@@ -102,8 +103,8 @@ export function makeListField<
     },
     state,
     schemas: {
-      input: () => buildListDbSchema(options.fields),
-      db: () => buildListDbSchema(options.fields),
+      input: () => buildListDbSchema(options.fields, options.ui),
+      db: () => buildListDbSchema(options.fields, options.ui),
       output: () => buildListOutputSchema(options.fields),
     },
   }) as ListFieldCore<Entries, State>;
@@ -120,10 +121,11 @@ export function makeListField<
   });
 }
 
-function buildListDbSchema<Entries extends readonly Entry[]>(fields: Entries) {
-  const valueSchemas = fields.map((entry) =>
-    entry.field.getSchema(),
-  );
+function buildListDbSchema<Entries extends readonly Entry[]>(
+  fields: Entries,
+  ui: ListMeta["ui"],
+) {
+  const valueSchemas = fields.map((entry) => getListDbValueSchema(entry, ui));
 
   return z.array(
     z.object({
@@ -131,6 +133,31 @@ function buildListDbSchema<Entries extends readonly Entry[]>(fields: Entries) {
       value: unionSchemas(valueSchemas),
     }),
   ) as z.ZodType<ListInputValue<Entries>>;
+}
+
+function getListDbValueSchema(entry: Entry, ui: ListMeta["ui"]) {
+  const schema = entry.field.getSchema();
+  const meta = entry.field.meta;
+
+  if (
+    ui === "Iterator" &&
+    meta.type === "Relation" &&
+    "only" in meta &&
+    meta.only === "new" &&
+    "contentType" in meta &&
+    typeof meta.contentType === "string"
+  ) {
+    return z.union([
+      schema,
+      z.object({
+        type: z.literal("existing"),
+        _id: Id,
+        contentType: z.literal(meta.contentType),
+      }),
+    ]);
+  }
+
+  return schema;
 }
 
 function buildListOutputSchema<Entries extends readonly Entry[]>(

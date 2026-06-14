@@ -13,8 +13,9 @@ import { useEditErrorStore } from '@/hooks/app-store'
 import { decodeCamelCase } from '@/helpers/decodeCamelCase'
 
 const ContentTypeUI: React.FC<RelationPropsRef> = ({ ref, ...props }) => {
+  const defaultRelationType = (props.defaultData as RelationFieldValue)?.type
   const [relation, setRelation] = useState<'new' | 'existing' | undefined>(
-    props.only || (props.defaultData as RelationFieldValue)?.type || undefined,
+    defaultRelationType || props.only || undefined,
   )
   const existingRef = useRef<FieldRef>(null)
   const newRef = useRef<FieldRef>(null)

@@ -8,6 +8,7 @@ import type {
 import type { FieldValue } from '../_fields/shared'
 
 import { createManagerQueryKey, useManagerMutation } from '@/client/react'
+import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { useManagerNavigation } from '@/state/navigation'
 
 type UseContentDocumentActionsParams = {
@@ -148,30 +149,38 @@ export const useContentDocumentActions = ({
   const handleMoveToTrash = async () => {
     if (!contentTypeId) return
 
-    await trashMutation.mutateAsync({
-      contentType: contentTypeName,
-      id: contentTypeId,
-    })
-    closeMoveToTrashDialog()
-    await invalidateContentListQueries()
-    await onAfterRestore?.()
-    toast.success('Moved to trash')
+    try {
+      await trashMutation.mutateAsync({
+        contentType: contentTypeName,
+        id: contentTypeId,
+      })
+      closeMoveToTrashDialog()
+      await invalidateContentListQueries()
+      await onAfterRestore?.()
+      toast.success('Moved to trash')
+    } catch (error) {
+      toast.error(getActionErrorMessage(error, 'Could not move item to trash'))
+    }
   }
 
   const handlePermanentDelete = async () => {
     if (!contentTypeId) return
 
-    await deleteMutation.mutateAsync({
-      contentType: contentTypeName,
-      id: contentTypeId,
-    })
-    closePermanentDeleteDialog()
-    await invalidateContentListQueries()
-    navigation.push?.({
-      name: 'content.list',
-      contentType: contentTypeName,
-    })
-    toast.success('Deleted permanently')
+    try {
+      await deleteMutation.mutateAsync({
+        contentType: contentTypeName,
+        id: contentTypeId,
+      })
+      closePermanentDeleteDialog()
+      await invalidateContentListQueries()
+      navigation.push?.({
+        name: 'content.list',
+        contentType: contentTypeName,
+      })
+      toast.success('Deleted permanently')
+    } catch (error) {
+      toast.error(getActionErrorMessage(error, 'Could not delete item'))
+    }
   }
 
   const handleTranslateDocument = async ({

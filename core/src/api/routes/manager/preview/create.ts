@@ -6,7 +6,7 @@ import { Language, PreviewSnapshot } from '../../../../internal-content-types'
 import { throwAppError } from '../../../../lib/errors'
 import { Logger } from '../../../../lib/Logger'
 import { getContentTypeByName } from '../../../../lib/Registry'
-import { Permission } from '../../../../lib/Permissions'
+import { getContentPermission } from '../../../../lib/Permissions'
 import { getMongoService } from '../../../../orm'
 import { CreatePreviewInput } from '../../../../schemas/manager/preview'
 import { RakunRequestContext } from '../../../context'
@@ -89,7 +89,11 @@ export const createPreviewHandler = async ({
       permission: 'updateAny',
     })
   } else {
-    checkPermissions(user, [`content.${contentType.name}.own` as Permission])
+    const createPermission = getContentPermission(contentType, 'own')
+
+    if (createPermission) {
+      checkPermissions(user, [createPermission])
+    }
   }
 
   const db = await getMongoService()

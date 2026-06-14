@@ -7,33 +7,115 @@ import ContentType from "../../lib/ContentType";
 import { Id } from "../../lib/utils/id";
 import { getContentTypes } from "../../lib/Registry";
 
-type DependencyField = ContentType["fields"][string];
+const passiveDependencyContentTypes = new Set([
+  "BackupDocument",
+  "ContentVersion",
+  "PreviewSnapshot",
+]);
 
-const isRelationFieldAndTarget = (
-  field: DependencyField,
-  contentType: string,
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === "object";
+
+const isObjectIdLike = (
+  value: unknown,
+  ObjectId: ReturnType<typeof getMongoDB>["ObjectId"],
+) => value instanceof ObjectId;
+
+const idMatches = (
+  value: unknown,
+  targetId: string,
+  ObjectId: ReturnType<typeof getMongoDB>["ObjectId"],
 ) => {
-  const config = field.getConfig() as { ui?: string; contentType?: string };
-  return config.ui === "ContentType" && config.contentType === contentType;
+  if (isObjectIdLike(value, ObjectId)) {
+    return value.toString() === targetId;
+  }
+
+  return typeof value === "string" && value === targetId;
 };
 
-const isFileFieldAndTarget = (field: DependencyField, contentType: string) =>
-  field.getConfig().type === "File" && contentType === "Media";
+const hasTargetDependency = ({
+  currentContentType,
+  ObjectId,
+  targetContentType,
+  targetId,
+  value,
+}: {
+  currentContentType: string;
+  ObjectId: ReturnType<typeof getMongoDB>["ObjectId"];
+  targetContentType: string;
+  targetId: string;
+  value: unknown;
+}): boolean => {
+  if (Array.isArray(value)) {
+    return value.some((item) =>
+      hasTargetDependency({
+        currentContentType,
+        ObjectId,
+        targetContentType,
+        targetId,
+        value: item,
+      }),
+    );
+  }
 
-const isSelfRelationFieldAndSameTarget = (
-  field: DependencyField,
-  thisContentType: string,
-  targetContentType: string,
-) =>
-  field.getConfig().ui === "SelfRelation" &&
-  thisContentType === targetContentType;
+  if (!isRecord(value)) return false;
+
+  if (value._tag === "Translatable") {
+    return Object.entries(value).some(([key, nested]) => {
+      if (key === "_tag") return false;
+
+      return hasTargetDependency({
+        currentContentType,
+        ObjectId,
+        targetContentType,
+        targetId,
+        value: nested,
+      });
+    });
+  }
+
+  const relationType = value.type;
+  if (
+    (relationType === "existing" || relationType === "self") &&
+    idMatches(value._id, targetId, ObjectId)
+  ) {
+    const relationContentType =
+      typeof value.contentType === "string"
+        ? value.contentType
+        : relationType === "self"
+          ? currentContentType
+          : undefined;
+
+    if (relationContentType === targetContentType) {
+      return true;
+    }
+  }
+
+  if (
+    typeof value.contentType === "string" &&
+    value.contentType === targetContentType &&
+    idMatches(value.moduleId, targetId, ObjectId)
+  ) {
+    return true;
+  }
+
+  return Object.values(value).some((nested) =>
+    hasTargetDependency({
+      currentContentType,
+      ObjectId,
+      targetContentType,
+      targetId,
+      value: nested,
+    }),
+  );
+};
 
 /**
  *
  * @param db database instance
  * @param contentType the content type of the item being checked for dependencies
  * @param id the ID of the item being checked for dependencies
- * @returns a list of content type and ID pairs that reference the given item via Relation, File, or SelfRelation fields
+ * @returns a list of content type and ID pairs that reference the given item via relation-shaped values or module slots
  * @example
  * // Find dependencies for an Article with ID '123'
  * const dependencies = await findDependenciesHandler(db)(getContentTypeByName('Article'), '123')
@@ -55,77 +137,34 @@ export const findDependenciesHandler =
     const { ObjectId } = getMongoDB();
     const parsedId = parseId(id);
     const parsedIdString = parsedId.toString();
-    const hasTargetId = (value: unknown): boolean => {
-      if (Array.isArray(value)) {
-        return value.some((item) => hasTargetId(item));
-      }
 
-      if (!value || typeof value !== "object") return false;
-
-      const maybeRelation = value as { _id?: unknown };
-      if (maybeRelation._id instanceof ObjectId) {
-        return maybeRelation._id.toString() === parsedIdString;
-      }
-      if (typeof maybeRelation._id === "string") {
-        return maybeRelation._id === parsedIdString;
-      }
-
-      const maybeTranslatable = value as Record<string, unknown>;
-      if (maybeTranslatable._tag === "Translatable") {
-        return Object.entries(maybeTranslatable).some(([key, nested]) => {
-          if (key === "_tag") return false;
-          return hasTargetId(nested);
-        });
-      }
-
-      return false;
-    };
-
-    // Collect content types that can reference the target type via Relation/File/SelfRelation fields.
-    const otherContentTypes = getContentTypes()
-      .filter((ct) =>
-        Object.entries(ct.fields).some(
-          ([_, field]) =>
-            isRelationFieldAndTarget(field, contentType.name) ||
-            isFileFieldAndTarget(field, contentType.name) ||
-            isSelfRelationFieldAndSameTarget(field, ct.name, contentType.name),
-        ),
-      )
-      .map((ct) => ({
-        name: ct.name,
-        fields: Object.entries(ct.fields)
-          .filter(
-            ([_, field]) =>
-              isRelationFieldAndTarget(field, contentType.name) ||
-              isFileFieldAndTarget(field, contentType.name) ||
-              isSelfRelationFieldAndSameTarget(
-                field,
-                ct.name,
-                contentType.name,
-              ),
-          )
-          .map(([fieldName]) => fieldName),
-      }));
+    const otherContentTypes = Array.from(
+      new Set(
+        getContentTypes()
+          .map((ct) => ct.name)
+          .filter((name) => !passiveDependencyContentTypes.has(name)),
+      ),
+    );
 
     const finds = await Promise.all(
-      otherContentTypes.map(async ({ name, fields }) => {
+      otherContentTypes.map(async (name) => {
         try {
-          // Query direct refs and translatable containers, then verify exact _id in-memory.
-          const fieldFilters = fields.flatMap((field) => [
-            { [`${field}._id`]: parsedId },
-            { [`${field}._tag`]: "Translatable" },
-          ]);
-
           const items = await db
             .collection(name)
-            .find({
-              $or: fieldFilters,
-            })
+            .find({})
             .toArray();
 
           // Return minimal dependency metadata used by delete conflict handling.
           return items
-            .filter((item) => fields.some((field) => hasTargetId(item[field])))
+            .filter((item) =>
+              hasTargetDependency({
+                currentContentType: name,
+                ObjectId,
+                targetContentType: contentType.name,
+                targetId: parsedIdString,
+                value: item,
+              }),
+            )
             .map((item) => ({
               contentType: name,
               _id: item._id.toString(),

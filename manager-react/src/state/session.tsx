@@ -10,13 +10,19 @@ import type { StoreApi } from "zustand";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 
-import { hasManagerPermissions } from "./permissions";
+import {
+  hasAnyManagerPermissionIfDefined,
+  hasManagerPermissions,
+  hasManagerPermissionsIfDefined,
+} from "./permissions";
 
 type SessionState = {
   user: ManagerUserSchema;
   setUser: (user: ManagerUserSchema) => void;
   hasPermissions: (permissions: Permission[]) => boolean;
   hasAnyPermission: (permissions: Permission[]) => boolean;
+  hasPermissionsIfDefined: (permissions: Permission[]) => boolean;
+  hasAnyPermissionIfDefined: (permissions: Permission[]) => boolean;
 };
 
 const SessionStoreContext = createContext<StoreApi<SessionState> | null>(null);
@@ -41,6 +47,14 @@ export function createSessionStoreWithContentTypes(
       return permissions.some((permission) =>
         hasManagerPermissions(user, [permission], contentTypes),
       );
+    },
+    hasPermissionsIfDefined: (permissions) => {
+      const { user } = get();
+      return hasManagerPermissionsIfDefined(user, permissions, contentTypes);
+    },
+    hasAnyPermissionIfDefined: (permissions) => {
+      const { user } = get();
+      return hasAnyManagerPermissionIfDefined(user, permissions, contentTypes);
     },
   }));
 }

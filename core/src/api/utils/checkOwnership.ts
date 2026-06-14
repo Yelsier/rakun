@@ -1,7 +1,7 @@
 import ContentType from "../../lib/ContentType";
 import { throwAppError } from "../../lib/errors";
 import { Logger } from "../../lib/Logger";
-import { Permission } from "../../lib/Permissions";
+import { getContentPermission } from "../../lib/Permissions";
 import { getMongoService } from "../../orm";
 import { RakunRequestContext } from "../context";
 import { checkAnyPermissions, checkPermissions } from "./checkPermissions";
@@ -30,16 +30,21 @@ export const checkOwnership = async ({
   }
 
   const ownsContent = search.createdBy === user._id;
+  const ownPermission = getContentPermission(contentType, "own");
+  const actionPermission = getContentPermission(contentType, permission);
 
   if (ownsContent) {
-    checkAnyPermissions(user, [
-      `content.${contentType.name}.own` as Permission,
-      `content.${contentType.name}.${permission}` as Permission,
-    ]);
+    const permissions = [ownPermission, actionPermission].filter(
+      (permission): permission is string => Boolean(permission),
+    );
+
+    if (permissions.length > 0) {
+      checkAnyPermissions(user, permissions);
+    }
   } else {
-    checkPermissions(user, [
-      `content.${contentType.name}.${permission}` as Permission,
-    ]);
+    if (actionPermission) {
+      checkPermissions(user, [actionPermission]);
+    }
   }
 
   Logger.addTrace("ownership checked", {

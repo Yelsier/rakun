@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 
 import { useManagerMutation } from '@/client/react'
 import { Button } from '@/components/ui/button'
+import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import {
   Dialog,
   DialogContent,
@@ -47,7 +48,7 @@ const DeleteCT: React.FC<{
           setDeleteItem(null)
         },
         onError: (error) => {
-          toast.error(`Error: ${error.message}`)
+          toast.error(getActionErrorMessage(error, 'Could not delete item'))
         },
       },
     )

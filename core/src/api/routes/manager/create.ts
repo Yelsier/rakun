@@ -8,7 +8,7 @@ import { CreateInput } from "../../../schemas/manager/create";
 import { checkPermissions } from "../../utils/checkPermissions";
 import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
-import { Permission } from "../../../lib/Permissions";
+import { getContentPermission } from "../../../lib/Permissions";
 import { sanitizeManagerOutput } from "../../utils/sanitizeManagerOutput";
 
 export const createHandler = async ({
@@ -25,7 +25,11 @@ export const createHandler = async ({
   const contentType = requireContentType(contentTypeName);
   const data = input.data as Record<string, unknown>;
 
-  checkPermissions(user, [`content.${contentTypeName}.own` as Permission]);
+  const createPermission = getContentPermission(contentType, "own");
+
+  if (createPermission) {
+    checkPermissions(user, [createPermission]);
+  }
 
   if (contentType.name === "Route") {
     throwAppError("FORBIDDEN", {

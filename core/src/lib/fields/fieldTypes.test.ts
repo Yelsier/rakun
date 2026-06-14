@@ -76,6 +76,38 @@ describe("field type inference", () => {
     ).toHaveLength(1);
   });
 
+  it("allows new iterator modules to be saved as existing relations", () => {
+    const IteratorParamCT = new ContentType({
+      name: "IteratorNewToExisting",
+      fields: {
+        title: Fields.string().required(),
+      },
+      iterator: [
+        {
+          contentType: TypeRegressionCT,
+          type: "new",
+        },
+      ],
+    });
+
+    expect(
+      IteratorParamCT.validate({
+        _type: "IteratorNewToExisting",
+        title: "Page",
+        [ITERATOR_FIELD_NAME]: [
+          {
+            name: TypeRegressionCT.name,
+            value: {
+              type: "existing",
+              _id: "64f0c0000000000000000001",
+              contentType: TypeRegressionCT.name,
+            },
+          },
+        ],
+      })[ITERATOR_FIELD_NAME]?.[0]?.value.type,
+    ).toBe("existing");
+  });
+
   it("allows required fields to be supplied by dynamic bindings", () => {
     const DynamicBindingCT = new ContentType({
       name: "DynamicBindingCT",

@@ -1,95 +1,187 @@
-"use client";
+'use client'
 
-import { Box, ChevronsUpDown, GripVertical, Plus, Trash } from "lucide-react";
-import React, { useCallback, useEffect, useRef } from "react";
+import {
+  Box,
+  ChevronsUpDown,
+  GripVertical,
+  Plus,
+  Save,
+  Trash,
+} from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   EncodedRelationField,
   ListFieldValueItem,
-} from "@rakun-kit/core/client";
+  RelationFieldValue,
+} from '@rakun-kit/core/client'
+import { toast } from 'sonner'
 
-import type { ListPropsRef } from ".";
-import { fieldsMap, type FieldRef } from "../../ContentTypeEdit";
-import { FieldValue, useFieldValues } from "../shared";
-import { FieldWrapper } from "../shared/FieldWrapper";
+import type { ListPropsRef } from '.'
+import { fieldsMap, type FieldRef } from '../../ContentTypeEdit'
+import { type FieldValue, useFieldValues } from '../shared'
+import { FieldWrapper } from '../shared/FieldWrapper'
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useManagerMutation } from '@/client/react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from '@/components/ui/collapsible'
 import {
   Sortable,
   SortableContent,
   SortableItem,
   SortableItemHandle,
-} from "@/components/ui/sortable";
-import { useLanguage } from "@/lib/providers/language/LanguageClientProvider";
+} from '@/components/ui/sortable'
+import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
 import {
   getIteratorModuleDisplay,
   IteratorModulePickerDialog,
-} from "./IteratorModulePicker";
+} from './IteratorModulePicker'
+import { useSession } from '@/state/session'
+import { getEncodedContentPermissions } from '@/state/permissions'
 
-type ListFieldValues = (ListFieldValueItem<FieldValue> & { uid: string })[];
+type ListFieldValues = (ListFieldValueItem<FieldValue> & { uid: string })[]
 
-const getModuleId = (item: ListFieldValues[number]) => {
-  const value = item.value;
+type RelationExistingValue = Extract<RelationFieldValue, { type: 'existing' }>
+type RelationNewValue = Extract<RelationFieldValue, { type: 'new' }>
 
-  if (!value || typeof value !== "object") return undefined;
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value && typeof value === 'object')
 
-  if ("_id" in value && typeof value._id === "string") {
-    return value._id;
-  }
+const hasNestedError = (value: unknown): boolean => {
+  if (!isRecord(value)) return false
+  if ('_error' in value) return true
+  if (Array.isArray(value)) return value.some(hasNestedError)
+  return Object.values(value).some(hasNestedError)
+}
 
-  if (
-    "data" in value &&
-    value.data &&
-    typeof value.data === "object" &&
-    "_id" in value.data &&
-    typeof value.data._id === "string"
-  ) {
-    return value.data._id;
-  }
+const isRelationValue = (value: unknown): value is RelationFieldValue =>
+  isRecord(value) &&
+  'type' in value &&
+  (value.type === 'new' || value.type === 'existing')
 
-  return undefined;
-};
+const isRelationNewValue = (value: unknown): value is RelationNewValue =>
+  isRelationValue(value) && value.type === 'new'
 
-const isApiOnlyNewRelationField = (
-  field: ListPropsRef["fields"][number]["field"],
-): field is EncodedRelationField => {
-  if (field.config.type !== "Relation") return false;
+const isRelationExistingValue = (
+  value: unknown,
+): value is RelationExistingValue =>
+  isRelationValue(value) && value.type === 'existing'
 
-  const relationField = field as EncodedRelationField;
+const getRelationField = (
+  field: ListPropsRef['fields'][number]['field'],
+): EncodedRelationField | undefined =>
+  field.config.type === 'Relation' ? (field as EncodedRelationField) : undefined
+
+const getCreatedId = (result: unknown) =>
+  isRecord(result) && typeof result._id === 'string' ? result._id : undefined
+
+const isManagerListQueryForContentType = (
+  queryKey: readonly unknown[],
+  contentType: string,
+) => {
+  const [prefix, name, input] = queryKey
 
   return (
-    relationField.only === "new" &&
-    Object.values(relationField.contentType.fields).every(
-      (field) => field.visibility === "api",
-    )
-  );
-};
+    prefix === 'rakun-manager' &&
+    name === 'manager.list' &&
+    isRecord(input) &&
+    input.contentType === contentType
+  )
+}
 
-const getApiOnlyNewRelationValue = (field: EncodedRelationField) => ({
-  type: "new" as const,
+const getCreatePermissions = (contentType: EncodedRelationField['contentType']) =>
+  getEncodedContentPermissions(contentType, ['own'])
+
+const hasManagerMenu = (contentType: EncodedRelationField['contentType']) =>
+  Boolean(contentType.menu?.title)
+
+const canUsePermissions = (
+  permissions: ReturnType<typeof getEncodedContentPermissions>,
+  hasAnyPermission: (permissions: ReturnType<typeof getEncodedContentPermissions>) => boolean,
+) => permissions.length === 0 || hasAnyPermission(permissions)
+
+type ManagerListData = {
+  totalItems?: number
+  items?: Array<Record<string, unknown> & { _id: string }>
+}
+
+const appendCreatedModuleToListData =
+  (created: Record<string, unknown> & { _id: string }) =>
+  (data: ManagerListData | undefined) => {
+    if (!data?.items || data.items.some((item) => item._id === created._id)) {
+      return data
+    }
+
+    return {
+      ...data,
+      totalItems:
+        typeof data.totalItems === 'number'
+          ? data.totalItems + 1
+          : data.totalItems,
+      items: [created, ...data.items],
+    }
+  }
+
+const getModuleId = (item: ListFieldValues[number]) => {
+  const value = item.value
+
+  if (!isRecord(value)) return undefined
+
+  const record = value as Record<string, unknown>
+
+  if (typeof record._id === 'string') {
+    return record._id
+  }
+
+  if (isRecord(record.data) && typeof record.data._id === 'string') {
+    return record.data._id
+  }
+
+  return undefined
+}
+
+const isApiOnlyNewRelationField = (
+  field: ListPropsRef['fields'][number]['field'],
+): field is EncodedRelationField => {
+  const relationField = getRelationField(field)
+
+  return Boolean(
+    relationField &&
+      relationField.only === 'new' &&
+      Object.values(relationField.contentType.fields).every(
+        (field) => field.visibility === 'api',
+      ),
+  )
+}
+
+const getApiOnlyNewRelationValue = (
+  field: EncodedRelationField,
+): RelationNewValue => ({
+  type: 'new',
   data: {
     _type: field.contentType.name,
   },
-});
+})
 
 const AddListButtons = React.memo(
   ({
     fields,
     onAdd,
   }: {
-    fields: ListPropsRef["fields"];
-    onAdd: (fieldName: string) => void;
+    fields: ListPropsRef['fields']
+    onAdd: (fieldName: string) => void
   }) => (
-    <div className="flex gap-2 flex-wrap">
+    <div className="flex flex-wrap gap-2">
       {fields.map((field) => (
         <Button
           onClick={() => onAdd(field.name)}
-          variant={"outline"}
+          variant="outline"
           key={field.name}
         >
           <Plus /> {field.name}
@@ -97,20 +189,24 @@ const AddListButtons = React.memo(
       ))}
     </div>
   ),
-);
+)
 
-AddListButtons.displayName = "AddListButtons";
+AddListButtons.displayName = 'AddListButtons'
 
 const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
-  const refs = useRef<Record<string, FieldRef | null>>({});
-  const valueRef = useRef<ListFieldValues>([]);
+  const refs = useRef<Record<string, FieldRef | null>>({})
+  const valueRef = useRef<ListFieldValues>([])
+  const [savingUid, setSavingUid] = useState<string | null>(null)
   const setRef = useCallback(
     (uid: string) => (fieldRef: FieldRef | null) => {
-      refs.current[uid] = fieldRef;
+      refs.current[uid] = fieldRef
     },
     [],
-  );
-  const { language } = useLanguage();
+  )
+  const { language } = useLanguage()
+  const { hasAnyPermission } = useSession()
+  const queryClient = useQueryClient()
+  const { mutateAsync: createModule } = useManagerMutation('manager.create')
 
   const { value, errors, onValueChange, getValue, getState } =
     useFieldValues<ListFieldValues>({
@@ -119,7 +215,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
       isTranslatable: props.isTranslatable,
       defaultData: (
         props.defaultData as (ListFieldValueItem<FieldValue> & {
-          uid?: string;
+          uid?: string
         })[]
       )?.map((item) => ({
         ...item,
@@ -127,83 +223,102 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
       })),
       defaultValue: [],
       validateValue: (value) => {
-        const values = value.map((item) => refs.current[item.uid]?.getValue());
+        const values = value.map((item) => refs.current[item.uid]?.getValue())
 
-        if (values.some((v) => typeof v === "object" && v && "_error" in v)) {
-          return "Please fix the errors above";
+        if (values.some((v) => typeof v === 'object' && v && '_error' in v)) {
+          return 'Please fix the errors above'
         }
 
-        return null;
+        return null
       },
-    });
+    })
 
   useEffect(() => {
-    valueRef.current = value;
-  }, [value]);
+    valueRef.current = value
+  }, [value])
+
+  const getItemFallbackValue = useCallback(
+    (item: ListFieldValues[number]) => {
+      const fieldConfig = props.fields.find((config) => config.name === item.name)
+
+      if (fieldConfig && isApiOnlyNewRelationField(fieldConfig.field)) {
+        return getApiOnlyNewRelationValue(fieldConfig.field) as FieldValue
+      }
+
+      return item.value
+    },
+    [props.fields],
+  )
+
+  const getItemStateValue = useCallback(
+    (item: ListFieldValues[number]) => {
+      const stateValue = refs.current[item.uid]?.getState()
+
+      return stateValue === undefined
+        ? getItemFallbackValue(item)
+        : (stateValue as FieldValue)
+    },
+    [getItemFallbackValue],
+  )
+
+  const getCurrentListState = useCallback(
+    () =>
+      valueRef.current.map((item) => ({
+        name: item.name,
+        value: getItemStateValue(item),
+        uid: item.uid,
+      })),
+    [getItemStateValue],
+  )
 
   const getValueWithNested = () => {
-    const values = getValue();
+    const values = getValue()
 
-    if (!values || "_error" in values) {
-      return values;
+    if (!values || '_error' in values) {
+      return values
     }
 
     return (values as ListFieldValues)
       .map((field) => {
-        const nestedValue = refs.current[field.uid]?.getValue();
-
-        if (nestedValue !== undefined) {
-          return {
-            name: field.name,
-            value: nestedValue,
-          };
-        }
-
-        const fieldConfig = props.fields.find(
-          (config) => config.name === field.name,
-        );
-
-        if (fieldConfig && isApiOnlyNewRelationField(fieldConfig.field)) {
-          return {
-            name: field.name,
-            value: getApiOnlyNewRelationValue(fieldConfig.field),
-          };
-        }
+        const nestedValue = refs.current[field.uid]?.getValue()
 
         return {
           name: field.name,
-          value: nestedValue,
-        };
+          value:
+            nestedValue === undefined
+              ? getItemFallbackValue(field)
+              : (nestedValue as FieldValue),
+        }
       })
       .filter(
-        (v) => v.value !== undefined && v.value !== null && v.value !== "",
-      );
-  };
+        (v) => v.value !== undefined && v.value !== null && v.value !== '',
+      )
+  }
 
   const getStateWithNested = () => {
-    const states = getState();
+    const states = getState()
 
-    if (!states) return states;
+    if (!states) return states
 
     return (states as ListFieldValues).map((field) => ({
       name: field.name,
-      value: refs.current[field.uid]?.getState(),
+      value: getItemStateValue(field),
       uid: field.uid,
-    }));
-  };
+    }))
+  }
 
   const handleSort = useCallback(
     (items: ListFieldValues) => {
       onValueChange(
         items.map((item) => ({
           name: item.name,
-          value: refs.current[item.uid]?.getState() as FieldValue,
+          value: getItemStateValue(item),
           uid: item.uid,
         })),
-      );
+      )
     },
-    [onValueChange],
-  );
+    [getItemStateValue, onValueChange],
+  )
 
   const handleDelete = useCallback(
     (uid: string) => {
@@ -212,44 +327,153 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
           .filter((item) => item.uid !== uid)
           .map((item) => ({
             name: item.name,
-            value: refs.current[item.uid]?.getState() as FieldValue,
+            value: getItemStateValue(item),
             uid: item.uid,
           })),
-      );
-      delete refs.current[uid];
+      )
+      delete refs.current[uid]
     },
-    [onValueChange, value],
-  );
+    [getItemStateValue, onValueChange, value],
+  )
 
   const handleAddItem = useCallback(
-    (fieldName: string) => {
-      const currentValue = valueRef.current;
+    (fieldName: string, initialValue?: FieldValue) => {
       onValueChange([
-        ...(currentValue?.map((item) => ({
-          name: item.name,
-          uid: item.uid,
-          value: refs.current[item.uid]?.getState() as FieldValue,
-        })) || []),
+        ...getCurrentListState(),
         {
           name: fieldName,
-          value: undefined,
+          value: initialValue as FieldValue,
           uid: crypto.randomUUID(),
         },
-      ]);
+      ])
     },
-    [onValueChange],
-  );
+    [getCurrentListState, onValueChange],
+  )
+
+  const handleSaveModule = useCallback(
+    async (item: ListFieldValues[number], title: string) => {
+      const fieldConfig = props.fields.find((field) => field.name === item.name)
+      const relationField = fieldConfig
+        ? getRelationField(fieldConfig.field)
+        : undefined
+
+      if (!relationField) {
+        toast.error('Only relation modules can be saved')
+        return
+      }
+
+      if (!hasManagerMenu(relationField.contentType)) {
+        toast.error('This module cannot be saved globally')
+        return
+      }
+
+      const createPermissions = getCreatePermissions(relationField.contentType)
+
+      if (!canUsePermissions(createPermissions, hasAnyPermission)) {
+        toast.error('You do not have permission to save this module globally')
+        return
+      }
+
+      const currentValue =
+        (refs.current[item.uid]?.getValue() as FieldValue | undefined) ??
+        getItemFallbackValue(item)
+
+      if (hasNestedError(currentValue)) {
+        toast.error('Please fix this module before saving it')
+        return
+      }
+
+      if (isRelationExistingValue(currentValue)) {
+        toast.info('This module is already saved')
+        return
+      }
+
+      if (!isRelationNewValue(currentValue) || !isRecord(currentValue.data)) {
+        toast.error('This module cannot be saved yet')
+        return
+      }
+
+      setSavingUid(item.uid)
+
+      try {
+        const created = await createModule({
+          contentType: relationField.contentType.name,
+          data: currentValue.data,
+        })
+        const createdId = getCreatedId(created)
+
+        if (!createdId) {
+          toast.error('The module was created but no id was returned')
+          return
+        }
+
+        const createdRecord = created as Record<string, unknown> & {
+          _id: string
+        }
+        const existingValue: RelationExistingValue = {
+          type: 'existing',
+          _id: createdId,
+          contentType: relationField.contentType.name,
+        }
+
+        onValueChange(
+          getCurrentListState().map((currentItem) =>
+            currentItem.uid === item.uid
+              ? {
+                  name: currentItem.name,
+                  value: existingValue as FieldValue,
+                  uid: currentItem.uid,
+                }
+              : currentItem,
+          ),
+        )
+
+        queryClient.setQueriesData<ManagerListData>(
+          {
+            predicate: (query) =>
+              isManagerListQueryForContentType(
+                query.queryKey,
+                relationField.contentType.name,
+              ),
+          },
+          appendCreatedModuleToListData(createdRecord),
+        )
+
+        await queryClient.invalidateQueries({
+          predicate: (query) =>
+            isManagerListQueryForContentType(
+              query.queryKey,
+              relationField.contentType.name,
+            ),
+        })
+
+        toast.success(`${title} saved`)
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Could not save module')
+      } finally {
+        setSavingUid(null)
+      }
+    },
+    [
+      createModule,
+      getCurrentListState,
+      getItemFallbackValue,
+      hasAnyPermission,
+      onValueChange,
+      props.fields,
+      queryClient,
+    ],
+  )
 
   useEffect(() => {
-    const currentValue = valueRef.current;
     onValueChange(
-      currentValue?.map((item) => ({
+      valueRef.current.map((item) => ({
         name: item.name,
-        value: refs.current[item.uid]?.getState() as FieldValue,
+        value: getItemStateValue(item),
         uid: item.uid,
       })),
-    );
-  }, [language.code]);
+    )
+  }, [language.code])
 
   return (
     <Sortable
@@ -264,7 +488,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
         getState={getStateWithNested}
         ref={ref}
       >
-        {props.config.ui === "Iterator" ? (
+        {props.config.ui === 'Iterator' ? (
           <IteratorModulePickerDialog
             fields={props.fields}
             onAdd={handleAddItem}
@@ -274,27 +498,41 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
         )}
         <SortableContent>
           {value.length > 0 && (
-            <div className="flex flex-col gap-4 mt-6">
+            <div className="mt-6 flex flex-col gap-4">
               {value.map((item, i) => {
                 const fieldConfig = props.fields.find(
                   (f) => f.name === item.name,
-                );
+                )
                 if (!fieldConfig) {
-                  return null;
+                  return null
                 }
 
                 const noModulesToRender = isApiOnlyNewRelationField(
                   fieldConfig.field,
-                );
+                )
 
-                const FieldComponent =
-                  fieldsMap[fieldConfig?.field.config.type];
-                const moduleId = getModuleId(item);
+                const FieldComponent = fieldsMap[fieldConfig.field.config.type]
+                const relationField = getRelationField(fieldConfig.field)
+                const relationValue = isRelationValue(item.value)
+                  ? item.value
+                  : undefined
+                const isSavedModule = isRelationExistingValue(relationValue)
+                const createPermissions = relationField
+                  ? getCreatePermissions(relationField.contentType)
+                  : []
+                const canSaveGlobal = relationField
+                  ? hasManagerMenu(relationField.contentType) &&
+                    canUsePermissions(createPermissions, hasAnyPermission)
+                  : false
+                const moduleId = getModuleId(item)
                 const moduleDisplay =
-                  props.config.ui === "Iterator"
+                  props.config.ui === 'Iterator'
                     ? getIteratorModuleDisplay(fieldConfig)
-                    : undefined;
-                const ModuleIcon = moduleDisplay?.icon ?? Box;
+                    : undefined
+                const ModuleIcon = moduleDisplay?.icon ?? Box
+                const moduleTitle = moduleDisplay?.title ?? item.name
+                const fieldKey = `${item.uid}:${relationValue?.type ?? 'empty'}`
+
                 return (
                   <SortableItem key={item.uid} value={item.uid} asChild>
                     <div
@@ -314,7 +552,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                               asChild
                               disabled={noModulesToRender}
                             >
-                              <div className="flex items-center justify-between gap-2 cursor-pointer">
+                              <div className="flex cursor-pointer items-center justify-between gap-2">
                                 <CardTitle className="flex min-w-0 items-center gap-2">
                                   <div className="flex shrink-0 items-center gap-2">
                                     <SortableItemHandle asChild>
@@ -346,22 +584,49 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                     <div className="flex min-w-0 items-center gap-2">
                                       <ModuleIcon className="size-4 shrink-0 text-muted-foreground" />
                                       <span className="truncate">
-                                        {moduleDisplay.title}
+                                        {moduleTitle}
                                       </span>
+                                      {isSavedModule ? (
+                                        <Badge
+                                          variant="secondary"
+                                          className="shrink-0"
+                                        >
+                                          Global
+                                        </Badge>
+                                      ) : null}
                                     </div>
                                   ) : (
                                     item.name
                                   )}
                                 </CardTitle>
-                                <Button
-                                  size={"icon"}
-                                  variant={"destructive"}
-                                  onClick={() => {
-                                    handleDelete(item.uid);
-                                  }}
-                                >
-                                  <Trash />
-                                </Button>
+                                <div className="flex shrink-0 items-center gap-2">
+                                  {props.config.ui === 'Iterator' &&
+                                  !isSavedModule &&
+                                  canSaveGlobal ? (
+                                    <Button
+                                      size="icon"
+                                      variant="outline"
+                                      aria-label={`Save ${moduleTitle}`}
+                                      disabled={savingUid === item.uid}
+                                      onClick={(event) => {
+                                        event.stopPropagation()
+                                        void handleSaveModule(item, moduleTitle)
+                                      }}
+                                    >
+                                      <Save />
+                                    </Button>
+                                  ) : null}
+                                  <Button
+                                    size="icon"
+                                    variant="destructive"
+                                    onClick={(event) => {
+                                      event.stopPropagation()
+                                      handleDelete(item.uid)
+                                    }}
+                                  >
+                                    <Trash />
+                                  </Button>
+                                </div>
                               </div>
                             </CollapsibleTrigger>
                           </CardHeader>
@@ -372,6 +637,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                             >
                               <CardContent>
                                 <FieldComponent
+                                  key={fieldKey}
                                   id={`${id}.${item.uid}.${fieldConfig.name}`}
                                   ref={setRef(item.uid)}
                                   collapsible
@@ -386,14 +652,14 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                       </Collapsible>
                     </div>
                   </SortableItem>
-                );
+                )
               })}
             </div>
           )}
         </SortableContent>
       </FieldWrapper>
     </Sortable>
-  );
-};
+  )
+}
 
-export default ListUI;
+export default ListUI

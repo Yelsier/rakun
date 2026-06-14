@@ -5,7 +5,7 @@ import {
   type Permission,
 } from '@rakun-kit/core/client'
 
-type ContentPermissionAction = 'own' | 'readAny' | 'updateAny' | 'deleteAny'
+export type ContentPermissionAction = 'own' | 'readAny' | 'updateAny' | 'deleteAny'
 
 const contentPermissionActions: ContentPermissionAction[] = [
   'readAny',
@@ -39,6 +39,13 @@ const resolveContentPermission = (
 
   if (!contentType) return permission
 
+  return getEncodedContentPermission(contentType, action)
+}
+
+export const getEncodedContentPermission = (
+  contentType: EncodedContentType,
+  action: ContentPermissionAction,
+): Permission | null => {
   const config = contentType.permissions
 
   if (config === false) return null
@@ -64,10 +71,18 @@ const resolveContentPermission = (
     return `content.${resource}.${action}` as Permission
   }
 
-  if (contentType.isInternal) return null
+  if (contentType.isInternal || contentType.isHiddenFromManager) return null
 
   return `content.${contentType.name}.${action}` as Permission
 }
+
+export const getEncodedContentPermissions = (
+  contentType: EncodedContentType,
+  actions: ContentPermissionAction[],
+) =>
+  actions
+    .map((action) => getEncodedContentPermission(contentType, action))
+    .filter((permission): permission is Permission => Boolean(permission))
 
 const resolvePermissions = (
   permissions: Permission[],
@@ -108,6 +123,27 @@ const getGrantedPermissions = (
   return granted
 }
 
+const resolveDefinedPermissions = (
+  permissions: Permission[],
+  contentTypes: EncodedContentType[]
+) =>
+  permissions.flatMap((permission) => {
+    const resolved = resolvePermissions([permission], contentTypes)
+
+    return resolved ?? []
+  })
+
+const hasGrantedPermission = (
+  permission: Permission,
+  granted: Set<Permission>,
+) => {
+  if (isContentPermission(permission)) {
+    return granted.has(permission)
+  }
+
+  return false
+}
+
 export const hasManagerPermissions = (
   user: ManagerUserSchema,
   permissions: Permission[],
@@ -120,10 +156,34 @@ export const hasManagerPermissions = (
   const granted = getGrantedPermissions(user, contentTypes)
 
   return resolved.every((permission) => {
-    if (isContentPermission(permission)) {
-      return granted.has(permission)
-    }
-
-    return false
+    return hasGrantedPermission(permission, granted)
   })
+}
+
+export const hasAnyManagerPermissionIfDefined = (
+  user: ManagerUserSchema,
+  permissions: Permission[],
+  contentTypes: EncodedContentType[] = []
+) => {
+  const resolved = resolveDefinedPermissions(permissions, contentTypes)
+
+  if (resolved.length === 0) return true
+
+  const granted = getGrantedPermissions(user, contentTypes)
+
+  return resolved.some((permission) => hasGrantedPermission(permission, granted))
+}
+
+export const hasManagerPermissionsIfDefined = (
+  user: ManagerUserSchema,
+  permissions: Permission[],
+  contentTypes: EncodedContentType[] = []
+) => {
+  const resolved = resolveDefinedPermissions(permissions, contentTypes)
+
+  if (resolved.length === 0) return true
+
+  const granted = getGrantedPermissions(user, contentTypes)
+
+  return resolved.every((permission) => hasGrantedPermission(permission, granted))
 }

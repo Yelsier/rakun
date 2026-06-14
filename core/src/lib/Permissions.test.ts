@@ -110,6 +110,25 @@ describe("permissions", () => {
     );
   });
 
+  it("omits hidden content permissions by default", () => {
+    const Hidden = new ContentType({
+      name: "PermissionTestHiddenDefault",
+      fields: {
+        title: Fields.string().required(),
+      },
+    }).hideFromManager();
+    registerContentType(Hidden);
+
+    expect(getPermissionList()).not.toContain(
+      "content.PermissionTestHiddenDefault.readAny",
+    );
+    expect(
+      hasPermissions(makeUser([]), [
+        "content.PermissionTestHiddenDefault.readAny" as Permission,
+      ]),
+    ).toBe(false);
+  });
+
   it("maps grouped route content permissions from content type definitions", () => {
     const user = makeUser(["content.Route.readAny", "content.Route.updateAny"]);
 
