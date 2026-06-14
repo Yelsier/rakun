@@ -4,6 +4,7 @@ import {
   Box,
   ChevronsUpDown,
   GripVertical,
+  Unlink,
   Plus,
   Save,
   Trash,
@@ -22,10 +23,16 @@ import { fieldsMap, type FieldRef } from '../../ContentTypeEdit'
 import { type FieldValue, useFieldValues } from '../shared'
 import { FieldWrapper } from '../shared/FieldWrapper'
 
-import { useManagerMutation } from '@/client/react'
+import { useManagerClient, useManagerMutation } from '@/client/react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { getActionErrorMessage } from '@/helpers/get-action-error-message'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import {
   Collapsible,
   CollapsibleContent,
@@ -80,6 +87,31 @@ const getRelationField = (
 
 const getCreatedId = (result: unknown) =>
   isRecord(result) && typeof result._id === 'string' ? result._id : undefined
+
+const documentMetadataKeys = new Set([
+  '_id',
+  '_revision',
+  '_schemaVersion',
+  '_trashed',
+  '_visibility',
+  '_visibilityBeforeTrash',
+  'createdAt',
+  'createdBy',
+  'trashedAt',
+  'trashedBy',
+  'updatedAt',
+  'updatedBy',
+])
+
+const copyDocumentAsNewModuleData = (
+  document: Record<string, unknown>,
+  contentType: string,
+) => ({
+  ...Object.fromEntries(
+    Object.entries(document).filter(([key]) => !documentMetadataKeys.has(key)),
+  ),
+  _type: contentType,
+})
 
 const isManagerListQueryForContentType = (
   queryKey: readonly unknown[],
@@ -197,6 +229,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
   const refs = useRef<Record<string, FieldRef | null>>({})
   const valueRef = useRef<ListFieldValues>([])
   const [savingUid, setSavingUid] = useState<string | null>(null)
+  const [unlinkingUid, setUnlinkingUid] = useState<string | null>(null)
   const setRef = useCallback(
     (uid: string) => (fieldRef: FieldRef | null) => {
       refs.current[uid] = fieldRef
@@ -206,6 +239,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
   const { language } = useLanguage()
   const { hasAnyPermission } = useSession()
   const queryClient = useQueryClient()
+  const managerClient = useManagerClient()
   const { mutateAsync: createModule } = useManagerMutation('manager.create')
 
   const { value, errors, onValueChange, getValue, getState } =
@@ -449,7 +483,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
 
         toast.success(`${title} saved`)
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : 'Could not save module')
+        toast.error(getActionErrorMessage(error, 'Could not save module'))
       } finally {
         setSavingUid(null)
       }
@@ -462,6 +496,72 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
       onValueChange,
       props.fields,
       queryClient,
+    ],
+  )
+
+  const handleUnlinkModule = useCallback(
+    async (item: ListFieldValues[number], title: string) => {
+      const fieldConfig = props.fields.find((field) => field.name === item.name)
+      const relationField = fieldConfig
+        ? getRelationField(fieldConfig.field)
+        : undefined
+
+      if (!relationField) {
+        toast.error('Only relation modules can be unlinked')
+        return
+      }
+
+      const currentValue =
+        (refs.current[item.uid]?.getValue() as FieldValue | undefined) ??
+        getItemFallbackValue(item)
+
+      if (!isRelationExistingValue(currentValue)) {
+        toast.info('This module is already local')
+        return
+      }
+
+      setUnlinkingUid(item.uid)
+
+      try {
+        const document = await managerClient.request('manager.get', {
+          contentType: relationField.contentType.name,
+          id: currentValue._id,
+        })
+        const data = isRecord(document)
+          ? copyDocumentAsNewModuleData(document, relationField.contentType.name)
+          : { _type: relationField.contentType.name }
+        const newValue: RelationNewValue = {
+          type: 'new',
+          data,
+        }
+
+        delete refs.current[item.uid]
+
+        onValueChange(
+          getCurrentListState().map((currentItem) =>
+            currentItem.uid === item.uid
+              ? {
+                  name: currentItem.name,
+                  value: newValue as FieldValue,
+                  uid: currentItem.uid,
+                }
+              : currentItem,
+          ),
+        )
+
+        toast.success(`${title} unlinked`)
+      } catch (error) {
+        toast.error(getActionErrorMessage(error, 'Could not unlink module'))
+      } finally {
+        setUnlinkingUid(null)
+      }
+    },
+    [
+      getCurrentListState,
+      getItemFallbackValue,
+      managerClient,
+      onValueChange,
+      props.fields,
     ],
   )
 
@@ -615,6 +715,31 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                     >
                                       <Save />
                                     </Button>
+                                  ) : null}
+                                  {props.config.ui === 'Iterator' &&
+                                  isSavedModule ? (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          size="icon"
+                                          variant="outline"
+                                          aria-label={`Unlink ${moduleTitle}`}
+                                          disabled={unlinkingUid === item.uid}
+                                          onClick={(event) => {
+                                            event.stopPropagation()
+                                            void handleUnlinkModule(
+                                              item,
+                                              moduleTitle,
+                                            )
+                                          }}
+                                        >
+                                          <Unlink />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top">
+                                        Unlink global module
+                                      </TooltipContent>
+                                    </Tooltip>
                                   ) : null}
                                   <Button
                                     size="icon"
