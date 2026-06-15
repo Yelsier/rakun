@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  ChevronDown,
   Copy,
   Eye,
   EyeOff,
@@ -19,6 +20,12 @@ import { useEditPageContext } from '../_context/EditPageContext'
 import type { EditableDocumentVisibility } from '../edit.types'
 
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Select,
   SelectContent,
@@ -71,6 +78,8 @@ export const EditToolbar = () => {
   } = useEditPageContext()
   const VisibilityIcon = visibilityIcons[editableVisibility]
   const pending = documentActions.pending
+  const savePending = pending.create || pending.update || pending.delete || pending.trash
+  const canSaveAsDraft = hasVisibility && contentTypeId && !isTrashed
 
   return (
     <div className='flex gap-2 justify-between items-center sticky top-0 bg-background z-50 pb-3 mb-3 border-b'>
@@ -168,32 +177,58 @@ export const EditToolbar = () => {
             Preview
           </Button>
         ) : null}
-        {hasVisibility && contentTypeId && !isTrashed ? (
-          <Button
-            variant='outline'
-            loading={pending.create}
-            onClick={() => void documentActions.handleSaveAsDraft()}
-          >
-            <Copy />
-            Save as draft
-          </Button>
-        ) : null}
-
-        <Tooltip open={showSaveErrorTooltip}>
-          <TooltipTrigger asChild>
-            <Button
-              loading={pending.create || pending.update || pending.delete || pending.trash}
-              className='cursor-pointer ml-auto'
-              onClick={() => void documentActions.handleSave()}
-              data-tour='content-edit-save'
-            >
-              Save
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side='top' sideOffset={8}>
-            Hay errores por corregir
-          </TooltipContent>
-        </Tooltip>
+        {canSaveAsDraft ? (
+          <div className='ml-auto inline-flex overflow-hidden rounded-md shadow-xs focus-within:ring-[3px] focus-within:ring-ring/50'>
+            <Tooltip open={showSaveErrorTooltip}>
+              <TooltipTrigger asChild>
+                <Button
+                  loading={savePending}
+                  className='cursor-pointer rounded-none shadow-none focus-visible:z-10 focus-visible:ring-0'
+                  onClick={() => void documentActions.handleSave()}
+                  data-tour='content-edit-save'
+                >
+                  Save
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side='top' sideOffset={8}>
+                Hay errores por corregir
+              </TooltipContent>
+            </Tooltip>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-label='Save options'
+                  disabled={savePending}
+                  className='w-9 rounded-none border-l border-primary-foreground/25 px-0! shadow-none focus-visible:z-10 focus-visible:ring-0'
+                >
+                  <ChevronDown />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align='end'>
+                <DropdownMenuItem onClick={() => void documentActions.handleSaveAsDraft()}>
+                  <Copy />
+                  Save as draft
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ) : (
+          <Tooltip open={showSaveErrorTooltip}>
+            <TooltipTrigger asChild>
+              <Button
+                loading={savePending}
+                className='cursor-pointer ml-auto'
+                onClick={() => void documentActions.handleSave()}
+                data-tour='content-edit-save'
+              >
+                Save
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side='top' sideOffset={8}>
+              Hay errores por corregir
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </div>
   )
