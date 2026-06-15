@@ -174,6 +174,7 @@ export const EditPageProvider = ({
   const documentActions = useContentDocumentActions({
     closeMoveToTrashDialog: () => setMoveToTrashOpen(false),
     closePermanentDeleteDialog: () => setPermanentDeleteOpen(false),
+    contentType,
     contentTypeId,
     contentTypeName: contentType.name,
     defaultData,

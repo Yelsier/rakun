@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  Copy,
   Eye,
   EyeOff,
   GitBranch,
@@ -165,6 +166,16 @@ export const EditToolbar = () => {
           >
             <Monitor />
             Preview
+          </Button>
+        ) : null}
+        {hasVisibility && contentTypeId && !isTrashed ? (
+          <Button
+            variant='outline'
+            loading={pending.create}
+            onClick={() => void documentActions.handleSaveAsDraft()}
+          >
+            <Copy />
+            Save as draft
           </Button>
         ) : null}
 
