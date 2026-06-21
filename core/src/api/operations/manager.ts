@@ -13,6 +13,10 @@ import { contentTypesHandler } from "../routes/manager/contentTypes";
 import { createHandler } from "../routes/manager/create";
 import { deleteHandler } from "../routes/manager/delete";
 import { duplicateHandler } from "../routes/manager/duplicate";
+import {
+  listFavoritesHandler,
+  toggleFavoriteHandler,
+} from "../routes/manager/favorites";
 import { trashHandler } from "../routes/manager/trash";
 import { getHandler } from "../routes/manager/get";
 import { listHandler } from "../routes/manager/list";
@@ -87,6 +91,12 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.list": {
       resolve: listHandler,
+    },
+    "manager.favorites.list": {
+      resolve: listFavoritesHandler,
+    },
+    "manager.favorites.toggle": {
+      resolve: toggleFavoriteHandler,
     },
     "manager.setDefaultLanguage": {
       resolve: setDefaultLanguageHandler,

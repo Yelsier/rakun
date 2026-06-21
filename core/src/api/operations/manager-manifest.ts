@@ -61,6 +61,16 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/list",
   },
+  "manager.favorites.list": {
+    kind: "query",
+    method: "post",
+    path: "/manager/favorites/list",
+  },
+  "manager.favorites.toggle": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/favorites/toggle",
+  },
   "manager.setDefaultLanguage": {
     kind: "mutation",
     method: "post",

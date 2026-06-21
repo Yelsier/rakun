@@ -5,6 +5,7 @@ export * from "./ContentVersion";
 export * from "./Language";
 export * from "./LiteralTranslation";
 export * from "./ManagerRole";
+export * from "./ManagerFavorite";
 export * from "./ManagerUser";
 export * from "./Media";
 export * from "./MediaFolder";

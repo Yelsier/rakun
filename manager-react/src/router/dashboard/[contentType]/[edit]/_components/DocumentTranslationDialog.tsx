@@ -1,6 +1,7 @@
 'use client'
 
 import { Languages } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 import { useEditPageContext } from '../_context/EditPageContext'
 
@@ -25,7 +26,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-export const DocumentTranslationDialog = () => {
+export const DocumentTranslationDialog = ({
+  trigger,
+}: {
+  trigger?: ReactNode | false
+} = {}) => {
   const { documentActions, languageCode, languageList, translation, translationEnabled } =
     useEditPageContext()
 
@@ -33,21 +38,24 @@ export const DocumentTranslationDialog = () => {
 
   const { open, overwrite, source, targets } = translation
   const targetOptions = languageList.filter((item) => item.code !== source)
+  const defaultTrigger = (
+    <Button
+      variant='outline'
+      onClick={() => {
+        translation.reset()
+        translation.setSource(languageCode)
+      }}
+    >
+      <Languages />
+      Translate
+    </Button>
+  )
 
   return (
     <Dialog open={open} onOpenChange={translation.setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant='outline'
-          onClick={() => {
-            translation.reset()
-            translation.setSource(languageCode)
-          }}
-        >
-          <Languages />
-          Translate
-        </Button>
-      </DialogTrigger>
+      {trigger === false ? null : (
+        <DialogTrigger asChild>{trigger ?? defaultTrigger}</DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Translate document</DialogTitle>
