@@ -44,7 +44,9 @@ const SelectUI: React.FC<SelectPropsRef> = ({ id, ref, ...props }) => {
         )}
         <Select value={value} onValueChange={onValueChange}>
           <SelectTrigger className='w-full'>
-            <SelectValue placeholder='Select an option' />
+            <SelectValue
+              placeholder={props.dynamicFallbackPlaceholder ?? 'Select an option'}
+            />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>

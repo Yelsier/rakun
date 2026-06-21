@@ -28,7 +28,11 @@ import { LinkToolbarPlugin } from '@/components/editor/plugins/toolbar/link-tool
 import { ToolbarPlugin } from '@/components/editor/plugins/toolbar/toolbar-plugin'
 import { Separator } from '@/components/ui/separator'
 
-export function Plugins() {
+export function Plugins({
+  placeholder = 'Start typing ...',
+}: {
+  placeholder?: string
+}) {
   const [floatingAnchorElem, setFloatingAnchorElem] = useState<HTMLDivElement | null>(null)
   const [isLinkEditMode, setIsLinkEditMode] = useState<boolean>(false)
 
@@ -75,7 +79,7 @@ export function Plugins() {
             <div className="">
               <div className="" ref={onRef}>
                 <ContentEditable
-                  placeholder={'Start typing ...'}
+                  placeholder={placeholder}
                   className="ContentEditable__root relative block min-h-72 overflow-auto px-8 py-4 focus:outline-none"
                 />
               </div>

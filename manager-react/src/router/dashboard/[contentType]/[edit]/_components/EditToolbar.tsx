@@ -219,14 +219,16 @@ export const EditToolbar = () => {
           </div>
         ) : null}
         {canSaveAsDraft ? (
-          <div className="ml-auto inline-flex overflow-hidden rounded-md shadow-xs focus-within:ring-[3px] focus-within:ring-ring/50">
+          <div
+            className="ml-auto inline-flex overflow-hidden rounded-md shadow-xs focus-within:ring-[3px] focus-within:ring-ring/50"
+            data-tour="content-edit-save"
+          >
             <Tooltip open={showSaveErrorTooltip}>
               <TooltipTrigger asChild>
                 <Button
                   loading={savePending}
                   className="cursor-pointer rounded-none shadow-none focus-visible:z-10 focus-visible:ring-0"
                   onClick={() => void documentActions.handleSave()}
-                  data-tour="content-edit-save"
                 >
                   Save
                 </Button>
@@ -275,7 +277,12 @@ export const EditToolbar = () => {
             <DocumentTranslationDialog trigger={false} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button aria-label="More actions" variant="outline" size="icon">
+                <Button
+                  aria-label="More actions"
+                  variant="outline"
+                  size="icon"
+                  data-tour="content-edit-actions"
+                >
                   <MoreVertical />
                 </Button>
               </DropdownMenuTrigger>

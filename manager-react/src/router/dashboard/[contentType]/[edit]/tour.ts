@@ -9,19 +9,26 @@ export const managerContentEditTour: ManagerTour = {
     {
       target: '[data-tour="content-edit-tabs"]',
       title: 'Sections',
-      description: 'Use tabs to move between fields, SEO, layout modules, and versions.',
+      description: 'Use tabs to move between info, content, SEO, layout modules, and versions.',
       side: 'bottom',
     },
     {
       target: '[data-tour="content-edit-visibility"]',
       title: 'Visibility',
-      description: 'Draft, hide, publish, or trash content when visibility is enabled.',
+      description: 'Choose whether this entry is draft, hidden, or published.',
       side: 'bottom',
     },
     {
       target: '[data-tour="content-edit-save"]',
       title: 'Save changes',
-      description: 'Save validates the whole form and highlights sections with errors.',
+      description: 'Save validates the whole form. When available, the arrow lets you save as draft.',
+      side: 'left',
+    },
+    {
+      target: '[data-tour="content-edit-actions"]',
+      title: 'More actions',
+      description:
+        'Open this menu to favorite, translate, preview, move to trash, restore, or delete.',
       side: 'left',
     },
     {

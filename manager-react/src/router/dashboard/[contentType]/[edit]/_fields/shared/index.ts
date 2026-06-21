@@ -26,6 +26,7 @@ export type FieldValue = PossibleValues | Record<string, PossibleValues>
 export type DefaultProps = {
   id: string
   defaultData?: FieldValue
+  dynamicFallbackPlaceholder?: string
 }
 
 export type DefaultDataTypes<T = FieldValue> =

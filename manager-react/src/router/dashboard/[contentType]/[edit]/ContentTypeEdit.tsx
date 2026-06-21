@@ -45,6 +45,11 @@ import { Button } from '@/components/ui/button'
 import { deepEqual } from '@/helpers/deepEqual'
 import { useTRPC } from '@/components/trpc-provider'
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import {
   DynamicDataControl,
   isDynamicFieldEnabled,
 } from './_fields/DynamicDataControl'
@@ -63,12 +68,36 @@ const defaultDataExtractor = (
 type FieldComponentProps = EncodedFieldUnknown & {
   id: string
   defaultData?: FieldValue
+  dynamicFallbackPlaceholder?: string
   ref: React.Ref<FieldRef>
   collapsible?: boolean
   parentContentType?: EncodedContentType
 }
 
 type FieldComponent = (config: FieldComponentProps) => React.ReactElement
+
+const FieldMetaIcon = ({
+  label,
+  children,
+}: {
+  label: string
+  children: ReactNode
+}) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <span
+        aria-label={label}
+        className='inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+        tabIndex={0}
+      >
+        {children}
+      </span>
+    </TooltipTrigger>
+    <TooltipContent side='top' sideOffset={6}>
+      {label}
+    </TooltipContent>
+  </Tooltip>
+)
 
 export const fieldsMap = {
   String: StringField,
@@ -294,12 +323,20 @@ const ContentTypeEdit = forwardRef<
           const FieldComponent = fieldsMap[
             fieldValue.config.type
           ] as FieldComponent
+          const dynamicBinding =
+            fieldValue.config.ui === 'List' ||
+            fieldValue.config.ui === 'Iterator'
+              ? dynamicBindings?.lists?.[fieldName]
+              : dynamicBindings?.fields?.[fieldName]
+          const dynamicFallbackPlaceholder =
+            showDynamicData && dynamicBinding ? 'Fallback value' : undefined
           const field = (
             <FieldComponent
               id={id + '.' + fieldName}
               ref={setRef(i)}
               {...fieldValue}
               defaultData={defaultDataExtractor(fieldName, props.defaultData)}
+              dynamicFallbackPlaceholder={dynamicFallbackPlaceholder}
               parentContentType={dynamicSourceContentType}
             />
           )
@@ -336,10 +373,18 @@ const ContentTypeEdit = forwardRef<
           ) : null
 
           const Tags = ({ children }: { children?: ReactNode }) => (
-            <div className='flex min-w-0 items-center gap-2'>
+            <div className='flex min-w-0 shrink-0 items-center gap-2'>
               {children}
-              {fieldValue.isTranslatable && <Languages size={16} />}
-              {fieldValue.isRequired && <Shield size={16} />}
+              {fieldValue.isTranslatable ? (
+                <FieldMetaIcon label='Translatable field'>
+                  <Languages aria-hidden='true' size={16} />
+                </FieldMetaIcon>
+              ) : null}
+              {fieldValue.isRequired ? (
+                <FieldMetaIcon label='Required field'>
+                  <Shield aria-hidden='true' size={16} />
+                </FieldMetaIcon>
+              ) : null}
             </div>
           )
 

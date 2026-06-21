@@ -28,6 +28,7 @@ const TextareaUI: React.FC<StringPropsRef> = ({ id, ref, ...props }) => {
     >
       <Textarea
         required={props.isRequired}
+        placeholder={props.dynamicFallbackPlaceholder}
         value={value}
         className={errorStyle({ error: !!error })}
         onChange={(e) => {

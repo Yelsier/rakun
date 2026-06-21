@@ -20,6 +20,7 @@ import { dateTimeToInputValue } from '@/helpers/dateToInputValue'
 export type DateProps = EncodedDateField & {
   id: string
   defaultData?: FieldValue
+  dynamicFallbackPlaceholder?: string
 }
 
 export type DatePropsRef = DateProps & RefAttributes<FieldRef>

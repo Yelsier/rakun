@@ -14,9 +14,9 @@ import {
   isDynamicDataSourceContentTypeAllowed,
   isTranslatableObject,
 } from '@rakun-kit/core/client'
-import { Cable, Link2, ListFilter, X } from 'lucide-react'
+import { Cable, HelpCircle, Link2, ListFilter, X } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,6 +24,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -35,6 +36,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useManagerQuery } from '@/client/react'
@@ -63,6 +69,27 @@ type SourceFieldOption = {
 }
 
 const CURRENT_DOCUMENT_ID = '__rakun_current_document__'
+
+const cloneDynamicBindings = (
+  bindings: DynamicDocumentBindings | undefined,
+) => (bindings ? structuredClone(bindings) : undefined)
+
+const cleanDynamicBindings = (
+  bindings: DynamicDocumentBindings | undefined,
+): DynamicDocumentBindings | undefined => {
+  if (!bindings) return undefined
+
+  const fields =
+    bindings.fields && Object.keys(bindings.fields).length > 0
+      ? bindings.fields
+      : undefined
+  const lists =
+    bindings.lists && Object.keys(bindings.lists).length > 0
+      ? bindings.lists
+      : undefined
+
+  return fields || lists ? { fields, lists } : undefined
+}
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
@@ -862,10 +889,28 @@ export const DynamicDataControl = ({
   mode?: 'full' | 'trigger' | 'panel' | 'dialog'
 }) => {
   const [internalOpen, setInternalOpen] = useState(false)
+  const [draftBindings, setDraftBindings] = useState<
+    DynamicDocumentBindings | undefined
+  >(() => cloneDynamicBindings(bindings))
+  const wasOpenRef = useRef(open ?? internalOpen)
+
+  const list = isListField(field)
+  const isOpen = open ?? internalOpen
+
+  useEffect(() => {
+    if (mode !== 'dialog') return
+
+    const wasOpen = wasOpenRef.current
+
+    if (!isOpen || !wasOpen) {
+      setDraftBindings(cloneDynamicBindings(bindings))
+    }
+
+    wasOpenRef.current = isOpen
+  }, [bindings, isOpen, mode])
 
   if (!isDynamicFieldEnabled(contentType, field)) return null
 
-  const isOpen = open ?? internalOpen
   const setOpen = (next: boolean | ((current: boolean) => boolean)) => {
     const value = typeof next === 'function' ? next(isOpen) : next
 
@@ -876,7 +921,13 @@ export const DynamicDataControl = ({
 
     setInternalOpen(value)
   }
-  const list = isListField(field)
+  const activeBindings = mode === 'dialog' ? draftBindings : bindings
+  const commitBindings =
+    mode === 'dialog'
+      ? (nextBindings: DynamicDocumentBindings | undefined) =>
+          setDraftBindings(cleanDynamicBindings(nextBindings))
+      : (nextBindings: DynamicDocumentBindings | undefined) =>
+          onChange(cleanDynamicBindings(nextBindings))
   const sourceContentTypes = getSourceContentTypes(contentTypes)
   const currentDocumentContentType = documentContentType ?? contentType
   const currentDocumentSourceEnabled =
@@ -892,8 +943,8 @@ export const DynamicDataControl = ({
     : sourceContentTypes.filter(
         (sourceContentType) => sourceContentType.name !== contentType.name,
       )
-  const fieldBinding = bindings?.fields?.[fieldName]
-  const listBinding = bindings?.lists?.[fieldName]
+  const fieldBinding = activeBindings?.fields?.[fieldName]
+  const listBinding = activeBindings?.lists?.[fieldName]
   const bound = list ? !!listBinding : !!fieldBinding
   const summary = bindingSummary({
     list,
@@ -902,77 +953,93 @@ export const DynamicDataControl = ({
     documentContentTypeName: currentDocumentContentType.name,
   })
   const updateFieldBinding = (binding: FieldBinding) => {
-    const fields = { ...(bindings?.fields ?? {}) }
+    const fields = { ...(activeBindings?.fields ?? {}) }
     if (binding) fields[fieldName] = binding
     else delete fields[fieldName]
-    onChange({
-      ...(bindings ?? {}),
+    commitBindings({
+      ...(activeBindings ?? {}),
       fields: Object.keys(fields).length ? fields : undefined,
     })
   }
   const updateListBinding = (binding: DynamicListBinding | undefined) => {
-    const lists = { ...(bindings?.lists ?? {}) }
+    const lists = { ...(activeBindings?.lists ?? {}) }
     if (binding) lists[fieldName] = binding
     else delete lists[fieldName]
-    onChange({
-      ...(bindings ?? {}),
+    commitBindings({
+      ...(activeBindings ?? {}),
       lists: Object.keys(lists).length ? lists : undefined,
     })
   }
   const clearBinding = () =>
     list ? updateListBinding(undefined) : updateFieldBinding(undefined)
+  const triggerLabel = bound ? 'Edit dynamic data link' : 'Link dynamic data'
+  const helpDescription = list
+    ? 'Dynamic data fills this list from another content source. Use it when modules should stay synced with page, route, or related content instead of being edited manually here.'
+    : 'Dynamic data fills this field from another content source. Use it when this value should stay synced with page, route, or related content instead of being edited manually here.'
+  const cancelDialogChanges = () => {
+    setDraftBindings(cloneDynamicBindings(bindings))
+    setOpen(false)
+  }
+  const saveDialogChanges = () => {
+    onChange(cleanDynamicBindings(draftBindings))
+    setOpen(false)
+  }
 
   const trigger = (
-    <div className='flex min-w-0 items-center gap-1'>
-      <button
-        type='button'
-        className='min-w-0 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-        onClick={() => setOpen((value) => !value)}
-      >
-        {bound && summary ? (
-          <Badge
-            variant='secondary'
-            className='max-w-80 min-w-0 gap-1.5 rounded-md px-2 py-1 hover:bg-secondary/80'
+    <div className='flex min-w-0 items-center gap-1.5'>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type='button'
+            className='min-w-0 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+            onClick={() => setOpen((value) => !value)}
           >
-            {list ? (
-              <ListFilter className='h-3.5 w-3.5 shrink-0' />
+            {bound && summary ? (
+              <Badge
+                variant='secondary'
+                className='max-w-80 min-w-0 gap-1.5 rounded-md px-2 py-1 hover:bg-secondary/80'
+              >
+                {list ? (
+                  <ListFilter className='h-3.5 w-3.5 shrink-0' />
+                ) : (
+                  <Link2 className='h-3.5 w-3.5 shrink-0' />
+                )}
+                <span className='truncate'>{summary}</span>
+              </Badge>
             ) : (
-              <Link2 className='h-3.5 w-3.5 shrink-0' />
+              <Badge
+                variant='outline'
+                className='gap-1.5 rounded-md px-2 py-1 text-muted-foreground'
+              >
+                <Cable className='h-3.5 w-3.5' />
+                Not linked
+              </Badge>
             )}
-            <span className='truncate'>{summary}</span>
-          </Badge>
-        ) : (
-          <Badge
-            variant='outline'
-            className='gap-1.5 rounded-md px-2 py-1 text-muted-foreground'
-          >
-            <Cable className='h-3.5 w-3.5' />
-            Not linked
-          </Badge>
-        )}
-      </button>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side='top' sideOffset={6}>
+          {triggerLabel}
+        </TooltipContent>
+      </Tooltip>
       {bound ? (
-        <Button
-          type='button'
-          size='icon'
-          variant='ghost'
-          className='size-8'
-          onClick={clearBinding}
-        >
-          <X className='h-4 w-4' />
-          <span className='sr-only'>Clear dynamic data</span>
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type='button'
+              size='icon'
+              variant='ghost'
+              className='size-6'
+              onClick={clearBinding}
+            >
+              <X className='h-4 w-4' />
+              <span className='sr-only'>Clear dynamic data</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side='top' sideOffset={6}>
+            Clear dynamic data link
+          </TooltipContent>
+        </Tooltip>
       ) : null}
-      <Button
-        type='button'
-        size='icon'
-        variant={isOpen ? 'secondary' : 'ghost'}
-        className='size-8 shrink-0'
-        onClick={() => setOpen((value) => !value)}
-      >
-        <Cable className='h-4 w-4' />
-        <span className='sr-only'>Edit dynamic data</span>
-      </Button>
     </div>
   )
 
@@ -1001,15 +1068,36 @@ export const DynamicDataControl = ({
   ) : null
 
   const dialog = (
-    <Dialog open={isOpen} onOpenChange={(value) => setOpen(value)}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(value) => {
+        if (value) {
+          setOpen(true)
+          return
+        }
+
+        cancelDialogChanges()
+      }}
+    >
       <DialogContent className='max-h-[85vh] w-screen max-w-5xl! overflow-y-auto'>
         <DialogHeader>
-          <DialogTitle>Dynamic data</DialogTitle>
-          <DialogDescription className='sr-only'>
-            Configure dynamic data for {fieldName}
+          <DialogTitle className='flex items-center gap-2'>
+            Dynamic data
+            <HelpCircle className='h-4 w-4 text-muted-foreground' />
+          </DialogTitle>
+          <DialogDescription className='max-w-2xl leading-relaxed'>
+            {helpDescription}
           </DialogDescription>
         </DialogHeader>
         {editor}
+        <DialogFooter>
+          <Button type='button' variant='outline' onClick={cancelDialogChanges}>
+            Cancel
+          </Button>
+          <Button type='button' onClick={saveDialogChanges}>
+            Save
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

@@ -24,6 +24,7 @@ const ContentReferenceMultiSelectUI: React.FC<ContentReferencePropsRef> = ({
   isRequired,
   isTranslatable,
   defaultData,
+  dynamicFallbackPlaceholder,
   ref,
   contentType,
 }) => {
@@ -79,7 +80,9 @@ const ContentReferenceMultiSelectUI: React.FC<ContentReferencePropsRef> = ({
           ))}
         </TagsTrigger>
         <TagsContent>
-          <TagsInput placeholder={`Search ${contentTypeName}...`} />
+          <TagsInput
+            placeholder={dynamicFallbackPlaceholder ?? `Search ${contentTypeName}...`}
+          />
           <TagsList>
             <TagsEmpty />
             <TagsGroup>

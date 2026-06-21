@@ -24,6 +24,7 @@ const MultiSelectUI: React.FC<SelectPropsRef> = ({
   isTranslatable,
   options,
   defaultData,
+  dynamicFallbackPlaceholder,
   ref,
 }) => {
   const { value, getValue, errors, cleanErrors, getState, onValueChange } =
@@ -75,7 +76,7 @@ const MultiSelectUI: React.FC<SelectPropsRef> = ({
           ))}
         </TagsTrigger>
         <TagsContent>
-          <TagsInput placeholder='Search tag...' />
+          <TagsInput placeholder={dynamicFallbackPlaceholder ?? 'Search tag...'} />
           <TagsList>
             <TagsEmpty />
             <TagsGroup>

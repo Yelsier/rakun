@@ -34,7 +34,15 @@ const RouteSelect: React.FC<{
   error?: string | null
   isRequired?: boolean
   setRoutes: (routes: RouteSchema[]) => void
-}> = ({ value, onValueChange, error, isRequired, setRoutes }) => {
+  dynamicFallbackPlaceholder?: string
+}> = ({
+  value,
+  onValueChange,
+  error,
+  isRequired,
+  setRoutes,
+  dynamicFallbackPlaceholder,
+}) => {
   const trpc = useTRPC()
   const { data } = useQuery(
     trpc.manager.list.queryOptions({
@@ -82,7 +90,9 @@ const RouteSelect: React.FC<{
             }
           >
             <SelectTrigger className={errorStyle({ error: !!error })}>
-              <SelectValue placeholder='Select a Route' />
+              <SelectValue
+                placeholder={dynamicFallbackPlaceholder ?? 'Select a Route'}
+              />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -107,7 +117,15 @@ const ItemSelect: React.FC<{
   onValueChange: (value: LinkfieldValue) => void
   error?: string | null
   isRequired?: boolean
-}> = ({ routes, value, onValueChange, error, isRequired }) => {
+  dynamicFallbackPlaceholder?: string
+}> = ({
+  routes,
+  value,
+  onValueChange,
+  error,
+  isRequired,
+  dynamicFallbackPlaceholder,
+}) => {
   const { language } = useLanguage()
   const trpc = useTRPC()
   const { data, refetch, isFetching } = useQuery(
@@ -170,7 +188,9 @@ const ItemSelect: React.FC<{
               }
             >
               <SelectTrigger className={errorStyle({ error: !!error })}>
-                <SelectValue placeholder='Select an Item' />
+                <SelectValue
+                  placeholder={dynamicFallbackPlaceholder ?? 'Select an Item'}
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
@@ -241,6 +261,7 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
           error={error}
           isRequired={props.isRequired}
           setRoutes={setRoutes}
+          dynamicFallbackPlaceholder={props.dynamicFallbackPlaceholder}
         />
         <ItemSelect
           routes={routes}
@@ -248,6 +269,7 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
           onValueChange={onValueChange}
           error={error}
           isRequired={props.isRequired}
+          dynamicFallbackPlaceholder={props.dynamicFallbackPlaceholder}
         />
       </div>
     </FieldWrapper>

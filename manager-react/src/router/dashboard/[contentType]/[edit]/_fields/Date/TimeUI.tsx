@@ -31,6 +31,7 @@ const TimeUI: React.FC<DatePropsRef> = ({ id, ref, ...props }) => {
         type='time'
         step={2}
         required={props.isRequired}
+        placeholder={props.dynamicFallbackPlaceholder}
         value={value}
         className={errorStyle({ error: !!error })}
         onChange={(e) => onValueChange(e.target.value)}

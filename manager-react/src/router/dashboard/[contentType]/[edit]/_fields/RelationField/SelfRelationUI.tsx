@@ -141,9 +141,12 @@ const SelfRelationUI: React.FC<RelationPropsRef> = ({ ref, ...props }) => {
         data={values}
         type={decodeCamelCase(contentType.name)}
       >
-        <ComboboxTrigger className='w-full' />
+        <ComboboxTrigger
+          className='w-full'
+          placeholder={props.dynamicFallbackPlaceholder}
+        />
         <ComboboxContent>
-          <ComboboxInput />
+          <ComboboxInput placeholder={props.dynamicFallbackPlaceholder} />
           <ComboboxEmpty />
           <ComboboxList>
             <ComboboxGroup>

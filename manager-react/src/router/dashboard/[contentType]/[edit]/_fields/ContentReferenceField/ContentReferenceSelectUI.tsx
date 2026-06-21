@@ -55,7 +55,11 @@ const ContentReferenceSelectUI: React.FC<ContentReferencePropsRef> = ({
         )}
         <Select value={value} onValueChange={onValueChange}>
           <SelectTrigger className='w-full'>
-            <SelectValue placeholder={`Select ${contentType.name}`} />
+            <SelectValue
+              placeholder={
+                props.dynamicFallbackPlaceholder ?? `Select ${contentType.name}`
+              }
+            />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>

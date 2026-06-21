@@ -41,12 +41,14 @@ export function Editor({
   onChange,
   onSerializedChange,
   editorRef,
+  placeholder = 'Start typing ...',
 }: {
   editorState?: EditorState
   editorSerializedState?: SerializedEditorState
   onChange?: (editorState: EditorState) => void
   onSerializedChange?: (editorSerializedState: SerializedEditorState) => void
   editorRef?: React.RefObject<LexicalEditor | null>
+  placeholder?: string
 }) {
   const { open } = useSidebar()
 
@@ -64,7 +66,7 @@ export function Editor({
         }
       >
         <TooltipProvider>
-          <Plugins />
+          <Plugins placeholder={placeholder} />
           {editorRef && <EditorRefPlugin editorRef={editorRef} />}
           <OnChangePlugin
             ignoreSelectionChange={true}

@@ -115,6 +115,7 @@ const RichTextUI: React.FC<StringPropsRef> = ({
       <Editor
         editorRef={editorRef}
         editorSerializedState={editorValue}
+        placeholder={props.dynamicFallbackPlaceholder ?? 'Start typing ...'}
         onSerializedChange={(value) => {
           onValueChange(value)
           cleanErrors()

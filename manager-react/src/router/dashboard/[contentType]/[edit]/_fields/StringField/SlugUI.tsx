@@ -42,6 +42,7 @@ const SlugUI: React.FC<StringPropsRef> = ({ id, ref, ...props }) => {
       <Input
         type='text'
         required={props.isRequired}
+        placeholder={props.dynamicFallbackPlaceholder}
         value={value}
         className={errorStyle({ error: !!error })}
         onChange={(e) => onValueChange(slugify(e.target.value))}

@@ -13,6 +13,7 @@ export type ListProps = EncodedListField & {
   id: string
   defaultData?: FieldValue
   parentContentType?: EncodedContentType
+  dynamicFallbackPlaceholder?: string
 }
 
 export type ListPropsRef = ListProps & RefAttributes<FieldRef>
@@ -20,6 +21,7 @@ export type ListPropsRef = ListProps & RefAttributes<FieldRef>
 export type SimpleListProps = EncodedSimpleListField & {
   id: string
   defaultData?: FieldValue
+  dynamicFallbackPlaceholder?: string
 }
 
 export type SimpleListPropsRef = SimpleListProps & RefAttributes<FieldRef>

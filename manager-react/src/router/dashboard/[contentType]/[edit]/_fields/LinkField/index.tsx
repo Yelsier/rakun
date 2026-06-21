@@ -11,6 +11,7 @@ import { FieldValue } from '../shared'
 export type LinkProps = EncodedLinkField & {
   id: string
   defaultData?: FieldValue
+  dynamicFallbackPlaceholder?: string
 }
 
 export type LinkPropsRef = LinkProps & RefAttributes<FieldRef>

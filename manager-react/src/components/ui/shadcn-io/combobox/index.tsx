@@ -114,10 +114,13 @@ export const Combobox = ({
   )
 }
 
-export type ComboboxTriggerProps = ComponentProps<typeof Button>
+export type ComboboxTriggerProps = ComponentProps<typeof Button> & {
+  placeholder?: string
+}
 
 export const ComboboxTrigger = ({
   children,
+  placeholder,
   ...props
 }: ComboboxTriggerProps) => {
   const { value, data, type, setWidth } = useContext(ComboboxContext)
@@ -151,7 +154,7 @@ export const ComboboxTrigger = ({
           <span className='flex w-full items-center justify-between gap-2'>
             {value
               ? data.find((item) => item.value === value)?.label
-              : `Select ${type}...`}
+              : placeholder ?? `Select ${type}...`}
             <ChevronsUpDownIcon
               className='shrink-0 text-muted-foreground'
               size={16}
@@ -195,6 +198,7 @@ export const ComboboxInput = ({
   value: controlledValue,
   defaultValue,
   onValueChange: controlledOnValueChange,
+  placeholder,
   ...props
 }: ComboboxInputProps) => {
   const { type, inputValue, setInputValue } = useContext(ComboboxContext)
@@ -213,7 +217,7 @@ export const ComboboxInput = ({
   return (
     <CommandInput
       onValueChange={onValueChange}
-      placeholder={`Search ${type}...`}
+      placeholder={placeholder ?? `Search ${type}...`}
       value={value}
       {...props}
     />

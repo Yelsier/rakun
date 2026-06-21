@@ -32,6 +32,7 @@ import {
 type SimpleListProps = EncodedSimpleListField & {
   id: string
   defaultData?: FieldValue
+  dynamicFallbackPlaceholder?: string
   ref?: React.Ref<FieldRef>
 }
 
@@ -244,7 +245,12 @@ const RelationSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) 
           ))}
         </TagsTrigger>
         <TagsContent>
-          <TagsInput placeholder={`Search ${relationField.contentType.name}...`} />
+          <TagsInput
+            placeholder={
+              props.dynamicFallbackPlaceholder ??
+              `Search ${relationField.contentType.name}...`
+            }
+          />
           <TagsList>
             <TagsEmpty />
             <TagsGroup>
@@ -397,7 +403,10 @@ const PrimitiveSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props })
         </TagsTrigger>
         <TagsContent>
           <TagsInput
-            placeholder={`Add ${isNumberField ? 'number' : 'value'}...`}
+            placeholder={
+              props.dynamicFallbackPlaceholder ??
+              `Add ${isNumberField ? 'number' : 'value'}...`
+            }
             value={query}
             onValueChange={setQuery}
             onKeyDown={(event) => {

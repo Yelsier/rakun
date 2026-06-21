@@ -29,6 +29,7 @@ const NumberUI: React.FC<NumberPropsRef> = ({ ref, id, ...props }) => {
       <Input
         type='number'
         required={props.isRequired}
+        placeholder={props.dynamicFallbackPlaceholder}
         value={value}
         min={props.minValue}
         max={props.maxValue}
