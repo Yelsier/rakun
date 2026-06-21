@@ -160,30 +160,23 @@ export function useFieldValues<T>({
     }
 
     if (isTranslatable) {
-      // Check if there are any translations that differ from the default value
-      const hasTranslations =
-        Object.keys(translatesStore).length > 1 &&
-        Object.values(translatesStore).some(
-          (v) => !isNullishValue(v, defaultValue),
-        )
-
-      // Set values that are equal to defaultValue to null
-      const defaultsToNull = Object.fromEntries(
-        Object.entries(translatesStore).map(([lang, v]) =>
-          isNullishValue(v, defaultValue) ? [lang, null] : [lang, v],
+      const filledTranslations = Object.fromEntries(
+        Object.entries(translatesStore).filter(
+          ([lang, v]) =>
+            lang !== '_tag' &&
+            v !== 'Translatable' &&
+            !isNullishValue(v, defaultValue),
         ),
       )
 
-      // If all translations are either null or equal to defaultValue, return null
-      if (
-        Object.entries(defaultsToNull)
-          .filter(([lang, v]) => lang !== '_tag' && v !== 'Translatable')
-          .every(([_, v]) => v === null)
-      ) {
+      if (Object.keys(filledTranslations).length === 0) {
         return null
       }
 
-      return hasTranslations ? defaultsToNull : null
+      return {
+        _tag: 'Translatable',
+        ...filledTranslations,
+      }
     } else {
       return isNullishValue(value, defaultValue) ? null : value
     }

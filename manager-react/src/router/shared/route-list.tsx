@@ -189,6 +189,9 @@ export const managerRouteDefinitions = [
       kind: "content-create",
       contentType: params.contentType ?? "",
     }),
+    headerEnd: () => (
+      <LanguageSelector className="w-36 border-0 shadow-none" />
+    ),
     render: (route, props, contentType) =>
       props.renderContentCreate?.(route, contentType) ?? (
         <ManagerContentTypeCreateScreen contentType={contentType} preview={props.preview} />

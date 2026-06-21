@@ -271,6 +271,28 @@ export const ConditionalDemo = new ContentType({
   listFields: ['title', 'intent', 'priority'],
 })
 
+export const TranslationPlayground = new ContentType({
+  name: 'TranslationPlayground',
+  menu: {
+    title: 'Translation playground',
+    icon: 'Languages',
+    category: 'Development',
+  },
+  fields: {
+    title: Fields.string().required().translatable(),
+    slug: Fields.string().type('Slug').required().translatable(),
+    subtitle: Fields.string().translatable(),
+    excerpt: Fields.string().type('Textarea').translatable(),
+    body: Fields.string().type('RichText').translatable(),
+    callToActionLabel: Fields.string().translatable(),
+    callToActionUrl: Fields.string().type('Url').translatable(),
+    metaTitle: Fields.string().translatable(),
+    metaDescription: Fields.string().type('Textarea').translatable(),
+  },
+  uniques: [['slug']],
+  listFields: ['title', 'slug', 'subtitle'],
+})
+
 export const previewContentTypes = [
   Header,
   Footer,
@@ -285,4 +307,5 @@ export const previewContentTypes = [
   RelationPlayground,
   ImagePlayground,
   ConditionalDemo,
+  TranslationPlayground,
 ]
