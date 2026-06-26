@@ -51,9 +51,11 @@
     "preview-next:dev": "bun -F @rakun-kit/preview-next dev",
     "migrate:media-urls": "node scripts/migrate-media-urls.mjs",
     "preview": "bun run --filter @rakun-kit/preview dev",
+    "preview:seed": "bun run --filter @rakun-kit/preview reset-seed",
     "preview:api": "bun run --filter @rakun-kit/preview dev:api",
     "preview:web": "bun run --filter @rakun-kit/preview dev:web",
-    "preview:next": "bun run --elide-lines=0 --filter @rakun-kit/preview-next dev"
+    "preview:next": "bun run --elide-lines=0 --filter @rakun-kit/preview-next dev",
+    "preview:next:seed": "bun run --elide-lines=0 --filter @rakun-kit/preview-next reset-seed"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
