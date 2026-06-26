@@ -380,7 +380,7 @@ const ListContents: React.FC<{
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search..."
-              className="md:w-md md:max-w-md md:justify-self-end"
+              className="lg:w-md md:max-w-md md:justify-self-end"
             />
           ) : (
             <div className="hidden md:block" />

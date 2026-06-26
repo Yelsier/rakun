@@ -86,7 +86,7 @@ export const ManagerDashboardLayout = ({
           {headerEnd}
         </SidebarHeader>
 
-        <ScrollArea className="max-h-[calc(100vh-6rem)]" data-tour="manager-page">
+        <ScrollArea className="md:max-h-[calc(100vh-6rem)]" data-tour="manager-page">
           {children}
         </ScrollArea>
       </SidebarInset>

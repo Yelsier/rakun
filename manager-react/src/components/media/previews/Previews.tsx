@@ -118,9 +118,7 @@ export default function Previews() {
   const [isSavingImageEdit, setIsSavingImageEdit] = useState(false)
   const [destinationFolderId, setDestinationFolderId] = useState('')
   const [selectionMode, setSelectionMode] = useState(false)
-  const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(
-    () => new Set()
-  )
+  const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(() => new Set())
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
@@ -180,10 +178,7 @@ export default function Previews() {
   const media = ((data as { items?: MediaRecord[] } | undefined)?.items ?? []) as MediaRecord[]
   const childFoldersData = childFolders as { items: FolderItem[] } | undefined
   const canBulkSelect = !selectable
-  const bulkSelectedIdsList = useMemo(
-    () => Array.from(bulkSelectedIds),
-    [bulkSelectedIds]
-  )
+  const bulkSelectedIdsList = useMemo(() => Array.from(bulkSelectedIds), [bulkSelectedIds])
   const bulkSelectedCount = bulkSelectedIdsList.length
   const folderOptions = useMemo(
     (): { _id: string | null; name: string; path: string }[] => [
@@ -417,7 +412,7 @@ export default function Previews() {
 
   const invalidateMediaLists = async (
     sourceFolderId: string | null,
-    targetFolderId: string | null,
+    targetFolderId: string | null
   ) => {
     await Promise.all(
       (['all', 'image', 'video', 'document'] as const).flatMap((mediaType) =>
@@ -483,16 +478,11 @@ export default function Previews() {
     }
 
     if (successCount > 0) {
-      await Promise.all([
-        refetch(),
-        invalidateMediaLists(sourceFolderId, targetFolderId),
-      ])
+      await Promise.all([refetch(), invalidateMediaLists(sourceFolderId, targetFolderId)])
       setMoveTarget(null)
       setDestinationFolderId('')
       clearBulkSelection()
-      toast.success(
-        `${successCount} file${successCount === 1 ? '' : 's'} moved successfully`
-      )
+      toast.success(`${successCount} file${successCount === 1 ? '' : 's'} moved successfully`)
     }
 
     if (failedCount > 0) {
@@ -544,10 +534,12 @@ export default function Previews() {
     try {
       const url = item.url
         ? item.url
-        : ((await managerClient.request('manager.media.getUrl', {
-            key: item.key,
-            access: item.access,
-          })) as { url: string }).url
+        : (
+            (await managerClient.request('manager.media.getUrl', {
+              key: item.key,
+              access: item.access,
+            })) as { url: string }
+          ).url
       setImageEditTarget(item)
       setImageEditUrl(url)
     } catch (error) {
@@ -665,9 +657,7 @@ export default function Previews() {
       await Promise.all([refetch(), refetchChildFolders(), refetchFoldersTree()])
       setBulkDeleteOpen(false)
       clearBulkSelection()
-      toast.success(
-        `${successCount} file${successCount === 1 ? '' : 's'} deleted successfully`
-      )
+      toast.success(`${successCount} file${successCount === 1 ? '' : 's'} deleted successfully`)
     }
 
     if (failedCount > 0) {
@@ -697,8 +687,7 @@ export default function Previews() {
       setMediaTypeFilter,
       viewMode,
       setViewMode,
-      isSelected: (id: string) =>
-        bulkSelectedIds.has(id) || (selectedMediaIds?.has(id) ?? false),
+      isSelected: (id: string) => bulkSelectedIds.has(id) || (selectedMediaIds?.has(id) ?? false),
       selectionMode,
       bulkSelectedIds,
       bulkSelectedCount,
@@ -746,7 +735,7 @@ export default function Previews() {
     <ScrollArea className="h-[calc(100%-2.5rem)] w-full">
       <MediaPreviewProvider value={mediaPreviewContextValue}>
         <div
-          className="mb-2 grid w-full grid-cols-2 gap-2 p-1 lg:grid-cols-6"
+          className="mb-2 grid w-full grid-cols-2 gap-2 p-1 lg:grid-cols-6 md:sticky md:top-0 "
           data-tour="media-folders"
         >
           <Button
@@ -902,10 +891,7 @@ export default function Previews() {
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button
-                variant="ghost"
-                onClick={() => setBulkDeleteOpen(false)}
-              >
+              <Button variant="ghost" onClick={() => setBulkDeleteOpen(false)}>
                 Cancel
               </Button>
               <Button

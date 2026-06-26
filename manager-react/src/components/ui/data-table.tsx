@@ -71,7 +71,7 @@ export function DataTable<TData, TValue>({
   const tableWidth = leafColumns.reduce((width, column) => width + getColumnWidth(column), 0)
 
   return (
-    <div className="w-full min-w-0 overflow-x-auto pb-4">
+    <div className="w-full min-w-0 overflow-x-auto pb-4  ">
       <div className="overflow-hidden rounded-lg border" style={{ minWidth: tableWidth }}>
         <Table className="table-fixed" style={{ minWidth: tableWidth }}>
           <colgroup>

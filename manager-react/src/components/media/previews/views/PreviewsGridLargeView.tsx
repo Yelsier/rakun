@@ -17,7 +17,7 @@ export default function PreviewsGridLargeView({ media }: PreviewsGridLargeViewPr
   const { onMediaClick, renderPreview, formatFileSize, isSelected } = useMediaPreview()
 
   return (
-    <div className="relative grid w-full grid-cols-1 gap-3 md:grid-cols-2">
+    <div className="relative grid w-full grid-cols-1 gap-3 lg:grid-cols-2">
       {media.map((item) => (
         <ContextMenu key={item._id}>
           <ContextMenuTrigger asChild>

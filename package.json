@@ -47,6 +47,8 @@
     "build:openai": "bun run --filter @rakun-kit/openai build",
     "build:react": "bun run --filter @rakun-kit/react build",
     "build:manager-react": "bun run --filter @rakun-kit/manager-react build",
+    "build:css": "bun -F @rakun-kit/preview-next reset-seed",
+    "preview-next:dev": "bun -F @rakun-kit/preview-next dev",
     "migrate:media-urls": "node scripts/migrate-media-urls.mjs",
     "preview": "bun run --filter @rakun-kit/preview dev",
     "preview:api": "bun run --filter @rakun-kit/preview dev:api",
@@ -61,6 +63,7 @@
     "@types/qrcode": "^1.5.6",
     "bcrypt": "^6.0.0",
     "mongodb": "^7.1.1",
+    "prettier": "^3.8.5",
     "sharp": "^0.34.5",
     "typescript": "^6.0.2"
   }
