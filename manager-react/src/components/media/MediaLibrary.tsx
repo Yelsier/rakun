@@ -211,7 +211,7 @@ export default function MediaLibrary({
     <MediaLibraryProvider value={mediaLibraryContext}>
       <div
         className={cn(
-          'relative grid md:h-[calc(100vh-6rem)] min-h-0 grid-cols-1 overflow-hidden rounded-xl border md:grid-cols-[20rem_1fr]',
+          'relative grid md:h-[calc(100vh-6rem)] min-h-0 grid-cols-1 overflow-hidden rounded-xl border md:grid-cols-[2rem_1fr]',
           isModal ? 'h-[calc(100vh-14.2rem)]' : '',
           className
         )}
@@ -228,7 +228,6 @@ export default function MediaLibrary({
             Current folder:{' '}
             <span className="font-medium text-foreground">{currentFolder?.path || '/'}</span>
           </p>
-
           <Previews />
         </div>
       </div>
