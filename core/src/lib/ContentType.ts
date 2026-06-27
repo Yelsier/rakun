@@ -271,6 +271,7 @@ type ContentTypeParams<
   hooks?: ContentTypeHooks;
   dynamicData?: DynamicDataOptions;
   dynamicDataSource?: boolean;
+  comments?: boolean;
 };
 
 type FieldSchemaMode = "input" | "db" | "populated";
@@ -359,6 +360,7 @@ export default class ContentType<
   hooks?: ContentTypeHooks;
   dynamicData?: DynamicDataOptions;
   dynamicDataSource?: boolean;
+  comments?: boolean;
   isInternal?: boolean;
   hasIterator = false;
   hasSeo = false;
@@ -384,6 +386,7 @@ export default class ContentType<
     this.hooks = params.hooks;
     this.dynamicData = params.dynamicData;
     this.dynamicDataSource = params.dynamicDataSource;
+    this.comments = params.comments;
   }
 
   getInputSchema() {
@@ -486,6 +489,11 @@ export default class ContentType<
     return this;
   }
 
+  enableComments() {
+    this.comments = true;
+    return this;
+  }
+
   enableDocumentVisibility() {
     this.documentVisibility = true;
     return this;
@@ -564,6 +572,7 @@ export default class ContentType<
         hooks: this.hooks,
         dynamicData: this.dynamicData,
         dynamicDataSource: this.dynamicDataSource,
+        comments: this.comments,
       },
       { allowSystemFields: true },
     );
@@ -579,6 +588,7 @@ export default class ContentType<
       hooks: this.hooks,
       dynamicData: this.dynamicData,
       dynamicDataSource: this.dynamicDataSource,
+      comments: this.comments,
       modulePicker: this.modulePicker,
       isInternal: this.isInternal,
       hasIterator: this.hasIterator,
@@ -883,6 +893,7 @@ export const EncodedContentTypeSchema = z.object({
   documentVisibility: z.boolean().optional(),
   dynamicData: DynamicDataOptionsSchema.optional(),
   dynamicDataSource: z.boolean().optional(),
+  comments: z.boolean().optional(),
   permissions: z
     .union([
       z.literal(false),

@@ -21,6 +21,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { DocumentTranslationDialog } from './DocumentTranslationDialog'
+import { ContentCommentsDrawer } from './ContentCommentsDrawer'
 import { useEditPageContext } from '../_context/EditPageContext'
 import type { EditableDocumentVisibility } from '../edit.types'
 
@@ -128,6 +129,7 @@ const FavoriteMenuItem = () => {
 export const EditToolbar = () => {
   const {
     canPreview,
+    contentType,
     contentTypeId,
     documentActions,
     editableVisibility,
@@ -200,6 +202,7 @@ export const EditToolbar = () => {
         </TabsList>
       </div>
       <div className="flex items-center gap-2">
+        {contentType.comments && contentTypeId ? <ContentCommentsDrawer /> : null}
         {hasVisibility && !isTrashed ? (
           <div data-tour="content-edit-visibility">
             <Select

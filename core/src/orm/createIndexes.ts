@@ -2,6 +2,7 @@ import type { Db } from "mongodb";
 import {
   Backup,
   BackupDocument,
+  ContentComment,
   ContentVersion,
   Migration,
   PreviewSnapshot,
@@ -51,6 +52,9 @@ export async function createIndexes(db: Db): Promise<void> {
         { contentType: 1, documentId: 1, revision: -1 },
         { unique: true },
       ),
+    db
+      .collection(ContentComment.name)
+      .createIndex({ contentType: 1, documentId: 1, createdAt: 1 }),
     db
       .collection(Migration.name)
       .createIndex({ contentType: 1, migrationId: 1 }),

@@ -17,6 +17,11 @@ import {
   listFavoritesHandler,
   toggleFavoriteHandler,
 } from "../routes/manager/favorites";
+import {
+  createCommentHandler,
+  listCommentsHandler,
+} from "../routes/manager/comments";
+import { listMentionUsersHandler } from "../routes/manager/users";
 import { trashHandler } from "../routes/manager/trash";
 import { getHandler } from "../routes/manager/get";
 import { listHandler } from "../routes/manager/list";
@@ -97,6 +102,15 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.favorites.toggle": {
       resolve: toggleFavoriteHandler,
+    },
+    "manager.users.mentions": {
+      resolve: listMentionUsersHandler,
+    },
+    "manager.comments.list": {
+      resolve: listCommentsHandler,
+    },
+    "manager.comments.create": {
+      resolve: createCommentHandler,
     },
     "manager.setDefaultLanguage": {
       resolve: setDefaultLanguageHandler,

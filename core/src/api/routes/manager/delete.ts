@@ -1,6 +1,6 @@
 import { throwAppError } from "../../../lib/errors";
 import { Logger } from "../../../lib/Logger";
-import { Media } from "../../../internal-content-types";
+import { ContentComment, Media } from "../../../internal-content-types";
 import { getMongoService } from "../../../orm";
 import { RakunRequestContext } from "../../context";
 import { DeleteInput } from "../../../schemas/manager/delete";
@@ -56,7 +56,14 @@ export const deleteHandler = async ({
     });
   }
 
-  await db.delete(contentType, { _id: id }, { actorId: ctx.getUser()._id });
+  const user = ctx.getUser();
+
+  await db.delete(contentType, { _id: id }, { actorId: user._id });
+  await db.delete(
+    ContentComment,
+    { contentType: contentType.name, documentId: id },
+    { actorId: user._id },
+  );
   Logger.addTrace("manager.delete: db delete success");
 
   await checkRevalidatePath({

@@ -76,6 +76,17 @@ export type {
 } from "./schemas/manager/versions";
 export type { DuplicateInput } from "./schemas/manager/duplicate";
 export type {
+  CommentRecord,
+  CreateCommentInput,
+  CreateCommentOutput,
+  ListCommentsInput,
+  ListCommentsOutput,
+} from "./schemas/manager/comments";
+export type {
+  ListMentionUsersOutput,
+  MentionUser,
+} from "./schemas/manager/users";
+export type {
   TranslateDocumentInput,
   TranslateDocumentOutput,
   TranslateDocumentSummary,

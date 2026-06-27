@@ -71,6 +71,21 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/favorites/toggle",
   },
+  "manager.users.mentions": {
+    kind: "query",
+    method: "get",
+    path: "/manager/users/mentions",
+  },
+  "manager.comments.list": {
+    kind: "query",
+    method: "post",
+    path: "/manager/comments/list",
+  },
+  "manager.comments.create": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/comments/create",
+  },
   "manager.setDefaultLanguage": {
     kind: "mutation",
     method: "post",
