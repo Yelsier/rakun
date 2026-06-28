@@ -10,6 +10,8 @@ import {
   backupRecord,
   createCommentInput,
   createCommentOutput,
+  toggleCommentReactionInput,
+  toggleCommentReactionOutput,
   confirmTotpInput,
   createFolderInput,
   createFolderOutput,
@@ -206,6 +208,14 @@ export const createManagerOperationContracts = () =>
       description: "Create a comment for a content document",
       input: createCommentInput,
       output: createCommentOutput,
+      method: "post",
+    }),
+    "manager.comments.toggleReaction": defineOperationContract({
+      access: "auth",
+      kind: "mutation",
+      description: "Add or remove a reaction for a content comment",
+      input: toggleCommentReactionInput,
+      output: toggleCommentReactionOutput,
       method: "post",
     }),
     "manager.setDefaultLanguage": defineOperationContract({

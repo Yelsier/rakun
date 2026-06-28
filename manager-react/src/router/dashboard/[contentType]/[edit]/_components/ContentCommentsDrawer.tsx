@@ -1,23 +1,37 @@
 'use client'
 
-import { MessageCircle, Send } from 'lucide-react'
+import { EmojiPicker } from '@ferrucc-io/emoji-picker'
+import { MessageCircle, Plus, Send } from 'lucide-react'
 import {
   Fragment,
   type ReactNode,
+  type WheelEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { MentionUser } from '@rakun-kit/core/client'
+import { isTranslatableObject } from '@rakun-kit/core/client'
+import type {
+  CommentReactionEmoji,
+  CommentReactionRecord,
+  MentionUser,
+} from '@rakun-kit/core/client'
 
 import { useEditPageContext } from '../_context/EditPageContext'
 
 import { createManagerQueryKey, useManagerMutation, useManagerQuery } from '@/client/react'
 import { UserAvatar } from '@/components/user-avatar'
+import {
+  Bubble,
+  BubbleContent,
+  BubbleGroup,
+  BubbleReactions,
+} from '@/components/ui/bubble'
 import { Button } from '@/components/ui/button'
 import {
   Drawer,
@@ -34,6 +48,7 @@ import {
   MentionInput,
   MentionItem,
 } from '@/components/ui/mention'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   HoverCard,
   HoverCardContent,
@@ -43,7 +58,6 @@ import {
   Message,
   MessageAvatar,
   MessageContent,
-  MessageGroup,
   MessageHeader,
 } from '@/components/ui/message'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -56,6 +70,58 @@ import { useSession } from '@/state/session'
 const displayUserName = (user: MentionUser) => user.name?.trim() || user.user
 
 const mentionLabel = (user: MentionUser) => user.user
+
+const getDocumentTitleValue = ({
+  data,
+  field,
+  languageCode,
+}: {
+  data?: Record<string, unknown>
+  field?: string
+  languageCode: string
+}) => {
+  if (!data || !field) return null
+
+  const value = data[field]
+
+  if (isTranslatableObject<string>(value)) {
+    const translatedValue = value[languageCode]
+
+    return typeof translatedValue === 'string' ? translatedValue.trim() || null : null
+  }
+
+  if (typeof value === 'string') return value.trim() || null
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+
+  return null
+}
+
+const COMMENT_REACTION_OPTIONS: Array<{
+  emoji: CommentReactionEmoji
+  label: string
+  symbol: string
+}> = [
+  {
+    emoji: '\u{1F44D}',
+    label: 'Thumbs up',
+    symbol: '\u{1F44D}',
+  },
+  {
+    emoji: '\u{1F440}',
+    label: 'Eyes',
+    symbol: '\u{1F440}',
+  },
+  {
+    emoji: '\u2764\uFE0F',
+    label: 'Heart',
+    symbol: '\u2764\uFE0F',
+  },
+]
+
+const FREQUENTLY_USED_REACTIONS = COMMENT_REACTION_OPTIONS.map(
+  (option) => option.emoji
+)
+const REACTION_PICKER_MIN_ANCHOR_WIDTH = 160
 
 const isOwnCommentAuthor = ({
   author,
@@ -77,6 +143,49 @@ const isCurrentUserMention = ({
 
 const isSameCommentAuthor = (firstAuthor: MentionUser, secondAuthor: MentionUser) =>
   firstAuthor._id === secondAuthor._id || firstAuthor.user === secondAuthor.user
+
+const getReactionOption = (emoji: CommentReactionEmoji) =>
+  COMMENT_REACTION_OPTIONS.find((option) => option.emoji === emoji) ?? {
+    emoji,
+    label: 'Reaction',
+    symbol: emoji,
+  }
+
+const hasCurrentUserReaction = ({
+  currentUser,
+  reaction,
+}: {
+  currentUser: { _id: string; user: string }
+  reaction?: CommentReactionRecord
+}) =>
+  Boolean(
+    reaction?.users.some((reactionUser) =>
+      isCurrentUserMention({
+        currentUser,
+        mentionUser: reactionUser,
+      }),
+    ),
+  )
+
+const getReactionUserLabel = (reaction: CommentReactionRecord) =>
+  reaction.users.map(displayUserName).join(', ')
+
+const scrollEmojiPickerViewport = (event: WheelEvent<HTMLElement>) => {
+  const viewport = event.currentTarget.querySelector(
+    '[tabindex="0"]'
+  ) as HTMLElement | null
+
+  if (!viewport) return
+
+  event.preventDefault()
+  event.stopPropagation()
+
+  viewport.scrollBy({
+    left: event.deltaX,
+    top: event.deltaY,
+    behavior: 'auto',
+  })
+}
 
 const getCommentDate = (value?: Date | string | null) => {
   if (!value) return null
@@ -227,8 +336,223 @@ const CommentText = ({
   return <>{parts}</>
 }
 
+const CommentReactionPicker = ({
+  anchorIsNarrow,
+  currentUser,
+  disabled,
+  onToggle,
+  ownComment,
+  reactions,
+}: {
+  anchorIsNarrow: boolean
+  currentUser: { _id: string; user: string }
+  disabled: boolean
+  onToggle: (emoji: CommentReactionEmoji) => void
+  ownComment: boolean
+  reactions: CommentReactionRecord[]
+}) => {
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false)
+
+  const handlePickerEmojiSelect = (emoji: string) => {
+    setEmojiPickerOpen(false)
+    onToggle(emoji)
+  }
+
+  return (
+    <BubbleReactions
+      side="top"
+      align={ownComment ? 'start' : 'end'}
+      className={cn(
+        'pointer-events-none scale-95 gap-0.5 border bg-popover opacity-0 shadow-sm ring-0 transition has-[button]:p-0.5 group-hover/comment-content:pointer-events-auto group-hover/comment-content:scale-100 group-hover/comment-content:opacity-100 group-focus-within/comment-content:pointer-events-auto group-focus-within/comment-content:scale-100 group-focus-within/comment-content:opacity-100',
+        ownComment && 'origin-bottom-left',
+        !ownComment && 'origin-bottom-right',
+        ownComment &&
+          anchorIsNarrow &&
+          '-translate-x-[calc(100%-2.5rem)] group-hover/comment-content:-translate-x-[calc(100%-2.5rem)] group-focus-within/comment-content:-translate-x-[calc(100%-2.5rem)]',
+        !ownComment &&
+          anchorIsNarrow &&
+          'translate-x-[calc(100%-2.5rem)] group-hover/comment-content:translate-x-[calc(100%-2.5rem)] group-focus-within/comment-content:translate-x-[calc(100%-2.5rem)]',
+        emojiPickerOpen && 'pointer-events-auto scale-100 opacity-100'
+      )}
+    >
+      {COMMENT_REACTION_OPTIONS.map((option) => {
+        const reaction = reactions.find((item) => item.emoji === option.emoji)
+        const reacted = hasCurrentUserReaction({
+          currentUser,
+          reaction,
+        })
+
+        return (
+          <Tooltip key={option.emoji}>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label={option.label}
+                disabled={disabled}
+                onClick={() => onToggle(option.emoji)}
+                className={cn(
+                  'grid size-7 place-items-center rounded-full text-base leading-none transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+                  reacted && 'bg-primary/10 ring-1 ring-primary/30'
+                )}
+              >
+                <span aria-hidden="true">{option.symbol}</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{option.label}</TooltipContent>
+          </Tooltip>
+        )
+      })}
+      <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                aria-label="More reactions"
+                disabled={disabled}
+                className="grid size-7 place-items-center rounded-full transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+              >
+                <Plus className="size-3.5" />
+              </button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent>More reactions</TooltipContent>
+        </Tooltip>
+        <PopoverContent
+          align={ownComment ? 'start' : 'end'}
+          collisionPadding={16}
+          side="top"
+          sideOffset={12}
+          className="w-[min(320px,calc(100vw-2rem))] max-h-[min(420px,calc(100vh-2rem))] overflow-hidden p-0 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
+          onWheelCapture={scrollEmojiPickerViewport}
+        >
+          <EmojiPicker
+            className="flex h-full max-h-[min(420px,calc(100vh-2rem))] w-full flex-col border-0 shadow-none ring-0 focus:ring-0 focus-visible:ring-0"
+            emojiSize={28}
+            emojisPerRow={8}
+            frequentlyUsedEmojis={FREQUENTLY_USED_REACTIONS}
+            onEmojiSelect={handlePickerEmojiSelect}
+          >
+            <EmojiPicker.Header className="border-b p-2">
+              <EmojiPicker.Input
+                autoFocus
+                placeholder="Search emoji"
+                className="h-9 w-full rounded-md border bg-background pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </EmojiPicker.Header>
+            <EmojiPicker.Group className="min-h-0 flex-1 overflow-hidden">
+              <EmojiPicker.List containerHeight={260} />
+            </EmojiPicker.Group>
+          </EmojiPicker>
+        </PopoverContent>
+      </Popover>
+    </BubbleReactions>
+  )
+}
+
+const CommentBubbleContent = ({
+  children,
+  currentUser,
+  disabled,
+  onToggleReaction,
+  ownComment,
+  reactions,
+}: {
+  children: ReactNode
+  currentUser: { _id: string; user: string }
+  disabled: boolean
+  onToggleReaction: (emoji: CommentReactionEmoji) => void
+  ownComment: boolean
+  reactions: CommentReactionRecord[]
+}) => {
+  const anchorRef = useRef<HTMLDivElement | null>(null)
+  const [anchorIsNarrow, setAnchorIsNarrow] = useState(false)
+
+  useLayoutEffect(() => {
+    const element = anchorRef.current
+
+    if (!element) return
+
+    const updateAnchorWidth = () => {
+      setAnchorIsNarrow(element.offsetWidth < REACTION_PICKER_MIN_ANCHOR_WIDTH)
+    }
+
+    updateAnchorWidth()
+
+    const observer = new ResizeObserver(updateAnchorWidth)
+    observer.observe(element)
+
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <div ref={anchorRef} className="group/comment-content relative w-fit max-w-full">
+      <CommentReactionPicker
+        anchorIsNarrow={anchorIsNarrow}
+        currentUser={currentUser}
+        disabled={disabled}
+        ownComment={ownComment}
+        reactions={reactions}
+        onToggle={onToggleReaction}
+      />
+      {children}
+    </div>
+  )
+}
+
+const CommentReactionSummary = ({
+  currentUser,
+  disabled,
+  onToggle,
+  ownComment,
+  reactions,
+}: {
+  currentUser: { _id: string; user: string }
+  disabled: boolean
+  onToggle: (emoji: CommentReactionEmoji) => void
+  ownComment: boolean
+  reactions: CommentReactionRecord[]
+}) => {
+  if (reactions.length === 0) return null
+
+  return (
+    <BubbleReactions side="bottom" align={ownComment ? 'end' : 'start'}>
+      {reactions.map((reaction) => {
+        const option = getReactionOption(reaction.emoji)
+        const reacted = hasCurrentUserReaction({
+          currentUser,
+          reaction,
+        })
+
+        if (!option) return null
+
+        return (
+          <Tooltip key={reaction.emoji}>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onToggle(reaction.emoji)}
+                className={cn(
+                  'inline-flex h-6 items-center gap-1 rounded-full border bg-background px-2 text-xs font-medium text-muted-foreground shadow-sm transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+                  reacted && 'border-primary/40 bg-primary/10 text-primary'
+                )}
+              >
+                <span aria-hidden="true">{option.symbol}</span>
+                <span>{reaction.users.length}</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{getReactionUserLabel(reaction)}</TooltipContent>
+          </Tooltip>
+        )
+      })}
+    </BubbleReactions>
+  )
+}
+
 export const ContentCommentsDrawer = () => {
-  const { contentTypeId, contentTypeName } = useEditPageContext()
+  const { contentType, contentTypeId, contentTypeName, form, languageCode } =
+    useEditPageContext()
   const { user } = useSession()
   const queryClient = useQueryClient()
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -258,12 +582,21 @@ export const ContentCommentsDrawer = () => {
     enabled: open,
   })
   const createCommentMutation = useManagerMutation('manager.comments.create')
+  const toggleReactionMutation = useManagerMutation('manager.comments.toggleReaction')
   const mentionUsers = usersQuery.data ?? []
   const mentionUsersById = useMemo(
     () => new Map(mentionUsers.map((mentionUser) => [mentionUser._id, mentionUser])),
     [mentionUsers]
   )
   const comments = commentsQuery.data?.comments ?? []
+  const documentTitle = getDocumentTitleValue({
+    data: form.draft.current,
+    field: contentType.listFields?.[0],
+    languageCode,
+  })
+  const drawerDescription = documentTitle
+    ? `${contentTypeName} - ${documentTitle}`
+    : contentTypeName
   const trimmedText = text.trim()
   const scrollMessagesToEnd = useCallback((behavior: ScrollBehavior = 'smooth') => {
     requestAnimationFrame(() => {
@@ -310,6 +643,25 @@ export const ContentCommentsDrawer = () => {
     }
   }
 
+  const handleToggleReaction = async ({
+    commentId,
+    emoji,
+  }: {
+    commentId: string
+    emoji: CommentReactionEmoji
+  }) => {
+    try {
+      await toggleReactionMutation.mutateAsync({
+        ...commentsInput,
+        commentId,
+        emoji,
+      })
+      await invalidateComments()
+    } catch (error) {
+      toast.error(getActionErrorMessage(error, 'Could not update reaction'))
+    }
+  }
+
   const filterMentionUsers = (options: string[], term: string) => {
     const normalizedTerm = term.trim().toLowerCase()
 
@@ -340,7 +692,7 @@ export const ContentCommentsDrawer = () => {
       <DrawerContent className="w-[min(92vw,520px)] sm:max-w-[520px]">
         <DrawerHeader className="border-b">
           <DrawerTitle>Comments</DrawerTitle>
-          <DrawerDescription>{contentTypeName}</DrawerDescription>
+          <DrawerDescription>{drawerDescription}</DrawerDescription>
         </DrawerHeader>
         <ScrollArea className="min-h-0 flex-1">
           <div className="flex min-h-[320px] flex-col gap-4 p-4">
@@ -359,7 +711,7 @@ export const ContentCommentsDrawer = () => {
                 </Button>
               </div>
             ) : comments.length ? (
-              <MessageGroup>
+              <BubbleGroup>
                 {comments.map((comment, index) => {
                   const previousComment = comments[index - 1]
                   const showDaySeparator =
@@ -402,32 +754,58 @@ export const ContentCommentsDrawer = () => {
                               </UserHoverCard>
                             </MessageHeader>
                           ) : null}
-                          <div
-                            className={cn(
-                              'w-fit max-w-[82%] whitespace-pre-wrap break-words rounded-md bg-muted px-3 py-2 text-left text-sm leading-relaxed',
-                              ownComment && 'self-end'
-                            )}
+                          <Bubble
+                            align={ownComment ? 'end' : 'start'}
+                            variant="muted"
+                            className={cn('max-w-[82%]', comment.reactions.length && 'mb-3')}
                           >
-                            <CommentText
+                            <CommentBubbleContent
                               currentUser={user}
-                              mentions={comment.mentions}
-                              text={comment.text}
+                              disabled={toggleReactionMutation.isPending}
+                              ownComment={ownComment}
+                              reactions={comment.reactions}
+                              onToggleReaction={(emoji) =>
+                                void handleToggleReaction({
+                                  commentId: comment._id,
+                                  emoji,
+                                })
+                              }
+                            >
+                              <BubbleContent className="bg-muted whitespace-pre-wrap text-left">
+                                <CommentText
+                                  currentUser={user}
+                                  mentions={comment.mentions}
+                                  text={comment.text}
+                                />
+                                {createdAt && messageTime ? (
+                                  <time
+                                    dateTime={createdAt.toISOString()}
+                                    className="mt-1 block text-right text-[10px] font-medium leading-none text-muted-foreground"
+                                  >
+                                    {messageTime}
+                                  </time>
+                                ) : null}
+                              </BubbleContent>
+                            </CommentBubbleContent>
+                            <CommentReactionSummary
+                              currentUser={user}
+                              disabled={toggleReactionMutation.isPending}
+                              ownComment={ownComment}
+                              reactions={comment.reactions}
+                              onToggle={(emoji) =>
+                                void handleToggleReaction({
+                                  commentId: comment._id,
+                                  emoji,
+                                })
+                              }
                             />
-                            {createdAt && messageTime ? (
-                              <time
-                                dateTime={createdAt.toISOString()}
-                                className="mt-1 block text-right text-[10px] font-medium leading-none text-muted-foreground"
-                              >
-                                {messageTime}
-                              </time>
-                            ) : null}
-                          </div>
+                          </Bubble>
                         </MessageContent>
                       </Message>
                     </Fragment>
                   )
                 })}
-              </MessageGroup>
+              </BubbleGroup>
             ) : (
               <p className="text-sm text-muted-foreground">No comments yet.</p>
             )}

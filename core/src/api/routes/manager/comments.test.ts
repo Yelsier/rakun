@@ -18,6 +18,7 @@ import {
 const {
   createCommentHandler,
   listCommentsHandler,
+  toggleCommentReactionHandler,
 } = await import("./comments");
 const { listMentionUsersHandler } = await import("./users");
 const { deleteHandler } = await import("./delete");
@@ -147,6 +148,7 @@ describe("manager comments", () => {
                       contentType: ManagerUser.name,
                     },
                   ],
+                  reactions: [`%F0%9F%91%8D:${mentionUserId}`],
                   createdAt,
                 },
               ],
@@ -191,6 +193,19 @@ describe("manager comments", () => {
               name: "Editor One",
               user: "editor",
               avatar: null,
+            },
+          ],
+          reactions: [
+            {
+              emoji: "👍",
+              users: [
+                {
+                  _id: mentionUserId,
+                  name: "Editor One",
+                  user: "editor",
+                  avatar: null,
+                },
+              ],
             },
           ],
         },
@@ -244,6 +259,7 @@ describe("manager comments", () => {
             contentType: ManagerUser.name,
           },
         ],
+        reactions: [],
         createdBy: userId,
         updatedBy: userId,
       },
@@ -251,6 +267,114 @@ describe("manager comments", () => {
     );
     expect(result.comment.text).toBe("Please review");
     expect(result.comment.mentions).toHaveLength(1);
+    expect(result.comment.reactions).toEqual([]);
+  });
+
+  it("toggles comment reactions for readers of the target document", async () => {
+    let storedReactions: string[] = [];
+    const update = mock(async (_contentType, _id, data) => {
+      storedReactions = data.reactions;
+
+      return {
+        _id: commentId,
+        _type: ContentComment.name,
+        contentType: CommentArticle.name,
+        documentId,
+        text: "Looks good",
+        author: {
+          type: "existing",
+          _id: mentionUserId,
+          contentType: ManagerUser.name,
+        },
+        mentions: [],
+        ...data,
+        createdAt,
+      };
+    });
+    const db = {
+      find: mock(async (contentType, filter) =>
+        contentType.name === ContentComment.name
+          ? {
+              _id: commentId,
+              _type: ContentComment.name,
+              contentType: CommentArticle.name,
+              documentId,
+              text: "Looks good",
+              author: {
+                type: "existing",
+                _id: mentionUserId,
+                contentType: ManagerUser.name,
+              },
+              mentions: [],
+              reactions: storedReactions,
+            }
+          : { _id: filter._id, createdBy: "someone-else" },
+      ),
+      list: mock(async () => ({
+        totalItems: managerUsers.length,
+        items: managerUsers,
+      })),
+      update,
+    };
+
+    mockGetMongoService.mockResolvedValue(db);
+
+    const result = await toggleCommentReactionHandler({
+      input: {
+        contentType: CommentArticle.name,
+        documentId,
+        commentId,
+        emoji: "👀",
+      },
+      ctx,
+    } as never);
+
+    expect(update).toHaveBeenCalledWith(
+      ContentComment,
+      commentId,
+      {
+        reactions: [`%F0%9F%91%80:${userId}`],
+        updatedBy: userId,
+      },
+      { actorId: userId },
+    );
+    expect(result.comment.reactions).toEqual([
+      {
+        emoji: "👀",
+        users: [
+          {
+            _id: userId,
+            name: "Yago Claros",
+            user: "yago",
+            avatar: {
+              url: "https://example.com/avatar.webp",
+              previewUrl: "https://example.com/avatar-small.webp",
+            },
+          },
+        ],
+      },
+    ]);
+
+    const removeResult = await toggleCommentReactionHandler({
+      input: {
+        contentType: CommentArticle.name,
+        documentId,
+        commentId,
+        emoji: "👀",
+      },
+      ctx,
+    } as never);
+
+    expect(update).toHaveBeenLastCalledWith(
+      ContentComment,
+      commentId,
+      {
+        reactions: [],
+        updatedBy: userId,
+      },
+      { actorId: userId },
+    );
+    expect(removeResult.comment.reactions).toEqual([]);
   });
 
   it("rejects comments for content types without comments enabled", async () => {

@@ -40,6 +40,7 @@
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@ferrucc-io/emoji-picker": "^0.1.1",
     "@floating-ui/react-dom": "^2.1.8",
     "@hookform/resolvers": "^5.0.0",
     "@lexical/code": "^0.34.0",

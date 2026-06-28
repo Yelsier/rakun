@@ -11,6 +11,13 @@ export const listCommentsInput = commentReferenceInput.extend({
   limit: z.number().int().positive().max(200).optional(),
 });
 
+export const commentReactionEmoji = z.string().trim().min(1).max(64);
+
+export const commentReactionRecord = z.object({
+  emoji: commentReactionEmoji,
+  users: z.array(mentionUser),
+});
+
 export const commentRecord = z.object({
   _id: z.string(),
   text: z.string(),
@@ -18,6 +25,7 @@ export const commentRecord = z.object({
   updatedAt: z.date().optional(),
   author: mentionUser,
   mentions: z.array(mentionUser),
+  reactions: z.array(commentReactionRecord),
 });
 
 export const listCommentsOutput = z.object({
@@ -34,9 +42,22 @@ export const createCommentOutput = z.object({
   comment: commentRecord,
 });
 
+export const toggleCommentReactionInput = commentReferenceInput.extend({
+  commentId: z.string().min(1),
+  emoji: commentReactionEmoji,
+});
+
+export const toggleCommentReactionOutput = z.object({
+  comment: commentRecord,
+});
+
 export type CommentReferenceInput = z.infer<typeof commentReferenceInput>;
 export type ListCommentsInput = z.infer<typeof listCommentsInput>;
+export type CommentReactionEmoji = z.infer<typeof commentReactionEmoji>;
+export type CommentReactionRecord = z.infer<typeof commentReactionRecord>;
 export type CommentRecord = z.infer<typeof commentRecord>;
 export type ListCommentsOutput = z.infer<typeof listCommentsOutput>;
 export type CreateCommentInput = z.infer<typeof createCommentInput>;
 export type CreateCommentOutput = z.infer<typeof createCommentOutput>;
+export type ToggleCommentReactionInput = z.infer<typeof toggleCommentReactionInput>;
+export type ToggleCommentReactionOutput = z.infer<typeof toggleCommentReactionOutput>;

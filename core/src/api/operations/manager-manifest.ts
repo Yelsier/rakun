@@ -86,6 +86,11 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/comments/create",
   },
+  "manager.comments.toggleReaction": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/comments/toggleReaction",
+  },
   "manager.setDefaultLanguage": {
     kind: "mutation",
     method: "post",

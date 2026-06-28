@@ -2,6 +2,7 @@
 @import 'tw-animate-css';
 @import '../components/editor/themes/editor-theme.css';
 @source "..";
+@source "../../node_modules/@ferrucc-io/emoji-picker";
 
 @custom-variant dark (&:is(.dark *));
 

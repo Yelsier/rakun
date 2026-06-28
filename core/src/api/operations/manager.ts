@@ -20,6 +20,7 @@ import {
 import {
   createCommentHandler,
   listCommentsHandler,
+  toggleCommentReactionHandler,
 } from "../routes/manager/comments";
 import { listMentionUsersHandler } from "../routes/manager/users";
 import { trashHandler } from "../routes/manager/trash";
@@ -111,6 +112,9 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.comments.create": {
       resolve: createCommentHandler,
+    },
+    "manager.comments.toggleReaction": {
+      resolve: toggleCommentReactionHandler,
     },
     "manager.setDefaultLanguage": {
       resolve: setDefaultLanguageHandler,

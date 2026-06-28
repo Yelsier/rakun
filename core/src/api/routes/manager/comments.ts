@@ -2,11 +2,14 @@ import { ContentComment, ManagerUser } from "../../../internal-content-types";
 import { throwAppError } from "../../../lib/errors";
 import { getMongoService } from "../../../orm";
 import type {
+  CommentReactionEmoji,
   CommentRecord,
   CreateCommentInput,
   CreateCommentOutput,
   ListCommentsInput,
   ListCommentsOutput,
+  ToggleCommentReactionInput,
+  ToggleCommentReactionOutput,
 } from "../../../schemas/manager/comments";
 import type { RakunRequestContext } from "../../context";
 import { checkOwnership } from "../../utils/checkOwnership";
@@ -27,10 +30,14 @@ type StoredComment = {
   updatedAt?: Date;
   author?: StoredRelation;
   mentions?: StoredRelation[];
+  reactions?: string[];
 };
 
 const DEFAULT_COMMENT_LIMIT = 100;
 const MAX_COMMENT_LIMIT = 200;
+const REACTION_KEY_SEPARATOR = ":";
+
+const normalizeReactionEmoji = (emoji: string): CommentReactionEmoji => emoji.trim();
 
 const requireCommentableDocument = async ({
   ctx,
@@ -72,6 +79,61 @@ const getRelationIds = (values: unknown) =>
 
 const uniqueIds = (ids: string[]) => Array.from(new Set(ids));
 
+const encodeReactionKey = ({
+  emoji,
+  userId,
+}: {
+  emoji: CommentReactionEmoji;
+  userId: string;
+}) => `${encodeURIComponent(normalizeReactionEmoji(emoji))}${REACTION_KEY_SEPARATOR}${userId}`;
+
+const getReactionKeys = (values: unknown) =>
+  Array.isArray(values)
+    ? values.filter((value): value is string => typeof value === "string")
+    : [];
+
+const parseReactionKey = (value: string) => {
+  const separatorIndex = value.lastIndexOf(REACTION_KEY_SEPARATOR);
+
+  if (separatorIndex <= 0) return null;
+
+  const rawEmoji = value.slice(0, separatorIndex);
+  const userId = value.slice(separatorIndex + REACTION_KEY_SEPARATOR.length);
+  let emoji = rawEmoji;
+
+  try {
+    emoji = decodeURIComponent(rawEmoji);
+  } catch (_) {
+    emoji = rawEmoji;
+  }
+
+  emoji = normalizeReactionEmoji(emoji);
+
+  if (!userId || !emoji) {
+    return null;
+  }
+
+  return {
+    emoji,
+    userId,
+  };
+};
+
+const getParsedReactions = (values: unknown) =>
+  getReactionKeys(values)
+    .map(parseReactionKey)
+    .filter(
+      (
+        reaction,
+      ): reaction is {
+        emoji: CommentReactionEmoji;
+        userId: string;
+      } => Boolean(reaction),
+    );
+
+const getReactionUserIds = (values: unknown) =>
+  getParsedReactions(values).map((reaction) => reaction.userId);
+
 const loadMentionUsers = async (ids: string[]) => {
   const unique = uniqueIds(ids);
 
@@ -96,12 +158,24 @@ const resolveComments = async (comments: StoredComment[]): Promise<CommentRecord
     comments.flatMap((comment) => [
       getRelationId(comment.author),
       ...getRelationIds(comment.mentions),
+      ...getReactionUserIds(comment.reactions),
     ]).filter((id): id is string => Boolean(id)),
   );
   const usersById = await loadMentionUsers(userIds);
 
   return comments.map((comment) => {
     const authorId = getRelationId(comment.author) ?? "";
+    const reactionsByEmoji = new Map<CommentReactionEmoji, string[]>();
+
+    for (const reaction of getParsedReactions(comment.reactions)) {
+      const users = reactionsByEmoji.get(reaction.emoji) ?? [];
+
+      if (!users.includes(reaction.userId)) {
+        users.push(reaction.userId);
+      }
+
+      reactionsByEmoji.set(reaction.emoji, users);
+    }
 
     return {
       _id: comment._id,
@@ -112,6 +186,10 @@ const resolveComments = async (comments: StoredComment[]): Promise<CommentRecord
       mentions: getRelationIds(comment.mentions).map(
         (id) => usersById.get(id) ?? fallbackMentionUser(id),
       ),
+      reactions: Array.from(reactionsByEmoji.entries()).map(([emoji, userIds]) => ({
+        emoji,
+        users: userIds.map((id) => usersById.get(id) ?? fallbackMentionUser(id)),
+      })),
     };
   });
 };
@@ -182,6 +260,7 @@ export const createCommentHandler = async ({
         _id: id,
         contentType: ManagerUser.name,
       })),
+      reactions: [],
       createdBy: user._id,
       updatedBy: user._id,
     },
@@ -189,6 +268,60 @@ export const createCommentHandler = async ({
   );
 
   const [resolved] = await resolveComments([comment as StoredComment]);
+
+  return {
+    comment: resolved,
+  };
+};
+
+export const toggleCommentReactionHandler = async ({
+  input,
+  ctx,
+}: {
+  input: ToggleCommentReactionInput;
+  ctx: RakunRequestContext;
+}): Promise<ToggleCommentReactionOutput> => {
+  await requireCommentableDocument({
+    ctx,
+    contentTypeName: input.contentType,
+    documentId: input.documentId,
+  });
+
+  const db = await getMongoService();
+  const user = ctx.getUser();
+  const comment = await db.find(ContentComment, {
+    _id: input.commentId,
+    contentType: input.contentType,
+    documentId: input.documentId,
+  } as never);
+
+  if (!comment) {
+    throwAppError("NOT_FOUND", {
+      resource: "ContentComment",
+      id: input.commentId,
+    });
+  }
+
+  const currentKeys = uniqueIds(
+    getParsedReactions((comment as StoredComment).reactions).map(encodeReactionKey),
+  );
+  const reactionKey = encodeReactionKey({
+    emoji: normalizeReactionEmoji(input.emoji),
+    userId: user._id,
+  });
+  const nextKeys = currentKeys.includes(reactionKey)
+    ? currentKeys.filter((key) => key !== reactionKey)
+    : [...currentKeys, reactionKey];
+  const updated = await db.update(
+    ContentComment,
+    input.commentId,
+    {
+      reactions: nextKeys,
+      updatedBy: user._id,
+    } as never,
+    { actorId: user._id },
+  );
+  const [resolved] = await resolveComments([updated as StoredComment]);
 
   return {
     comment: resolved,

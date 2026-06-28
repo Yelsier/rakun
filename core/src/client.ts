@@ -77,10 +77,14 @@ export type {
 export type { DuplicateInput } from "./schemas/manager/duplicate";
 export type {
   CommentRecord,
+  CommentReactionEmoji,
+  CommentReactionRecord,
   CreateCommentInput,
   CreateCommentOutput,
   ListCommentsInput,
   ListCommentsOutput,
+  ToggleCommentReactionInput,
+  ToggleCommentReactionOutput,
 } from "./schemas/manager/comments";
 export type {
   ListMentionUsersOutput,
