@@ -16,6 +16,7 @@ import {
 
 export type ManagerUserRecord = {
   _id: string
+  name?: string
   user: string
   email: string
   role?: { _id: string; name: string } | null
@@ -37,6 +38,11 @@ export const columns = ({
     accessorKey: '_id',
     header: () => <span className='ml-2'>ID</span>,
     cell: ({ row }) => <IDColumn _id={row.getValue('_id') as string} />,
+  },
+  {
+    accessorKey: 'name',
+    header: () => <span className='ml-2'>Name</span>,
+    cell: ({ row }) => <span className='ml-2'>{row.getValue('name') || '-'}</span>,
   },
   {
     accessorKey: 'user',

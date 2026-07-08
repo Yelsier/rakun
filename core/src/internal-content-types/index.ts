@@ -1,6 +1,7 @@
 export * from "./ApiOperation";
 export * from "./Backup";
 export * from "./BackupDocument";
+export * from "./ContentComment";
 export * from "./ContentVersion";
 export * from "./Language";
 export * from "./LiteralTranslation";

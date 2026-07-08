@@ -23,6 +23,12 @@ import {
   listLocaleVariantsHandler,
   unassignLocaleVariantHandler,
 } from "../routes/manager/localeVariants";
+import {
+  createCommentHandler,
+  listCommentsHandler,
+  toggleCommentReactionHandler,
+} from "../routes/manager/comments";
+import { listMentionUsersHandler } from "../routes/manager/users";
 import { trashHandler } from "../routes/manager/trash";
 import { getHandler } from "../routes/manager/get";
 import { listHandler } from "../routes/manager/list";
@@ -115,6 +121,18 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.localeVariants.unassign": {
       resolve: unassignLocaleVariantHandler,
+    },
+    "manager.users.mentions": {
+      resolve: listMentionUsersHandler,
+    },
+    "manager.comments.list": {
+      resolve: listCommentsHandler,
+    },
+    "manager.comments.create": {
+      resolve: createCommentHandler,
+    },
+    "manager.comments.toggleReaction": {
+      resolve: toggleCommentReactionHandler,
     },
     "manager.setDefaultLanguage": {
       resolve: setDefaultLanguageHandler,

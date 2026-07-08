@@ -94,6 +94,21 @@ export type {
 } from "./schemas/manager/localeVariants";
 export type { DuplicateInput } from "./schemas/manager/duplicate";
 export type {
+  CommentRecord,
+  CommentReactionEmoji,
+  CommentReactionRecord,
+  CreateCommentInput,
+  CreateCommentOutput,
+  ListCommentsInput,
+  ListCommentsOutput,
+  ToggleCommentReactionInput,
+  ToggleCommentReactionOutput,
+} from "./schemas/manager/comments";
+export type {
+  ListMentionUsersOutput,
+  MentionUser,
+} from "./schemas/manager/users";
+export type {
   TranslateDocumentInput,
   TranslateDocumentOutput,
   TranslateDocumentSummary,

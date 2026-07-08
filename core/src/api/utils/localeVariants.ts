@@ -1,4 +1,5 @@
 import { RouteLocaleVariant } from "../../internal-content-types";
+import { getRakunBootstrapOptions } from "../../bootstrapState";
 import type ContentType from "../../lib/ContentType";
 import { throwAppError } from "../../lib/errors";
 import {
@@ -16,6 +17,15 @@ export const prepareLocaleVariantRemoval = async ({
   id: string;
 }): Promise<{ revalidateContentTypeId: string }> => {
   const db = await getMongoService();
+  const hasPageRoute =
+    getRakunBootstrapOptions()?.routes?.some(
+      (route) => route.contentType === contentType.name && route.hasPage,
+    ) ?? false;
+
+  if (!hasPageRoute) {
+    return { revalidateContentTypeId: id };
+  }
+
   const document = (await db.get(contentType, id)) as Record<string, unknown> & {
     _id: string;
   };

@@ -109,6 +109,7 @@ A `ContentType` defines a logical collection:
 ```ts
 const Post = new ContentType({
   name: "Post",
+  comments: true,
   menu: {
     title: "Posts",
     icon: "newspaper",
@@ -150,6 +151,7 @@ Main properties:
 - `hideFromManager()`: hides the content type from manager content type lists.
 - `apiOnly()`: applies `.apiOnly()` to every field in the content type.
 - `managerOnly()`: applies `.managerOnly()` to every field in the content type.
+- `comments: true` or `enableComments()`: enables manager document comments and user mentions for saved entries.
 - `withHooks()`: attaches lifecycle hooks such as `beforeInsert`, `beforeUpdate`, and `onGet`.
 - Dynamic data bindings are available on manager-visible fields by default; use
   field-level `.noDynamic()` to opt out.
@@ -338,6 +340,7 @@ In environments other than `test`, the connection creates indexes defined by `cr
 `api/operations` defines typed contracts and handlers for endpoints:
 
 - Manager: CRUD, auth, MFA, media, literals, settings.
+- Manager comments: `manager.comments.list`, `manager.comments.create`, and `manager.users.mentions`.
 - Web: page resolution.
 
 Main helpers:
