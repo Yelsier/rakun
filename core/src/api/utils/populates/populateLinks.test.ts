@@ -41,7 +41,7 @@ const makeRouteMap = (overrides: Partial<RouteMapRow>): RouteMapRow =>
   ({
     _id: `${overrides.routeId ?? "route-id"}-${overrides.languageId ?? "language-en"}`,
     _type: "RouteMap",
-    path: "/en/fallback/",
+    path: "/fallback/",
     contentType: "Page",
     contentTypeId: "content-id",
     routeId: "route-id",
@@ -89,7 +89,7 @@ describe("populateLinks", () => {
         routeId: "route-about",
         contentTypeId: "about-id",
         languageId: "language-en",
-        path: "/en/about/",
+        path: "/about/",
       }),
       makeRouteMap({
         routeId: "route-about",
@@ -101,7 +101,7 @@ describe("populateLinks", () => {
         routeId: "route-contact",
         contentTypeId: "contact-id",
         languageId: "language-en",
-        path: "/en/contact/",
+        path: "/contact/",
       }),
       makeRouteMap({
         routeId: "route-contact",
@@ -138,14 +138,14 @@ describe("populateLinks", () => {
       title: "Docs",
       primaryLink: {
         _tag: "Translatable",
-        en: "/en/about/",
+        en: "/about/",
         es: "/es/sobre/",
       },
       blocks: [
         {
           ctaLink: {
             _tag: "Translatable",
-            en: "/en/contact/",
+            en: "/contact/",
             es: "/es/contacto/",
           },
         },
@@ -221,7 +221,7 @@ describe("populateLinks", () => {
         contentTypeId: "about-id",
         variantGroupId: "about-id",
         languageId: "language-en",
-        path: "/en/about/",
+        path: "/about/",
       }),
       makeRouteMap({
         routeId: "route-about",
@@ -246,7 +246,7 @@ describe("populateLinks", () => {
       _type: "TestPage",
       primaryLink: {
         _tag: "Translatable",
-        en: "/en/about/",
+        en: "/about/",
         es: "/es/sobre/",
       },
     });

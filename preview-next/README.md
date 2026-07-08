@@ -22,7 +22,7 @@ bun run dev
 
 Open:
 
-- `http://localhost:3000/en` for seeded home page
+- `http://localhost:3000` for seeded home page
 - `http://localhost:3000/backend` for manager
 
 Default seeded login:
@@ -46,9 +46,9 @@ The API route seeds preview data on first request when `SEED_PREVIEW` is not
   `Project`
 - populated `Fields.link()` examples in header and footer modules
 - `Author` and `Article`
-- `RouteLocaleVariant` assignments and route maps for `/en/`, `/es/`,
-  `/es-MX/`, `/en/about/`, `/es/sobre/`, `/es-MX/sobre-mexico/`,
-  `/en/contact/`, `/es/contacto/`, and `/es-MX/contacto/`
+- `RouteLocaleVariant` assignments and route maps for `/`, `/es/`,
+  `/es-MX/`, `/about/`, `/es/sobre/`, `/es-MX/sobre-mexico/`,
+  `/contact/`, `/es/contacto/`, and `/es-MX/contacto/`
 
 The seed is idempotent and also repairs the seeded home `_iterator` so
 `HelloWorld` stays present after local database reuse.

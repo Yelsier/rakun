@@ -180,7 +180,33 @@ const getTranslatableValue = (
   return typeof value === "string" ? value : "";
 };
 
+const getLanguagePathPrefix = (language: Document) =>
+  language.default === true ? "" : String(language.code);
+
 const buildPagePath = ({
+  page,
+  language,
+  languages = [],
+  home = false,
+}: {
+  page: Document;
+  language: Document;
+  languages?: readonly Document[];
+  home?: boolean;
+}) => {
+  const code = String(language.code);
+  const languagePrefix = getLanguagePathPrefix(language);
+
+  if (home) {
+    return `/${languagePrefix}/`.replace(/\/\/+/g, "/");
+  }
+
+  const slug = getTranslatableValue(page.slug, code, languages);
+
+  return `/${languagePrefix}/${slug}/`.replace(/\/\/+/g, "/");
+};
+
+const buildLegacyPrefixedPagePath = ({
   page,
   language,
   languages = [],
@@ -203,6 +229,22 @@ const buildPagePath = ({
 };
 
 const buildProjectPath = ({
+  project,
+  language,
+  languages = [],
+}: {
+  project: Document;
+  language: Document;
+  languages?: readonly Document[];
+}) => {
+  const code = String(language.code);
+  const languagePrefix = getLanguagePathPrefix(language);
+  const slug = getTranslatableValue(project.slug, code, languages);
+
+  return `/${languagePrefix}/projects/${slug}/`.replace(/\/\/+/g, "/");
+};
+
+const buildLegacyPrefixedProjectPath = ({
   project,
   language,
   languages = [],
@@ -276,13 +318,15 @@ const upsertProjectRouteMap = async ({
   project,
   route,
   language,
+  languages = [],
 }: {
   db: Db;
   project: Document;
   route: Document;
   language: Document;
+  languages?: readonly Document[];
 }) => {
-  const path = buildProjectPath({ project, language });
+  const path = buildProjectPath({ project, language, languages });
   const payload = {
     path,
     contentType: Project.name,
@@ -1269,6 +1313,46 @@ export const seedPreviewData = async ({
         ),
       );
 
+      const legacyDefaultLanguagePaths = Array.from(
+        new Set(
+          languages
+            .filter((routeLanguage) => routeLanguage.default === true)
+            .flatMap((routeLanguage) => [
+              ...pageVariantGroups.map((group) =>
+                buildLegacyPrefixedPagePath({
+                  page: resolveSeedPageVariant({
+                    primary: group.primary,
+                    assignments: group.assignments,
+                    language: routeLanguage,
+                    languages,
+                  }),
+                  language: routeLanguage,
+                  languages,
+                  home: group.home,
+                }),
+              ),
+              ...(projectRoute
+                ? projects.map((project) =>
+                    buildLegacyPrefixedProjectPath({
+                      project,
+                      language: routeLanguage,
+                      languages,
+                    }),
+                  )
+                : []),
+            ]),
+        ),
+      );
+
+      if (legacyDefaultLanguagePaths.length > 0) {
+        await db.collection("RouteMap").deleteMany({
+          path: { $in: legacyDefaultLanguagePaths },
+          routeId: {
+            $in: [route._id, ...(projectRoute ? [projectRoute._id] : [])],
+          },
+        });
+      }
+
       await Promise.all(
         languages.flatMap((routeLanguage) => [
           ...pageVariantGroups.map((group) =>
@@ -1293,6 +1377,7 @@ export const seedPreviewData = async ({
                   project,
                   route: projectRoute,
                   language: routeLanguage,
+                  languages,
                 }),
               )
             : []),

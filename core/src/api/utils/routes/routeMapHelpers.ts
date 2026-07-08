@@ -119,6 +119,9 @@ export const getParentPath = (
     );
   })();
 
+export const getLanguagePathPrefix = (language: DBOutput<Language>): string =>
+  language.default === true ? "" : (language.code as string);
+
 export const buildRoutePath = (
   item: UnknownItem,
   route: DBOutput<Route>,
@@ -128,9 +131,9 @@ export const buildRoutePath = (
   routeSettings: DBOutput<RouteSettings> | null,
   homeGroupId?: string,
 ): string => {
-  const code = language.code as string;
+  const languagePrefix = getLanguagePathPrefix(language);
   if (isHomePageRouteItem({ item, route, routeSettings, homeGroupId })) {
-    return `/${code}/`;
+    return `/${languagePrefix}/`.replace(/\/\/+/g, "/");
   }
 
   const routeSegment =
@@ -142,7 +145,7 @@ export const buildRoutePath = (
           [...languages],
         );
 
-  return `/${code}/${parentPath}/${translate(
+  return `/${languagePrefix}/${parentPath}/${translate(
     route.basePath as TranslatableValue<string>,
     language,
     [...languages],

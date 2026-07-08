@@ -299,7 +299,7 @@ export const ManagerSettingsRoutesScreen = () => {
           <CardTitle>Home page</CardTitle>
           <CardDescription>
             The selected page will resolve to the locale root path, for example
-            `/en/` instead of `/en/home/`.
+            `/` for the default language or `/es/` instead of `/es/home/`.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4 lg:flex-row lg:items-end">

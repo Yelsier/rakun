@@ -192,7 +192,7 @@ describe.serial("preview", () => {
       },
     });
 
-    expect(result.path).toBe("/en/draft-page/");
+    expect(result.path).toBe("/draft-page/");
     expect(new Date(result.expiresAt).getTime()).toBeGreaterThan(Date.now());
 
     const snapshot = await db.find(PreviewSnapshot, { path: result.path });
@@ -250,7 +250,7 @@ describe.serial("preview", () => {
 
     const wrongPath = await getPreviewPage({
       token: result.token,
-      path: "/en/other/",
+      path: "/other/",
     });
     expect(wrongPath.modules[0]?._type).toBe("NotFound");
   });

@@ -147,10 +147,10 @@ describe('route map helpers', () => {
     expect(routeMaps.map((item) => item.contentTypeId)).toContain('hidden')
     expect(routeMaps.map((item) => item.contentTypeId)).toContain('published')
     expect(routeMaps.find((item) => item.contentTypeId === 'hidden')?.path).toBe(
-      '/en/articles/hidden/'
+      '/articles/hidden/'
     )
     expect(routeMaps.find((item) => item.contentTypeId === 'published')?.path).toBe(
-      '/en/articles/published-post/'
+      '/articles/published-post/'
     )
   })
 
@@ -184,7 +184,7 @@ describe('route map helpers', () => {
         [english],
         routeSettings
       )
-    ).toBe('/en/')
+    ).toBe('/')
   })
 
   it('maps locale variant home page groups to locale roots', async () => {
@@ -237,7 +237,7 @@ describe('route map helpers', () => {
         expect.objectContaining({
           contentTypeId: 'home-primary',
           languageId: english._id,
-          path: '/en/',
+          path: '/',
         }),
         expect.objectContaining({
           contentTypeId: 'home-es',
@@ -293,7 +293,7 @@ describe('route map helpers', () => {
       ] satisfies RouteLocaleVariantRecord[]
     )
 
-    expect(routeMaps.map((item) => item.path).sort()).toEqual(['/en/', '/es/'])
+    expect(routeMaps.map((item) => item.path).sort()).toEqual(['/', '/es/'])
   })
 
   it('includes parent relation field in projected route fields', () => {
@@ -473,6 +473,6 @@ describe('route map helpers', () => {
       'about-shared',
       'about-shared',
     ])
-    expect(routeMaps.map((item) => item.path)).toEqual(['/en/company/', '/es/empresa/'])
+    expect(routeMaps.map((item) => item.path)).toEqual(['/company/', '/es/empresa/'])
   })
 })
