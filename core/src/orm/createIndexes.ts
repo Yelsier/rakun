@@ -8,6 +8,7 @@ import {
   SchemaState,
 } from "../internal-content-types";
 import { getContentTypes } from "../lib/Registry";
+import { getPersistedUniqueGroups } from "../lib/routeableContent";
 
 const LEGACY_INTERNAL_COLLECTIONS = [
   ["_rakun_backups", Backup.name],
@@ -67,7 +68,23 @@ export async function createIndexes(db: Db): Promise<void> {
 
   for (const contentType of contentTypes) {
     if (contentType.uniques && contentType.uniques.length > 0) {
-      const indexes = contentType.uniques.map((uniqueFields) => ({
+      const persistedUniqueGroups = getPersistedUniqueGroups(
+        contentType.name,
+        contentType.uniques,
+      );
+      const skippedUniqueGroups = contentType.uniques.filter(
+        (uniqueFields) => !persistedUniqueGroups.includes(uniqueFields),
+      );
+
+      for (const uniqueFields of skippedUniqueGroups) {
+        try {
+          await db
+            .collection(contentType.name)
+            .dropIndex(`unique_${uniqueFields.join("_")}`);
+        } catch {}
+      }
+
+      const indexes = persistedUniqueGroups.map((uniqueFields) => ({
         key: uniqueFields.reduce(
           (acc, field) => {
             acc[field] = 1;
@@ -79,14 +96,16 @@ export async function createIndexes(db: Db): Promise<void> {
         unique: true,
       }));
 
-      try {
-        await db.collection(contentType.name).createIndexes(indexes);
-      } catch (error) {
-        // If it fails, log but don't fail the application
-        console.warn(
-          `Failed to create indexes for ${contentType.name}:`,
-          error,
-        );
+      if (indexes.length > 0) {
+        try {
+          await db.collection(contentType.name).createIndexes(indexes);
+        } catch (error) {
+          // If it fails, log but don't fail the application
+          console.warn(
+            `Failed to create indexes for ${contentType.name}:`,
+            error,
+          );
+        }
       }
     }
   }

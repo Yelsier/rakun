@@ -296,6 +296,14 @@ export { getListField } from "./lib/utils/getListField";
 export { getTranslation } from "./lib/utils/getTranslation";
 export { encodeContentTypeForManager } from "./lib/Registry";
 export { ITERATOR_FIELD_NAME, SEO_FIELD_NAME } from "./lib/systemFields";
+export {
+  LOCALE_VARIANT_GROUP_FIELD,
+  LOCALE_VARIANT_ROLE_FIELD,
+  LocaleVariantRole,
+  getLocaleVariantGroupId,
+  getLocaleVariantRole,
+  isLocaleVariantDocument,
+} from "./lib/localeVariants";
 export { Id, isId, type Id as IdType } from "./lib/utils/id";
 export { isTranslatableObject } from "./lib/utils/isTranslatableObject";
 export { slugify } from "./lib/utils/slugify";

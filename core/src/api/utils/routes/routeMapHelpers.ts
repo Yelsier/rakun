@@ -6,8 +6,15 @@ import {
   Route,
   Language,
   RouteSettings,
+  RouteLocaleVariant,
 } from "../../../internal-content-types";
 import { getContentTypeByName } from "../../../lib/Registry";
+import {
+  getLocaleVariantGroupId,
+  getLocaleVariantRole,
+  LOCALE_VARIANT_GROUP_FIELD,
+  LOCALE_VARIANT_ROLE_FIELD,
+} from "../../../lib/localeVariants";
 import { DataInput, DBOutput, TranslatableValue } from "../../../lib/types";
 import { getMongoService } from "../../../orm";
 import { DbErrorConflict, type DBService } from "../../../orm/dbService";
@@ -20,6 +27,10 @@ export type UnknownItem = {
 };
 
 export type RouteMapItemInput = DataInput<RouteMap>;
+export type RouteLocaleVariantRecord = Pick<
+  DBOutput<RouteLocaleVariant>,
+  "routeId" | "groupId" | "languageId" | "documentId"
+>;
 
 export const isVisibleForRouteMap = (item: UnknownItem): boolean =>
   item._trashed !== true &&
@@ -45,16 +56,23 @@ export const isHomePageRouteItem = ({
   item,
   route,
   routeSettings,
+  homeGroupId,
 }: {
   item: UnknownItem;
   route: DBOutput<Route>;
   routeSettings: DBOutput<RouteSettings> | null;
+  homeGroupId?: string;
 }): boolean => {
   if (route.contentType !== "Page") return false;
 
   const homePage = routeSettings?.homePage as { _id?: string } | undefined;
+  const itemGroupId = getLocaleVariantGroupId(item);
 
-  return homePage?._id === item._id;
+  return (
+    homeGroupId === itemGroupId ||
+    homePage?._id === item._id ||
+    homePage?._id === itemGroupId
+  );
 };
 
 export const getParentPath = (
@@ -108,9 +126,10 @@ export const buildRoutePath = (
   parentPath: string,
   languages: readonly DBOutput<Language>[],
   routeSettings: DBOutput<RouteSettings> | null,
+  homeGroupId?: string,
 ): string => {
   const code = language.code as string;
-  if (isHomePageRouteItem({ item, route, routeSettings })) {
+  if (isHomePageRouteItem({ item, route, routeSettings, homeGroupId })) {
     return `/${code}/`;
   }
 
@@ -131,7 +150,13 @@ export const buildRoutePath = (
 };
 
 export const getRouteFields = (route: DBOutput<Route>) => {
-  const routFields = [route.field as string, "createdAt", "updatedAt"];
+  const routFields = [
+    route.field as string,
+    LOCALE_VARIANT_GROUP_FIELD,
+    LOCALE_VARIANT_ROLE_FIELD,
+    "createdAt",
+    "updatedAt",
+  ];
   if (route.parent && route.parentRelationField) {
     routFields.push(route.parentRelationField as string);
   }
@@ -140,6 +165,107 @@ export const getRouteFields = (route: DBOutput<Route>) => {
 
 export const getRouteMapLastModified = (item: UnknownItem): Date =>
   item.updatedAt ?? item.createdAt ?? new Date();
+
+type RouteItemGroup = {
+  groupId: string;
+  primary?: UnknownItem;
+  fallback?: UnknownItem;
+  itemsById: Map<string, UnknownItem>;
+};
+
+const hasRouteFieldValue = (item: UnknownItem, route: DBOutput<Route>) =>
+  Boolean(item[route.field as string]);
+
+const getFallbackLanguageChain = (
+  language: DBOutput<Language>,
+  languages: readonly DBOutput<Language>[],
+) => {
+  const result: DBOutput<Language>[] = [];
+  const seen = new Set<string>();
+  let current: DBOutput<Language> | undefined = language;
+
+  while (current && !seen.has(String(current._id))) {
+    result.push(current);
+    seen.add(String(current._id));
+    current = languages.find((item) => item._id === current?.parent?._id);
+  }
+
+  const defaultLanguage = languages.find((item) => item.default);
+  if (defaultLanguage && !seen.has(String(defaultLanguage._id))) {
+    result.push(defaultLanguage);
+  }
+
+  return result;
+};
+
+const groupRouteItems = (
+  items: readonly UnknownItem[],
+  route: DBOutput<Route>,
+): RouteItemGroup[] => {
+  const groups = new Map<string, RouteItemGroup>();
+
+  for (const item of items) {
+    if (!isVisibleForRouteMap(item)) continue;
+    if (!hasRouteFieldValue(item, route)) continue;
+
+    const groupId = getLocaleVariantGroupId(item);
+    const group =
+      groups.get(groupId) ??
+      ({
+        groupId,
+        itemsById: new Map<string, UnknownItem>(),
+      } satisfies RouteItemGroup);
+
+    group.itemsById.set(item._id, item);
+
+    if (getLocaleVariantRole(item) === "primary" || item._id === groupId) {
+      group.primary = item;
+    }
+
+    group.fallback ??= item;
+    groups.set(groupId, group);
+  }
+
+  return Array.from(groups.values());
+};
+
+const resolveRouteItemForLanguage = ({
+  group,
+  language,
+  languages,
+  route,
+  localeVariants,
+}: {
+  group: RouteItemGroup;
+  language: DBOutput<Language>;
+  languages: readonly DBOutput<Language>[];
+  route: DBOutput<Route>;
+  localeVariants: readonly RouteLocaleVariantRecord[];
+}): UnknownItem | null => {
+  const fallbackLanguages = getFallbackLanguageChain(language, languages);
+
+  for (const fallbackLanguage of fallbackLanguages) {
+    const assignment = localeVariants.find(
+      (item) =>
+        item.routeId === route._id &&
+        item.groupId === group.groupId &&
+        item.languageId === fallbackLanguage._id,
+    );
+    if (!assignment) continue;
+
+    const item = group.itemsById.get(assignment.documentId);
+    if (item && isVisibleForRouteMap(item) && hasRouteFieldValue(item, route)) {
+      return item;
+    }
+  }
+
+  const primary = group.primary;
+  if (primary && isVisibleForRouteMap(primary) && hasRouteFieldValue(primary, route)) {
+    return primary;
+  }
+
+  return group.fallback ?? null;
+};
 
 /**
  *  Generates route map items for a given content items, route and language, including parent paths.
@@ -156,13 +282,32 @@ export const generateRouteMapItems = (
   routes: readonly DBOutput<Route>[],
   routeSettings: DBOutput<RouteSettings> | null,
   translationLanguages: readonly DBOutput<Language>[] = languages,
+  localeVariants: readonly RouteLocaleVariantRecord[] = [],
 ) =>
   (async () => {
     const result: RouteMapItemInput[] = [];
-    for (const language of languages) {
-      for (const item of items) {
-        if (!isVisibleForRouteMap(item)) continue;
-        if (!item[route.field as string]) continue;
+    const groups = groupRouteItems(items, route);
+    const homePageId = (routeSettings?.homePage as { _id?: string } | undefined)
+      ?._id;
+
+    for (const group of groups) {
+      const homeGroupId =
+        route.contentType === "Page" &&
+        homePageId &&
+        (group.groupId === homePageId || group.itemsById.has(homePageId))
+          ? group.groupId
+          : undefined;
+
+      for (const language of languages) {
+        const item = resolveRouteItemForLanguage({
+          group,
+          language,
+          languages: translationLanguages,
+          route,
+          localeVariants,
+        });
+        if (!item) continue;
+
         const parentPath = await getParentPath(
           item,
           route,
@@ -174,6 +319,7 @@ export const generateRouteMapItems = (
         result.push({
           contentTypeId: item._id,
           contentType: route.contentType as string,
+          variantGroupId: group.groupId,
           path: buildRoutePath(
             item,
             route,
@@ -181,6 +327,7 @@ export const generateRouteMapItems = (
             parentPath,
             translationLanguages,
             routeSettings,
+            homeGroupId,
           ),
           routeId: route._id as string,
           languageId: language._id as string,
@@ -198,13 +345,15 @@ export async function updateRouteMapEntries(
   const db = await getMongoService();
 
   for (const route of routesMap) {
-    const identity = {
-      contentTypeId: route.contentTypeId,
-      contentType: route.contentType,
-      routeId: route.routeId,
-      languageId: route.languageId,
-    };
-    const existingByIdentity = await db.find(RouteMap, identity);
+    const identity = getRouteMapIdentity(route);
+    const existingByIdentity =
+      (await db.find(RouteMap, identity)) ??
+      (await db.find(RouteMap, {
+        contentType: route.contentType,
+        routeId: route.routeId,
+        languageId: route.languageId,
+        contentTypeId: route.variantGroupId ?? route.contentTypeId,
+      }));
 
     if (existingByIdentity) {
       await db.update(RouteMap, existingByIdentity._id, route);
@@ -236,12 +385,55 @@ export async function updateRouteMapEntries(
   }
 }
 
+const getRouteMapIdentity = (
+  route: Pick<
+    RouteMapItemInput,
+    "contentType" | "contentTypeId" | "languageId" | "routeId" | "variantGroupId"
+  >,
+) => ({
+  contentType: route.contentType,
+  routeId: route.routeId,
+  languageId: route.languageId,
+  variantGroupId: route.variantGroupId ?? route.contentTypeId,
+});
+
+const routeMapIdentityKey = (
+  route: Pick<
+    RouteMapItemInput,
+    "contentType" | "contentTypeId" | "languageId" | "routeId" | "variantGroupId"
+  >,
+) => {
+  const identity = getRouteMapIdentity(route);
+  return [
+    identity.contentType,
+    identity.routeId,
+    identity.languageId,
+    identity.variantGroupId,
+  ].join(":");
+};
+
+export async function deleteMissingRouteMapEntries(
+  routesMap: RouteMapItemInput[],
+  prevRoutesMap: DBOutput<RouteMap>[],
+): Promise<void> {
+  const db = await getMongoService();
+  const nextKeys = new Set(routesMap.map(routeMapIdentityKey));
+
+  await Promise.all(
+    prevRoutesMap
+      .filter((route) => !nextKeys.has(routeMapIdentityKey(route)))
+      .map((route) => db.delete(RouteMap, { _id: route._id })),
+  );
+}
+
 const isSameRouteMapOwner = (
   existing: DBOutput<RouteMap>,
   next: RouteMapItemInput,
 ) =>
   existing.contentType === next.contentType &&
-  String(existing.contentTypeId) === String(next.contentTypeId) &&
+  String(existing.routeId) === String(next.routeId) &&
+  String(existing.variantGroupId ?? existing.contentTypeId) ===
+    String(next.variantGroupId ?? next.contentTypeId) &&
   String(existing.languageId) === String(next.languageId);
 
 const isStaleRouteMapEntry = async (

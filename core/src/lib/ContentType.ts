@@ -25,6 +25,11 @@ import {
   type DynamicDataOptions,
 } from "./dynamicData";
 import type { ContentTypeHooks } from "./hooks";
+import {
+  LOCALE_VARIANT_GROUP_FIELD,
+  LOCALE_VARIANT_ROLE_FIELD,
+  LocaleVariantRole,
+} from "./localeVariants";
 
 export const Menu = z
   .object({
@@ -195,6 +200,8 @@ type BaseMetadata<N extends string> = {
   _visibilityBeforeTrash?: Exclude<DocumentVisibility, "trash">;
   _trashed?: boolean;
   _revision?: number;
+  [LOCALE_VARIANT_GROUP_FIELD]?: string;
+  [LOCALE_VARIANT_ROLE_FIELD]?: z.infer<typeof LocaleVariantRole>;
 };
 
 type IdMetadata = {
@@ -282,6 +289,8 @@ const baseMetadataSchema = {
   _visibilityBeforeTrash: DocumentVisibilityBeforeTrash.optional(),
   _trashed: z.boolean().optional(),
   _revision: z.number().optional(),
+  [LOCALE_VARIANT_GROUP_FIELD]: z.string().optional(),
+  [LOCALE_VARIANT_ROLE_FIELD]: LocaleVariantRole.optional(),
 } satisfies SchemaShape;
 
 const idMetadataSchema = {

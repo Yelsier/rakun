@@ -7,6 +7,7 @@ import {
   generateRouteMapItems,
   getRouteFields,
   isHomePageRouteItem,
+  type RouteLocaleVariantRecord,
 } from './routeMapHelpers'
 
 const makeLanguage = (overrides: Partial<DBOutput<Language>>): DBOutput<Language> =>
@@ -186,6 +187,115 @@ describe('route map helpers', () => {
     ).toBe('/en/')
   })
 
+  it('maps locale variant home page groups to locale roots', async () => {
+    const english = makeLanguage({ code: 'en', default: true })
+    const spanish = makeLanguage({ code: 'es' })
+    const route = makeRoute({ contentType: 'Page' })
+    const routeSettings = {
+      _id: 'settings-id',
+      _type: 'RouteSettings',
+      key: 'default',
+      homePage: {
+        type: 'existing',
+        _id: 'home-primary',
+        contentType: 'Page',
+      },
+    } as DBOutput<RouteSettings>
+
+    const routeMaps = await generateRouteMapItems(
+      [
+        {
+          _id: 'home-primary',
+          slug: { _tag: 'Translatable', en: 'home', es: 'inicio' },
+          _localeVariantGroupId: 'home-primary',
+          _localeVariantRole: 'primary',
+        },
+        {
+          _id: 'home-es',
+          slug: { _tag: 'Translatable', en: 'home-es', es: 'inicio-es' },
+          _localeVariantGroupId: 'home-primary',
+          _localeVariantRole: 'variant',
+        },
+      ],
+      route,
+      [english, spanish],
+      [route],
+      routeSettings,
+      [english, spanish],
+      [
+        {
+          routeId: route._id,
+          groupId: 'home-primary',
+          languageId: spanish._id,
+          documentId: 'home-es',
+        },
+      ] satisfies RouteLocaleVariantRecord[]
+    )
+
+    expect(routeMaps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          contentTypeId: 'home-primary',
+          languageId: english._id,
+          path: '/en/',
+        }),
+        expect.objectContaining({
+          contentTypeId: 'home-es',
+          languageId: spanish._id,
+          path: '/es/',
+        }),
+      ])
+    )
+  })
+
+  it('maps home page group to roots when settings point at a variant', async () => {
+    const english = makeLanguage({ code: 'en', default: true })
+    const spanish = makeLanguage({ code: 'es' })
+    const route = makeRoute({ contentType: 'Page' })
+    const routeSettings = {
+      _id: 'settings-id',
+      _type: 'RouteSettings',
+      key: 'default',
+      homePage: {
+        type: 'existing',
+        _id: 'home-es',
+        contentType: 'Page',
+      },
+    } as DBOutput<RouteSettings>
+
+    const routeMaps = await generateRouteMapItems(
+      [
+        {
+          _id: 'home-primary',
+          slug: { _tag: 'Translatable', en: 'home', es: 'inicio' },
+          _localeVariantGroupId: 'home-primary',
+          _localeVariantRole: 'primary',
+        },
+        {
+          _id: 'home-es',
+          slug: { _tag: 'Translatable', en: 'home-es', es: 'inicio-es' },
+          _localeVariantGroupId: 'home-primary',
+          _localeVariantRole: 'variant',
+        },
+      ],
+      route,
+      [english, spanish],
+      [route],
+      routeSettings,
+      [english, spanish],
+      [
+        {
+          routeId: route._id,
+          groupId: 'home-primary',
+          languageId: spanish._id,
+          documentId: 'home-es',
+        },
+      ] satisfies RouteLocaleVariantRecord[]
+    )
+
+    expect(routeMaps.map((item) => item.path).sort()).toEqual(['/en/', '/es/'])
+  })
+
   it('includes parent relation field in projected route fields', () => {
     expect(
       getRouteFields(
@@ -198,6 +308,171 @@ describe('route map helpers', () => {
           parentRelationField: 'category',
         })
       )
-    ).toEqual(['slug', 'createdAt', 'updatedAt', 'category'])
+    ).toEqual([
+      'slug',
+      '_localeVariantGroupId',
+      '_localeVariantRole',
+      'createdAt',
+      'updatedAt',
+      'category',
+    ])
+  })
+
+  it('resolves locale variants through parent languages', async () => {
+    const english = makeLanguage({ code: 'en', default: true })
+    const spanish = makeLanguage({ code: 'es' })
+    const mexicanSpanish = makeLanguage({
+      code: 'es-MX',
+      parent: {
+        type: 'self',
+        _id: spanish._id,
+        contentType: 'Language',
+      },
+    })
+    const route = makeRoute()
+    const items = [
+      {
+        _id: 'about-primary',
+        slug: { _tag: 'Translatable', en: 'about', es: 'sobre' },
+      },
+      {
+        _id: 'about-es',
+        _localeVariantGroupId: 'about-primary',
+        _localeVariantRole: 'variant',
+        slug: { _tag: 'Translatable', en: 'about', es: 'sobre-es' },
+      },
+    ]
+    const variants: RouteLocaleVariantRecord[] = [
+      {
+        routeId: route._id,
+        groupId: 'about-primary',
+        languageId: spanish._id,
+        documentId: 'about-es',
+      },
+    ]
+
+    const routeMaps = await generateRouteMapItems(
+      items,
+      route,
+      [mexicanSpanish],
+      [],
+      null,
+      [english, spanish, mexicanSpanish],
+      variants
+    )
+
+    expect(routeMaps).toHaveLength(1)
+    expect(routeMaps[0]?.contentTypeId).toBe('about-es')
+    expect(routeMaps[0]?.variantGroupId).toBe('about-primary')
+    expect(routeMaps[0]?.path).toBe('/es-MX/sobre-es/')
+  })
+
+  it('prefers exact locale variants over parent assignments', async () => {
+    const english = makeLanguage({ code: 'en', default: true })
+    const spanish = makeLanguage({ code: 'es' })
+    const mexicanSpanish = makeLanguage({
+      code: 'es-MX',
+      parent: {
+        type: 'self',
+        _id: spanish._id,
+        contentType: 'Language',
+      },
+    })
+    const route = makeRoute()
+    const items = [
+      {
+        _id: 'about-primary',
+        slug: { _tag: 'Translatable', en: 'about', es: 'sobre' },
+      },
+      {
+        _id: 'about-es',
+        _localeVariantGroupId: 'about-primary',
+        _localeVariantRole: 'variant',
+        slug: { _tag: 'Translatable', en: 'about', es: 'sobre-es' },
+      },
+      {
+        _id: 'about-mx',
+        _localeVariantGroupId: 'about-primary',
+        _localeVariantRole: 'variant',
+        slug: { _tag: 'Translatable', en: 'about', es: 'sobre-mx', 'es-MX': 'acerca' },
+      },
+    ]
+    const variants: RouteLocaleVariantRecord[] = [
+      {
+        routeId: route._id,
+        groupId: 'about-primary',
+        languageId: spanish._id,
+        documentId: 'about-es',
+      },
+      {
+        routeId: route._id,
+        groupId: 'about-primary',
+        languageId: mexicanSpanish._id,
+        documentId: 'about-mx',
+      },
+    ]
+
+    const routeMaps = await generateRouteMapItems(
+      items,
+      route,
+      [mexicanSpanish],
+      [],
+      null,
+      [english, spanish, mexicanSpanish],
+      variants
+    )
+
+    expect(routeMaps).toHaveLength(1)
+    expect(routeMaps[0]?.contentTypeId).toBe('about-mx')
+    expect(routeMaps[0]?.path).toBe('/es-MX/acerca/')
+  })
+
+  it('lets one locale variant serve multiple languages', async () => {
+    const english = makeLanguage({ code: 'en', default: true })
+    const spanish = makeLanguage({ code: 'es' })
+    const route = makeRoute()
+    const items = [
+      {
+        _id: 'about-primary',
+        slug: { _tag: 'Translatable', en: 'about', es: 'sobre' },
+      },
+      {
+        _id: 'about-shared',
+        _localeVariantGroupId: 'about-primary',
+        _localeVariantRole: 'variant',
+        slug: { _tag: 'Translatable', en: 'company', es: 'empresa' },
+      },
+    ]
+    const variants: RouteLocaleVariantRecord[] = [
+      {
+        routeId: route._id,
+        groupId: 'about-primary',
+        languageId: english._id,
+        documentId: 'about-shared',
+      },
+      {
+        routeId: route._id,
+        groupId: 'about-primary',
+        languageId: spanish._id,
+        documentId: 'about-shared',
+      },
+    ]
+
+    const routeMaps = await generateRouteMapItems(
+      items,
+      route,
+      [english, spanish],
+      [],
+      null,
+      [english, spanish],
+      variants
+    )
+
+    expect(routeMaps).toHaveLength(2)
+    expect(routeMaps.map((item) => item.contentTypeId)).toEqual([
+      'about-shared',
+      'about-shared',
+    ])
+    expect(routeMaps.map((item) => item.path)).toEqual(['/en/company/', '/es/empresa/'])
   })
 })

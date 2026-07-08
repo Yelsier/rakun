@@ -19,6 +19,7 @@ import { deepDeleteNulls } from "../utils/deepDeleteNulls";
 import ContentType from "../../lib/ContentType";
 import { DataInput, DBOutput } from "../../lib/types";
 import { Id } from "../../lib/utils/id";
+import { getPersistedUniqueGroups } from "../../lib/routeableContent";
 import {
   hasContentHooks,
   runAfterUpdateHook,
@@ -64,9 +65,14 @@ export const updateHandler =
       throw error;
     }
 
+    const uniqueGroups = getPersistedUniqueGroups(
+      contentType.name,
+      contentType.uniques,
+    );
+
     if (
-      contentType.uniques?.length &&
-      contentType.uniques.some((fields) =>
+      uniqueGroups.length &&
+      uniqueGroups.some((fields) =>
         fields.some((f) => f in effectiveData),
       )
     ) {
@@ -75,7 +81,7 @@ export const updateHandler =
           $and: [
             { _id: { $ne: parseId(id) } },
             {
-              $or: contentType.uniques!.map((fields) => {
+              $or: uniqueGroups.map((fields) => {
                 const subFilter: Record<string, unknown> = {};
                 fields.forEach((field) => {
                   if (field in effectiveData) {
@@ -121,7 +127,7 @@ export const updateHandler =
         if (checkUniques) {
           throw new DbErrorConflict(
             `Unique constraint violation`,
-            `The combination of fields ${contentType.uniques
+            `The combination of fields ${uniqueGroups
               .map((fields) => fields.join(", "))
               .join(" or ")} must be unique.`,
           );

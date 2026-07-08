@@ -39,14 +39,16 @@ The API route seeds preview data on first request when `SEED_PREVIEW` is not
 - `Language`
 - preview admin role and user
 - `Header` and `Footer` layout modules
-- home, about, and contact `Page` records
+- `en`, `es`, and `es-MX` locales, with `es-MX` falling back to `es`
+- home, about, and contact `Page` records with seeded locale variants
 - inline `HelloWorld` modules in the seeded page `_iterator`
 - a `FeatureCarousel` module that demonstrates dynamic data bindings from
   `Project`
 - populated `Fields.link()` examples in header and footer modules
 - `Author` and `Article`
-- route settings and route maps for `/en/`, `/es/`, `/en/about/`, `/es/sobre/`,
-  `/en/contact/`, and `/es/contacto/`
+- `RouteLocaleVariant` assignments and route maps for `/en/`, `/es/`,
+  `/es-MX/`, `/en/about/`, `/es/sobre/`, `/es-MX/sobre-mexico/`,
+  `/en/contact/`, `/es/contacto/`, and `/es-MX/contacto/`
 
 The seed is idempotent and also repairs the seeded home `_iterator` so
 `HelloWorld` stays present after local database reuse.

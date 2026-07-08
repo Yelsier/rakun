@@ -6,6 +6,7 @@ import { RakunRequestContext } from "../../context";
 import { checkOwnership } from "../../utils/checkOwnership";
 import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
+import { prepareLocaleVariantRemoval } from "../../utils/localeVariants";
 
 export const trashHandler = async ({
   input,
@@ -48,6 +49,10 @@ export const trashHandler = async ({
 
   const user = ctx.getUser();
   const current = await db.get(contentType, id);
+  const localeVariantRemoval = await prepareLocaleVariantRemoval({
+    contentType,
+    id,
+  });
   const currentVisibility =
     (current as { _visibility?: string })._visibility ?? "published";
   const isRestorableVisibility = (
@@ -86,8 +91,9 @@ export const trashHandler = async ({
 
   await checkRevalidatePath({
     contentType: contentType.name,
-    contentTypeId: id,
-    operation: "delete",
+    contentTypeId: localeVariantRemoval.revalidateContentTypeId,
+    operation:
+      localeVariantRemoval.revalidateContentTypeId === id ? "delete" : "update",
   });
 
   return { ok: true };

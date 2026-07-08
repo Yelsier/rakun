@@ -8,6 +8,7 @@ import { checkOwnership } from "../../utils/checkOwnership";
 import { deleteMediaStorage } from "./media/deleteMediaStorage";
 import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
+import { prepareLocaleVariantRemoval } from "../../utils/localeVariants";
 
 export const deleteHandler = async ({
   input,
@@ -56,13 +57,19 @@ export const deleteHandler = async ({
     });
   }
 
+  const localeVariantRemoval = await prepareLocaleVariantRemoval({
+    contentType,
+    id,
+  });
+
   await db.delete(contentType, { _id: id }, { actorId: ctx.getUser()._id });
   Logger.addTrace("manager.delete: db delete success");
 
   await checkRevalidatePath({
     contentType: contentType.name,
-    contentTypeId: id,
-    operation: "delete",
+    contentTypeId: localeVariantRemoval.revalidateContentTypeId,
+    operation:
+      localeVariantRemoval.revalidateContentTypeId === id ? "delete" : "update",
   });
 
   return { ok: true };

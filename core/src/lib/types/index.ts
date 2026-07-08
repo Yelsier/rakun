@@ -192,6 +192,8 @@ export type DBMetadata = {
   _visibility?: "draft" | "hidden" | "published" | "trash";
   _visibilityBeforeTrash?: "draft" | "hidden" | "published";
   _trashed?: boolean;
+  _localeVariantGroupId?: string;
+  _localeVariantRole?: "primary" | "variant";
   trashedAt?: Date;
   trashedBy?: string;
   _revision?: number;

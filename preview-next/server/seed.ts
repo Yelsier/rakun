@@ -3,10 +3,13 @@ import { MongoClient, type Db, type Document } from "mongodb";
 import {
   HelloWorld,
   LiteralTranslation,
+  RouteLocaleVariant,
   Seo,
 } from "@rakun-kit/next/internal-content-types";
 import {
   ITERATOR_FIELD_NAME,
+  LOCALE_VARIANT_GROUP_FIELD,
+  LOCALE_VARIANT_ROLE_FIELD,
   getPermissionList,
   SEO_FIELD_NAME,
 } from "@rakun-kit/next";
@@ -27,14 +30,25 @@ import {
 } from "./content-types";
 
 const now = () => new Date();
-const translatable = (en: string, es = en) => ({
+const translatable = (
+  en: string,
+  es = en,
+  overrides: Record<string, string> = {},
+) => ({
   _tag: "Translatable",
   en,
   es,
+  ...overrides,
 });
 const seedLanguages = [
   { code: "en", name: "English", default: true },
   { code: "es", name: "Spanish", default: false },
+  {
+    code: "es-MX",
+    name: "Spanish (Mexico)",
+    default: false,
+    parentCode: "es",
+  },
 ] as const;
 const seedLiteralTranslations = [
   {
@@ -115,10 +129,50 @@ const releaseSeedLock = async (db: Db) => {
   await db.collection<SeedLock>(SEED_LOCKS).deleteOne({ _id: SEED_LOCK_ID });
 };
 
-const getTranslatableValue = (value: unknown, languageCode: string) => {
+const getDocumentId = (value: unknown) => {
+  if (!value) {
+    return null;
+  }
+
+  if (typeof value === "object" && "_id" in value) {
+    return String((value as { _id?: unknown })._id);
+  }
+
+  return String(value);
+};
+
+const getTranslatableValue = (
+  value: unknown,
+  languageCode: string,
+  languages: readonly Document[] = [],
+) => {
   if (value && typeof value === "object") {
     const record = value as Record<string, unknown>;
-    const localized = record[languageCode] ?? record.en;
+    const codes: string[] = [];
+    const seenLanguages = new Set<string>();
+    let current = languages.find((item) => String(item.code) === languageCode);
+
+    const pushCode = (code: unknown) => {
+      if (typeof code === "string" && code.length > 0 && !codes.includes(code)) {
+        codes.push(code);
+      }
+    };
+
+    pushCode(languageCode);
+
+    while (current && !seenLanguages.has(String(current._id))) {
+      seenLanguages.add(String(current._id));
+      const parentId = getDocumentId(current.parent);
+      current = parentId
+        ? languages.find((item) => String(item._id) === parentId)
+        : undefined;
+      pushCode(current?.code);
+    }
+
+    pushCode(languages.find((item) => item.default)?.code);
+    pushCode("en");
+
+    const localized = codes.map((code) => record[code]).find(Boolean);
 
     return typeof localized === "string" ? localized : "";
   }
@@ -129,10 +183,12 @@ const getTranslatableValue = (value: unknown, languageCode: string) => {
 const buildPagePath = ({
   page,
   language,
+  languages = [],
   home = false,
 }: {
   page: Document;
   language: Document;
+  languages?: readonly Document[];
   home?: boolean;
 }) => {
   const code = String(language.code);
@@ -141,7 +197,7 @@ const buildPagePath = ({
     return `/${code}/`;
   }
 
-  const slug = getTranslatableValue(page.slug, code);
+  const slug = getTranslatableValue(page.slug, code, languages);
 
   return `/${code}/${slug}/`.replace(/\/\/+/g, "/");
 };
@@ -149,12 +205,14 @@ const buildPagePath = ({
 const buildProjectPath = ({
   project,
   language,
+  languages = [],
 }: {
   project: Document;
   language: Document;
+  languages?: readonly Document[];
 }) => {
   const code = String(language.code);
-  const slug = getTranslatableValue(project.slug, code);
+  const slug = getTranslatableValue(project.slug, code, languages);
 
   return `/${code}/projects/${slug}/`.replace(/\/\/+/g, "/");
 };
@@ -169,21 +227,26 @@ const upsertPageRouteMap = async ({
   page,
   route,
   language,
+  languages = [],
   home = false,
 }: {
   db: Db;
   page: Document;
   route: Document;
   language: Document;
+  languages?: readonly Document[];
   home?: boolean;
 }) => {
-  const path = buildPagePath({ page, language, home });
+  const path = buildPagePath({ page, language, languages, home });
+  const variantGroupId = page[LOCALE_VARIANT_GROUP_FIELD] ?? page._id;
   const payload = {
     path,
     contentType: Page.name,
     contentTypeId: page._id,
+    variantGroupId,
     routeId: route._id,
     languageId: language._id,
+    lastModified: page.updatedAt ?? page.createdAt ?? now(),
     _type: "RouteMap",
     updatedAt: now(),
   };
@@ -248,6 +311,112 @@ const upsertProjectRouteMap = async ({
 
     await db.collection("RouteMap").updateOne({ path }, { $set: payload });
   }
+};
+
+const markPageLocaleVariant = async ({
+  db,
+  page,
+  group,
+  role,
+}: {
+  db: Db;
+  page: Document;
+  group: Document;
+  role: "primary" | "variant";
+}) => {
+  const groupId = group._id;
+
+  await db.collection(Page.name).updateOne(
+    { _id: page._id },
+    {
+      $set: {
+        [LOCALE_VARIANT_GROUP_FIELD]: groupId,
+        [LOCALE_VARIANT_ROLE_FIELD]: role,
+        updatedAt: now(),
+      },
+    },
+  );
+
+  page[LOCALE_VARIANT_GROUP_FIELD] = groupId;
+  page[LOCALE_VARIANT_ROLE_FIELD] = role;
+};
+
+const upsertRouteLocaleVariant = async ({
+  db,
+  route,
+  language,
+  group,
+  document,
+}: {
+  db: Db;
+  route: Document;
+  language: Document;
+  group: Document;
+  document: Document;
+}) => {
+  const payload = {
+    routeId: route._id,
+    routeKey: "page",
+    contentType: Page.name,
+    groupId: group._id,
+    languageId: language._id,
+    documentId: document._id,
+    _type: RouteLocaleVariant.name,
+    updatedAt: now(),
+  };
+
+  await db.collection(RouteLocaleVariant.name).updateOne(
+    {
+      routeId: route._id,
+      groupId: group._id,
+      languageId: language._id,
+    },
+    {
+      $set: payload,
+      $setOnInsert: {
+        createdAt: now(),
+      },
+    },
+    { upsert: true },
+  );
+};
+
+const resolveSeedPageVariant = ({
+  primary,
+  assignments,
+  language,
+  languages,
+}: {
+  primary: Document;
+  assignments: Array<{ language: Document; document: Document }>;
+  language: Document;
+  languages: readonly Document[];
+}) => {
+  const seenLanguages = new Set<string>();
+  let current: Document | undefined = language;
+
+  while (current && !seenLanguages.has(String(current._id))) {
+    seenLanguages.add(String(current._id));
+    const assignment = assignments.find(
+      (item) => String(item.language._id) === String(current?._id),
+    );
+
+    if (assignment) {
+      return assignment.document;
+    }
+
+    const parentId = getDocumentId(current.parent);
+    current = parentId
+      ? languages.find((item) => String(item._id) === parentId)
+      : undefined;
+  }
+
+  const defaultLanguage = languages.find((item) => item.default);
+  const defaultAssignment = assignments.find(
+    (item) => String(item.language._id) === String(defaultLanguage?._id),
+  );
+
+  return defaultAssignment?.document ?? primary;
 };
 
 const richText = (text: string) => ({
@@ -323,13 +492,14 @@ const previewSeo = (title = "Home", description = "page-1") => ({
 const previewHelloWorldModule = (
   enText = "Hello Preview",
   esText = enText,
+  overrides: Record<string, string> = {},
 ) => ({
   name: HelloWorld.name,
   value: {
     type: "new",
     data: {
       _type: HelloWorld.name,
-      text: translatable(enText, esText),
+      text: translatable(enText, esText, overrides),
     },
   },
 });
@@ -469,14 +639,33 @@ export const seedPreviewData = async ({
     lockAcquired = true;
 
     for (const language of seedLanguages) {
+      const parentCode = "parentCode" in language ? language.parentCode : null;
+      const parent = parentCode
+        ? await db.collection("Language").findOne({ code: parentCode })
+        : null;
+
       await db.collection("Language").updateOne(
         { code: language.code },
         {
-          $setOnInsert: {
-            ...language,
+          $set: {
+            code: language.code,
+            name: language.name,
+            default: language.default,
+            ...(parent
+              ? {
+                  parent: {
+                    type: "self",
+                    contentType: "Language",
+                    _id: parent._id,
+                  },
+                }
+              : {}),
             _type: "Language",
-            createdAt: now(),
             updatedAt: now(),
+          },
+          ...(parent ? {} : { $unset: { parent: "" } }),
+          $setOnInsert: {
+            createdAt: now(),
           },
         },
         { upsert: true },
@@ -719,6 +908,146 @@ export const seedPreviewData = async ({
       throw new Error("Failed to create preview contact page.");
     }
 
+    await Promise.all([
+      markPageLocaleVariant({ db, page, group: page, role: "primary" }),
+      markPageLocaleVariant({
+        db,
+        page: aboutPage,
+        group: aboutPage,
+        role: "primary",
+      }),
+      markPageLocaleVariant({
+        db,
+        page: contactPage,
+        group: contactPage,
+        role: "primary",
+      }),
+    ]);
+
+    const aboutSpanishPage = await db.collection(Page.name).findOneAndUpdate(
+      {
+        [LOCALE_VARIANT_ROLE_FIELD]: "variant",
+        "slug.en": "about-es",
+        $or: [
+          { [LOCALE_VARIANT_GROUP_FIELD]: aboutPage._id },
+          { [LOCALE_VARIANT_GROUP_FIELD]: aboutPage._id.toString() },
+        ],
+      },
+      {
+        $set: {
+          title: translatable("About Spanish", "Sobre"),
+          slug: translatable("about-es", "sobre"),
+          [SEO_FIELD_NAME]: previewSeo(
+            "Sobre",
+            "Generic Spanish locale variant.",
+          ),
+          [ITERATOR_FIELD_NAME]: [
+            previewHelloWorldModule(
+              "Generic Spanish about variant",
+              "Variante Sobre en espanol",
+            ),
+          ],
+          [LOCALE_VARIANT_GROUP_FIELD]: aboutPage._id,
+          [LOCALE_VARIANT_ROLE_FIELD]: "variant",
+          _type: Page.name,
+          updatedAt: now(),
+        },
+        $setOnInsert: {
+          createdAt: now(),
+        },
+      },
+      { upsert: true, returnDocument: "after" },
+    );
+
+    if (!aboutSpanishPage) {
+      throw new Error("Failed to create preview Spanish about page variant.");
+    }
+
+    const aboutMexicoPage = await db.collection(Page.name).findOneAndUpdate(
+      {
+        [LOCALE_VARIANT_ROLE_FIELD]: "variant",
+        "slug.en": "about-mx",
+        $or: [
+          { [LOCALE_VARIANT_GROUP_FIELD]: aboutPage._id },
+          { [LOCALE_VARIANT_GROUP_FIELD]: aboutPage._id.toString() },
+        ],
+      },
+      {
+        $set: {
+          title: translatable("About Mexico", "Sobre Mexico", {
+            "es-MX": "Sobre Mexico",
+          }),
+          slug: translatable("about-mx", "sobre-mexico", {
+            "es-MX": "sobre-mexico",
+          }),
+          [SEO_FIELD_NAME]: previewSeo(
+            "Sobre Mexico",
+            "Mexico-specific locale variant.",
+          ),
+          [ITERATOR_FIELD_NAME]: [
+            previewHelloWorldModule(
+              "Mexico-specific about variant",
+              "Variante Sobre Mexico",
+              {
+                "es-MX": "Variante Sobre Mexico",
+              },
+            ),
+          ],
+          [LOCALE_VARIANT_GROUP_FIELD]: aboutPage._id,
+          [LOCALE_VARIANT_ROLE_FIELD]: "variant",
+          _type: Page.name,
+          updatedAt: now(),
+        },
+        $setOnInsert: {
+          createdAt: now(),
+        },
+      },
+      { upsert: true, returnDocument: "after" },
+    );
+
+    if (!aboutMexicoPage) {
+      throw new Error("Failed to create preview Mexico about page variant.");
+    }
+
+    const contactSpanishPage = await db.collection(Page.name).findOneAndUpdate(
+      {
+        [LOCALE_VARIANT_ROLE_FIELD]: "variant",
+        "slug.en": "contact-es",
+        $or: [
+          { [LOCALE_VARIANT_GROUP_FIELD]: contactPage._id },
+          { [LOCALE_VARIANT_GROUP_FIELD]: contactPage._id.toString() },
+        ],
+      },
+      {
+        $set: {
+          title: translatable("Contact Spanish", "Contacto"),
+          slug: translatable("contact-es", "contacto"),
+          [SEO_FIELD_NAME]: previewSeo(
+            "Contacto",
+            "Generic Spanish contact variant used by es-MX fallback.",
+          ),
+          [ITERATOR_FIELD_NAME]: [
+            previewHelloWorldModule(
+              "Generic Spanish contact variant",
+              "Variante Contacto en espanol",
+            ),
+          ],
+          [LOCALE_VARIANT_GROUP_FIELD]: contactPage._id,
+          [LOCALE_VARIANT_ROLE_FIELD]: "variant",
+          _type: Page.name,
+          updatedAt: now(),
+        },
+        $setOnInsert: {
+          createdAt: now(),
+        },
+      },
+      { upsert: true, returnDocument: "after" },
+    );
+
+    if (!contactSpanishPage) {
+      throw new Error("Failed to create preview Spanish contact page variant.");
+    }
+
     await db.collection(Page.name).updateOne(
       { _id: page._id, [SEO_FIELD_NAME]: { $exists: false } },
       {
@@ -884,28 +1213,79 @@ export const seedPreviewData = async ({
       );
 
       const languages = await db.collection("Language").find({}).toArray();
+      const languageByCode = new Map(
+        languages.map((routeLanguage) => [
+          String(routeLanguage.code),
+          routeLanguage,
+        ]),
+      );
+      const enLanguage = languageByCode.get("en");
+      const esLanguage = languageByCode.get("es");
+      const esMxLanguage = languageByCode.get("es-MX");
+
+      if (!enLanguage || !esLanguage || !esMxLanguage) {
+        throw new Error("Failed to load preview locale languages.");
+      }
+
+      const pageVariantGroups = [
+        {
+          primary: page,
+          home: true,
+          assignments: [
+            { language: enLanguage, document: page },
+            { language: esLanguage, document: page },
+          ],
+        },
+        {
+          primary: aboutPage,
+          home: false,
+          assignments: [
+            { language: enLanguage, document: aboutPage },
+            { language: esLanguage, document: aboutSpanishPage },
+            { language: esMxLanguage, document: aboutMexicoPage },
+          ],
+        },
+        {
+          primary: contactPage,
+          home: false,
+          assignments: [
+            { language: enLanguage, document: contactPage },
+            { language: esLanguage, document: contactSpanishPage },
+          ],
+        },
+      ];
+
+      await Promise.all(
+        pageVariantGroups.flatMap((group) =>
+          group.assignments.map((assignment) =>
+            upsertRouteLocaleVariant({
+              db,
+              route,
+              group: group.primary,
+              language: assignment.language,
+              document: assignment.document,
+            }),
+          ),
+        ),
+      );
 
       await Promise.all(
         languages.flatMap((routeLanguage) => [
-          upsertPageRouteMap({
-            db,
-            page,
-            route,
-            language: routeLanguage,
-            home: true,
-          }),
-          upsertPageRouteMap({
-            db,
-            page: aboutPage,
-            route,
-            language: routeLanguage,
-          }),
-          upsertPageRouteMap({
-            db,
-            page: contactPage,
-            route,
-            language: routeLanguage,
-          }),
+          ...pageVariantGroups.map((group) =>
+            upsertPageRouteMap({
+              db,
+              page: resolveSeedPageVariant({
+                primary: group.primary,
+                assignments: group.assignments,
+                language: routeLanguage,
+                languages,
+              }),
+              route,
+              language: routeLanguage,
+              languages,
+              home: group.home,
+            }),
+          ),
           ...(projectRoute
             ? projects.map((project) =>
                 upsertProjectRouteMap({

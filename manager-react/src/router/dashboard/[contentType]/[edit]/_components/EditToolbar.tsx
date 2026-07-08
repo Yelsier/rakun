@@ -8,6 +8,7 @@ import {
   GitBranch,
   Globe,
   Languages,
+  MapPinned,
   LayoutPanelTop,
   Monitor,
   MoreVertical,
@@ -133,6 +134,7 @@ export const EditToolbar = () => {
     editableVisibility,
     handleVisibilityChange,
     hasVersioning,
+    hasLocaleVariants,
     hasVisibility,
     isTrashed,
     languageCode,
@@ -191,6 +193,12 @@ export const EditToolbar = () => {
               {layoutModule.contentType}
             </TabsTrigger>
           ))}
+          {hasLocaleVariants ? (
+            <TabsTrigger value="locale-variants">
+              <MapPinned />
+              Locales
+            </TabsTrigger>
+          ) : null}
           {hasVersioning && contentTypeId ? (
             <TabsTrigger value="versions">
               <GitBranch />

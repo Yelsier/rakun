@@ -11,6 +11,7 @@ export * from "./schemas/manager/setDefaultLanguage";
 export * from "./schemas/manager/backups";
 export * from "./schemas/manager/migrations";
 export * from "./schemas/manager/versions";
+export * from "./schemas/manager/localeVariants";
 export * from "./schemas/manager/translateDocument";
 export * from "./schemas/manager/preview";
 export * from "./schemas/manager/updatePassword";

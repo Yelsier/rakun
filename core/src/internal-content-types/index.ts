@@ -13,6 +13,7 @@ export * from "./Migration";
 export * from "./MigrationLock";
 export * from "./MfaChallenge";
 export * from "./Route";
+export * from "./RouteLocaleVariant";
 export * from "./RouteLayoutModule";
 export * from "./RouteLayoutModuleOverride";
 export * from "./RouteMap";

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { RowSelectionState } from '@tanstack/react-table'
 import { Archive, Languages, Plus, RotateCcw, Trash } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Permission } from '@rakun-kit/core/client'
+import { LOCALE_VARIANT_ROLE_FIELD, type Permission } from '@rakun-kit/core/client'
 import { toast } from 'sonner'
 
 import { columns } from './columns'
@@ -89,7 +89,8 @@ const ListContents: React.FC<{
   contentType: string
   fields?: string[]
   documentVisibility?: boolean
-}> = ({ contentType, fields, documentVisibility }) => {
+  hasPageRoutes?: boolean
+}> = ({ contentType, fields, documentVisibility, hasPageRoutes }) => {
   const [page, setPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [search, setSearch] = useState('')
@@ -129,6 +130,7 @@ const ListContents: React.FC<{
   const listFilter = useMemo(() => {
     const filter: Record<string, unknown> = {
       ...(isTrash ? { _trashed: true } : {}),
+      ...(hasPageRoutes ? { [LOCALE_VARIANT_ROLE_FIELD]: { $ne: 'variant' } } : {}),
     }
 
     if (trimmedSearch && searchableFields.length > 0) {
@@ -140,7 +142,7 @@ const ListContents: React.FC<{
     }
 
     return Object.keys(filter).length > 0 ? filter : undefined
-  }, [isTrash, searchableFields, trimmedSearch])
+  }, [hasPageRoutes, isTrash, searchableFields, trimmedSearch])
   const { data, refetch } = useQuery(
     trpc.manager.list.queryOptions({
       contentType,

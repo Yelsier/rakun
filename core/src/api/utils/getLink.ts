@@ -32,13 +32,23 @@ export const getLink = async (
     });
   }
 
-  const { items } = await db.list(RouteMap, {
+  const routeMapsByGroup = await db.list(RouteMap, {
     filter: {
       routeId: route._id,
-      contentTypeId: id,
+      variantGroupId: id,
     },
     options: { limit: "all", fields: ["path"] },
   });
+  const { items } =
+    routeMapsByGroup.items.length > 0
+      ? routeMapsByGroup
+      : await db.list(RouteMap, {
+          filter: {
+            routeId: route._id,
+            contentTypeId: id,
+          },
+          options: { limit: "all", fields: ["path"] },
+        });
 
   return Object.fromEntries(
     items

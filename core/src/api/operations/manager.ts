@@ -17,6 +17,12 @@ import {
   listFavoritesHandler,
   toggleFavoriteHandler,
 } from "../routes/manager/favorites";
+import {
+  assignLocaleVariantHandler,
+  createLocaleVariantHandler,
+  listLocaleVariantsHandler,
+  unassignLocaleVariantHandler,
+} from "../routes/manager/localeVariants";
 import { trashHandler } from "../routes/manager/trash";
 import { getHandler } from "../routes/manager/get";
 import { listHandler } from "../routes/manager/list";
@@ -97,6 +103,18 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.favorites.toggle": {
       resolve: toggleFavoriteHandler,
+    },
+    "manager.localeVariants.list": {
+      resolve: listLocaleVariantsHandler,
+    },
+    "manager.localeVariants.create": {
+      resolve: createLocaleVariantHandler,
+    },
+    "manager.localeVariants.assign": {
+      resolve: assignLocaleVariantHandler,
+    },
+    "manager.localeVariants.unassign": {
+      resolve: unassignLocaleVariantHandler,
     },
     "manager.setDefaultLanguage": {
       resolve: setDefaultLanguageHandler,

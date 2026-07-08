@@ -71,6 +71,26 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/favorites/toggle",
   },
+  "manager.localeVariants.list": {
+    kind: "query",
+    method: "post",
+    path: "/manager/localeVariants/list",
+  },
+  "manager.localeVariants.create": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/localeVariants/create",
+  },
+  "manager.localeVariants.assign": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/localeVariants/assign",
+  },
+  "manager.localeVariants.unassign": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/localeVariants/unassign",
+  },
   "manager.setDefaultLanguage": {
     kind: "mutation",
     method: "post",

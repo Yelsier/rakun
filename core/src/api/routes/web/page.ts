@@ -69,11 +69,13 @@ type PageContentData = Record<string, unknown> & {
 const getSeoAlternatePaths = async ({
   contentType,
   contentTypeId,
+  variantGroupId,
   routeId,
   languages,
 }: {
   contentType: string;
   contentTypeId: string;
+  variantGroupId?: string;
   routeId: string;
   languages: readonly DBOutput<Language>[];
 }): Promise<Record<string, string> | undefined> => {
@@ -85,8 +87,15 @@ const getSeoAlternatePaths = async ({
     await db.list(RouteMap, {
       filter: {
         contentType,
-        contentTypeId,
         routeId,
+        ...(variantGroupId
+          ? { variantGroupId }
+          : {
+              $or: [
+                { contentTypeId },
+                { variantGroupId: contentTypeId },
+              ],
+            }),
       },
       options: {
         limit: "all",
@@ -111,6 +120,7 @@ export const buildPageOutput = async ({
   route,
   contentType,
   contentTypeId,
+  variantGroupId,
   data,
   language,
   tracePrefix = "web.page",
@@ -119,6 +129,7 @@ export const buildPageOutput = async ({
   route: DBOutput<Route>;
   contentType: ContentType;
   contentTypeId: string;
+  variantGroupId?: string;
   data: PageContentData;
   language: DBOutput<Language>;
   tracePrefix?: string;
@@ -220,6 +231,7 @@ export const buildPageOutput = async ({
           const alternatePaths = await getSeoAlternatePaths({
             contentType: contentType.name,
             contentTypeId,
+            variantGroupId,
             routeId: route._id,
             languages,
           });
@@ -347,6 +359,7 @@ export const buildPageOutput = async ({
             info: {
               ...info,
               locale: localeCode,
+              variantGroupId: variantGroupId ?? contentTypeId,
               literals: literalMap,
             },
           };
@@ -422,6 +435,7 @@ export const getPage = async (input: PageInput): Promise<PageOutput> => {
       route,
       contentType,
       contentTypeId: routeMapEntry.contentTypeId,
+      variantGroupId: routeMapEntry.variantGroupId,
       data,
       language,
     });

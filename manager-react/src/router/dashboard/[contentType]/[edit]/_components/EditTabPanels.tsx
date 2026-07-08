@@ -4,6 +4,7 @@ import ContentTypeEdit from '../ContentTypeEdit'
 import { useEditPageContext } from '../_context/EditPageContext'
 import VersionHistory from './Versions'
 import { RouteLayoutModuleTabContent } from './RouteLayoutModuleTabContent'
+import { LocaleVariants } from './LocaleVariants'
 
 import { TabsContent } from '@/components/ui/tabs'
 
@@ -16,6 +17,7 @@ export const EditTabPanels = () => {
     contentTypeName,
     form,
     hasVersioning,
+    hasLocaleVariants,
     onAfterRestore,
     routeLayout,
     sections,
@@ -82,6 +84,11 @@ export const EditTabPanels = () => {
       {routeLayout.routeLayoutModules.map((layoutModule) => (
         <RouteLayoutModuleTabContent key={layoutModule._id} layoutModule={layoutModule} />
       ))}
+      {hasLocaleVariants ? (
+        <TabsContent value="locale-variants">
+          <LocaleVariants />
+        </TabsContent>
+      ) : null}
       {hasVersioning && contentTypeId ? (
         <TabsContent value="versions">
           <VersionHistory

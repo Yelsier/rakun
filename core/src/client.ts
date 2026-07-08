@@ -39,6 +39,14 @@ export { slugify } from "./lib/utils/slugify";
 export { encodeContentTypeForManager } from "./lib/Registry";
 export { ITERATOR_FIELD_NAME, SEO_FIELD_NAME } from "./lib/systemFields";
 export {
+  LOCALE_VARIANT_GROUP_FIELD,
+  LOCALE_VARIANT_ROLE_FIELD,
+  LocaleVariantRole,
+  getLocaleVariantGroupId,
+  getLocaleVariantRole,
+  isLocaleVariantDocument,
+} from "./lib/localeVariants";
+export {
   instanceofAppErrorShape,
   type AppErrorShape,
 } from "./lib/errors/errors";
@@ -74,6 +82,16 @@ export type {
   RestoreVersionInput,
   RestoreVersionOutput,
 } from "./schemas/manager/versions";
+export type {
+  LocaleVariantAssignInput,
+  LocaleVariantAssignment,
+  LocaleVariantCreateInput,
+  LocaleVariantCreateOutput,
+  LocaleVariantDocument,
+  LocaleVariantListInput,
+  LocaleVariantListOutput,
+  LocaleVariantUnassignInput,
+} from "./schemas/manager/localeVariants";
 export type { DuplicateInput } from "./schemas/manager/duplicate";
 export type {
   TranslateDocumentInput,

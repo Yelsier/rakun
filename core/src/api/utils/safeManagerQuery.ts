@@ -16,6 +16,8 @@ const systemFields = new Set([
   "_visibilityBeforeTrash",
   "_trashed",
   "_revision",
+  "_localeVariantGroupId",
+  "_localeVariantRole",
   "createdAt",
   "createdBy",
   "updatedAt",
