@@ -6,7 +6,6 @@ import type { ManagerResolvedRoute } from './router/shared/types'
 
 import { AppSidebar, type ManagerSidebarItem } from './components/app-sidebar'
 import BreadcrumbComponent from './components/bread-crumb'
-import { ScrollArea } from './components/ui/scroll-area'
 import { Separator } from './components/ui/separator'
 import { ManagerHelpProvider } from './help/manager-help'
 import {
@@ -86,9 +85,9 @@ export const ManagerDashboardLayout = ({
           {headerEnd}
         </SidebarHeader>
 
-        <ScrollArea className="max-h-[calc(100vh-6rem)]" data-tour="manager-page">
+        <div className="h-full" data-tour="manager-page">
           {children}
-        </ScrollArea>
+        </div>
       </SidebarInset>
     </ManagerHelpProvider>
   </SidebarProvider>

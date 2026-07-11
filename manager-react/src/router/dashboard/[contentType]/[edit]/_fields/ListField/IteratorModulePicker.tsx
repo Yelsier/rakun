@@ -11,10 +11,7 @@ import { Box, Plus } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
-import {
-  createManagerQueryOptions,
-  useManagerClient,
-} from '@/client/react'
+import { createManagerQueryOptions, useManagerClient } from '@/client/react'
 import { SearchInput } from '@/components/search-input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -92,16 +89,14 @@ const cleanText = (value: string | undefined) => {
 }
 
 const getRelationField = (
-  field: EncodedListFieldItem['field'],
+  field: EncodedListFieldItem['field']
 ): EncodedRelationField | undefined =>
   field.config.type === 'Relation' ? (field as EncodedRelationField) : undefined
 
 const uniqueText = (values: Array<string | undefined>) =>
   Array.from(new Set(values.filter(Boolean) as string[]))
 
-const getModuleProps = (
-  contentType: IteratorModuleContentType | undefined,
-): ModuleProp[] =>
+const getModuleProps = (contentType: IteratorModuleContentType | undefined): ModuleProp[] =>
   Object.entries(contentType?.fields ?? {})
     .filter(([, field]) => field.visibility !== 'api')
     .map(([name, field]) => ({
@@ -110,22 +105,16 @@ const getModuleProps = (
       required: field.isRequired,
     }))
 
-export const getIteratorModuleDisplay = (
-  entry: EncodedListFieldItem,
-): IteratorModuleDisplay => {
+export const getIteratorModuleDisplay = (entry: EncodedListFieldItem): IteratorModuleDisplay => {
   const relationField = getRelationField(entry.field)
-  const contentType = relationField?.contentType as
-    | IteratorModuleContentType
-    | undefined
+  const contentType = relationField?.contentType as IteratorModuleContentType | undefined
   const modulePicker = contentType?.modulePicker
   const title =
     cleanText(modulePicker?.title) ??
     cleanText(contentType?.menu?.title) ??
     decodeCamelCase(entry.name)
   const category =
-    cleanText(modulePicker?.category) ??
-    cleanText(contentType?.menu?.category) ??
-    FALLBACK_CATEGORY
+    cleanText(modulePicker?.category) ?? cleanText(contentType?.menu?.category) ?? FALLBACK_CATEGORY
   const description = cleanText(modulePicker?.description)
   const icon = resolveLucideIcon(modulePicker?.icon ?? contentType?.menu?.icon)
   const props = getModuleProps(contentType)
@@ -176,14 +165,13 @@ const ModuleIcon = ({ icon: Icon }: { icon?: LucideIcon }) => {
 }
 
 const isQueryableOption = (
-  option: IteratorModuleDisplay,
+  option: IteratorModuleDisplay
 ): option is QueryableIteratorModuleDisplay =>
   Boolean(option.contentType) &&
   typeof option.contentTypeName === 'string' &&
   option.contentTypeName.length > 0
 
-const hasManagerMenu = (contentType: IteratorModuleContentType) =>
-  Boolean(contentType.menu?.title)
+const hasManagerMenu = (contentType: IteratorModuleContentType) => Boolean(contentType.menu?.title)
 
 const getReadPermissions = (contentType: IteratorModuleContentType) =>
   getEncodedContentPermissions(contentType, ['own', 'readAny'])
@@ -202,10 +190,7 @@ export const IteratorModulePickerDialog = ({
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORIES)
   const options = useMemo(() => fields.map(getIteratorModuleDisplay).sort(sortModules), [fields])
-  const queryableOptions = useMemo(
-    () => options.filter(isQueryableOption),
-    [options],
-  )
+  const queryableOptions = useMemo(() => options.filter(isQueryableOption), [options])
   const readableOptions = useMemo(
     () =>
       queryableOptions.filter((option) => {
@@ -215,19 +200,18 @@ export const IteratorModulePickerDialog = ({
 
         return readPermissions.length === 0 || hasAnyPermission(readPermissions)
       }),
-    [hasAnyPermission, queryableOptions],
+    [hasAnyPermission, queryableOptions]
   )
   const categories = useMemo(
     () =>
       Array.from(new Set(options.map((option) => option.category))).sort((a, b) =>
-        a.localeCompare(b),
+        a.localeCompare(b)
       ),
-    [options],
+    [options]
   )
   const existingModuleQueries = useQueries({
     queries: readableOptions.map((option) => {
-      const fields =
-        option.labelField === '_id' ? ['_id'] : ['_id', option.labelField]
+      const fields = option.labelField === '_id' ? ['_id'] : ['_id', option.labelField]
 
       return {
         ...createManagerQueryOptions(managerClient, 'manager.list', {
@@ -254,7 +238,7 @@ export const IteratorModulePickerDialog = ({
 
         return (data?.items ?? []).map((item) => {
           const translatedTitle = getTranslation(
-            item[option.labelField] as MaybeTranslatableValue<string>,
+            item[option.labelField] as MaybeTranslatableValue<string>
           )
           const title = String(translatedTitle || item._id)
 
@@ -281,7 +265,7 @@ export const IteratorModulePickerDialog = ({
           }
         })
       }),
-    [existingModuleQueries, getTranslation, readableOptions],
+    [existingModuleQueries, getTranslation, readableOptions]
   )
   const searchTerm = search.trim().toLocaleLowerCase()
   const filteredOptions = useMemo(
@@ -293,7 +277,7 @@ export const IteratorModulePickerDialog = ({
 
         return matchesCategory && matchesSearch
       }),
-    [options, searchTerm, selectedCategory],
+    [options, searchTerm, selectedCategory]
   )
   const filteredExistingModules = useMemo(
     () =>
@@ -304,10 +288,10 @@ export const IteratorModulePickerDialog = ({
 
         return matchesCategory && matchesSearch
       }),
-    [existingModules, searchTerm, selectedCategory],
+    [existingModules, searchTerm, selectedCategory]
   )
   const isLoadingExistingModules = existingModuleQueries.some(
-    (query) => query.isPending || query.isFetching,
+    (query) => query.isPending || query.isFetching
   )
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -330,12 +314,14 @@ export const IteratorModulePickerDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <Plus />
-          Add module
-        </Button>
-      </DialogTrigger>
+      <div className="pb-4 sticky top-0 bg-background w-full flex">
+        <DialogTrigger asChild>
+          <Button variant="outline" className="m-0">
+            <Plus />
+            Add module
+          </Button>
+        </DialogTrigger>
+      </div>
       <DialogContent className="max-h-[85vh] w-screen max-w-5xl! overflow-hidden p-0">
         <DialogHeader className="border-b px-6 py-4">
           <DialogTitle>Add module</DialogTitle>

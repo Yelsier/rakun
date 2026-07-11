@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { EditTabPanels } from './_components/EditTabPanels'
 import { EditToolbar } from './_components/EditToolbar'
 import { PreviewPanel } from './_components/PreviewPanel'
+import { ModuleNavigation } from './_components/ModuleNavigation'
 import { TrashDialogs } from './_components/TrashDialogs'
 import { EditPageProvider, useEditPageContext } from './_context/EditPageContext'
 import type { EditPageProps } from './edit.types'
@@ -36,15 +37,18 @@ const EditPageContent = () => {
   const previewOpen = canPreview && previewState.previewOpen
 
   return (
-    <div className="container py-10 px-4 mx-auto">
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+    <div className="container pt-10 pb-4 px-4 mx-auto h-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full">
         <EditToolbar />
         <TrashDialogs />
         {previewOpen && canResizePreview ? (
           <ResizablePanelGroup className="w-full" orientation="horizontal">
             <ResizablePanel className="min-w-[320px]" defaultSize={50} minSize={20}>
-              <div className="min-w-0 pr-2">
-                <EditTabPanels />
+              <div className="flex min-w-0 gap-4 h-full pr-2">
+                {activeTab === 'content' ? <ModuleNavigation /> : null}
+                <div className="min-w-0 flex-1">
+                  <EditTabPanels />
+                </div>
               </div>
             </ResizablePanel>
             <ResizableHandle withHandle className="mx-2" />
@@ -55,8 +59,13 @@ const EditPageContent = () => {
             </ResizablePanel>
           </ResizablePanelGroup>
         ) : (
-          <div className="grid gap-4">
-            <EditTabPanels />
+          <div className="grid gap-4 h-full">
+            <div className="flex min-w-0 gap-4 h-full">
+              {activeTab === 'content' ? <ModuleNavigation /> : null}
+              <div className="min-w-0 flex-1">
+                <EditTabPanels />
+              </div>
+            </div>
             {previewOpen ? <PreviewPanel /> : null}
           </div>
         )}
