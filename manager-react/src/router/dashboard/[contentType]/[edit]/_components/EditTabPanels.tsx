@@ -26,7 +26,7 @@ export const EditTabPanels = () => {
 
   return (
     <ScrollArea className="h-full pr-4">
-      <div className="min-w-0 h-full">
+      <div className="min-w-0 h-[calc(100vh-14rem)]">
         {sections.hasIterables ? (
           <TabsContent
             value="content"

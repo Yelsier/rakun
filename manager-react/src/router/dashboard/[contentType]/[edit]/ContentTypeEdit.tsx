@@ -367,7 +367,7 @@ const ContentTypeEdit = forwardRef<
           }
 
           return (
-            <div key={fieldName} className={`${canCollapse ? 'bg-red-600' : ''} h-full`}>
+            <div key={fieldName} className={`${canCollapse ? 'bg-red-600' : ''}`}>
               {hideTitle ? null : (
                 <div className="mb-4 space-y-1">
                   <CardTitle className="flex items-center justify-between gap-3">
