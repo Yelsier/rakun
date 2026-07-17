@@ -9,7 +9,7 @@ import type { MaybeTranslatableValue } from '@rakun-kit/core/types'
 import { useQueries } from '@tanstack/react-query'
 import { Box, Plus } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 import { createManagerQueryOptions, useManagerClient } from '@/client/react'
 import { SearchInput } from '@/components/search-input'
@@ -186,6 +186,7 @@ export const IteratorModulePickerDialog = ({
   const managerClient = useManagerClient()
   const { getTranslation } = useLanguage()
   const { hasAnyPermission } = useSession()
+  const preventCloseAutoFocus = useRef(false)
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORIES)
@@ -308,21 +309,34 @@ export const IteratorModulePickerDialog = ({
   }
 
   const handleAdd = (fieldName: string, value?: RelationFieldValue) => {
+    preventCloseAutoFocus.current = true
     onAdd(fieldName, value)
     handleOpenChange(false)
   }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <div className="pb-4 sticky top-0 bg-background w-full flex">
+      <div className="flex w-full pb-4 lg:hidden">
         <DialogTrigger asChild>
-          <Button variant="outline" className="m-0">
+          <Button
+            variant="outline"
+            className="m-0"
+            data-rakun-manager-add-module-trigger
+          >
             <Plus />
             Add module
           </Button>
         </DialogTrigger>
       </div>
-      <DialogContent className="max-h-[85vh] w-screen max-w-5xl! overflow-hidden p-0">
+      <DialogContent
+        className="max-h-[85vh] w-screen max-w-5xl! overflow-hidden p-0"
+        onCloseAutoFocus={(event) => {
+          if (!preventCloseAutoFocus.current) return
+
+          event.preventDefault()
+          preventCloseAutoFocus.current = false
+        }}
+      >
         <DialogHeader className="border-b px-6 py-4">
           <DialogTitle>Add module</DialogTitle>
           <DialogDescription className="sr-only">

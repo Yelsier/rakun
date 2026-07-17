@@ -1,6 +1,6 @@
 'use client'
 
-import { Box, ChevronRight, ListTree } from 'lucide-react'
+import { Box, ChevronRight, ListTree, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -182,6 +182,17 @@ export const ModuleNavigation = () => {
     revealAndScrollTo(item)
   }
 
+  const openModulePicker = () => {
+    const contentPanel = document.querySelector<HTMLElement>(
+      '[data-rakun-manager-tab-panel="content"]'
+    )
+    const trigger = contentPanel?.querySelector<HTMLButtonElement>(
+      '[data-rakun-manager-add-module-trigger]'
+    )
+
+    trigger?.click()
+  }
+
   useEffect(() => {
     const contentPanel = document.querySelector<HTMLElement>(
       '[data-rakun-manager-tab-panel="content"]'
@@ -205,8 +216,6 @@ export const ModuleNavigation = () => {
     return () => observer.disconnect()
   }, [])
 
-  if (items.length === 0) return null
-
   return (
     <aside
       className="sticky top-4 hidden h-full w-60 shrink-0 self-start overflow-hidden rounded-2xl bg-muted/40 lg:block"
@@ -224,9 +233,19 @@ export const ModuleNavigation = () => {
         </div>
         <ScrollArea className="min-h-0 flex-1">
           <div className="px-2 pb-3" style={{ paddingTop: '0.75rem' }}>
-            <NavigationItems activeId={activeId} items={items} onSelect={selectItem} />
+            {items.length > 0 ? (
+              <NavigationItems activeId={activeId} items={items} onSelect={selectItem} />
+            ) : (
+              <p className="px-2 text-xs text-muted-foreground">No modules yet.</p>
+            )}
           </div>
         </ScrollArea>
+        <div className="shrink-0 border-t p-3">
+          <Button variant="outline" className="w-full justify-start" onClick={openModulePicker}>
+            <Plus />
+            Add module
+          </Button>
+        </div>
       </div>
     </aside>
   )

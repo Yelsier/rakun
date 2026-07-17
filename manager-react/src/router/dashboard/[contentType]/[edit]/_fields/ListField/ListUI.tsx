@@ -180,6 +180,7 @@ AddListButtons.displayName = 'AddListButtons'
 const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
   const refs = useRef<Record<string, FieldRef | null>>({})
   const valueRef = useRef<ListFieldValues>([])
+  const [addedModuleUid, setAddedModuleUid] = useState<string | null>(null)
   const [savingUid, setSavingUid] = useState<string | null>(null)
   const [unlinkingUid, setUnlinkingUid] = useState<string | null>(null)
   const setRef = useCallback(
@@ -221,6 +222,60 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
   useEffect(() => {
     valueRef.current = value
   }, [value])
+
+  useEffect(() => {
+    if (!addedModuleUid) return
+
+    let nextFrame = 0
+    const frame = window.requestAnimationFrame(() => {
+      nextFrame = window.requestAnimationFrame(() => {
+        const navigationId = `${id}.${addedModuleUid}`
+        const target = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            '[data-rakun-manager-module-navigation-id]'
+          )
+        ).find(
+          (element) => element.dataset.rakunManagerModuleNavigationId === navigationId
+        )
+
+        if (!target) return
+
+        const scrollArea = document.querySelector<HTMLElement>(
+          '[data-rakun-manager-edit-scroll-area]'
+        )
+        const viewport = scrollArea?.querySelector<HTMLElement>(
+          '[data-slot="scroll-area-viewport"]'
+        )
+
+        if (viewport?.contains(target)) {
+          const viewportRect = viewport.getBoundingClientRect()
+          const targetRect = target.getBoundingClientRect()
+          const top =
+            viewport.scrollTop +
+            targetRect.top -
+            viewportRect.top -
+            (viewport.clientHeight - targetRect.height) / 2
+
+          viewport.scrollTo({ top, behavior: 'smooth' })
+        }
+
+        target.focus({ preventScroll: true })
+        target.classList.remove('rakun-manager-preview-selected')
+        void target.offsetWidth
+        target.classList.add('rakun-manager-preview-selected')
+        setAddedModuleUid(null)
+
+        window.setTimeout(() => {
+          target.classList.remove('rakun-manager-preview-selected')
+        }, 2200)
+      })
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.cancelAnimationFrame(nextFrame)
+    }
+  }, [addedModuleUid, id])
 
   const getItemFallbackValue = useCallback(
     (item: ListFieldValues[number]) => {
@@ -317,12 +372,15 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
 
   const handleAddItem = useCallback(
     (fieldName: string, initialValue?: FieldValue) => {
+      const uid = crypto.randomUUID()
+
+      setAddedModuleUid(uid)
       onValueChange([
         ...getCurrentListState(),
         {
           name: fieldName,
           value: initialValue as FieldValue,
-          uid: crypto.randomUUID(),
+          uid,
         },
       ])
     },
