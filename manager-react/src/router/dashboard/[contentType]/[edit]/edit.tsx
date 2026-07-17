@@ -43,12 +43,7 @@ const EditPageContent = () => {
         <TrashDialogs />
         {previewOpen && canResizePreview ? (
           <ResizablePanelGroup className="w-full" orientation="horizontal">
-            <ResizablePanel
-              className="min-w-[320px]"
-              style={{ overflow: 'hidden' }}
-              defaultSize={50}
-              minSize={700}
-            >
+            <ResizablePanel style={{ overflow: 'hidden' }} defaultSize={50} minSize={350}>
               <div className="flex min-w-0 gap-4 h-full pr-2">
                 {activeTab === 'content' ? <ModuleNavigation /> : null}
                 <div className="min-w-0 flex-1">
@@ -57,8 +52,8 @@ const EditPageContent = () => {
               </div>
             </ResizablePanel>
             <ResizableHandle withHandle className="mx-2" />
-            <ResizablePanel className="min-w-130" defaultSize={50} minSize={35}>
-              <div className="min-w-130 pl-2">
+            <ResizablePanel defaultSize={50} minSize={350}>
+              <div className="pl-2">
                 <PreviewPanel />
               </div>
             </ResizablePanel>

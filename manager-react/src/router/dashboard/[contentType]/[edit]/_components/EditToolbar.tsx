@@ -307,8 +307,15 @@ export const EditToolbar = () => {
                 ) : null}
                 {canPreview ? (
                   <DropdownMenuItem
-                    disabled={previewState.isPreviewPending}
-                    onSelect={() => void previewState.handlePreview()}
+                    disabled={!previewState.previewOpen && previewState.isPreviewPending}
+                    onSelect={() => {
+                      if (previewState.previewOpen) {
+                        previewState.setPreviewOpen(false)
+                        return
+                      }
+
+                      void previewState.handlePreview()
+                    }}
                   >
                     <Monitor />
                     {previewState.previewOpen ? 'Close preview' : 'Preview'}
