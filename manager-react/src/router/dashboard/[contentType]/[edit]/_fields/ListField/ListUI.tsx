@@ -516,7 +516,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
         ) : (
           <AddListButtons fields={props.fields} onAdd={handleAddItem} />
         )}
-        <SortableContent className="max-h-full">
+        <SortableContent className="max-h-full mt-4">
           {value.length > 0 && (
             <div className="flex flex-col gap-4">
               {value.map((item, i) => {
