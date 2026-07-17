@@ -550,14 +550,30 @@ const CommentReactionSummary = ({
   )
 }
 
-export const ContentCommentsDrawer = () => {
+export const ContentCommentsDrawer = ({
+  open: controlledOpen,
+  onOpenChange,
+  trigger = true,
+}: {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  trigger?: boolean
+} = {}) => {
   const { contentType, contentTypeId, contentTypeName, form, languageCode } =
     useEditPageContext()
   const { user } = useSession()
   const queryClient = useQueryClient()
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = controlledOpen ?? internalOpen
+  const setOpen = (nextOpen: boolean) => {
+    if (controlledOpen === undefined) {
+      setInternalOpen(nextOpen)
+    }
+
+    onOpenChange?.(nextOpen)
+  }
   const [text, setText] = useState('')
   const [mentions, setMentions] = useState<string[]>([])
   const [composerKey, setComposerKey] = useState(0)
@@ -679,16 +695,18 @@ export const ContentCommentsDrawer = () => {
 
   return (
     <Drawer direction="right" open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DrawerTrigger asChild>
-            <Button aria-label="Comments" variant="outline" size="icon">
-              <MessageCircle />
-            </Button>
-          </DrawerTrigger>
-        </TooltipTrigger>
-        <TooltipContent>Comments</TooltipContent>
-      </Tooltip>
+      {trigger ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DrawerTrigger asChild>
+              <Button aria-label="Comments" variant="outline" size="icon">
+                <MessageCircle />
+              </Button>
+            </DrawerTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Comments</TooltipContent>
+        </Tooltip>
+      ) : null}
       <DrawerContent className="w-[min(92vw,520px)] sm:max-w-[520px]">
         <DrawerHeader className="border-b">
           <DrawerTitle>Comments</DrawerTitle>

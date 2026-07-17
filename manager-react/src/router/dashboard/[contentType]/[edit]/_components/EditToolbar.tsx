@@ -10,6 +10,7 @@ import {
   Languages,
   MapPinned,
   LayoutPanelTop,
+  MessageCircle,
   Monitor,
   MoreVertical,
   NotepadText,
@@ -18,6 +19,7 @@ import {
   Star,
   Trash,
 } from 'lucide-react'
+import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
@@ -128,6 +130,7 @@ const FavoriteMenuItem = () => {
 }
 
 export const EditToolbar = () => {
+  const [commentsOpen, setCommentsOpen] = useState(false)
   const {
     canPreview,
     contentType,
@@ -154,6 +157,7 @@ export const EditToolbar = () => {
   const pending = documentActions.pending
   const savePending = pending.create || pending.update || pending.delete || pending.trash
   const canSaveAsDraft = hasVisibility && contentTypeId && !isTrashed
+  const commentsEnabled = Boolean(contentType.comments && contentTypeId)
   const hasMoreActions = Boolean(contentTypeId) || canPreview || translationEnabled || isTrashed
   const hasPrimaryMenuActions =
     Boolean(contentTypeId && !isTrashed) || canPreview || translationEnabled
@@ -210,7 +214,6 @@ export const EditToolbar = () => {
         </TabsList>
       </div>
       <div className="flex items-center gap-2">
-        {contentType.comments && contentTypeId ? <ContentCommentsDrawer /> : null}
         {hasVisibility && !isTrashed ? (
           <div data-tour="content-edit-visibility">
             <Select
@@ -286,6 +289,13 @@ export const EditToolbar = () => {
         {hasMoreActions ? (
           <>
             <DocumentTranslationDialog trigger={false} />
+            {commentsEnabled ? (
+              <ContentCommentsDrawer
+                open={commentsOpen}
+                onOpenChange={setCommentsOpen}
+                trigger={false}
+              />
+            ) : null}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -299,6 +309,12 @@ export const EditToolbar = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-52">
                 <FavoriteMenuItem />
+                {commentsEnabled ? (
+                  <DropdownMenuItem onSelect={() => setCommentsOpen(true)}>
+                    <MessageCircle />
+                    Comments
+                  </DropdownMenuItem>
+                ) : null}
                 {translationEnabled ? (
                   <DropdownMenuItem disabled={pending.translate} onSelect={openTranslationDialog}>
                     <Languages />
