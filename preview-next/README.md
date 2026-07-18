@@ -33,13 +33,14 @@ admin@rakun.local / admin1234
 
 ## Plugin code editor
 
-This preview registers `@rakun-kit/plugin-code-editor` on both sides of the
-Next application. The server facet is configured in `server/bootstrap.ts`; the
-manager facet is imported by the client boundary in
+This preview registers `@rakun-kit/plugin-code-editor` in the manager client
+boundary at
 `app/backend/[[...slug]]/preview-manager.tsx`.
 
-Open the seeded `Hello Preview` article in the manager to edit and persist its
-`sourceExample` TypeScript field with CodeMirror.
+Open the seeded `Lexical Code Blocks` article in the manager to edit its
+RichText code block, switch the syntax language, save it, and reopen it. This
+preview limits the selector to Plain Text, JSON, JavaScript, TypeScript, HTML,
+and CSS.
 
 ## Seed
 

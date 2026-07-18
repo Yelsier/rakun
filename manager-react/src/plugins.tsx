@@ -6,6 +6,7 @@ import type {
   Permission,
 } from '@rakun-kit/core/client'
 import type { LucideIcon } from 'lucide-react'
+import type { LexicalNodeConfig } from 'lexical'
 import {
   createContext,
   useContext,
@@ -16,6 +17,7 @@ import {
 } from 'react'
 
 import type { FieldValue } from './router/dashboard/[contentType]/[edit]/_fields/shared'
+import { nodes as builtInRichTextNodes } from './components/blocks/editor-00/nodes'
 
 export type ManagerPluginPageProps = {
   params: Record<string, string>
@@ -59,11 +61,36 @@ export type ManagerFieldEditorComponent = ComponentType<
   ManagerFieldEditorProps & RefAttributes<ManagerFieldEditorRef>
 >
 
+export type ManagerRichTextPluginPlacement =
+  | 'toolbar'
+  | 'block-format'
+  | 'editor'
+  | 'actions-start'
+  | 'actions-end'
+
+export type ManagerRichTextPluginProps = ManagerFieldEditorProps
+
+export type ManagerRichTextPluginComponent =
+  ComponentType<ManagerRichTextPluginProps>
+
+export type ManagerRichTextPluginDefinition = {
+  id: string
+  component: ManagerRichTextPluginComponent
+  placement?: ManagerRichTextPluginPlacement
+  order?: number
+}
+
+export type ManagerRichTextExtensionDefinition = {
+  nodes?: readonly LexicalNodeConfig[]
+  plugins?: readonly ManagerRichTextPluginDefinition[]
+}
+
 export type RakunManagerPluginDefinition = {
   id: string
   routes?: readonly ManagerPluginRouteDefinition[]
   sidebar?: readonly ManagerPluginSidebarItem[]
   fieldEditors?: Readonly<Record<string, ManagerFieldEditorComponent>>
+  richText?: ManagerRichTextExtensionDefinition
 }
 
 export const defineRakunManagerPlugin = <
@@ -80,12 +107,19 @@ export type ResolvedManagerPluginSidebarItem = ManagerPluginSidebarItem & {
   pluginId: string
 }
 
+export type ResolvedManagerRichTextPlugin = ManagerRichTextPluginDefinition & {
+  pluginId: string
+  placement: ManagerRichTextPluginPlacement
+}
+
 export type ManagerPluginRegistry = {
   plugins: readonly RakunManagerPluginDefinition[]
   routes: readonly ResolvedManagerPluginRoute[]
   routesById: ReadonlyMap<string, ResolvedManagerPluginRoute>
   sidebar: readonly ResolvedManagerPluginSidebarItem[]
   fieldEditors: Readonly<Record<string, ManagerFieldEditorComponent>>
+  richTextNodes: readonly LexicalNodeConfig[]
+  richTextPlugins: readonly ResolvedManagerRichTextPlugin[]
 }
 
 const normalizePath = (path: string) =>
@@ -119,6 +153,14 @@ const registerId = (
   ids.set(id, owner)
 }
 
+const getLexicalNodeRegistration = (node: LexicalNodeConfig) => {
+  if (typeof node === 'function') {
+    return { kind: 'node', type: node.getType() }
+  }
+
+  return { kind: 'node replacement', type: node.replace.getType() }
+}
+
 export const resolveRakunManagerPlugins = (
   plugins: readonly RakunManagerPluginDefinition[] = [],
 ): ManagerPluginRegistry => {
@@ -127,9 +169,21 @@ export const resolveRakunManagerPlugins = (
   const routePaths = new Map<string, string>()
   const sidebarIds = new Map<string, string>()
   const editorIds = new Map<string, string>()
+  const richTextNodeIds = new Map<string, string>(
+    builtInRichTextNodes.map((node) => {
+      const registration = getLexicalNodeRegistration(node)
+      return [
+        `${registration.kind}:${registration.type}`,
+        '@rakun-kit/manager-react',
+      ]
+    }),
+  )
+  const richTextPluginIds = new Map<string, string>()
   const routes: ResolvedManagerPluginRoute[] = []
   const sidebar: ResolvedManagerPluginSidebarItem[] = []
   const fieldEditors: Record<string, ManagerFieldEditorComponent> = {}
+  const richTextNodes: LexicalNodeConfig[] = []
+  const richTextPlugins: ResolvedManagerRichTextPlugin[] = []
 
   for (const plugin of plugins) {
     registerId(pluginIds, plugin.id, plugin.id, 'plugin')
@@ -159,6 +213,31 @@ export const resolveRakunManagerPlugins = (
       registerId(editorIds, id, plugin.id, 'field editor')
       fieldEditors[id] = editor
     }
+
+    for (const node of plugin.richText?.nodes ?? []) {
+      const registration = getLexicalNodeRegistration(node)
+      registerId(
+        richTextNodeIds,
+        `${registration.kind}:${registration.type}`,
+        plugin.id,
+        `rich text ${registration.kind}`,
+      )
+      richTextNodes.push(node)
+    }
+
+    for (const lexicalPlugin of plugin.richText?.plugins ?? []) {
+      registerId(
+        richTextPluginIds,
+        lexicalPlugin.id,
+        plugin.id,
+        'rich text plugin',
+      )
+      richTextPlugins.push({
+        ...lexicalPlugin,
+        placement: lexicalPlugin.placement ?? 'editor',
+        pluginId: plugin.id,
+      })
+    }
   }
 
   return {
@@ -169,6 +248,10 @@ export const resolveRakunManagerPlugins = (
     ),
     sidebar,
     fieldEditors,
+    richTextNodes,
+    richTextPlugins: richTextPlugins.sort(
+      (left, right) => (left.order ?? 0) - (right.order ?? 0),
+    ),
   }
 }
 

@@ -21,7 +21,7 @@
       "@rakun-kit/core/types": ["../core/src/lib/types/index.ts"],
       "@rakun-kit/manager-react": ["../manager-react/src/index.ts"],
       "@rakun-kit/manager-react/plugins": ["../manager-react/src/plugins.tsx"],
-      "@rakun-kit/manager-react/state/theme": ["../manager-react/src/state/theme.tsx"]
+      "@rakun-kit/manager-react/rich-text": ["../manager-react/src/rich-text.tsx"]
     }
   },
   "include": ["src"]

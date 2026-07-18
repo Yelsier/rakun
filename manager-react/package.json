@@ -170,6 +170,12 @@
       "require": "./dist/cjs/plugins.js",
       "default": "./dist/esm/plugins.js"
     },
+    "./rich-text": {
+      "types": "./dist/esm/rich-text.d.ts",
+      "import": "./dist/esm/rich-text.js",
+      "require": "./dist/cjs/rich-text.js",
+      "default": "./dist/esm/rich-text.js"
+    },
     "./styles.css": {
       "types": "./dist/styles.css.d.ts",
       "default": "./dist/styles.css"

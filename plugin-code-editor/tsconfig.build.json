@@ -12,7 +12,7 @@
       "@rakun-kit/core/types": ["../core/dist/esm/lib/types/index.d.ts"],
       "@rakun-kit/manager-react": ["../manager-react/dist/esm/index.d.ts"],
       "@rakun-kit/manager-react/plugins": ["../manager-react/dist/esm/plugins.d.ts"],
-      "@rakun-kit/manager-react/state/theme": ["../manager-react/dist/esm/state/theme.d.ts"]
+      "@rakun-kit/manager-react/rich-text": ["../manager-react/dist/esm/rich-text.d.ts"]
     }
   },
   "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]

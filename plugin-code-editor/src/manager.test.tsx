@@ -1,76 +1,74 @@
-import { afterAll, describe, expect, it } from 'bun:test'
-import { EditorView } from 'codemirror'
-import { GlobalRegistrator } from '@happy-dom/global-registrator'
-import { act, cleanup, render } from '@testing-library/react'
-import { createRef } from 'react'
+import { describe, expect, it } from 'bun:test'
 import {
-  type ManagerFieldEditorRef,
-} from '@rakun-kit/manager-react/plugins'
-import type { LanguageSchema } from '@rakun-kit/core/client'
-import { ManagerProvider } from '../../manager-react/src/client/react'
-import { createManagerClient } from '../../manager-react/src/client/request'
-import { LanguageProvider } from '../../manager-react/src/state/language'
-import { ManagerThemeProvider } from '../../manager-react/src/state/theme'
+  $createCodeNode,
+  CodeHighlightNode,
+  CodeNode,
+  getCodeLanguages,
+} from '@lexical/code'
+import { createEditor, $getRoot, $createTextNode } from 'lexical'
 
-import { CodeEditorField } from './manager'
-import { codeField } from './server'
+import {
+  codeEditorManagerPlugin,
+  createCodeEditorManagerPlugin,
+} from './manager'
 
-GlobalRegistrator.register()
+describe('code editor manager plugin', () => {
+  it('registers code nodes and the shadcn-editor contribution points', () => {
+    expect(
+      codeEditorManagerPlugin.richText?.nodes?.map((node) =>
+        typeof node === 'function' ? node.getType() : node.replace.getType(),
+      ),
+    ).toEqual(['code', 'code-highlight'])
+    expect(
+      codeEditorManagerPlugin.richText?.plugins?.map(({ placement }) => placement),
+    ).toEqual(['block-format', 'toolbar', 'editor', 'editor'])
+  })
 
-afterAll(() => {
-  cleanup()
-  GlobalRegistrator.unregister()
-})
+  it('serializes code blocks through the normal Lexical RichText state', () => {
+    const editor = createEditor({ nodes: [CodeNode, CodeHighlightNode] })
 
-const language = {
-  _id: '000000000000000000000000',
-  _type: 'Language',
-  code: 'en',
-  name: 'English',
-  default: true,
-} as LanguageSchema
-
-describe('CodeEditorField', () => {
-  it('mounts CodeMirror and exposes edited values through the manager ref', () => {
-    const field = codeField({ language: 'typescript', minHeight: 180 })
-    const ref = createRef<ManagerFieldEditorRef>()
-    const client = createManagerClient(async () => [] as never)
-    const encoded = {
-      config: field.getConfig(),
-      isRequired: field.getIsRequired(),
-      isTranslatable: field.getIsTranslatable(),
-      visibility: field.getVisibility(),
-      isDynamic: field.getIsDynamic(),
-      condition: field.getCondition(),
-      defaultData: 'const first = true',
-      id: 'snippet.source',
-    }
-
-    const result = render(
-      <ManagerProvider client={client}>
-        <ManagerThemeProvider>
-          <LanguageProvider languages={[language]} initialLanguage={language}>
-            <CodeEditorField {...(encoded as never)} ref={ref} />
-          </LanguageProvider>
-        </ManagerThemeProvider>
-      </ManagerProvider>,
+    editor.update(
+      () => {
+        const code = $createCodeNode('typescript')
+        code.append($createTextNode('const answer: number = 42'))
+        $getRoot().append(code)
+      },
+      { discrete: true },
     )
 
-    const editorElement = result.container.querySelector('.cm-editor')
-    expect(editorElement).not.toBeNull()
-    expect(ref.current?.getValue()).toBe('const first = true')
+    const serialized = editor.getEditorState().toJSON()
+    expect(serialized.root.children[0]).toMatchObject({
+      type: 'code',
+      language: 'typescript',
+    })
+    expect(serialized.root.children[0]?.children?.[0]).toMatchObject({
+      text: 'const answer: number = 42',
+    })
+  })
 
-    const view = EditorView.findFromDOM(editorElement as HTMLElement)
-    act(() => {
-      view.dispatch({
-        changes: {
-          from: 0,
-          to: view.state.doc.length,
-          insert: 'const second = true',
-        },
-      })
+  it('creates a plugin with a project-specific language list', () => {
+    const plugin = createCodeEditorManagerPlugin({
+      languages: ['plaintext', 'json', 'javascript', 'typescript'],
     })
 
-    expect(ref.current?.getValue()).toBe('const second = true')
+    expect(plugin.id).toBe('@rakun-kit/plugin-code-editor')
+    expect(plugin.richText?.plugins?.map(({ placement }) => placement)).toEqual([
+      'block-format',
+      'toolbar',
+      'editor',
+      'editor',
+    ])
+    expect(getCodeLanguages()).toContain('json')
+  })
+
+  it('rejects empty and unsupported language lists', () => {
+    expect(() =>
+      createCodeEditorManagerPlugin({ languages: [] }),
+    ).toThrow('must not be empty')
+    expect(() =>
+      createCodeEditorManagerPlugin({
+        languages: ['elixir' as 'plain'],
+      }),
+    ).toThrow('Unsupported code editor language "elixir"')
   })
 })

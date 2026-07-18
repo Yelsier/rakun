@@ -35,7 +35,6 @@
       "@rakun-kit/trpc": ["../trpc/src/index.ts"],
       "@rakun-kit/s3": ["../s3/src/index.ts"],
       "@rakun-kit/openai": ["../openai/src/index.ts"],
-      "@rakun-kit/plugin-code-editor/server": ["../plugin-code-editor/src/server.ts"],
       "@rakun-kit/plugin-code-editor/manager": ["../plugin-code-editor/src/manager.tsx"]
     }
   },

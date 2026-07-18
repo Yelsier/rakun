@@ -9,6 +9,7 @@ import { FieldWrapper } from '../shared/FieldWrapper'
 
 import { Editor } from '@/components/blocks/editor-00/editor'
 import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
+import type { ManagerFieldEditorProps } from '@/plugins'
 
 const EmptyValue = {
   root: {
@@ -67,13 +68,14 @@ const normalizeEditorState = (value: unknown): SerializedEditorState => {
   return isSerializedEditorState(value) ? value : EmptyValue
 }
 
-const RichTextUI: React.FC<StringPropsRef> = ({
-  id,
-  isTranslatable,
-  defaultData,
-  ref,
-  ...props
-}) => {
+const RichTextUI: React.FC<StringPropsRef> = (fieldProps) => {
+  const { id, isTranslatable, defaultData, ref, ...props } = fieldProps
+  const pluginProps = {
+    ...props,
+    id,
+    isTranslatable,
+    defaultData,
+  } as ManagerFieldEditorProps
   const {
     errors,
     cleanErrors,
@@ -115,6 +117,7 @@ const RichTextUI: React.FC<StringPropsRef> = ({
       <Editor
         editorRef={editorRef}
         editorSerializedState={editorValue}
+        pluginProps={pluginProps}
         placeholder={props.dynamicFallbackPlaceholder ?? 'Start typing ...'}
         onSerializedChange={(value) => {
           onValueChange(value)

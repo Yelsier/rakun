@@ -495,12 +495,49 @@ const richText = (text: string) => ({
   },
 });
 
-const codeEditorExample = `type Greeting = {
-  name: string
-}
+const richTextWithCode = ({
+  intro,
+  code,
+  language,
+}: {
+  intro: string;
+  code: string;
+  language: string;
+}) => {
+  const paragraph = richText(intro).root.children[0];
 
-export const greet = ({ name }: Greeting) => \`Hello, \${name}!\`
-`
+  return {
+    root: {
+      children: [
+        paragraph,
+        {
+          children: [
+            {
+              detail: 0,
+              format: 0,
+              mode: "normal",
+              style: "",
+              text: code,
+              type: "text",
+              version: 1,
+            },
+          ],
+          direction: null,
+          format: "",
+          indent: 0,
+          language,
+          type: "code",
+          version: 1,
+        },
+      ],
+      direction: null,
+      format: "",
+      indent: 0,
+      type: "root",
+      version: 1,
+    },
+  };
+};
 
 const existingRelation = (contentType: string, document: Document) => ({
   type: "existing",
@@ -1489,19 +1526,6 @@ export const seedPreviewData = async ({
       },
     );
 
-    await db.collection(Article.name).updateOne(
-      {
-        slug: "hello-preview",
-        sourceExample: { $exists: false },
-      },
-      {
-        $set: {
-          sourceExample: codeEditorExample,
-          updatedAt: now(),
-        },
-      },
-    );
-
     const helloArticle = await db.collection(Article.name).findOneAndUpdate(
       { slug: "hello-preview" },
       {
@@ -1516,7 +1540,6 @@ export const seedPreviewData = async ({
             _id: author._id,
           },
           body: richText("Edit manager-react and Next.js will update this UI."),
-          sourceExample: codeEditorExample,
           tags: ["preview", "manager-react"],
           _type: Article.name,
           createdAt: now(),
@@ -1528,6 +1551,33 @@ export const seedPreviewData = async ({
 
     if (!helloArticle) {
       throw new Error("Failed to create preview article.");
+    }
+
+    const codeArticle = await db.collection(Article.name).findOneAndUpdate(
+      { slug: "lexical-code-blocks" },
+      {
+        $setOnInsert: {
+          title: "Lexical Code Blocks",
+          slug: "lexical-code-blocks",
+          excerpt: "RichText code blocks provided by a Rakun manager plugin.",
+          published: true,
+          author: existingRelation(Author.name, author),
+          body: richTextWithCode({
+            intro: "Edit this code block, change its language, and save the article.",
+            code: "type Greeting = { name: string }\n\nexport const greet = ({ name }: Greeting) => `Hello, ${name}!`",
+            language: "typescript",
+          }),
+          tags: ["lexical", "plugins", "code"],
+          _type: Article.name,
+          createdAt: now(),
+          updatedAt: now(),
+        },
+      },
+      { upsert: true, returnDocument: "after" },
+    );
+
+    if (!codeArticle) {
+      throw new Error("Failed to create Lexical code block article.");
     }
 
     const relationsArticle = await db.collection(Article.name).findOneAndUpdate(
