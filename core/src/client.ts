@@ -133,4 +133,8 @@ export type {
 } from "./schemas/manager/media/prepareUpload";
 export { Seo } from "./internal-content-types/Seo";
 export type { LanguageSchema } from "./internal-content-types/Language";
+export {
+  ADMIN_ROLE_NAME,
+  isAdminRole,
+} from "./lib/ManagerRolePolicy";
 export type { ManagerUserSchema } from "./internal-content-types/ManagerUser";

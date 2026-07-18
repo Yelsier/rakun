@@ -26,9 +26,10 @@ import {
 } from "./Permissions";
 import { registerContentType, registerInternalContentType } from "./Registry";
 
-const makeUser = (permissions: Permission[]) =>
+const makeUser = (permissions: Permission[], roleName = "editor") =>
   ({
     role: {
+      name: roleName,
       permissions,
     },
   }) as ManagerUserSchema;
@@ -55,6 +56,17 @@ describe("permissions", () => {
 
     expect(
       hasPermissions(user, ["manager.backups.restore" as Permission]),
+    ).toBe(false);
+  });
+
+  it("always grants every defined permission to the admin role", () => {
+    const user = makeUser([], "admin");
+
+    expect(
+      hasPermissions(user, ["content.ManagerRole.updateAny" as Permission]),
+    ).toBe(true);
+    expect(
+      hasPermissions(user, ["manager.unknown" as Permission]),
     ).toBe(false);
   });
 

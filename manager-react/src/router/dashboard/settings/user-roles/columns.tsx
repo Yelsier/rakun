@@ -1,6 +1,6 @@
 'use client'
 
-import type { Permission } from '@rakun-kit/core/client'
+import { isAdminRole, type Permission } from '@rakun-kit/core/client'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Edit, MoreHorizontal, Trash } from 'lucide-react'
 
@@ -43,6 +43,8 @@ export const columns = ({
     id: 'actions',
     cell: ({ row }) => {
       const role = row.original
+      if (isAdminRole(role)) return null
+
       return (
         <DropdownMenu>
           {hasAnyPermission([

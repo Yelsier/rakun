@@ -4,7 +4,9 @@ import {
 } from "./lib/Registry";
 import { createLogger, Logger } from "./lib/Logger";
 import * as internalContentTypes from "./internal-content-types";
+import { applyManagerRoleHooks } from "./internal-content-types/ManagerRoleHooks";
 import { applyManagerUserHooks } from "./internal-content-types/ManagerUserHooks";
+import { syncAdminRole } from "./internal-content-types/syncAdminRole";
 import { syncConfiguredRoutes } from "./api/utils/routes/syncConfiguredRoutes";
 import { createMongoConnection, getMongoService } from "./orm";
 import { runMigrations } from "./orm/migrations";
@@ -93,6 +95,7 @@ export const ensureRakunInitialized = async () => {
 
     const db = await getMongoService();
     await runMigrations(db);
+    await syncAdminRole(db);
 
     const shouldSyncRoutes = bootstrapOptions?.syncRoutes;
 
@@ -203,6 +206,7 @@ export const rakunBootstrap = (options: RakunBootstrapOptions) => {
     Object.values(configuredInternalContentTypes),
     resolvedOptions.fields,
   )
+  applyManagerRoleHooks(configuredInternalContentTypes.ManagerRole);
   applyManagerUserHooks(configuredInternalContentTypes.ManagerUser);
   const routeableContentTypes = new Set(
     resolvedOptions.routes

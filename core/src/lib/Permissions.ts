@@ -1,4 +1,5 @@
 import type { ManagerUserSchema } from "../internal-content-types/ManagerUser";
+import { isAdminRole } from "./ManagerRolePolicy";
 import type ContentType from "./ContentType";
 import { getContentTypes } from "./Registry";
 import { getRakunBootstrapOptions } from '../bootstrapState'
@@ -120,6 +121,10 @@ export const hasPermissions = (
     if (!allPermissions.includes(permission)) {
       return false;
     }
+  }
+
+  if (isAdminRole(user.role)) {
+    return true;
   }
 
   return mappedPermissions.every((permission) => {
