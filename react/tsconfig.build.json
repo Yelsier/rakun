@@ -6,5 +6,6 @@
     "noEmit": false,
     "rootDir": "src",
     "outDir": "dist/esm"
-  }
+  },
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
 }

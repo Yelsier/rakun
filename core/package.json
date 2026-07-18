@@ -112,6 +112,12 @@
       "import": "./dist/esm/lib/types/index.js",
       "require": "./dist/cjs/lib/types/index.js",
       "default": "./dist/esm/lib/types/index.js"
+    },
+    "./plugins": {
+      "types": "./dist/esm/plugins.d.ts",
+      "import": "./dist/esm/plugins.js",
+      "require": "./dist/cjs/plugins.js",
+      "default": "./dist/esm/plugins.js"
     }
   },
   "devDependencies": {

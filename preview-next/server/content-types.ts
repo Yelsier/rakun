@@ -1,5 +1,6 @@
 import { ContentType, Fields } from '@rakun-kit/next'
 import { HelloWorld } from '@rakun-kit/next/internal-content-types'
+import { codeField } from '@rakun-kit/plugin-code-editor/server'
 
 export const Header = new ContentType({
   name: 'Header',
@@ -154,6 +155,7 @@ export const Article = new ContentType({
     published: Fields.boolean(),
     author: Fields.relation(Author),
     body: Fields.string().type('RichText'),
+    sourceExample: codeField({ language: 'typescript', minHeight: 280 }),
     tags: Fields.array(Fields.string()),
   },
   uniques: [['slug']],

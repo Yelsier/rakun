@@ -137,11 +137,7 @@ const hasGrantedPermission = (
   permission: Permission,
   granted: Set<Permission>,
 ) => {
-  if (isContentPermission(permission)) {
-    return granted.has(permission)
-  }
-
-  return false
+  return granted.has(permission)
 }
 
 export const hasManagerPermissions = (

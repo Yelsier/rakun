@@ -31,6 +31,16 @@ Default seeded login:
 admin@rakun.local / admin1234
 ```
 
+## Plugin code editor
+
+This preview registers `@rakun-kit/plugin-code-editor` on both sides of the
+Next application. The server facet is configured in `server/bootstrap.ts`; the
+manager facet is imported by the client boundary in
+`app/backend/[[...slug]]/preview-manager.tsx`.
+
+Open the seeded `Hello Preview` article in the manager to edit and persist its
+`sourceExample` TypeScript field with CodeMirror.
+
 ## Seed
 
 The API route seeds preview data on first request when `SEED_PREVIEW` is not

@@ -1,0 +1,48 @@
+{
+  "name": "@rakun-kit/plugin-code-editor",
+  "version": "0.1.0",
+  "description": "CodeMirror field editor plugin for Rakun.",
+  "license": "MIT",
+  "type": "module",
+  "files": ["dist"],
+  "scripts": {
+    "build": "rm -rf dist && bun run build:esm && bun run build:cjs",
+    "build:esm": "tsc -b --force tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
+    "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../scripts/fix-dist-imports.mjs dist/cjs && node ../scripts/write-cjs-package-json.mjs dist/cjs"
+  },
+  "exports": {
+    "./server": {
+      "types": "./dist/esm/server.d.ts",
+      "import": "./dist/esm/server.js",
+      "require": "./dist/cjs/server.js",
+      "default": "./dist/esm/server.js"
+    },
+    "./manager": {
+      "types": "./dist/esm/manager.d.ts",
+      "import": "./dist/esm/manager.js",
+      "require": "./dist/cjs/manager.js",
+      "default": "./dist/esm/manager.js"
+    }
+  },
+  "dependencies": {
+    "@codemirror/lang-css": "^6.0.0",
+    "@codemirror/lang-html": "^6.0.0",
+    "@codemirror/lang-javascript": "^6.0.0",
+    "@codemirror/lang-json": "^6.0.0",
+    "codemirror": "^6.0.0",
+    "zod": "^4.3.6"
+  },
+  "peerDependencies": {
+    "@rakun-kit/core": ">=1.3.0",
+    "@rakun-kit/manager-react": ">=1.3.0",
+    "react": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.0.0",
+    "@happy-dom/global-registrator": "^20.0.0",
+    "@types/react": "^19.2.2",
+    "happy-dom": "^20.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}

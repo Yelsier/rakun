@@ -152,11 +152,23 @@
       "require": "./dist/cjs/state/navigation.js",
       "default": "./dist/esm/state/navigation.js"
     },
+    "./state/theme": {
+      "types": "./dist/esm/state/theme.d.ts",
+      "import": "./dist/esm/state/theme.js",
+      "require": "./dist/cjs/state/theme.js",
+      "default": "./dist/esm/state/theme.js"
+    },
     "./link": {
       "types": "./dist/esm/link.d.ts",
       "import": "./dist/esm/link.js",
       "require": "./dist/cjs/link.js",
       "default": "./dist/esm/link.js"
+    },
+    "./plugins": {
+      "types": "./dist/esm/plugins.d.ts",
+      "import": "./dist/esm/plugins.js",
+      "require": "./dist/cjs/plugins.js",
+      "default": "./dist/esm/plugins.js"
     },
     "./styles.css": {
       "types": "./dist/styles.css.d.ts",

@@ -3,12 +3,14 @@ import { createLocalMediaServiceConfig, type RakunBootstrapOptions } from '@raku
 import { Footer, Header, PreviewPage, Project, previewContentTypes } from './content-types'
 import { apiOperations } from './api-operations'
 import { createOpenAITranslationServiceConfig } from '@rakun-kit/openai'
+import { codeEditorPlugin } from '@rakun-kit/plugin-code-editor/server'
 
 export const getPreviewMongoUri = () =>
   process.env.MONGO_URI ?? 'mongodb://127.0.0.1:27017/rakun_preview'
 
 export const createPreviewBootstrap = () =>
   ({
+    plugins: [codeEditorPlugin],
     literals: {
       'test.hello': {
         defaultMessage: 'Hello, {name}!',

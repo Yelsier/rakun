@@ -495,6 +495,13 @@ const richText = (text: string) => ({
   },
 });
 
+const codeEditorExample = `type Greeting = {
+  name: string
+}
+
+export const greet = ({ name }: Greeting) => \`Hello, \${name}!\`
+`
+
 const existingRelation = (contentType: string, document: Document) => ({
   type: "existing",
   contentType,
@@ -1476,7 +1483,20 @@ export const seedPreviewData = async ({
       },
       {
         $set: {
-          body: richText("Edit manager-react and Vite will update this UI."),
+          body: richText("Edit manager-react and Next.js will update this UI."),
+          updatedAt: now(),
+        },
+      },
+    );
+
+    await db.collection(Article.name).updateOne(
+      {
+        slug: "hello-preview",
+        sourceExample: { $exists: false },
+      },
+      {
+        $set: {
+          sourceExample: codeEditorExample,
           updatedAt: now(),
         },
       },
@@ -1495,7 +1515,8 @@ export const seedPreviewData = async ({
             contentType: Author.name,
             _id: author._id,
           },
-          body: richText("Edit manager-react and Vite will update this UI."),
+          body: richText("Edit manager-react and Next.js will update this UI."),
+          sourceExample: codeEditorExample,
           tags: ["preview", "manager-react"],
           _type: Article.name,
           createdAt: now(),

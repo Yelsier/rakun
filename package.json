@@ -26,7 +26,8 @@
     "react",
     "manager-react",
     "preview",
-    "preview-next"
+    "preview-next",
+    "plugin-code-editor"
   ],
   "overrides": {
     "next": "16.2.6",
@@ -34,11 +35,11 @@
     "qs": "6.15.2"
   },
   "scripts": {
-    "clean": "rm -rf core/dist trpc/dist express/dist next/dist s3/dist openai/dist react/dist manager-react/dist",
+    "clean": "rm -rf core/dist trpc/dist express/dist next/dist s3/dist openai/dist react/dist manager-react/dist plugin-code-editor/dist",
     "test": "bun run --filter @rakun-kit/core test",
-    "build": "bun run clean && bun run --filter @rakun-kit/core build && bun run --filter @rakun-kit/trpc build && bun run --filter @rakun-kit/react build && bun run --filter @rakun-kit/manager-react build && bun run --filter @rakun-kit/express build && bun run --filter @rakun-kit/next build && bun run --filter @rakun-kit/s3 build && bun run --filter @rakun-kit/openai build",
-    "build:esm": "bun run --filter @rakun-kit/core build:esm && bun run --filter @rakun-kit/trpc build:esm && bun run --filter @rakun-kit/express build:esm && bun run --filter @rakun-kit/react build:esm && bun run --filter @rakun-kit/manager-react build:esm && bun run --filter @rakun-kit/next build:esm && bun run --filter @rakun-kit/s3 build:esm && bun run --filter @rakun-kit/openai build:esm",
-    "build:cjs": "bun run --filter @rakun-kit/core build:cjs && bun run --filter @rakun-kit/trpc build:cjs && bun run --filter @rakun-kit/express build:cjs && bun run --filter @rakun-kit/react build:cjs && bun run --filter @rakun-kit/manager-react build:cjs && bun run --filter @rakun-kit/next build:cjs && bun run --filter @rakun-kit/s3 build:cjs && bun run --filter @rakun-kit/openai build:cjs",
+    "build": "bun run clean && bun run --filter @rakun-kit/core build && bun run --filter @rakun-kit/trpc build && bun run --filter @rakun-kit/react build && bun run --filter @rakun-kit/manager-react build && bun run --filter @rakun-kit/plugin-code-editor build && bun run --filter @rakun-kit/express build && bun run --filter @rakun-kit/next build && bun run --filter @rakun-kit/s3 build && bun run --filter @rakun-kit/openai build",
+    "build:esm": "bun run --filter @rakun-kit/core build:esm && bun run --filter @rakun-kit/trpc build:esm && bun run --filter @rakun-kit/express build:esm && bun run --filter @rakun-kit/react build:esm && bun run --filter @rakun-kit/manager-react build:esm && bun run --filter @rakun-kit/plugin-code-editor build:esm && bun run --filter @rakun-kit/next build:esm && bun run --filter @rakun-kit/s3 build:esm && bun run --filter @rakun-kit/openai build:esm",
+    "build:cjs": "bun run --filter @rakun-kit/core build:cjs && bun run --filter @rakun-kit/trpc build:cjs && bun run --filter @rakun-kit/express build:cjs && bun run --filter @rakun-kit/react build:cjs && bun run --filter @rakun-kit/manager-react build:cjs && bun run --filter @rakun-kit/plugin-code-editor build:cjs && bun run --filter @rakun-kit/next build:cjs && bun run --filter @rakun-kit/s3 build:cjs && bun run --filter @rakun-kit/openai build:cjs",
     "build:core": "bun run --filter @rakun-kit/core build",
     "build:trpc": "bun run --filter @rakun-kit/trpc build",
     "build:express": "bun run --filter @rakun-kit/express build",
@@ -47,6 +48,7 @@
     "build:openai": "bun run --filter @rakun-kit/openai build",
     "build:react": "bun run --filter @rakun-kit/react build",
     "build:manager-react": "bun run --filter @rakun-kit/manager-react build",
+    "build:plugin-code-editor": "bun run --filter @rakun-kit/plugin-code-editor build",
     "migrate:media-urls": "node scripts/migrate-media-urls.mjs",
     "preview": "bun run --filter @rakun-kit/preview dev",
     "preview:api": "bun run --filter @rakun-kit/preview dev:api",

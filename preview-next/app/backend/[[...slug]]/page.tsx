@@ -1,4 +1,6 @@
-import { RakunManagerPage, RakunManagerPageProps } from '@rakun-kit/next/manager'
+import { RakunManagerPage, type RakunManagerPageProps } from '@rakun-kit/next/manager'
+
+import { PreviewManager } from './preview-manager'
 
 export default function BackendPage(props: RakunManagerPageProps) {
   return (
@@ -7,6 +9,7 @@ export default function BackendPage(props: RakunManagerPageProps) {
       basePath="/backend"
       apiBaseUrl="/api"
       preview={{ webBaseUrl: '/' }}
+      managerComponent={PreviewManager}
     />
   )
 }

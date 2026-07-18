@@ -26,6 +26,7 @@ const closedCategoryActiveMenuClass =
 
 export function NavMain({
   items,
+  label = 'Content types',
 }: {
   items: {
     title: string
@@ -39,6 +40,7 @@ export function NavMain({
       isActive?: boolean
     }[]
   }[]
+  label?: string
 }) {
   const totalItems = items.reduce(
     (total, item) => total + (item.items?.length ?? 1),
@@ -47,7 +49,7 @@ export function NavMain({
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Content types ({totalItems})</SidebarGroupLabel>
+      <SidebarGroupLabel>{label} ({totalItems})</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <Collapsible

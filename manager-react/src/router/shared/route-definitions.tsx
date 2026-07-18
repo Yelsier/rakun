@@ -5,6 +5,10 @@ import { ManagerAuthLayout, ManagerDashboardLayout } from "../../layouts";
 import { managerRouteDefinitions } from "./route-list";
 import { matchRoutePath, type AnyManagerRouteDefinition } from "./route-schema";
 import { getManagerRelativePathname } from "../../state/navigation";
+import {
+  managerRoutePathsOverlap,
+  type ManagerPluginRegistry,
+} from '../../plugins'
 
 import type {
   ManagerResolvedRoute,
@@ -17,13 +21,55 @@ export const resolveManagerRoute = (args: {
   pathname: string;
   basePath?: string;
   searchParams?: ManagerSearchParams;
+  pluginRegistry?: ManagerPluginRegistry;
+  contentTypes?: { name: string }[];
 }) => {
   const pathname =
     getManagerRelativePathname(args.pathname, {
       basePath: args.basePath,
     }).replace(/\/+$/, "") || "/";
 
-  for (const definition of managerRouteDefinitions) {
+  const contentRouteKinds = new Set([
+    'content-list',
+    'content-create',
+    'content-edit',
+  ])
+  const staticDefinitions = managerRouteDefinitions.filter(
+    (definition) => !contentRouteKinds.has(definition.kind),
+  )
+  const contentDefinitions = managerRouteDefinitions.filter((definition) =>
+    contentRouteKinds.has(definition.kind),
+  )
+
+  for (const pluginRoute of args.pluginRegistry?.routes ?? []) {
+    const firstSegment = pluginRoute.path.split('/').filter(Boolean)[0]
+    if (firstSegment?.startsWith(':')) {
+      throw new Error(
+        `Rakun manager plugin route "${pluginRoute.path}" must begin with a static path segment.`,
+      )
+    }
+
+    const reservedDefinition = staticDefinitions.find((definition) =>
+      managerRoutePathsOverlap(definition.path, pluginRoute.path),
+    )
+    if (reservedDefinition) {
+      throw new Error(
+        `Rakun manager plugin route "${pluginRoute.path}" conflicts with built-in route "${reservedDefinition.kind}".`,
+      )
+    }
+
+    if (
+      firstSegment &&
+      args.contentTypes?.some((contentType) => contentType.name === firstSegment)
+    ) {
+      throw new Error(
+        `Rakun manager plugin route "${pluginRoute.path}" conflicts with content type "${firstSegment}".`,
+      )
+    }
+
+  }
+
+  for (const definition of staticDefinitions) {
     const params = matchRoutePath(definition.path, pathname);
     if (!params) continue;
 
@@ -33,6 +79,29 @@ export const resolveManagerRoute = (args: {
     });
 
     return { definition, route };
+  }
+
+  for (const pluginRoute of args.pluginRegistry?.routes ?? []) {
+    const params = matchRoutePath(pluginRoute.path, pathname)
+    if (!params) continue
+
+    return {
+      route: {
+        kind: 'plugin',
+        pluginId: pluginRoute.pluginId,
+        routeId: pluginRoute.id,
+        params,
+      } as const,
+      definition: undefined,
+    }
+  }
+
+  for (const definition of contentDefinitions) {
+    const params = matchRoutePath(definition.path, pathname)
+    if (!params) continue
+
+    const route = definition.parse({ params, searchParams: args.searchParams })
+    return { definition, route }
   }
 
   return {

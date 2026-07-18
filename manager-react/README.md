@@ -89,6 +89,46 @@ Import the package stylesheet once:
 import "@rakun-kit/manager-react/styles.css";
 ```
 
+## Manager Plugins
+
+Manager plugins run inside the normal providers and can add dashboard routes,
+sidebar items, and custom field editors:
+
+```tsx
+import {
+  defineRakunManagerPlugin,
+  ManagerBrowserApp,
+} from '@rakun-kit/manager-react'
+
+const analyticsManagerPlugin = defineRakunManagerPlugin({
+  id: '@acme/rakun-analytics',
+  routes: [{
+    id: 'dashboard',
+    path: '/analytics',
+    component: AnalyticsScreen,
+    permissions: ['plugin.analytics.view'],
+  }],
+  sidebar: [{
+    id: 'analytics',
+    title: 'Analytics',
+    routeId: 'dashboard',
+    position: 'primary',
+    group: 'Plugins',
+  }],
+  fieldEditors: {
+    '@acme/rakun-analytics.query': QueryEditor,
+  },
+})
+
+<ManagerBrowserApp plugins={[analyticsManagerPlugin]} {...props} />
+```
+
+Use `ManagerFieldEditorProps`, `ManagerFieldEditorRef`, and
+`useManagerFieldValue` from `@rakun-kit/manager-react/plugins` when implementing
+field editors. Next.js applications should import plugin objects inside a
+`'use client'` wrapper around `RakunManagerClientPage`; `RakunManagerPage` accepts
+that wrapper through `managerComponent`.
+
 ## Exports
 
 - `@rakun-kit/manager-react`: manager app, providers, clients, navigation, router, layout, media, and state helpers.
