@@ -141,7 +141,7 @@ describe("permissions", () => {
     ).toBe(false);
   });
 
-  it("maps grouped route content permissions from content type definitions", () => {
+  it("keeps page permissions separate from grouped route permissions", () => {
     const user = makeUser(["content.Route.readAny", "content.Route.updateAny"]);
 
     expect(
@@ -150,8 +150,13 @@ describe("permissions", () => {
       ]),
     ).toBe(true);
     expect(hasPermissions(user, ["content.Page.readAny" as Permission])).toBe(
-      true,
+      false,
     );
+    expect(
+      hasPermissions(makeUser(["content.Page.readAny"]), [
+        "content.Page.readAny" as Permission,
+      ]),
+    ).toBe(true);
     expect(hasPermissions(user, ["content.RouteMap.readAny" as Permission])).toBe(
       true,
     );
@@ -165,6 +170,7 @@ describe("permissions", () => {
 
   it("uses content type permissions for internal manager resources", () => {
     expect(getPermissionList()).toContain("content.Route.readAny");
+    expect(getPermissionList()).toContain("content.Page.readAny");
     expect(getPermissionList()).toContain("content.ManagerUser.readAny");
     expect(getPermissionList()).toContain("content.ManagerRole.updateAny");
     expect(getPermissionList()).toContain("content.Language.updateAny");
