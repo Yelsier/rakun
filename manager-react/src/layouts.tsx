@@ -14,6 +14,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from './components/ui/sidebar'
+import { ScrollArea } from './components/ui/scroll-area'
 
 export type ManagerLayoutContext = {
   pathname?: string
@@ -85,9 +86,9 @@ export const ManagerDashboardLayout = ({
           {headerEnd}
         </SidebarHeader>
 
-        <div className="h-full" data-tour="manager-page">
+        <ScrollArea className="h-[calc(100vh-5rem)]" data-tour="manager-page">
           {children}
-        </div>
+        </ScrollArea>
       </SidebarInset>
     </ManagerHelpProvider>
   </SidebarProvider>
