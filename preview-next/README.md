@@ -31,6 +31,17 @@ Default seeded login:
 admin@rakun.local / admin1234
 ```
 
+## Plugin code editor
+
+This preview registers `@rakun-kit/plugin-code-editor` in the manager client
+boundary at
+`app/backend/[[...slug]]/preview-manager.tsx`.
+
+Open the seeded `Lexical Code Blocks` article in the manager to edit its
+RichText code block, switch the syntax language, save it, and reopen it. This
+preview limits the selector to Plain Text, JSON, JavaScript, TypeScript, HTML,
+and CSS.
+
 ## Seed
 
 The API route seeds preview data on first request when `SEED_PREVIEW` is not

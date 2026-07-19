@@ -4,22 +4,35 @@ import {
 } from "./lib/Registry";
 import { createLogger, Logger } from "./lib/Logger";
 import * as internalContentTypes from "./internal-content-types";
+import { applyManagerRoleHooks } from "./internal-content-types/ManagerRoleHooks";
 import { applyManagerUserHooks } from "./internal-content-types/ManagerUserHooks";
+import { syncAdminRole } from "./internal-content-types/syncAdminRole";
 import { syncConfiguredRoutes } from "./api/utils/routes/syncConfiguredRoutes";
 import { createMongoConnection, getMongoService } from "./orm";
 import { runMigrations } from "./orm/migrations";
-import { createMediaService } from "./media";
-import { createTranslationService } from "./translation";
+import { createMediaService, getMediaService } from "./media";
+import {
+  createTranslationService,
+  getTranslationService,
+  hasTranslationService,
+} from "./translation";
 import { Fields } from "./lib/fields";
 import {
   getRakunBootstrapOptions,
   hasRakunBootstrapped,
   setRakunBootstrapOptions,
   type RakunBootstrapOptions,
+  type ResolvedRakunBootstrapOptions,
 } from "./bootstrapState";
 import { setLiteralCatalog } from "./literals/definitions";
+import {
+  resolveRakunPluginContributions,
+  runRakunPluginInitializers,
+  assertRakunPluginFieldsDeclared,
+} from './plugins'
 
 let initPromise: Promise<void> | null = null;
+let initializedPluginIds = new Set<string>()
 
 const ensureLogger = (): void => {
   const bootstrapOptions = getRakunBootstrapOptions();
@@ -82,12 +95,29 @@ export const ensureRakunInitialized = async () => {
 
     const db = await getMongoService();
     await runMigrations(db);
+    await syncAdminRole(db);
 
     const shouldSyncRoutes = bootstrapOptions?.syncRoutes;
 
     if (shouldSyncRoutes !== false) {
       await syncConfiguredRoutes();
     }
+
+    if (!bootstrapOptions) return
+
+    await runRakunPluginInitializers({
+      plugins: bootstrapOptions.plugins,
+      initializedPluginIds,
+      context: {
+        db,
+        logger: Logger!,
+        media: bootstrapOptions.media ? getMediaService() : undefined,
+        translation: hasTranslationService()
+          ? getTranslationService()
+          : undefined,
+        options: bootstrapOptions,
+      },
+    })
   })();
 
   try {
@@ -157,17 +187,29 @@ export const runWithRakunRequestTrace = <T>(
 };
 
 export const rakunBootstrap = (options: RakunBootstrapOptions) => {
-  setRakunBootstrapOptions(options);
-  setLiteralCatalog(options.literals);
+  const contributions = resolveRakunPluginContributions(options)
+  const resolvedOptions: ResolvedRakunBootstrapOptions = {
+    ...options,
+    ...contributions,
+  }
+
+  setRakunBootstrapOptions(resolvedOptions);
+  setLiteralCatalog(resolvedOptions.literals);
   initPromise = null;
+  initializedPluginIds = new Set()
 
   const configuredInternalContentTypes = {
     ...internalContentTypes,
-    ...options.internalContentTypes,
+    ...resolvedOptions.internalContentTypes,
   };
+  assertRakunPluginFieldsDeclared(
+    Object.values(configuredInternalContentTypes),
+    resolvedOptions.fields,
+  )
+  applyManagerRoleHooks(configuredInternalContentTypes.ManagerRole);
   applyManagerUserHooks(configuredInternalContentTypes.ManagerUser);
   const routeableContentTypes = new Set(
-    (options.routes ?? [])
+    resolvedOptions.routes
       .filter((route) => route.hasPage)
       .map((route) => route.contentType),
   );
@@ -180,7 +222,7 @@ export const rakunBootstrap = (options: RakunBootstrapOptions) => {
     registerInternalContentType(ct, { override: true });
   }
 
-  for (const ct of options.contentTypes) {
+  for (const ct of resolvedOptions.contentTypes) {
     if (routeableContentTypes.has(ct.name)) {
       ct.enableDocumentVisibility();
       ct.enableSeoField(Fields.relation(internalContentTypes.Seo, "new"));
@@ -197,7 +239,17 @@ export const ensureRakunBootstrap = (options: RakunBootstrapOptions) => {
   rakunBootstrap(options);
 };
 
-export type { RakunBootstrapOptions };
+export type { RakunBootstrapOptions, ResolvedRakunBootstrapOptions };
+export {
+  defineRakunPlugin,
+  assertRakunPluginFieldsDeclared,
+  resolveRakunPluginContributions,
+  runRakunPluginInitializers,
+  type RakunPluginDefinition,
+  type RakunPluginFieldDefinition,
+  type RakunPluginInitContext,
+  type RakunResolvedPluginContributions,
+} from './plugins'
 export {
   getContentHookContext,
   runContentHookContext,

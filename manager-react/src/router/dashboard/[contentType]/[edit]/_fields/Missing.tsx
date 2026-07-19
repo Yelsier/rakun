@@ -1,7 +1,11 @@
-const MissingUI: React.FC<{ field: { type: string; ui: string } }> = ({ field }) => {
+const MissingUI: React.FC<{
+  field: { type: string; ui: string; editor?: string }
+}> = ({ field }) => {
   return (
     <div>
-      Field UI {field.ui} Type {field.type} is missing.
+      {field.editor
+        ? `Field editor ${field.editor} is missing.`
+        : `Field UI ${field.ui} Type ${field.type} is missing.`}
     </div>
   )
 }

@@ -1,6 +1,8 @@
 import type { ManagerUserSchema } from "../internal-content-types/ManagerUser";
+import { isAdminRole } from "./ManagerRolePolicy";
 import type ContentType from "./ContentType";
 import { getContentTypes } from "./Registry";
+import { getRakunBootstrapOptions } from '../bootstrapState'
 
 type ContentPermissionAction = "own" | "readAny" | "updateAny" | "deleteAny";
 
@@ -67,7 +69,12 @@ const getDynamicContentPermissions = () =>
   });
 
 export const getPermissionList = () =>
-  Array.from(new Set(getDynamicContentPermissions()));
+  Array.from(
+    new Set([
+      ...getDynamicContentPermissions(),
+      ...(getRakunBootstrapOptions()?.permissions ?? []),
+    ]),
+  );
 
 const mapContentTypePermission = (permission: string): string[] | null => {
   const match = /^content\.([^.]+)\.(own|readAny|updateAny|deleteAny)$/.exec(
@@ -114,6 +121,10 @@ export const hasPermissions = (
     if (!allPermissions.includes(permission)) {
       return false;
     }
+  }
+
+  if (isAdminRole(user.role)) {
+    return true;
   }
 
   return mappedPermissions.every((permission) => {

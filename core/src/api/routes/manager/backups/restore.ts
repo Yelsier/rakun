@@ -1,4 +1,5 @@
 import { Logger } from "../../../../lib/Logger";
+import { syncAdminRole } from "../../../../internal-content-types/syncAdminRole";
 import { getMongoService } from "../../../../orm";
 import { RakunRequestContext } from "../../../context";
 import {
@@ -21,6 +22,7 @@ export const restoreBackupHandler = async ({
     ...input,
     actorId: user._id,
   });
+  await syncAdminRole(db);
   Logger.addTrace("manager.backups.restore: backup restored", {
     backupId: result.backup._id,
     safetyBackupId: result.safetyBackup._id,

@@ -99,7 +99,7 @@ export const FeatureCarousel = new ContentType({
 
 export const PreviewPage = new ContentType({
   name: 'Page',
-  permissions: 'Route',
+  permissions: 'Page',
   fields: {
     title: Fields.string().translatable().required(),
     slug: Fields.string().type('Slug').required().translatable(),

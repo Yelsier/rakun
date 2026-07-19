@@ -1,5 +1,7 @@
 'use client'
 
+import { isAdminRole } from '@rakun-kit/core/client'
+
 import { EditRole } from '../edit'
 import type { ManagerRoleRecord } from '../columns'
 
@@ -34,6 +36,15 @@ export const ManagerSettingsUserRoleEditScreen = ({ id }: { id: string }) => {
       <ErrorMessage
         message='Content type "ManagerRole" not found.'
         _tag='NotFound'
+      />
+    )
+  }
+
+  if (isAdminRole(roleQuery.data as ManagerRoleRecord)) {
+    return (
+      <ErrorMessage
+        message='The admin role is managed by Rakun and cannot be modified.'
+        _tag='Forbidden'
       />
     )
   }

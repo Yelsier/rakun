@@ -102,6 +102,43 @@ plus the content slot.
 
 `ensureRakunBootstrap(options)` only calls `rakunBootstrap` if the runtime has not been bootstrapped yet.
 
+## Plugins
+
+Trusted server plugins contribute to the same bootstrap registry without coupling
+core to React:
+
+```ts
+import { defineRakunPlugin, rakunBootstrap } from '@rakun-kit/core'
+
+export const analyticsPlugin = defineRakunPlugin({
+  id: '@acme/rakun-analytics',
+  contentTypes: [AnalyticsEvent],
+  routes: analyticsRoutes,
+  apiOperations: analyticsOperations,
+  permissions: ['plugin.analytics.view'],
+  literals: {},
+  initialize: async ({ db }) => {
+    // Services and migrations are ready here. Keep initialization idempotent.
+  },
+})
+
+rakunBootstrap({
+  plugins: [analyticsPlugin],
+  contentTypes: [],
+  literals: {},
+  mongo,
+})
+```
+
+Plugin ids and contributed content types, routes, operations, literals, and
+custom field editor ids must be unique. Rakun reports both owners on conflicts.
+Visual manager and web facets are registered separately in their browser
+runtimes.
+
+Custom field factories can use `createPluginField`. Their serializable
+`meta.editor` must match a field declaration in the server plugin and a React
+editor registered by its manager facet.
+
 ## Content Types
 
 A `ContentType` defines a logical collection:

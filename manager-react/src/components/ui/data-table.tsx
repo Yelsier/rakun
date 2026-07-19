@@ -29,8 +29,6 @@ const actionColumnWidth = 56
 const defaultColumnWidth = 176
 
 const getColumnWidth = <TData, TValue>(column: Column<TData, TValue>) => {
-  console.log(column)
-
   if (column.id === 'select') return selectColumnWidth
   if (column.id === 'actions' || column.id === 'view') return actionColumnWidth
   if (column.id === 'id' || column.id === '_id' || column.id.endsWith('Id')) {
@@ -71,8 +69,11 @@ export function DataTable<TData, TValue>({
   const tableWidth = leafColumns.reduce((width, column) => width + getColumnWidth(column), 0)
 
   return (
-    <div className="w-full min-w-0 overflow-x-auto pb-4">
-      <div className="overflow-hidden rounded-lg border" style={{ minWidth: tableWidth }}>
+    <div className="w-full max-w-full min-w-0 overflow-x-auto pb-4 [contain:inline-size]">
+      <div
+        className="w-max min-w-full overflow-hidden rounded-lg border"
+        style={{ width: tableWidth }}
+      >
         <Table className="table-fixed" style={{ minWidth: tableWidth }}>
           <colgroup>
             {leafColumns.map((column) => (

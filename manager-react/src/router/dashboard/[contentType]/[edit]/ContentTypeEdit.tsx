@@ -32,6 +32,11 @@ import { deepEqual } from '@/helpers/deepEqual'
 import { useTRPC } from '@/components/trpc-provider'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { DynamicDataControl, isDynamicFieldEnabled } from './_fields/DynamicDataControl'
+import {
+  useManagerPlugins,
+  type ManagerFieldEditorRef,
+} from '@/plugins'
+import MissingUI from './_fields/Missing'
 
 const defaultDataExtractor = (fieldName: string, defaultData?: Record<string, FieldValue>) => {
   if (!defaultData) {
@@ -92,10 +97,7 @@ export function useArrayRefs<T>() {
   return { refs, setRef }
 }
 
-export type FieldRef = {
-  getValue: () => unknown
-  getState: () => unknown
-}
+export type FieldRef = ManagerFieldEditorRef
 
 const hasNestedError = (value: unknown): boolean => {
   if (!value || typeof value !== 'object') return false
@@ -149,6 +151,7 @@ const ContentTypeEdit = forwardRef<
   const { contentType, id, collapsible, hideTitle } = props
   const dynamicSourceContentType = props.parentContentType ?? contentType
   const trpc = useTRPC()
+  const pluginRegistry = useManagerPlugins()
   const { data: contentTypesData } = useQuery(trpc.manager.contentTypes.queryOptions())
 
   const { refs, setRef } = useArrayRefs<FieldRef>()
@@ -266,14 +269,17 @@ const ContentTypeEdit = forwardRef<
 
           const error = errors.find((e) => e.id === id + '.' + fieldName)?.error
           const showDynamicData = isDynamicFieldEnabled(contentType, fieldValue)
-          const FieldComponent = fieldsMap[fieldValue.config.type] as FieldComponent
+          const customEditor = fieldValue.config.editor
+          const FieldComponent = customEditor
+            ? pluginRegistry.fieldEditors[customEditor]
+            : (fieldsMap[fieldValue.config.type] as FieldComponent | undefined)
           const dynamicBinding =
             fieldValue.config.ui === 'List' || fieldValue.config.ui === 'Iterator'
               ? dynamicBindings?.lists?.[fieldName]
               : dynamicBindings?.fields?.[fieldName]
           const dynamicFallbackPlaceholder =
             showDynamicData && dynamicBinding ? 'Fallback value' : undefined
-          const field = (
+          const field = FieldComponent ? (
             <FieldComponent
               id={id + '.' + fieldName}
               ref={setRef(i)}
@@ -282,6 +288,8 @@ const ContentTypeEdit = forwardRef<
               dynamicFallbackPlaceholder={dynamicFallbackPlaceholder}
               parentContentType={dynamicSourceContentType}
             />
+          ) : (
+            <MissingUI field={fieldValue.config} />
           )
           const dynamicOpen = dynamicEditorOpen === fieldName
           const setDynamicOpen = (open: boolean) => setDynamicEditorOpen(open ? fieldName : null)

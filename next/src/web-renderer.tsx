@@ -2,6 +2,12 @@ import type { ComponentType, CSSProperties, ReactNode } from "react";
 import { permanentRedirect, redirect } from "next/navigation";
 import type { PageModule, PageOutput } from "@rakun-kit/core/contracts";
 import { getPageLayout } from "@rakun-kit/core/web";
+import {
+  getRegistryRecord,
+  mergeRakunModuleRegistries,
+  type RakunModuleRegistry,
+  type RakunWebPluginDefinition,
+} from '@rakun-kit/react'
 
 import { PageInfoProvider, runWithPageInfo } from "./translation";
 import { RakunPreviewBridge } from "./web-preview-bridge";
@@ -15,6 +21,34 @@ export type RakunPageModuleImport = {
 export type RakunPageModuleLoader = (
   name: string,
 ) => Promise<RakunPageModuleImport>;
+
+export const createRakunPageModuleLoader = ({
+  modules,
+  plugins,
+  fallback,
+}: {
+  modules?: RakunModuleRegistry
+  plugins?: readonly RakunWebPluginDefinition[]
+  fallback?: RakunPageModuleLoader
+}): RakunPageModuleLoader => {
+  const registry = mergeRakunModuleRegistries({ modules, plugins })
+
+  return async (name) => {
+    const entry = registry[name]
+    if (!entry) {
+      if (fallback) return fallback(name)
+      throw new Error(`Rakun web module "${name}" is not registered.`)
+    }
+
+    const record = getRegistryRecord(entry)
+    if (record.load) return (await record.load()) as RakunPageModuleImport
+    if (record.component) {
+      return { component: record.component }
+    }
+
+    throw new Error(`Rakun web module "${name}" has no component or loader.`)
+  }
+}
 
 export type RakunPageRendererProps = {
   page: PageOutput;
