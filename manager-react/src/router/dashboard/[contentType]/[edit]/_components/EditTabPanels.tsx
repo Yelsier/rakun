@@ -25,8 +25,8 @@ export const EditTabPanels = () => {
   } = useEditPageContext()
 
   return (
-    <ScrollArea className="h-full pr-4" data-rakun-manager-edit-scroll-area>
-      <div className="min-w-0 h-[calc(100vh-14rem)]">
+    <ScrollArea className="h-full min-h-0 pr-4" data-rakun-manager-edit-scroll-area>
+      <div className="min-h-full min-w-0">
         {sections.hasIterables ? (
           <TabsContent
             value="content"

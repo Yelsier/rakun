@@ -6,6 +6,7 @@ import type { ManagerResolvedRoute } from './router/shared/types'
 
 import { AppSidebar, type ManagerSidebarItem } from './components/app-sidebar'
 import BreadcrumbComponent from './components/bread-crumb'
+import { ScrollArea } from './components/ui/scroll-area'
 import { Separator } from './components/ui/separator'
 import { ManagerHelpProvider } from './help/manager-help'
 import {
@@ -61,34 +62,47 @@ export const ManagerDashboardLayout = ({
   sidebar,
   headerStart,
   headerEnd,
-}: ManagerDashboardLayoutProps) => (
-  <SidebarProvider className="max-h-screen overflow-hidden">
-    <ManagerHelpProvider route={route ?? { kind: 'unknown', pathname: pathname ?? '/' }}>
-      {sidebar ?? (
-        <AppSidebar
-          contentTypes={contentTypes}
-          pathname={pathname}
-          basePath={basePath}
-          secondaryItems={secondaryItems}
-        />
-      )}
-      <SidebarInset className="p-4 pt-0">
-        <SidebarHeader
-          className="flex h-16 shrink-0 flex-row items-center justify-between gap-2"
-          data-tour="manager-header"
-        >
-          <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-            {headerStart ?? <BreadcrumbComponent basePath={basePath} pathname={pathname} />}
-          </div>
-          {headerEnd}
-        </SidebarHeader>
+}: ManagerDashboardLayoutProps) => {
+  const hasInternalPageScroll = route?.kind === 'content-create' || route?.kind === 'content-edit'
 
-        <div className="h-full" data-tour="manager-page">
-          {children}
-        </div>
-      </SidebarInset>
-    </ManagerHelpProvider>
-  </SidebarProvider>
-)
+  return (
+    <SidebarProvider className="h-svh min-h-0 overflow-hidden">
+      <ManagerHelpProvider route={route ?? { kind: 'unknown', pathname: pathname ?? '/' }}>
+        {sidebar ?? (
+          <AppSidebar
+            contentTypes={contentTypes}
+            pathname={pathname}
+            basePath={basePath}
+            secondaryItems={secondaryItems}
+          />
+        )}
+        <SidebarInset className="min-h-0 overflow-hidden p-4 pt-0">
+          <SidebarHeader
+            className="flex h-16 shrink-0 flex-row items-center justify-between gap-2"
+            data-tour="manager-header"
+          >
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-1" />
+              <Separator
+                orientation="vertical"
+                className="mr-2 data-[orientation=vertical]:h-4"
+              />
+              {headerStart ?? <BreadcrumbComponent basePath={basePath} pathname={pathname} />}
+            </div>
+            {headerEnd}
+          </SidebarHeader>
+
+          {hasInternalPageScroll ? (
+            <div className="min-h-0 flex-1 overflow-hidden" data-tour="manager-page">
+              {children}
+            </div>
+          ) : (
+            <ScrollArea className="min-h-0 flex-1" data-tour="manager-page">
+              {children}
+            </ScrollArea>
+          )}
+        </SidebarInset>
+      </ManagerHelpProvider>
+    </SidebarProvider>
+  )
+}
