@@ -65,6 +65,7 @@ export type DocumentVisibility = z.infer<typeof DocumentVisibility>;
 const DocumentVisibilityBeforeTrash = DocumentVisibility.exclude(["trash"]);
 
 export type VersioningOptions = {
+  /** Maximum number of saved versions retained for each document. */
   maxVersions?: number;
 };
 
@@ -78,22 +79,33 @@ export type ContentTypePermissions =
   | false
   | string
   | {
+      /** Resource segment used in generated `content.<resource>.*` permissions. */
       resource: string;
+      /** Permission actions generated for this content type. Defaults to all actions. */
       actions?: ContentTypePermissionAction[];
     };
 
 export type ContentTypeMigrationContext = {
+  /** Database service configured for the current Rakun instance. */
   db: DBService;
+  /** Underlying database instance for migrations that need direct access. */
   rawDB: unknown;
+  /** Content type being migrated. */
   contentType: ContentType;
+  /** Identifier of the backup created before the migration, when available. */
   backupId?: string;
 };
 
 export type ContentTypeMigration = {
+  /** Stable identifier for the migration. */
   id?: string;
+  /** Schema version expected before the migration runs. */
   from: number;
+  /** Schema version produced by the migration. */
   to: number;
+  /** Human-readable summary of the migration. */
   description?: string;
+  /** Applies the data changes required to move from `from` to `to`. */
   migrate: (
     context: ContentTypeMigrationContext,
   ) => Promise<void> | void;
@@ -263,21 +275,56 @@ type ContentTypeParams<
   N extends string,
   I extends readonly EntryContentType[] | undefined,
 > = {
+  /**
+   * Stable name of the content type. It identifies the collection and is stored
+   * as `_type` on every document.
+   */
   name: N;
+  /** User-defined fields keyed by their persisted property name. */
   fields: F;
+  /**
+   * Content types allowed as ordered modules. Defining this property adds the
+   * reserved `_iterator` field automatically.
+   */
   iterator?: I;
+  /** Controls how the content type appears in the manager navigation. */
   menu?: Menu;
+  /** Customizes how this content type appears in an iterator module picker. */
   modulePicker?: ModulePicker;
+  /**
+   * Groups of fields that must be unique. Multiple fields in one group form a
+   * compound uniqueness constraint.
+   */
   uniques?: Array<Array<keyof ContentTypeFields<F, I>>>;
+  /**
+   * Field paths displayed as the document summary in manager lists and relation
+   * selectors. Nested paths use dot notation.
+   */
   listFields?: NestedPaths<ContentTypePopulatedShape<ContentTypeFields<F, I>, N>>[];
+  /** Current schema version stored in the document's `_schemaVersion` metadata. */
   schemaVersion?: number;
+  /** Ordered data migrations used to move documents between schema versions. */
   migrations?: ContentTypeMigration[];
+  /** Enables document history, optionally limiting the versions retained. */
   versioning?: boolean | VersioningOptions;
+  /** Enables the draft, hidden, published, and trash visibility workflow. */
   documentVisibility?: boolean;
+  /**
+   * Configures manager permissions for this content type. Use `false` to disable
+   * generated permissions, a string to share a resource name, or an object to
+   * select the resource and actions.
+   */
   permissions?: ContentTypePermissions;
+  /** Lifecycle hooks run around mutations and public output resolution. */
   hooks?: ContentTypeHooks;
+  /**
+   * Configures dynamic field and list bindings. Dynamic bindings are available
+   * by default; use `false` to disable them for the content type.
+   */
   dynamicData?: DynamicDataOptions;
+  /** Makes documents of this type available as dynamic data sources. */
   dynamicDataSource?: boolean;
+  /** Enables manager comments and user mentions for saved documents. */
   comments?: boolean;
 };
 
@@ -353,25 +400,45 @@ export default class ContentType<
   N extends string = string,
   I extends readonly EntryContentType[] | undefined = undefined,
 > {
+  /** Stable content type name, also stored as `_type` on its documents. */
   name: N;
+  /** Fields available on documents of this type, including generated system fields. */
   fields: ContentTypeFields<F, I>;
+  /** Manager navigation metadata. */
   menu?: Menu;
+  /** Iterator module picker metadata. */
   modulePicker?: ModulePicker;
+  /** Unique field groups, represented as persisted property names. */
   uniques: Array<Array<string>> = [];
+  /** Field paths used to summarize documents in manager lists and selectors. */
   listFields?: string[];
+  /** Fields marked for collapsed presentation by manager integrations. */
   collapseFields?: string[];
+  /** Whether the content type is omitted from manager content type lists. */
   isHiddenFromManager?: boolean;
+  /** Current persisted document schema version. */
   schemaVersion?: number;
+  /** Data migrations registered for this content type. */
   migrations: ContentTypeMigration[] = [];
+  /** Document history configuration. */
   versioning?: boolean | VersioningOptions;
+  /** Whether the document visibility workflow is enabled. */
   documentVisibility?: boolean;
+  /** Manager permission configuration. */
   permissions?: ContentTypePermissions;
+  /** Lifecycle hooks registered for this content type. */
   hooks?: ContentTypeHooks;
+  /** Dynamic field and list binding configuration. */
   dynamicData?: DynamicDataOptions;
+  /** Whether documents of this type can be selected as dynamic data sources. */
   dynamicDataSource?: boolean;
+  /** Whether manager comments are enabled for saved documents. */
   comments?: boolean;
+  /** Whether the content type belongs to Rakun's internal registry. */
   isInternal?: boolean;
+  /** Whether an iterator field was generated for this content type. */
   hasIterator = false;
+  /** Whether the reserved SEO field has been added to this content type. */
   hasSeo = false;
 
   constructor(
