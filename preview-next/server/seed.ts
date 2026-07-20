@@ -3,6 +3,7 @@ import { MongoClient, type Db, type Document } from "mongodb";
 import {
   HelloWorld,
   LiteralTranslation,
+  Media,
   RouteLocaleVariant,
   Seo,
 } from "@rakun-kit/next/internal-content-types";
@@ -17,6 +18,9 @@ import {
 import {
   Article,
   Author,
+  CategoriesGallery,
+  CategoriesGalleryItem,
+  Category,
   Footer,
   FeatureCarousel,
   FeatureCarouselItem,
@@ -259,6 +263,36 @@ const buildLegacyPrefixedProjectPath = ({
   return `/${code}/projects/${slug}/`.replace(/\/\/+/g, "/");
 };
 
+const buildCategoryPath = ({
+  category,
+  language,
+  languages = [],
+}: {
+  category: Document;
+  language: Document;
+  languages?: readonly Document[];
+}) => {
+  const languagePrefix = getLanguagePathPrefix(language);
+  const slug = getTranslatableValue(category.slug, String(language.code), languages);
+
+  return `/${languagePrefix}/categories/${slug}/`.replace(/\/\/+/g, "/");
+};
+
+const buildLegacyPrefixedCategoryPath = ({
+  category,
+  language,
+  languages = [],
+}: {
+  category: Document;
+  language: Document;
+  languages?: readonly Document[];
+}) => {
+  const code = String(language.code);
+  const slug = getTranslatableValue(category.slug, code, languages);
+
+  return `/${code}/categories/${slug}/`.replace(/\/\/+/g, "/");
+};
+
 const pageLink = (route: Document, page: Document) => ({
   routeId: route._id.toString(),
   contentTypeId: page._id.toString(),
@@ -331,6 +365,50 @@ const upsertProjectRouteMap = async ({
     path,
     contentType: Project.name,
     contentTypeId: project._id,
+    routeId: route._id,
+    languageId: language._id,
+    _type: "RouteMap",
+    updatedAt: now(),
+  };
+
+  try {
+    await db.collection("RouteMap").updateOne(
+      { path },
+      {
+        $set: payload,
+        $setOnInsert: {
+          createdAt: now(),
+        },
+      },
+      { upsert: true },
+    );
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) {
+      throw error;
+    }
+
+    await db.collection("RouteMap").updateOne({ path }, { $set: payload });
+  }
+};
+
+const upsertCategoryRouteMap = async ({
+  db,
+  category,
+  route,
+  language,
+  languages = [],
+}: {
+  db: Db;
+  category: Document;
+  route: Document;
+  language: Document;
+  languages?: readonly Document[];
+}) => {
+  const path = buildCategoryPath({ category, language, languages });
+  const payload = {
+    path,
+    contentType: Category.name,
+    contentTypeId: category._id,
     routeId: route._id,
     languageId: language._id,
     _type: "RouteMap",
@@ -646,6 +724,56 @@ const previewFeatureCarouselModule = (featuredProject: Document) => ({
   },
 });
 
+const previewCategoriesGalleryModule = () => ({
+  name: CategoriesGallery.name,
+  value: {
+    type: "new",
+    data: {
+      _type: CategoriesGallery.name,
+      eyebrow: "Related collection mapping",
+      title: "Project images grouped by category",
+      items: [],
+      _bindings: {
+        lists: {
+          items: {
+            contentType: Category.name,
+            itemName: CategoriesGalleryItem.name,
+            query: {
+              options: {
+                limit: 10,
+                sort: {
+                  title: "asc",
+                },
+              },
+            },
+            map: {
+              title: {
+                contentType: Category.name,
+                path: "title",
+              },
+              href: {
+                contentType: Category.name,
+                virtual: "href",
+                routeKey: "category",
+              },
+              images: {
+                kind: "relatedCollection",
+                contentType: Project.name,
+                relation: "category",
+                path: "images",
+                limit: 10,
+                sort: {
+                  title: "asc",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+});
+
 const seedLiterals = async (db: Db) => {
   await db.collection(LiteralTranslation.name).bulkWrite(
     seedLiteralTranslations.map((literal) => ({
@@ -871,6 +999,93 @@ export const seedPreviewData = async ({
       throw new Error("Failed to create preview page section.");
     }
 
+    const seededCategories = await Promise.all(
+      [
+        { title: "Launch campaigns", slug: "launch-campaigns" },
+        { title: "Creative studios", slug: "creative-studios" },
+      ].map((category) =>
+        db.collection(Category.name).findOneAndUpdate(
+          { slug: category.slug },
+          {
+            $set: {
+              title: category.title,
+              updatedAt: now(),
+            },
+            $setOnInsert: {
+              slug: category.slug,
+              _type: Category.name,
+              createdAt: now(),
+            },
+          },
+          { upsert: true, returnDocument: "after" },
+        ),
+      ),
+    );
+    const categories = seededCategories.filter(Boolean) as Array<
+      NonNullable<(typeof seededCategories)[number]>
+    >;
+    const categoryBySlug = new Map(categories.map((category) => [category.slug, category]));
+
+    if (categories.length !== seededCategories.length) {
+      throw new Error("Failed to create preview categories.");
+    }
+
+    const seededGalleryMedia = await Promise.all(
+      [
+        { key: "public/dynamic-data/aurora.svg", name: "Aurora gradients" },
+        { key: "public/dynamic-data/borealis.svg", name: "Borealis forms" },
+        { key: "public/dynamic-data/canopy.svg", name: "Canopy composition" },
+        { key: "public/dynamic-data/studio.svg", name: "Studio still life" },
+      ].map((media) =>
+        db.collection(Media.name).findOneAndUpdate(
+          { key: media.key },
+          {
+            $set: {
+              name: media.name,
+              title: media.name,
+              alt: media.name,
+              originalName: media.key.split("/").at(-1),
+              access: "public",
+              mime: "image/svg+xml",
+              extension: "svg",
+              size: 0,
+              width: 1200,
+              height: 900,
+              orientation: "landscape",
+              status: "uploaded",
+              updatedAt: now(),
+            },
+            $setOnInsert: {
+              key: media.key,
+              uploadedAt: now(),
+              _type: Media.name,
+              createdAt: now(),
+            },
+          },
+          { upsert: true, returnDocument: "after" },
+        ),
+      ),
+    );
+    const galleryMedia = seededGalleryMedia.filter(Boolean) as Array<
+      NonNullable<(typeof seededGalleryMedia)[number]>
+    >;
+    const galleryMediaByKey = new Map(galleryMedia.map((media) => [media.key, media]));
+
+    if (galleryMedia.length !== seededGalleryMedia.length) {
+      throw new Error("Failed to create preview gallery media.");
+    }
+
+    const categoryRelation = (slug: string) => {
+      const category = categoryBySlug.get(slug);
+      if (!category) throw new Error(`Missing preview category: ${slug}`);
+      return existingRelation(Category.name, category);
+    };
+    const imageRelation = (key: string) => {
+      const media = galleryMediaByKey.get(key);
+      if (!media) throw new Error(`Missing preview gallery media: ${key}`);
+      return existingRelation(Media.name, media);
+    };
+
     const seededProjects = await Promise.all(
       [
         {
@@ -878,24 +1093,32 @@ export const seedPreviewData = async ({
           slug: "aurora-launch",
           excerpt: "Routeable source item used by the dynamic carousel title.",
           featured: true,
+          category: "launch-campaigns",
+          images: ["public/dynamic-data/aurora.svg", "public/dynamic-data/borealis.svg"],
         },
         {
           title: "Borealis workspace",
           slug: "borealis-workspace",
           excerpt: "Featured project mapped into carousel item summary.",
           featured: true,
+          category: "launch-campaigns",
+          images: ["public/dynamic-data/borealis.svg", "public/dynamic-data/canopy.svg"],
         },
         {
           title: "Canopy studio",
           slug: "canopy-studio",
           excerpt: "Third featured project for list binding limits and hrefs.",
           featured: true,
+          category: "creative-studios",
+          images: ["public/dynamic-data/canopy.svg", "public/dynamic-data/aurora.svg"],
         },
         {
           title: "Draft lab",
           slug: "draft-lab",
           excerpt: "Non-featured project kept out by the binding filter.",
           featured: false,
+          category: "creative-studios",
+          images: ["public/dynamic-data/studio.svg"],
         },
       ].map((project) =>
         db.collection(Project.name).findOneAndUpdate(
@@ -905,6 +1128,8 @@ export const seedPreviewData = async ({
               title: project.title,
               excerpt: project.excerpt,
               featured: project.featured,
+              category: categoryRelation(project.category),
+              images: project.images.map(imageRelation),
               updatedAt: now(),
             },
             $setOnInsert: {
@@ -936,6 +1161,7 @@ export const seedPreviewData = async ({
           [ITERATOR_FIELD_NAME]: [
             previewHelloWorldModule(),
             previewFeatureCarouselModule(featuredProject),
+            previewCategoriesGalleryModule(),
           ],
           _type: Page.name,
           createdAt: now(),
@@ -1250,12 +1476,51 @@ export const seedPreviewData = async ({
       },
     );
 
+    await db.collection(Page.name).updateOne(
+      {
+        _id: page._id,
+        [`${ITERATOR_FIELD_NAME}.name`]: { $ne: CategoriesGallery.name },
+      },
+      {
+        $push: {
+          [ITERATOR_FIELD_NAME]: previewCategoriesGalleryModule(),
+        },
+        $set: {
+          updatedAt: now(),
+        },
+      } as Document,
+    );
+
+    await db.collection(Page.name).updateOne(
+      {
+        _id: page._id,
+        [`${ITERATOR_FIELD_NAME}.name`]: CategoriesGallery.name,
+      },
+      {
+        $set: {
+          [`${ITERATOR_FIELD_NAME}.$[module].value`]: previewCategoriesGalleryModule().value,
+          updatedAt: now(),
+        },
+      },
+      {
+        arrayFilters: [
+          {
+            "module.name": CategoriesGallery.name,
+          },
+        ],
+      },
+    );
+
     const route = await db.collection("Route").findOne({
       contentType: Page.name,
       field: "slug",
     });
     const projectRoute = await db.collection("Route").findOne({
       contentType: Project.name,
+      field: "slug",
+    });
+    const categoryRoute = await db.collection("Route").findOne({
+      contentType: Category.name,
       field: "slug",
     });
 
@@ -1384,6 +1649,15 @@ export const seedPreviewData = async ({
                     }),
                   )
                 : []),
+              ...(categoryRoute
+                ? categories.map((category) =>
+                    buildLegacyPrefixedCategoryPath({
+                      category,
+                      language: routeLanguage,
+                      languages,
+                    }),
+                  )
+                : []),
             ]),
         ),
       );
@@ -1392,7 +1666,11 @@ export const seedPreviewData = async ({
         await db.collection("RouteMap").deleteMany({
           path: { $in: legacyDefaultLanguagePaths },
           routeId: {
-            $in: [route._id, ...(projectRoute ? [projectRoute._id] : [])],
+            $in: [
+              route._id,
+              ...(projectRoute ? [projectRoute._id] : []),
+              ...(categoryRoute ? [categoryRoute._id] : []),
+            ],
           },
         });
       }
@@ -1425,6 +1703,17 @@ export const seedPreviewData = async ({
                 }),
               )
             : []),
+          ...(categoryRoute
+            ? categories.map((category) =>
+                upsertCategoryRouteMap({
+                  db,
+                  category,
+                  route: categoryRoute,
+                  language: routeLanguage,
+                  languages,
+                }),
+              )
+            : []),
         ]),
       );
 
@@ -1441,6 +1730,28 @@ export const seedPreviewData = async ({
 
         await db.collection("RouteLayoutModule").updateOne(
           { routeId: projectRoute._id, key: "footer" },
+          {
+            $set: {
+              moduleId: footer._id.toString(),
+              updatedAt: now(),
+            },
+          },
+        );
+      }
+
+      if (categoryRoute) {
+        await db.collection("RouteLayoutModule").updateOne(
+          { routeId: categoryRoute._id, key: "header" },
+          {
+            $set: {
+              moduleId: header._id.toString(),
+              updatedAt: now(),
+            },
+          },
+        );
+
+        await db.collection("RouteLayoutModule").updateOne(
+          { routeId: categoryRoute._id, key: "footer" },
           {
             $set: {
               moduleId: footer._id.toString(),

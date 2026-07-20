@@ -50,6 +50,22 @@ export const PageSection = new ContentType({
   listFields: ['title'],
 })
 
+export const Category = new ContentType({
+  name: 'Category',
+  dynamicDataSource: true,
+  menu: {
+    title: 'Categories',
+    icon: 'Tags',
+    category: 'Dynamic data',
+  },
+  fields: {
+    title: Fields.string().required(),
+    slug: Fields.string().type('Slug').required(),
+  },
+  uniques: [['slug']],
+  listFields: ['title', 'slug'],
+})
+
 export const Project = new ContentType({
   name: 'Project',
   dynamicDataSource: true,
@@ -63,9 +79,11 @@ export const Project = new ContentType({
     slug: Fields.string().type('Slug').required(),
     excerpt: Fields.string().type('Textarea'),
     featured: Fields.boolean(),
+    category: Fields.relation(Category, 'existing').required(),
+    images: Fields.file().type('Image').multiple(),
   },
   uniques: [['slug']],
-  listFields: ['title', 'slug', 'featured'],
+  listFields: ['title', 'slug', 'featured', 'category.title'],
 })
 
 export const FeatureCarouselItem = new ContentType({
@@ -97,6 +115,35 @@ export const FeatureCarousel = new ContentType({
   listFields: ['title', 'eyebrow'],
 })
 
+export const CategoriesGalleryItem = new ContentType({
+  name: 'CategoriesGalleryItem',
+  fields: {
+    title: Fields.string().required(),
+    href: Fields.link().required(),
+    images: Fields.file().type('Image').multiple().required(),
+  },
+}).hideFromManager()
+
+export const CategoriesGallery = new ContentType({
+  name: 'CategoriesGallery',
+  menu: {
+    title: 'Category galleries',
+    icon: 'Images',
+    category: 'Dynamic data',
+  },
+  fields: {
+    eyebrow: Fields.string(),
+    title: Fields.string().required(),
+    items: Fields.blocks([
+      {
+        name: CategoriesGalleryItem.name,
+        field: Fields.relation(CategoriesGalleryItem, 'new'),
+      },
+    ]),
+  },
+  listFields: ['title', 'eyebrow'],
+})
+
 export const PreviewPage = new ContentType({
   name: 'Page',
   permissions: 'Page',
@@ -111,6 +158,10 @@ export const PreviewPage = new ContentType({
     },
     {
       contentType: FeatureCarousel,
+      type: 'new',
+    },
+    {
+      contentType: CategoriesGallery,
       type: 'new',
     },
   ],
@@ -298,9 +349,12 @@ export const previewContentTypes = [
   Header,
   Footer,
   PageSection,
+  Category,
   Project,
   FeatureCarouselItem,
   FeatureCarousel,
+  CategoriesGalleryItem,
+  CategoriesGallery,
   Author,
   Article,
   RelationLevel3,

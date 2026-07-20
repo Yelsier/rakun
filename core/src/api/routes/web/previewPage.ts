@@ -2,6 +2,7 @@ import { PreviewSnapshot, Route } from "../../../internal-content-types";
 import { Logger } from "../../../lib/Logger";
 import { getContentTypeByName } from "../../../lib/Registry";
 import { getMongoService } from "../../../orm";
+import { deepDeleteNulls } from "../../../orm/utils/deepDeleteNulls";
 import type { PreviewPageInput } from "../../../schemas/web/previewPage";
 import { getLanguages } from "../../utils/getLanguages";
 import { parsePreviewData } from "../../utils/previewData";
@@ -46,7 +47,9 @@ export const getPreviewPage = async (
   if (!language) return NotFoundResponse;
 
   try {
-    const data = parsePreviewData(snapshot.data) as Record<string, unknown> & {
+    const data = deepDeleteNulls(
+      parsePreviewData(snapshot.data) as Record<string, unknown>,
+    ) as Record<string, unknown> & {
       _id: string;
       _type: string;
     };

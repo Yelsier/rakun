@@ -18,12 +18,27 @@ export type DynamicDataSourceDescriptor = {
 };
 
 const dynamicBindingSourceSchema = z.object({
+  kind: z.never().optional(),
   contentType: z.string(),
   id: z.string().optional(),
   path: z.string().optional(),
   virtual: z.enum(["href"]).optional(),
   routeKey: z.string().optional(),
 });
+
+const dynamicRelatedCollectionSourceSchema = z.object({
+  kind: z.literal("relatedCollection"),
+  contentType: z.string(),
+  relation: z.string(),
+  path: z.string(),
+  limit: z.number().int().min(1).max(100),
+  sort: z.record(z.string(), z.enum(["asc", "desc"])).optional(),
+});
+
+const dynamicListMapSourceSchema = z.union([
+  dynamicBindingSourceSchema,
+  dynamicRelatedCollectionSourceSchema,
+]);
 
 const dynamicQuerySchema = z
   .object({
@@ -43,7 +58,7 @@ const dynamicListBindingSchema = z.object({
   contentType: z.string(),
   query: dynamicQuerySchema,
   itemName: z.string(),
-  map: z.record(z.string(), dynamicBindingSourceSchema),
+  map: z.record(z.string(), dynamicListMapSourceSchema),
 });
 
 export const DynamicDocumentBindingsSchema = z.object({
@@ -51,9 +66,16 @@ export const DynamicDocumentBindingsSchema = z.object({
   lists: z.record(z.string(), dynamicListBindingSchema).optional(),
 });
 
-export type DynamicBindingSource = z.infer<
-  typeof dynamicBindingSourceSchema
+export type DynamicBindingSource = Omit<
+  z.infer<typeof dynamicBindingSourceSchema>,
+  "kind"
 >;
+export type DynamicRelatedCollectionSource = z.infer<
+  typeof dynamicRelatedCollectionSourceSchema
+>;
+export type DynamicListMapSource =
+  | DynamicBindingSource
+  | DynamicRelatedCollectionSource;
 export type DynamicListBinding = z.infer<typeof dynamicListBindingSchema>;
 export type DynamicDocumentBindings = z.infer<
   typeof DynamicDocumentBindingsSchema

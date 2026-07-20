@@ -4,22 +4,30 @@ import type {
   DynamicBindingSource,
   DynamicDocumentBindings,
   DynamicListBinding,
+  DynamicListMapSource,
+  DynamicRelatedCollectionSource,
   EncodedContentType,
   EncodedFieldUnknown,
   EncodedListField,
   EncodedRelationField,
+  EncodedSimpleListField,
 } from '@rakun-kit/core/client'
 import {
   getListField,
   isDynamicDataSourceContentTypeAllowed,
   isTranslatableObject,
 } from '@rakun-kit/core/client'
-import { Cable, HelpCircle, Link2, ListFilter, X } from 'lucide-react'
+import { Cable, ChevronRight, HelpCircle, Link2, ListFilter, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import {
   Dialog,
   DialogContent,
@@ -47,6 +55,7 @@ import { useManagerQuery } from '@/client/react'
 import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
 
 type FieldBinding = DynamicBindingSource | undefined
+type ListMapSource = DynamicListMapSource | undefined
 type FilterOperator = 'equals' | 'contains' | 'true' | 'false'
 type FilterState = {
   field: string
@@ -97,6 +106,11 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isListField = (field: EncodedFieldUnknown) =>
   field.config.ui === 'List' || field.config.ui === 'Iterator'
 
+const isRelatedCollectionSource = (
+  source: ListMapSource,
+): source is DynamicRelatedCollectionSource =>
+  !!source && 'kind' in source && source.kind === 'relatedCollection'
+
 const isDynamicVisibleField = (field: EncodedFieldUnknown) =>
   (field.visibility ?? 'all') === 'all' && field.isDynamic !== false
 
@@ -130,6 +144,7 @@ const getFieldKind = (field: EncodedFieldUnknown): SourceFieldKind => {
     return (field as { isMultiple?: boolean }).isMultiple ? 'array' : 'object'
   }
   if (field.config.type === 'Relation') return 'object'
+  if (field.config.ui === 'SimpleList') return 'array'
   if (isListField(field)) return 'array'
 
   return 'unknown'
@@ -144,14 +159,43 @@ const isCompatibleSourceKind = (
   return sourceKind === getFieldKind(targetField)
 }
 
+const getMultipleFileField = (field: EncodedFieldUnknown) =>
+  field.config.type === 'File' &&
+  (field as { isMultiple?: boolean }).isMultiple
+    ? (field as EncodedFieldUnknown & {
+        mediaType?: string
+        isMultiple: true
+      })
+    : undefined
+
+const areFieldKindsCompatible = (
+  sourceField: EncodedFieldUnknown,
+  targetField?: EncodedFieldUnknown,
+) => {
+  const sourceKind = getFieldKind(sourceField)
+  if (!targetField) return isCompatibleSourceKind(sourceKind)
+
+  const targetKind = getFieldKind(targetField)
+  if (sourceKind !== targetKind) return false
+  if (sourceKind !== 'array') return true
+
+  const sourceFile = getMultipleFileField(sourceField)
+  const targetFile = getMultipleFileField(targetField)
+  if (!sourceFile && !targetFile) return true
+  if (!sourceFile || !targetFile) return false
+
+  return (
+    sourceFile.mediaType === 'Any' ||
+    targetFile.mediaType === 'Any' ||
+    sourceFile.mediaType === targetFile.mediaType
+  )
+}
+
 const fieldLabel = (path: string) =>
   path.startsWith('_seo.') ? `seo.${path.slice('_seo.'.length)}` : path
 
 const isSeoPath = (path: string) =>
-  path === '_seo' ||
-  path === 'seo' ||
-  path.startsWith('_seo.') ||
-  path.startsWith('seo.')
+  path.split('.').some((segment) => segment === '_seo' || segment === 'seo')
 
 const fileFieldOptions = (
   path: string,
@@ -221,11 +265,26 @@ const nestedSourceFieldOptions = ({
       })
     }
 
+    if (
+      field.config.type === 'File' &&
+      (field as { isMultiple?: boolean }).isMultiple
+    ) {
+      if (!areFieldKindsCompatible(field, targetField)) return []
+
+      return [
+        {
+          label: fieldLabel(path),
+          value: path,
+          kind,
+        },
+      ]
+    }
+
     if (field.config.type === 'File') {
       return fileFieldOptions(path, targetField)
     }
 
-    if (!isCompatibleSourceKind(kind, targetField)) return []
+    if (!areFieldKindsCompatible(field, targetField)) return []
 
     return [
       {
@@ -266,6 +325,33 @@ const sourceValue = (source?: DynamicBindingSource) =>
 
 const sourceLabel = (source?: DynamicBindingSource) =>
   source?.virtual === 'href' ? 'href' : fieldLabel(source?.path || '')
+
+const mappingSourceSummary = (
+  source: ListMapSource,
+  currentSourceName: string,
+) => {
+  if (!source) {
+    return {
+      mode: 'Not configured',
+      detail: 'Choose a mapping source',
+    }
+  }
+
+  if (!isRelatedCollectionSource(source)) {
+    return {
+      mode: 'Direct field',
+      detail: `${currentSourceName}.${sourceLabel(source)}`,
+    }
+  }
+
+  const sort = Object.entries(source.sort ?? {})[0]
+  const sortSummary = sort ? ` · sort ${sort[0]} ${sort[1]}` : ''
+
+  return {
+    mode: 'Related collection',
+    detail: `${source.contentType}.${source.relation} → ${currentSourceName} · collect ${source.path} · limit ${source.limit}${sortSummary}`,
+  }
+}
 
 const sourceContentTypeLabel = (
   source: DynamicBindingSource,
@@ -373,6 +459,32 @@ const PanelSection = ({
   </div>
 )
 
+const ControlLabel = ({
+  children,
+  help,
+}: {
+  children: ReactNode
+  help: string
+}) => (
+  <div className='flex items-center gap-1.5'>
+    <Label>{children}</Label>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type='button'
+          className='rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring'
+          aria-label={help}
+        >
+          <HelpCircle className='h-3.5 w-3.5' />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side='top' sideOffset={6} className='max-w-xs'>
+        {help}
+      </TooltipContent>
+    </Tooltip>
+  </div>
+)
+
 const FieldBindingEditor = ({
   contentTypes,
   documentContentType,
@@ -422,6 +534,10 @@ const FieldBindingEditor = ({
   const items = ((sourceItemsQuery.data as
     | { items?: Array<Record<string, unknown> & { _id: string }> }
     | undefined)?.items ?? []) as Array<Record<string, unknown> & { _id: string }>
+  const hasCurrentDocumentItem =
+    currentDocumentSourceEnabled && sourceType === documentContentType.name
+  const hasItemOptions = hasCurrentDocumentItem || items.length > 0
+  const fieldOptions = sourceFieldOptions(selectedContentType, targetField)
 
   const emit = (nextType = sourceType, nextId = sourceId, nextPath = fieldPath) => {
     const usesCurrentDocument =
@@ -443,6 +559,7 @@ const FieldBindingEditor = ({
         <Label className='grid gap-1.5'>
           Source
           <Select
+            disabled={contentTypes.length === 0}
             value={sourceType}
             onValueChange={(value) => {
               const nextId =
@@ -458,7 +575,11 @@ const FieldBindingEditor = ({
             }}
           >
             <SelectTrigger className='w-full'>
-              <SelectValue placeholder='Content type' />
+              <SelectValue
+                placeholder={
+                  contentTypes.length > 0 ? 'Content type' : 'No content types'
+                }
+              />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -477,7 +598,7 @@ const FieldBindingEditor = ({
         <Label className='grid gap-1.5'>
           Item
           <Select
-            disabled={!sourceType}
+            disabled={!sourceType || !hasItemOptions}
             value={sourceId}
             onValueChange={(value) => {
               setSourceId(value)
@@ -485,12 +606,13 @@ const FieldBindingEditor = ({
             }}
           >
             <SelectTrigger className='w-full'>
-              <SelectValue placeholder='Item' />
+              <SelectValue
+                placeholder={hasItemOptions ? 'Item' : 'No items available'}
+              />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {currentDocumentSourceEnabled &&
-                sourceType === documentContentType.name ? (
+                {hasCurrentDocumentItem ? (
                   <SelectItem value={CURRENT_DOCUMENT_ID}>
                     Current document
                   </SelectItem>
@@ -515,7 +637,7 @@ const FieldBindingEditor = ({
         <Label className='grid gap-1.5'>
           Field
           <Select
-            disabled={!sourceType || !sourceId}
+            disabled={!sourceType || !sourceId || fieldOptions.length === 0}
             value={fieldPath}
             onValueChange={(value) => {
               setFieldPath(value)
@@ -523,17 +645,19 @@ const FieldBindingEditor = ({
             }}
           >
             <SelectTrigger className='w-full'>
-              <SelectValue placeholder='Field' />
+              <SelectValue
+                placeholder={
+                  fieldOptions.length > 0 ? 'Field' : 'No compatible fields'
+                }
+              />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {sourceFieldOptions(selectedContentType, targetField).map(
-                  (field) => (
+                {fieldOptions.map((field) => (
                     <SelectItem key={field.value} value={field.value}>
                       {field.label}
                     </SelectItem>
-                  ),
-                )}
+                  ))}
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -551,6 +675,400 @@ const getListTargetContentType = (
   if (!entry || entry.field.config.type !== 'Relation') return undefined
 
   return (entry.field as EncodedRelationField).contentType
+}
+
+const getRelationContentType = (field: EncodedFieldUnknown) => {
+  if (field.isTranslatable) return undefined
+
+  if (field.config.type === 'Relation') {
+    return (field as EncodedRelationField).contentType
+  }
+
+  if (field.config.ui === 'SimpleList') {
+    const itemField = (field as EncodedSimpleListField).field
+    if (itemField.config.type === 'Relation') {
+      return (itemField as EncodedRelationField).contentType
+    }
+  }
+
+  return undefined
+}
+
+const getRelatedRelationOptions = (
+  contentType: EncodedContentType,
+  currentSource: EncodedContentType,
+) =>
+  Object.entries(contentType.fields).flatMap(([name, field]) => {
+    if (!isDynamicVisibleField(field)) return []
+
+    const relationContentType = getRelationContentType(field)
+    return relationContentType?.name === currentSource.name ? [name] : []
+  })
+
+const getRelatedPathOptions = (
+  contentType: EncodedContentType,
+  targetField: EncodedFieldUnknown,
+) =>
+  sourceFieldOptions(contentType, targetField).filter(
+    (option) => option.kind === 'array' && option.value !== '$href',
+  )
+
+const getSortFieldOptions = (
+  contentType: EncodedContentType,
+): SourceFieldOption[] =>
+  Object.entries(contentType.fields).flatMap(([name, field]) => {
+    if (
+      !isDynamicVisibleField(field) ||
+      field.isTranslatable ||
+      name.startsWith('_') ||
+      isSeoPath(name)
+    ) {
+      return []
+    }
+
+    const kind = getFieldKind(field)
+    const isSingleSelect =
+      field.config.type === 'Select' &&
+      !(field as { isMultiple?: boolean }).isMultiple
+    const isSortable =
+      (field.config.type === 'String' && field.config.ui !== 'RichText') ||
+      field.config.type === 'Number' ||
+      field.config.type === 'Boolean' ||
+      field.config.type === 'Date' ||
+      isSingleSelect
+
+    return isSortable ? [{ label: fieldLabel(name), value: name, kind }] : []
+  })
+
+const createRelatedCollectionSource = ({
+  contentType,
+  currentSource,
+  targetField,
+}: {
+  contentType: EncodedContentType
+  currentSource: EncodedContentType
+  targetField: EncodedFieldUnknown
+}): DynamicRelatedCollectionSource | undefined => {
+  const relation = getRelatedRelationOptions(contentType, currentSource)[0]
+  const path = getRelatedPathOptions(contentType, targetField)[0]?.value
+  if (!relation || !path) return undefined
+
+  return {
+    kind: 'relatedCollection',
+    contentType: contentType.name,
+    relation,
+    path,
+    limit: 10,
+  }
+}
+
+const MappingSourceEditor = ({
+  contentTypes,
+  currentSource,
+  targetField,
+  source,
+  onChange,
+}: {
+  contentTypes: EncodedContentType[]
+  currentSource: EncodedContentType
+  targetField: EncodedFieldUnknown
+  source: ListMapSource
+  onChange: (source: ListMapSource) => void
+}) => {
+  const relatedSource = isRelatedCollectionSource(source) ? source : undefined
+  const directSource =
+    source && !isRelatedCollectionSource(source) ? source : undefined
+  const directFieldOptions = sourceFieldOptions(currentSource, targetField)
+  const relatedContentTypes = contentTypes.filter(
+    (contentType) =>
+      getRelatedRelationOptions(contentType, currentSource).length > 0 &&
+      getRelatedPathOptions(contentType, targetField).length > 0,
+  )
+  const selectedRelatedContentType = relatedSource
+    ? relatedContentTypes.find(
+        (contentType) => contentType.name === relatedSource.contentType,
+      )
+    : undefined
+  const relationOptions = selectedRelatedContentType
+    ? getRelatedRelationOptions(selectedRelatedContentType, currentSource)
+    : []
+  const pathOptions = selectedRelatedContentType
+    ? getRelatedPathOptions(selectedRelatedContentType, targetField)
+    : []
+  const sortOptions = selectedRelatedContentType
+    ? getSortFieldOptions(selectedRelatedContentType)
+    : []
+  const sortEntry = Object.entries(relatedSource?.sort ?? {})[0]
+  const sortField = sortEntry?.[0] ?? ''
+  const sortDirection = sortEntry?.[1] ?? 'desc'
+
+  if (!relatedSource) {
+    return (
+      <div className='grid gap-3 md:grid-cols-[0.7fr_1.3fr]'>
+        <div className='grid content-start gap-1.5'>
+          <ControlLabel help='Choose a direct field or query a related collection.'>
+            Mapping mode
+          </ControlLabel>
+          <Select
+            value='field'
+            onValueChange={(value) => {
+              if (value !== 'relatedCollection') return
+
+              const next = relatedContentTypes
+                .map((contentType) =>
+                  createRelatedCollectionSource({
+                    contentType,
+                    currentSource,
+                    targetField,
+                  }),
+                )
+                .find(Boolean)
+              onChange(next)
+            }}
+          >
+            <SelectTrigger className='w-full'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='field'>Direct field</SelectItem>
+              {relatedContentTypes.length > 0 ? (
+                <SelectItem value='relatedCollection'>Related collection</SelectItem>
+              ) : null}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className='grid content-start gap-1.5'>
+          <ControlLabel help='Its value will be assigned to this mapped property.'>
+            Field on {currentSource.name}
+          </ControlLabel>
+          <Select
+            disabled={directFieldOptions.length === 0}
+            value={sourceValue(directSource)}
+            onValueChange={(value) =>
+              onChange(createSource(currentSource.name, value))
+            }
+          >
+            <SelectTrigger className='w-full'>
+              <SelectValue
+                placeholder={
+                  directFieldOptions.length > 0
+                    ? 'Select a source field'
+                    : 'No compatible fields'
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {directFieldOptions.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className='grid gap-3'>
+      <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+        <div className='grid content-start gap-1.5'>
+          <ControlLabel help='Query records related to the current source item.'>
+            Mapping mode
+          </ControlLabel>
+          <Select
+            value='relatedCollection'
+            onValueChange={() => onChange(undefined)}
+          >
+            <SelectTrigger className='w-full'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='field'>Direct field</SelectItem>
+              <SelectItem value='relatedCollection'>Related collection</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className='grid content-start gap-1.5'>
+          <ControlLabel help='Content type whose records will be searched.'>
+            Collection to query
+          </ControlLabel>
+          <Select
+            disabled={relatedContentTypes.length === 0}
+            value={relatedSource.contentType}
+            onValueChange={(value) => {
+              const contentType = relatedContentTypes.find(
+                (item) => item.name === value,
+              )
+              if (!contentType) return
+
+              onChange(
+                createRelatedCollectionSource({
+                  contentType,
+                  currentSource,
+                  targetField,
+                }),
+              )
+            }}
+          >
+            <SelectTrigger className='w-full'>
+              <SelectValue
+                placeholder={
+                  relatedContentTypes.length > 0
+                    ? 'Select a content type'
+                    : 'No compatible collections'
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {relatedContentTypes.map((contentType) => (
+                <SelectItem key={contentType.name} value={contentType.name}>
+                  {contentType.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className='grid content-start gap-1.5'>
+          <ControlLabel
+            help={`Field on ${relatedSource.contentType} that points to ${currentSource.name}.`}
+          >
+            Relation to {currentSource.name}
+          </ControlLabel>
+          <Select
+            disabled={relationOptions.length === 0}
+            value={relatedSource.relation}
+            onValueChange={(relation) => onChange({ ...relatedSource, relation })}
+          >
+            <SelectTrigger className='w-full'>
+              <SelectValue
+                placeholder={
+                  relationOptions.length > 0
+                    ? 'Select a relation field'
+                    : 'No compatible relations'
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {relationOptions.map((relation) => (
+                <SelectItem key={relation} value={relation}>
+                  {relation}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className='grid content-start gap-1.5'>
+          <ControlLabel help='Arrays from matching records are flattened into one result.'>
+            Array field to collect
+          </ControlLabel>
+          <Select
+            disabled={pathOptions.length === 0}
+            value={relatedSource.path}
+            onValueChange={(path) => onChange({ ...relatedSource, path })}
+          >
+            <SelectTrigger className='w-full'>
+              <SelectValue
+                placeholder={
+                  pathOptions.length > 0
+                    ? 'Select an array field'
+                    : 'No compatible array fields'
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {pathOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className='grid gap-3 sm:grid-cols-[0.7fr_1fr_0.7fr]'>
+        <div className='grid content-start gap-1.5'>
+          <ControlLabel
+            help={`Number of ${relatedSource.contentType} records queried per ${currentSource.name}. Minimum 1, maximum 100.`}
+          >
+            Maximum related records
+          </ControlLabel>
+          <Input
+            type='number'
+            min={1}
+            max={100}
+            value={String(relatedSource.limit)}
+            onChange={(event) =>
+              onChange({
+                ...relatedSource,
+                limit: Math.min(
+                  100,
+                  Math.max(1, Number(event.target.value || 10)),
+                ),
+              })
+            }
+          />
+        </div>
+        <div className='grid content-start gap-1.5'>
+          <ControlLabel help='Optional. Only direct scalar fields can be used.'>
+            Sort related records by
+          </ControlLabel>
+          <Select
+            value={sortField || '__none__'}
+            onValueChange={(value) =>
+              onChange({
+                ...relatedSource,
+                sort:
+                  value === '__none__'
+                    ? undefined
+                    : { [value]: sortDirection },
+              })
+            }
+          >
+            <SelectTrigger className='w-full'>
+              <SelectValue placeholder='No sort' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='__none__'>No sort</SelectItem>
+              {sortOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className='grid content-start gap-1.5'>
+          <ControlLabel help='Applied before collecting and flattening the arrays.'>
+            Sort direction
+          </ControlLabel>
+          <Select
+            disabled={!sortField}
+            value={sortDirection}
+            onValueChange={(direction) =>
+              sortField
+                ? onChange({
+                    ...relatedSource,
+                    sort: { [sortField]: direction as 'asc' | 'desc' },
+                  })
+                : undefined
+            }
+          >
+            <SelectTrigger className='w-full'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='asc'>Ascending</SelectItem>
+              <SelectItem value='desc'>Descending</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 const ListBindingEditor = ({
@@ -571,6 +1089,7 @@ const ListBindingEditor = ({
   const [filterState, setFilterState] = useState<FilterState | undefined>(
     readFilterState(binding?.query?.filter),
   )
+  const [openMappingField, setOpenMappingField] = useState<string | null>(null)
   const selectedSource = contentTypes.find((ct) => ct.name === sourceType)
   const targetContentType = getListTargetContentType(field, itemName)
   const targetFields = useMemo(
@@ -582,6 +1101,12 @@ const ListBindingEditor = ({
         : [],
     [targetContentType],
   )
+  const sortFieldOptions = selectedSource
+    ? getSortFieldOptions(selectedSource)
+    : []
+  const filterFieldOptions = selectedSource
+    ? sourceFieldOptions(selectedSource).filter((item) => item.value !== '$href')
+    : []
 
   const emit = (patch: Partial<DynamicListBinding>) => {
     const next = {
@@ -617,6 +1142,7 @@ const ListBindingEditor = ({
           <Label className='grid gap-1.5'>
             Source
             <Select
+              disabled={contentTypes.length === 0}
               value={sourceType}
               onValueChange={(value) => {
                 setSourceType(value)
@@ -624,7 +1150,11 @@ const ListBindingEditor = ({
               }}
             >
               <SelectTrigger className='w-full'>
-                <SelectValue placeholder='Content type' />
+                <SelectValue
+                  placeholder={
+                    contentTypes.length > 0 ? 'Content type' : 'No content types'
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
@@ -640,7 +1170,7 @@ const ListBindingEditor = ({
           <Label className='grid gap-1.5'>
             Item
             <Select
-              disabled={!sourceType}
+              disabled={!sourceType || field.fields.length === 0}
               value={itemName}
               onValueChange={(value) => {
                 setItemName(value)
@@ -648,7 +1178,11 @@ const ListBindingEditor = ({
               }}
             >
               <SelectTrigger className='w-full'>
-                <SelectValue placeholder='Item type' />
+                <SelectValue
+                  placeholder={
+                    field.fields.length > 0 ? 'Item type' : 'No item types'
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
@@ -688,7 +1222,7 @@ const ListBindingEditor = ({
           <Label className='grid gap-1.5'>
             Sort
             <Select
-              disabled={!selectedSource}
+              disabled={sortFieldOptions.length === 0}
               value={Object.keys(binding?.query?.options?.sort ?? {})[0] ?? ''}
               onValueChange={(value) =>
                 emit({
@@ -703,13 +1237,17 @@ const ListBindingEditor = ({
               }
             >
               <SelectTrigger className='w-full'>
-                <SelectValue placeholder='Field' />
+                <SelectValue
+                  placeholder={
+                    sortFieldOptions.length > 0
+                      ? 'Field'
+                      : 'No sortable fields'
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  {sourceFieldOptions(selectedSource)
-                    .filter((item) => item.value !== '$href')
-                    .map((item) => (
+                  {sortFieldOptions.map((item) => (
                       <SelectItem key={item.value} value={item.value}>
                         {item.label}
                       </SelectItem>
@@ -734,7 +1272,7 @@ const ListBindingEditor = ({
             </div>
             <div className='grid gap-2 sm:grid-cols-[1fr_0.9fr_1fr]'>
               <Select
-                disabled={!selectedSource}
+                disabled={filterFieldOptions.length === 0}
                 value={filterState?.field || ''}
                 onValueChange={(value) =>
                   updateFilter(
@@ -749,13 +1287,17 @@ const ListBindingEditor = ({
                 }
               >
                 <SelectTrigger className='w-full'>
-                  <SelectValue placeholder='Field' />
+                  <SelectValue
+                    placeholder={
+                      filterFieldOptions.length > 0
+                        ? 'Field'
+                        : 'No filterable fields'
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {sourceFieldOptions(selectedSource)
-                      .filter((item) => item.value !== '$href')
-                      .map((item) => (
+                    {filterFieldOptions.map((item) => (
                         <SelectItem key={item.value} value={item.value}>
                           {item.label}
                         </SelectItem>
@@ -817,46 +1359,65 @@ const ListBindingEditor = ({
         <div className='grid gap-2'>
           {targetFields.map(([targetField, targetFieldConfig]) => {
             const source = binding?.map?.[targetField]
+            const summary = mappingSourceSummary(
+              source,
+              selectedSource?.name ?? 'Source',
+            )
+            const isOpen = openMappingField === targetField
 
             return (
-              <div
+              <Collapsible
                 key={targetField}
-                className='grid items-center gap-2 rounded-md border border-border bg-background/70 px-3 py-2 md:grid-cols-[minmax(8rem,0.7fr)_auto_minmax(12rem,1.3fr)]'
+                open={isOpen}
+                onOpenChange={(open) =>
+                  setOpenMappingField(open ? targetField : null)
+                }
               >
-                <span className='truncate text-sm font-medium'>
-                  {targetField}
-                </span>
-                <span className='hidden text-xs text-muted-foreground md:block'>
-                  {'->'}
-                </span>
-                <Select
-                  disabled={!selectedSource}
-                  value={sourceValue(source)}
-                  onValueChange={(value) =>
-                    emit({
-                      map: {
-                        ...binding?.map,
-                        [targetField]: createSource(sourceType, value),
-                      },
-                    })
-                  }
-                >
-                  <SelectTrigger className='w-full'>
-                    <SelectValue placeholder='Source field' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {sourceFieldOptions(selectedSource, targetFieldConfig).map(
-                        (item) => (
-                          <SelectItem key={item.value} value={item.value}>
-                            {item.label}
-                          </SelectItem>
-                        ),
-                      )}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className='overflow-hidden rounded-md border border-border bg-background/70 transition-colors hover:border-foreground/20'>
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type='button'
+                      disabled={!selectedSource}
+                      className='group grid w-full grid-cols-[minmax(6rem,0.45fr)_auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50'
+                    >
+                      <span className='truncate text-sm font-semibold'>
+                        {targetField}
+                      </span>
+                      <Badge
+                        variant={source ? 'secondary' : 'outline'}
+                        className='max-w-40 truncate'
+                      >
+                        {summary.mode}
+                      </Badge>
+                      <span className='truncate text-sm text-muted-foreground'>
+                        {selectedSource
+                          ? summary.detail
+                          : 'Select a source collection first'}
+                      </span>
+                      <ChevronRight className='h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-90' />
+                      <span className='sr-only'>Configure {targetField} mapping</span>
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className='border-t border-border bg-muted/20 p-3'>
+                      {selectedSource ? (
+                        <MappingSourceEditor
+                          contentTypes={contentTypes}
+                          currentSource={selectedSource}
+                          targetField={targetFieldConfig}
+                          source={source}
+                          onChange={(nextSource) => {
+                            const map = { ...(binding?.map ?? {}) }
+                            if (nextSource) map[targetField] = nextSource
+                            else delete map[targetField]
+                            emit({ map })
+                          }}
+                        />
+                      ) : null}
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
             )
           })}
         </div>

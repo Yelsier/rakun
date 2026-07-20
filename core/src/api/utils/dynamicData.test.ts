@@ -1,9 +1,14 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, mock } from "bun:test";
 
 import ContentType from "../../lib/ContentType";
 import { Fields } from "../../lib/fields";
 import { registerContentType } from "../../lib/Registry";
-import { mergeDynamicListItems, resolveDynamicData } from "./dynamicData";
+import type { DBService } from "../../orm/dbService";
+import {
+  mergeDynamicListItems,
+  resolveDynamicData,
+  resolveRelatedCollectionValue,
+} from "./dynamicData";
 
 describe("dynamic data output", () => {
   it("does not resolve field bindings from the same root document", async () => {
@@ -165,5 +170,185 @@ describe("dynamic data output", () => {
     expect(mergeDynamicListItems([storedCopy], [dynamicItem])).toEqual([
       dynamicItem,
     ]);
+  });
+
+  it("collects and flattens related arrays while preserving order and duplicates", async () => {
+    const RelatedCategory = new ContentType({
+      name: "RelatedDynamicCategory",
+      dynamicDataSource: true,
+      fields: {
+        title: Fields.string().required(),
+      },
+    });
+    const RelatedProject = new ContentType({
+      name: "RelatedDynamicProject",
+      dynamicDataSource: true,
+      fields: {
+        title: Fields.string().required(),
+        category: Fields.relation(RelatedCategory, "existing").required(),
+        images: Fields.file().type("Image").multiple().required(),
+      },
+    });
+    registerContentType(RelatedCategory);
+    registerContentType(RelatedProject);
+
+    const repeatedImage = { key: "shared", url: "/shared.webp" };
+    const list = mock(async () => ({
+      totalItems: 2,
+      items: [
+        {
+          _id: "project-1",
+          _type: RelatedProject.name,
+          title: "First",
+          images: [
+            { key: "first", url: "/first.webp" },
+            repeatedImage,
+          ],
+        },
+        {
+          _id: "project-2",
+          _type: RelatedProject.name,
+          title: "Second",
+          images: [repeatedImage, { key: "last", url: "/last.webp" }],
+        },
+      ],
+    }));
+
+    const resolved = await resolveRelatedCollectionValue({
+      db: { list } as unknown as DBService,
+      source: {
+        kind: "relatedCollection",
+        contentType: RelatedProject.name,
+        relation: "category",
+        path: "images",
+        limit: 20,
+        sort: { title: "asc" },
+      },
+      currentSource: {
+        _id: "category-1",
+        _type: RelatedCategory.name,
+        title: "Category",
+      },
+      currentContentType: RelatedCategory,
+      populateDocument: async (item) => item as Record<string, unknown>,
+    });
+
+    expect(resolved).toEqual([
+      { key: "first", url: "/first.webp" },
+      repeatedImage,
+      repeatedImage,
+      { key: "last", url: "/last.webp" },
+    ]);
+    expect(list).toHaveBeenCalledWith(RelatedProject, {
+      filter: {
+        "category._id": "category-1",
+        _trashed: { $ne: true },
+        _visibility: { $nin: ["draft", "trash"] },
+      },
+      options: {
+        fields: undefined,
+        limit: 20,
+        page: undefined,
+        sort: { title: "asc" },
+      },
+    });
+  });
+
+  it("supports multiple relations and returns an empty array without matches", async () => {
+    const RelatedCategory = new ContentType({
+      name: "MultipleRelatedDynamicCategory",
+      dynamicDataSource: true,
+      fields: { title: Fields.string().required() },
+    });
+    const RelatedProject = new ContentType({
+      name: "MultipleRelatedDynamicProject",
+      dynamicDataSource: true,
+      fields: {
+        categories: Fields.relation(
+          RelatedCategory,
+          "existing",
+        ).multiple(),
+        images: Fields.file().type("Image").multiple(),
+      },
+    });
+    registerContentType(RelatedCategory);
+    registerContentType(RelatedProject);
+    const list = mock(async () => ({ totalItems: 0, items: [] }));
+
+    const resolved = await resolveRelatedCollectionValue({
+      db: { list } as unknown as DBService,
+      source: {
+        kind: "relatedCollection",
+        contentType: RelatedProject.name,
+        relation: "categories",
+        path: "images",
+        limit: 10,
+      },
+      currentSource: { _id: "category-2" },
+      currentContentType: RelatedCategory,
+      populateDocument: async (item) => item as Record<string, unknown>,
+    });
+
+    expect(resolved).toEqual([]);
+  });
+
+  it("rejects unrelated fields and non-array source paths", async () => {
+    const RelatedCategory = new ContentType({
+      name: "RejectedRelatedDynamicCategory",
+      dynamicDataSource: true,
+      fields: { title: Fields.string().required() },
+    });
+    const OtherCategory = new ContentType({
+      name: "RejectedRelatedDynamicOther",
+      dynamicDataSource: true,
+      fields: { title: Fields.string().required() },
+    });
+    const RelatedProject = new ContentType({
+      name: "RejectedRelatedDynamicProject",
+      dynamicDataSource: true,
+      fields: {
+        title: Fields.string().required(),
+        category: Fields.relation(RelatedCategory, "existing"),
+        otherCategory: Fields.relation(OtherCategory, "existing"),
+        images: Fields.file().type("Image").multiple(),
+      },
+    });
+    registerContentType(RelatedCategory);
+    registerContentType(OtherCategory);
+    registerContentType(RelatedProject);
+    const list = mock(async () => ({ totalItems: 0, items: [] }));
+    const base = {
+      db: { list } as unknown as DBService,
+      currentSource: { _id: "category-3" },
+      currentContentType: RelatedCategory,
+      populateDocument: async (item: unknown) =>
+        item as Record<string, unknown>,
+    };
+
+    expect(
+      await resolveRelatedCollectionValue({
+        ...base,
+        source: {
+          kind: "relatedCollection",
+          contentType: RelatedProject.name,
+          relation: "otherCategory",
+          path: "images",
+          limit: 10,
+        },
+      }),
+    ).toBeUndefined();
+    expect(
+      await resolveRelatedCollectionValue({
+        ...base,
+        source: {
+          kind: "relatedCollection",
+          contentType: RelatedProject.name,
+          relation: "category",
+          path: "title",
+          limit: 10,
+        },
+      }),
+    ).toBeUndefined();
+    expect(list).not.toHaveBeenCalled();
   });
 });

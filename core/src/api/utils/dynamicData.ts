@@ -6,6 +6,8 @@ import {
   isDynamicDataSourceContentTypeAllowed,
   type DynamicBindingSource,
   type DynamicListBinding,
+  type DynamicListMapSource,
+  type DynamicRelatedCollectionSource,
 } from "../../lib/dynamicData";
 import { Logger } from "../../lib/Logger";
 import type { DataPopulatedWithoutApiOnly, DBOutput, Query } from "../../lib/types";
@@ -97,6 +99,64 @@ const isDynamicSourcePathAllowed = (
   }
 
   return false;
+};
+
+const getDynamicSourceField = (
+  contentType: ContentType,
+  path: string | undefined,
+  depth = 0,
+): ContentType["fields"][string] | undefined => {
+  if (!path) return undefined;
+
+  const [fieldName, ...rest] = path.split(".");
+  const field = contentType.fields[fieldName];
+  if (!field || !contentType.allowsDynamicBindingForField(fieldName)) {
+    return undefined;
+  }
+
+  if (rest.length === 0) return field;
+
+  if (
+    field.meta.type === "Relation" &&
+    "contentType" in field &&
+    depth < 3
+  ) {
+    return getDynamicSourceField(
+      field.contentType as ContentType,
+      rest.join("."),
+      depth + 1,
+    );
+  }
+
+  return undefined;
+};
+
+const isArraySourceField = (
+  field: ContentType["fields"][string] | undefined,
+) => {
+  if (!field) return false;
+  if (field.meta.type === "List") return true;
+
+  return "isMultiple" in field.meta && field.meta.isMultiple === true;
+};
+
+const getRelationTarget = (
+  field: ContentType["fields"][string] | undefined,
+): ContentType | undefined => {
+  if (!field || field.getIsTranslatable()) return undefined;
+
+  if (field.meta.type === "Relation" && "contentType" in field) {
+    return field.contentType as ContentType;
+  }
+
+  if (field.meta.ui === "SimpleList" && "field" in field) {
+    const itemField = field.field as ContentType["fields"][string];
+    if (itemField.meta.type === "Relation" && "contentType" in itemField) {
+      return itemField.contentType as ContentType;
+    }
+  }
+
+  return undefined;
 };
 
 const getRouteKeyForSource = (
@@ -191,6 +251,11 @@ const resolveSourceValue = async ({
   return getAtPath(sourceDocument, source.path);
 };
 
+const isRelatedCollectionSource = (
+  source: DynamicListMapSource,
+): source is DynamicRelatedCollectionSource =>
+  "kind" in source && source.kind === "relatedCollection";
+
 const addPublicContentFilter = (query: Query): Query => ({
   ...query,
   filter: {
@@ -199,6 +264,102 @@ const addPublicContentFilter = (query: Query): Query => ({
     _visibility: { $nin: ["draft", "trash"] },
   },
 });
+
+export const resolveRelatedCollectionValue = async ({
+  db,
+  source,
+  currentSource,
+  currentContentType,
+  populateDocument = async (sourceItem: DBOutput<ContentType>) =>
+    (await populateRelations(
+      await populateLinks(sourceItem),
+    )) as Record<string, unknown>,
+}: {
+  db: DBService;
+  source: DynamicRelatedCollectionSource;
+  currentSource: Record<string, unknown>;
+  currentContentType: ContentType;
+  populateDocument?: (
+    sourceItem: DBOutput<ContentType>,
+  ) => Promise<Record<string, unknown>>;
+}) => {
+  if (!isDynamicDataSourceContentTypeAllowed(currentContentType)) {
+    return undefined;
+  }
+
+  const sourceId = currentSource._id;
+  if (typeof sourceId !== "string") return undefined;
+
+  const relatedContentType = getAllowedSourceContentType(source.contentType);
+  if (!relatedContentType) return undefined;
+
+  const relationField = relatedContentType.fields[source.relation];
+  const relationTarget = getRelationTarget(relationField);
+  if (
+    !relationTarget ||
+    relationTarget.name !== currentContentType.name ||
+    !relatedContentType.allowsDynamicBindingForField(source.relation)
+  ) {
+    return undefined;
+  }
+
+  const sourceField = getDynamicSourceField(relatedContentType, source.path);
+  if (!isArraySourceField(sourceField)) return undefined;
+
+  const query = addPublicContentFilter(
+    parseSafeManagerQuery(relatedContentType, {
+      filter: { [`${source.relation}._id`]: sourceId },
+      options: {
+        limit: source.limit,
+        sort: source.sort,
+      },
+    }),
+  );
+  const sourceItems = (await db.list(relatedContentType, query)).items;
+  const values = await Promise.all(
+    sourceItems.map(async (sourceItem) => {
+      const populated = await populateDocument(
+        sourceItem as DBOutput<ContentType>,
+      );
+
+      return getAtPath(populated, source.path);
+    }),
+  );
+
+  return values.flatMap((value) => (Array.isArray(value) ? value : []));
+};
+
+const resolveListMapSourceValue = async ({
+  db,
+  source,
+  currentSource,
+  currentContentType,
+  contextSource,
+}: {
+  db: DBService;
+  source: DynamicListMapSource;
+  currentSource: Record<string, unknown>;
+  currentContentType: ContentType;
+  contextSource?: ResolveOptions["contextSource"];
+}) => {
+  if (isRelatedCollectionSource(source)) {
+    return await resolveRelatedCollectionValue({
+      db,
+      source,
+      currentSource,
+      currentContentType,
+    });
+  }
+
+  return await resolveSourceValue({
+    db,
+    source,
+    currentSource,
+    currentContentType,
+    allowCurrentSource: true,
+    contextSource,
+  });
+};
 
 const resolveListBinding = async ({
   db,
@@ -228,12 +389,11 @@ const resolveListBinding = async ({
         await Promise.all(
           Object.entries(binding.map).map(async ([targetField, source]) => [
             targetField,
-            await resolveSourceValue({
+            await resolveListMapSourceValue({
               db,
               source,
               currentSource: populated,
               currentContentType: sourceContentType,
-              allowCurrentSource: true,
               contextSource,
             }),
           ]),

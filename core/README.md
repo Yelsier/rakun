@@ -262,6 +262,53 @@ List bindings append dynamic items to manually stored items instead of replacing
 the list. If the same stable item id appears in both sources, the dynamically
 resolved item wins and the duplicate manual copy is skipped.
 
+A list mapping can also collect an array through a reverse relation without
+persisting that relation on the source document. For example, a category gallery
+can create one item per `Category` and collect the images of its related
+`Project` documents:
+
+```ts
+const Category = new ContentType({
+  name: "Category",
+  dynamicDataSource: true,
+  fields: {
+    title: Fields.string().required(),
+  },
+});
+
+const Project = new ContentType({
+  name: "Project",
+  dynamicDataSource: true,
+  fields: {
+    category: Fields.relation(Category, "existing").required(),
+    images: Fields.file().type("Image").multiple().required(),
+  },
+});
+
+const galleryBindings = {
+  lists: {
+    items: {
+      contentType: Category.name,
+      itemName: "CategoriesGalleryItem",
+      map: {
+        title: { contentType: Category.name, path: "title" },
+        images: {
+          kind: "relatedCollection",
+          contentType: Project.name,
+          relation: "category",
+          path: "images",
+          limit: 10,
+        },
+      },
+    },
+  },
+};
+```
+
+The related collection query matches `Project.category._id` against the current
+category, preserves project and image order, and flattens the selected array by
+one level. Its numeric limit applies to related projects and is capped at 100.
+
 Schema and validation methods:
 
 - `getInputSchema()`: write schema. Includes `_type`, `createdBy`, and `updatedBy`.

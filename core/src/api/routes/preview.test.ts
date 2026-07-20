@@ -42,6 +42,7 @@ const PreviewModule = new ContentType({
   name: "PreviewTestModule",
   fields: {
     text: Fields.string().translatable().required(),
+    eyebrow: Fields.string(),
   },
 });
 
@@ -112,6 +113,7 @@ const pageData = ({
         data: {
           _type: PreviewModule.name,
           text: translatable(moduleText),
+          eyebrow: null,
         },
       },
     },
@@ -206,6 +208,7 @@ describe.serial("preview", () => {
     });
     expect(preview.modules[0]?._type).toBe(PreviewModule.name);
     expect(preview.modules[0]?.text).toBe("Live module");
+    expect(preview.modules[0]?.eyebrow).toBeUndefined();
     expect(preview.info?.title).toBe("Draft title");
 
     const publicPage = await getPage({ path: result.path });

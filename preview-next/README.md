@@ -55,6 +55,9 @@ The API route seeds preview data on first request when `SEED_PREVIEW` is not
 - inline `HelloWorld` modules in the seeded page `_iterator`
 - a `FeatureCarousel` module that demonstrates dynamic data bindings from
   `Project`
+- a `CategoriesGallery` module that maps `Category` records and queries each
+  category's related `Project.images`
+- local SVG `Media` records used by the related project galleries
 - populated `Fields.link()` examples in header and footer modules
 - `Author` and `Article`
 - `RouteLocaleVariant` assignments and route maps for `/`, `/es/`,
@@ -62,12 +65,29 @@ The API route seeds preview data on first request when `SEED_PREVIEW` is not
   `/contact/`, `/es/contacto/`, and `/es-MX/contacto/`
 
 The seed is idempotent and also repairs the seeded home `_iterator` so
-`HelloWorld` stays present after local database reuse.
+`HelloWorld`, `FeatureCarousel`, and `CategoriesGallery` stay present after
+local database reuse.
 
 The seeded `FeatureCarousel` is a reusable layout module. Its title can be bound
 to a selected `Project`, and its item list can be populated from filtered
 `Project` records. The manager stores those bindings in `_bindings`; manually
 added carousel items are kept and merged with the dynamic list output.
+
+The seeded `CategoriesGallery` demonstrates a reverse relation without storing
+`Category.projects`. Its outer list comes from `Category`; the `images` mapping
+queries projects whose `category._id` matches the current category and flattens
+each project's `images` array:
+
+```ts
+images: {
+  kind: "relatedCollection",
+  contentType: Project.name,
+  relation: "category",
+  path: "images",
+  limit: 10,
+  sort: { title: "asc" },
+}
+```
 
 ## Custom API Operation
 
