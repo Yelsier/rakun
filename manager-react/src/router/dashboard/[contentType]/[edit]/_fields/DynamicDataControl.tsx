@@ -7,6 +7,7 @@ import type {
   DynamicListMapSource,
   DynamicRelatedCollectionSource,
   EncodedContentType,
+  EncodedFileField,
   EncodedFieldUnknown,
   EncodedListField,
   EncodedRelationField,
@@ -159,14 +160,8 @@ const isCompatibleSourceKind = (
   return sourceKind === getFieldKind(targetField)
 }
 
-const getMultipleFileField = (field: EncodedFieldUnknown) =>
-  field.config.type === 'File' &&
-  (field as { isMultiple?: boolean }).isMultiple
-    ? (field as EncodedFieldUnknown & {
-        mediaType?: string
-        isMultiple: true
-      })
-    : undefined
+const getFileField = (field: EncodedFieldUnknown) =>
+  field.config.type === 'File' ? (field as EncodedFileField) : undefined
 
 const areFieldKindsCompatible = (
   sourceField: EncodedFieldUnknown,
@@ -177,17 +172,17 @@ const areFieldKindsCompatible = (
 
   const targetKind = getFieldKind(targetField)
   if (sourceKind !== targetKind) return false
-  if (sourceKind !== 'array') return true
 
-  const sourceFile = getMultipleFileField(sourceField)
-  const targetFile = getMultipleFileField(targetField)
+  const sourceFile = getFileField(sourceField)
+  const targetFile = getFileField(targetField)
   if (!sourceFile && !targetFile) return true
   if (!sourceFile || !targetFile) return false
 
   return (
-    sourceFile.mediaType === 'Any' ||
-    targetFile.mediaType === 'Any' ||
-    sourceFile.mediaType === targetFile.mediaType
+    sourceFile.isMultiple === targetFile.isMultiple &&
+    (sourceFile.mediaType === 'Any' ||
+      targetFile.mediaType === 'Any' ||
+      sourceFile.mediaType === targetFile.mediaType)
   )
 }
 
@@ -265,23 +260,20 @@ const nestedSourceFieldOptions = ({
       })
     }
 
-    if (
-      field.config.type === 'File' &&
-      (field as { isMultiple?: boolean }).isMultiple
-    ) {
-      if (!areFieldKindsCompatible(field, targetField)) return []
-
-      return [
-        {
-          label: fieldLabel(path),
-          value: path,
-          kind,
-        },
-      ]
-    }
-
     if (field.config.type === 'File') {
-      return fileFieldOptions(path, targetField)
+      const fieldOption = areFieldKindsCompatible(field, targetField)
+        ? [
+            {
+              label: fieldLabel(path),
+              value: path,
+              kind,
+            },
+          ]
+        : []
+
+      if ((field as EncodedFileField).isMultiple) return fieldOption
+
+      return [...fieldOption, ...fileFieldOptions(path, targetField)]
     }
 
     if (!areFieldKindsCompatible(field, targetField)) return []
@@ -295,7 +287,7 @@ const nestedSourceFieldOptions = ({
     ]
   })
 
-const sourceFieldOptions = (
+export const sourceFieldOptions = (
   contentType?: EncodedContentType,
   targetField?: EncodedFieldUnknown,
 ) => {
