@@ -262,6 +262,23 @@ List bindings append dynamic items to manually stored items instead of replacing
 the list. If the same stable item id appears in both sources, the dynamically
 resolved item wins and the duplicate manual copy is skipped.
 
+List query conditions can compare a source field with a value from the current
+document. The manager exposes this as `Current document`; programmatic bindings
+use `{ $current: "path.to.field" }`. For example, a category can query only the
+projects whose related category has the same slug:
+
+```ts
+query: {
+  filter: {
+    "category.slug": { $current: "slug" },
+  },
+  options: { limit: 10 },
+}
+```
+
+Current-document paths are checked against the content type's dynamic field
+rules before the query runs. `_id` is also available for relation queries.
+
 A list mapping can also collect an array through a reverse relation without
 persisting that relation on the source document. For example, a category gallery
 can create one item per `Category` and collect the images of its related

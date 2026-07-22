@@ -11,11 +11,14 @@ export type {
   DynamicDocumentBindings,
   DynamicListBinding,
   DynamicListMapSource,
+  DynamicQueryCurrentValue,
   DynamicRelatedCollectionSource,
 } from "./lib/dynamicData";
 export {
+  DYNAMIC_QUERY_CURRENT_VALUE_KEY,
   DYNAMIC_BINDINGS_FIELD_NAME,
   DynamicDocumentBindingsSchema,
+  DynamicQueryCurrentValueSchema,
   isDynamicDataSourceContentTypeAllowed,
 } from "./lib/dynamicData";
 export { Fields } from "./lib/fields";

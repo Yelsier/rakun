@@ -1,6 +1,6 @@
 {
   "name": "@rakun-kit/core",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "Core Rakun content, routing, media, auth, and manager APIs.",
   "license": "MIT",
   "author": {

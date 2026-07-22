@@ -58,6 +58,13 @@ const assertPlainValue = (value: unknown, path: string): unknown => {
     validationError(`Invalid value for ${path}`);
   }
 
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) {
+      validationError(`Invalid date for ${path}`);
+    }
+    return value;
+  }
+
   if (Array.isArray(value)) {
     return value.map((item) => assertPlainValue(item, path));
   }

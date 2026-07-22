@@ -99,6 +99,91 @@ describe("dynamic data output", () => {
     expect(resolved.modules[0]?.value.eyebrow).toBe("Parent title");
   });
 
+  it("resolves list query values from the current document", async () => {
+    const CurrentQueryCard = new ContentType({
+      name: "CurrentQueryCard",
+      fields: {
+        title: Fields.string(),
+      },
+    });
+    const CurrentQueryCategory = new ContentType({
+      name: "CurrentQueryCategory",
+      fields: {
+        title: Fields.string().required(),
+        slug: Fields.string().required(),
+        projects: Fields.blocks([
+          {
+            name: CurrentQueryCard.name,
+            field: Fields.relation(CurrentQueryCard, "new"),
+          },
+        ]),
+      },
+    });
+    const CurrentQueryProject = new ContentType({
+      name: "CurrentQueryProject",
+      dynamicDataSource: true,
+      fields: {
+        title: Fields.string().required(),
+        category: Fields.relation(CurrentQueryCategory, "existing").required(),
+        published: Fields.boolean(),
+      },
+    });
+    registerContentType(CurrentQueryCard);
+    registerContentType(CurrentQueryCategory);
+    registerContentType(CurrentQueryProject);
+    const list = mock(async () => ({ totalItems: 0, items: [] }));
+
+    await resolveDynamicData(
+      {
+        _id: "category-1",
+        _type: CurrentQueryCategory.name,
+        title: "Design",
+        slug: "design",
+        projects: [],
+        _bindings: {
+          lists: {
+            projects: {
+              contentType: CurrentQueryProject.name,
+              itemName: CurrentQueryCard.name,
+              query: {
+                filter: {
+                  $and: [
+                    { "category.slug": { $current: "slug" } },
+                    { published: true },
+                  ],
+                },
+                options: { limit: 10 },
+              },
+              map: {},
+            },
+          },
+        },
+      },
+      {
+        db: { list } as unknown as DBService,
+        contentType: CurrentQueryCategory,
+        surface: "web",
+      },
+    );
+
+    expect(list).toHaveBeenCalledWith(CurrentQueryProject, {
+      filter: {
+        $and: [
+          { "category.slug": "design" },
+          { published: true },
+        ],
+        _trashed: { $ne: true },
+        _visibility: { $nin: ["draft", "trash"] },
+      },
+      options: {
+        fields: undefined,
+        limit: 10,
+        page: undefined,
+        sort: undefined,
+      },
+    });
+  });
+
   it("merges dynamic list items with manually stored items", () => {
     const dynamicItem = {
       name: "CarouselItem",
