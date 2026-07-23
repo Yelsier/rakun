@@ -174,14 +174,23 @@ const Page = new ContentType({
     slug: Fields.string().type("Slug").required(),
   },
   iterator: [{ contentType: PageSection, type: "existing" }],
+  linkedIterator: true,
 });
 ```
+
+Set `linkedIterator: true` when every document should use one shared module
+structure. The manager stores a canonical iterator for the content type, while
+dynamic bindings such as `Current document` continue to resolve against the
+individual page being rendered. Documents are linked by default and can be
+unlinked in the manager to keep a local copy of the iterator.
 
 Main properties:
 
 - `name`: stable type name. Also used as `_type`.
 - `fields`: field map.
 - `iterator`: page module entries. Generates the reserved `_iterator` field.
+- `linkedIterator`: shares that iterator between documents while allowing
+  explicit per-document overrides.
 - `menu`: manager metadata.
 - `uniques`: unique field groups.
 - `listFields`: preferred fields in lists and relations.

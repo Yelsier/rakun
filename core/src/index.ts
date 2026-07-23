@@ -352,7 +352,11 @@ export type { MaybeTranslatableValue, TranslatableValue } from "./lib/types";
 export { getListField } from "./lib/utils/getListField";
 export { getTranslation } from "./lib/utils/getTranslation";
 export { encodeContentTypeForManager } from "./lib/Registry";
-export { ITERATOR_FIELD_NAME, SEO_FIELD_NAME } from "./lib/systemFields";
+export {
+  ITERATOR_FIELD_NAME,
+  ITERATOR_UNLINKED_FIELD_NAME,
+  SEO_FIELD_NAME,
+} from "./lib/systemFields";
 export {
   LOCALE_VARIANT_GROUP_FIELD,
   LOCALE_VARIANT_ROLE_FIELD,

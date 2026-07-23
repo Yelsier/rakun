@@ -7,6 +7,7 @@ import type { RakunRequestContext } from "../../context";
 import { checkOwnership } from "../../utils/checkOwnership";
 import { requireContentType } from "../../utils/requireContentType";
 import { createHandler } from "./create";
+import { forbidLinkedIteratorTemplateAccess } from "./linkedIterator";
 
 const COPY_SUFFIX = "-copy";
 
@@ -110,6 +111,7 @@ export const duplicateHandler = async ({
   const db = await getMongoService();
   const { contentType: contentTypeName, id } = input;
   const contentType = requireContentType(contentTypeName);
+  forbidLinkedIteratorTemplateAccess(contentType);
 
   await checkOwnership({
     ctx,

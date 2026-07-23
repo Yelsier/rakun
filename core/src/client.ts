@@ -42,7 +42,11 @@ export { Id, isId, type Id as IdType } from "./lib/utils/id";
 export { isTranslatableObject } from "./lib/utils/isTranslatableObject";
 export { slugify } from "./lib/utils/slugify";
 export { encodeContentTypeForManager } from "./lib/Registry";
-export { ITERATOR_FIELD_NAME, SEO_FIELD_NAME } from "./lib/systemFields";
+export {
+  ITERATOR_FIELD_NAME,
+  ITERATOR_UNLINKED_FIELD_NAME,
+  SEO_FIELD_NAME,
+} from "./lib/systemFields";
 export {
   LOCALE_VARIANT_GROUP_FIELD,
   LOCALE_VARIANT_ROLE_FIELD,
@@ -97,6 +101,13 @@ export type {
   LocaleVariantListOutput,
   LocaleVariantUnassignInput,
 } from "./schemas/manager/localeVariants";
+export type {
+  LinkedIteratorAction,
+  LinkedIteratorControl,
+  LinkedIteratorGetInput,
+  LinkedIteratorMode,
+  LinkedIteratorStateOutput,
+} from "./schemas/manager/linkedIterator";
 export type { DuplicateInput } from "./schemas/manager/duplicate";
 export type {
   CommentRecord,

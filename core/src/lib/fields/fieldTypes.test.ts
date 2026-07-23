@@ -1,8 +1,16 @@
 import { describe, expect, it } from "bun:test";
 
 import ContentType from "../ContentType";
-import { getContentTypesForManager, registerContentType } from "../Registry";
-import { ITERATOR_FIELD_NAME, SEO_FIELD_NAME } from "../systemFields";
+import {
+  encodeContentTypeForManager,
+  getContentTypesForManager,
+  registerContentType,
+} from "../Registry";
+import {
+  ITERATOR_FIELD_NAME,
+  ITERATOR_UNLINKED_FIELD_NAME,
+  SEO_FIELD_NAME,
+} from "../systemFields";
 import { Fields } from "./index";
 import type { DataInput } from "../types";
 
@@ -74,6 +82,35 @@ describe("field type inference", () => {
         ],
       })[ITERATOR_FIELD_NAME],
     ).toHaveLength(1);
+  });
+
+  it("requires an iterator when linkedIterator is enabled and encodes the flag", () => {
+    expect(
+      () =>
+        new ContentType({
+          name: "InvalidLinkedIterator",
+          fields: {},
+          linkedIterator: true,
+        }),
+    ).toThrow("requires ContentType.iterator");
+
+    const LinkedIteratorCT = new ContentType({
+      name: "LinkedIteratorParam",
+      fields: {},
+      iterator: [
+        {
+          contentType: TypeRegressionCT,
+          type: "new",
+        },
+      ],
+      linkedIterator: true,
+    });
+
+    expect(LinkedIteratorCT.linkedIterator).toBe(true);
+    expect(encodeContentTypeForManager(LinkedIteratorCT).linkedIterator).toBe(
+      true,
+    );
+    expect(LinkedIteratorCT.apiOnly().linkedIterator).toBe(true);
   });
 
   it("allows new iterator modules to be saved as existing relations", () => {
@@ -179,6 +216,16 @@ describe("field type inference", () => {
           name: "ReservedIterator",
           fields: {
             [ITERATOR_FIELD_NAME]: Fields.string(),
+          },
+        }),
+    ).toThrow("reserved");
+
+    expect(
+      () =>
+        new ContentType({
+          name: "ReservedIteratorLink",
+          fields: {
+            [ITERATOR_UNLINKED_FIELD_NAME]: Fields.boolean(),
           },
         }),
     ).toThrow("reserved");

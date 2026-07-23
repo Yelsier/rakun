@@ -56,6 +56,11 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/get",
   },
+  "manager.linkedIterator.get": {
+    kind: "query",
+    method: "post",
+    path: "/manager/linkedIterator/get",
+  },
   "manager.list": {
     kind: "query",
     method: "post",

@@ -26,7 +26,11 @@ export { validateModule } from "./validateModule";
 export { populateLinks } from "./populates/populateLinks";
 export { populateRelations } from "./populates/populateRelations";
 export { resolveRedirect } from "./redirects/resolveRedirect";
-export { checkRevalidatePath, revalidatePath } from "./routes/revalidatePath";
+export {
+  checkRevalidatePath,
+  revalidateContentTypePaths,
+  revalidatePath,
+} from "./routes/revalidatePath";
 export * from "./routes/routeDefinitions";
 export {
   buildRoutePath,

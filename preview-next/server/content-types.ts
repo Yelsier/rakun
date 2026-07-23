@@ -59,10 +59,17 @@ export const Category = new ContentType({
     icon: 'Tags',
     category: 'Dynamic data',
   },
+  iterator: [
+    {
+      type: 'new',
+      contentType: HelloWorld,
+    },
+  ],
   fields: {
     title: Fields.string().required(),
     slug: Fields.string().type('Slug').required(),
   },
+  linkedIterator: true,
   uniques: [['slug']],
   listFields: ['title', 'slug'],
 })

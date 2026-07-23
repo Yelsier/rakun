@@ -6,6 +6,10 @@ import { defineOperationContract } from "./types";
 import { Language, ManagerUser } from "../../internal-content-types";
 import { EncodedContentTypeSchema } from "../../lib/ContentType";
 import {
+  linkedIteratorGetInput,
+  linkedIteratorStateOutput,
+} from "../../schemas/manager/linkedIterator";
+import {
   accountInfoOutput,
   backupRecord,
   createCommentInput,
@@ -167,6 +171,14 @@ export const createManagerOperationContracts = () =>
       description: "Get an entry for a content type",
       input: getInput,
       output: z.any(),
+      method: "post",
+    }),
+    "manager.linkedIterator.get": defineOperationContract({
+      access: "auth",
+      kind: "query",
+      description: "Get the effective linked iterator state for a content type",
+      input: linkedIteratorGetInput,
+      output: linkedIteratorStateOutput,
       method: "post",
     }),
     "manager.list": defineOperationContract({

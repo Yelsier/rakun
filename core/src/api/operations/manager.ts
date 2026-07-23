@@ -31,6 +31,7 @@ import {
 import { listMentionUsersHandler } from "../routes/manager/users";
 import { trashHandler } from "../routes/manager/trash";
 import { getHandler } from "../routes/manager/get";
+import { linkedIteratorGetHandler } from "../routes/manager/linkedIterator";
 import { listHandler } from "../routes/manager/list";
 import { languagesHandler } from "../routes/manager/languages";
 import { listMigrationsHandler } from "../routes/manager/migrations/list";
@@ -100,6 +101,9 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.get": {
       resolve: getHandler,
+    },
+    "manager.linkedIterator.get": {
+      resolve: linkedIteratorGetHandler,
     },
     "manager.list": {
       resolve: listHandler,

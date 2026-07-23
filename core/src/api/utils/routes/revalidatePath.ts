@@ -54,6 +54,20 @@ export async function revalidatePath(path: string): Promise<void> {
   });
 }
 
+export async function revalidateContentTypePaths(
+  contentType: string,
+): Promise<void> {
+  const db = await getMongoService();
+  const paths = (
+    await db.list(RouteMap, {
+      filter: { contentType },
+      options: { fields: ["path"], limit: "all" },
+    })
+  ).items.map((item) => item.path);
+
+  await Promise.all(Array.from(new Set(paths)).map(revalidatePath));
+}
+
 const upsertCase = async (
   contentType: string,
   contentTypeId: string,

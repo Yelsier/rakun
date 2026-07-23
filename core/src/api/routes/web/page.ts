@@ -29,6 +29,8 @@ import { populateRelations } from "../../utils/populates/populateRelations";
 import { resolveRedirect } from "../../utils/redirects/resolveRedirect";
 import { validateModule } from "../../utils/validateModule";
 import { resolveSeo } from "./seo";
+import { applyEffectiveIterator } from "../../utils/linkedIterator";
+import { ITERATOR_UNLINKED_FIELD_NAME } from "../../../lib/systemFields";
 
 export const NotFoundResponse: PageOutput = {
   renderMode: "static",
@@ -124,6 +126,7 @@ export const buildPageOutput = async ({
   data,
   language,
   tracePrefix = "web.page",
+  preferDocumentIterator = false,
 }: {
   path: string;
   route: DBOutput<Route>;
@@ -133,11 +136,20 @@ export const buildPageOutput = async ({
   data: PageContentData;
   language: DBOutput<Language>;
   tracePrefix?: string;
+  preferDocumentIterator?: boolean;
 }): Promise<PageOutput> => {
   const db = await getMongoService();
   const surface = tracePrefix === "web.previewPage" ? "preview" : "web";
   const localeCode = language.code || "en";
-  const iterator = contentType.hasIterator ? data[ITERATOR_FIELD_NAME] : [];
+  const effectiveData = await applyEffectiveIterator({
+    db,
+    contentType,
+    document: data,
+    preferDocument: preferDocumentIterator,
+  });
+  const iterator = contentType.hasIterator
+    ? effectiveData[ITERATOR_FIELD_NAME]
+    : [];
   const iteratorModules = Array.isArray(iterator) ? iterator : [];
 
   return runContentHookContext(
@@ -152,7 +164,9 @@ export const buildPageOutput = async ({
       },
     },
     async () => {
-      const linksPopulated = await populateLinks(data as DBOutput<ContentType>);
+      const linksPopulated = await populateLinks(
+        effectiveData as DBOutput<ContentType>,
+      );
       Logger.addTrace(`${tracePrefix}: links populated`);
 
       const populated = await populateRelations(
@@ -198,6 +212,7 @@ export const buildPageOutput = async ({
 
       const {
         [ITERATOR_FIELD_NAME]: modules = iteratorModules,
+        [ITERATOR_UNLINKED_FIELD_NAME]: _iteratorUnlinked,
         [SEO_FIELD_NAME]: seo,
         ...info
       } = populatedTranslated;
