@@ -1,6 +1,6 @@
 'use client'
 
-import { GripVertical, ImagePlus, Trash2 } from 'lucide-react'
+import { GripVertical, ImagePlus, Settings2, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -13,11 +13,20 @@ import { FieldWrapper } from '../shared/FieldWrapper'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   Sortable,
   SortableContent,
   SortableItem,
   SortableItemHandle,
 } from '@/components/ui/sortable'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { useTRPC, useTRPCClient } from '@/components/trpc-provider'
 import { useEditErrorStore } from '@/hooks/app-store'
 import type { MediaRecord } from '@/lib/media'
@@ -44,6 +53,8 @@ type MediaPreviewListItem = Pick<MediaRecord, '_id' | 'name'> &
   Partial<
     Pick<MediaRecord, 'access' | 'key' | 'mime' | 'previewKey' | 'previewUrl' | 'size' | 'url'>
   >
+
+const INLINE_MEDIA_LIMIT = 5
 
 const isMediaRelation = (value: unknown): value is MediaRelationValue => {
   return (
@@ -86,9 +97,13 @@ const isValidType = (mediaType: EncodedFileField['mediaType'], mime: string): bo
 const SelectedMediaListItem = ({
   media,
   onDelete,
+  reorderable = true,
+  layout = 'list',
 }: {
   media: MediaPreviewListItem
   onDelete: (id: string) => void
+  reorderable?: boolean
+  layout?: 'list' | 'grid'
 }) => {
   const trpcClient = useTRPCClient()
   const canResolvePreview = Boolean(
@@ -123,14 +138,65 @@ const SelectedMediaListItem = ({
     .filter(Boolean)
     .join(' • ')
 
+  if (layout === 'grid') {
+    return (
+      <div className="group relative min-w-0 overflow-hidden rounded-lg border bg-background">
+        <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+          {previewUrl ? (
+            <img
+              src={previewUrl}
+              alt={media.name || 'Selected image'}
+              className="h-full w-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            <div className="flex size-full items-center justify-center">
+              <ImagePlus className="text-muted-foreground size-7" />
+            </div>
+          )}
+          {reorderable ? (
+            <SortableItemHandle asChild>
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                className="absolute top-2 left-2 size-8 cursor-grab shadow-sm active:cursor-grabbing"
+              >
+                <GripVertical className="size-4" />
+                <span className="sr-only">Reorder media</span>
+              </Button>
+            </SortableItemHandle>
+          ) : null}
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            className="text-destructive hover:text-destructive absolute top-2 right-2 size-8 shadow-sm"
+            onClick={() => onDelete(media._id)}
+          >
+            <Trash2 className="size-4" />
+            <span className="sr-only">Remove media</span>
+          </Button>
+        </div>
+        <div className="min-w-0 p-2.5">
+          <p className="truncate text-sm font-medium">{media.name || media._id}</p>
+          {metadata ? <p className="text-muted-foreground truncate text-xs">{metadata}</p> : null}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-w-0 items-center gap-3 rounded-md border bg-background p-2">
-      <SortableItemHandle asChild>
-        <Button type="button" variant="ghost" size="icon" className="size-8 shrink-0">
-          <GripVertical className="size-4" />
-          <span className="sr-only">Reorder media</span>
-        </Button>
-      </SortableItemHandle>
+      {reorderable ? (
+        <SortableItemHandle asChild>
+          <Button type="button" variant="ghost" size="icon" className="size-8 shrink-0">
+            <GripVertical className="size-4" />
+            <span className="sr-only">Reorder media</span>
+          </Button>
+        </SortableItemHandle>
+      ) : null}
       <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
         {previewUrl ? (
           <img
@@ -138,6 +204,7 @@ const SelectedMediaListItem = ({
             alt={media.name || 'Selected image'}
             className="h-full w-full object-cover"
             loading="lazy"
+            decoding="async"
           />
         ) : (
           <ImagePlus className="text-muted-foreground size-5" />
@@ -173,6 +240,7 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
   )
   const [selectedMedia, setSelectedMedia] = useState<MediaRecord | null>(null)
   const [selectedMediaList, setSelectedMediaList] = useState<MediaRecord[]>([])
+  const [manageMediaOpen, setManageMediaOpen] = useState(false)
   const [translations, setTranslations] = useState<MediaRelationTranslatableValue>(() =>
     props.isTranslatable && !props.isMultiple && isTranslatableMediaRelation(props.defaultData)
       ? props.defaultData
@@ -281,6 +349,8 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
         }
     )
   }, [mediaListForPreview, valueList])
+  const inlineMediaItems = selectedMediaItems.slice(0, INLINE_MEDIA_LIMIT)
+  const hasMoreMedia = selectedMediaItems.length > INLINE_MEDIA_LIMIT
 
   const { data: previewUrl } = useQuery({
     queryKey: [
@@ -579,22 +649,61 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
           valueList.length > 0 ? (
             <Card className="p-3 text-sm">
               <div className="space-y-3">
-                <p className="font-medium">{valueList.length} media selected</p>
-                <Sortable
-                  value={selectedMediaItems}
-                  onValueChange={handleMultipleSort}
-                  getItemValue={(item) => item._id}
-                >
-                  <SortableContent className="flex flex-col gap-2">
-                    {selectedMediaItems.map((media) => (
-                      <SortableItem key={media._id} value={media._id} asChild>
-                        <div>
-                          <SelectedMediaListItem media={media} onDelete={handleMultipleDelete} />
-                        </div>
-                      </SortableItem>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="font-medium">{valueList.length} media selected</p>
+                    {hasMoreMedia ? (
+                      <p className="text-muted-foreground text-xs">
+                        Showing the first {INLINE_MEDIA_LIMIT}
+                      </p>
+                    ) : null}
+                  </div>
+                  {hasMoreMedia ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setManageMediaOpen(true)}
+                    >
+                      <Settings2 className="size-4" />
+                      Manage & reorder
+                    </Button>
+                  ) : null}
+                </div>
+                {hasMoreMedia ? (
+                  <div className="grid grid-cols-3 gap-2 lg:grid-cols-5">
+                    {inlineMediaItems.map((media) => (
+                      <SelectedMediaListItem
+                        key={media._id}
+                        media={media}
+                        onDelete={handleMultipleDelete}
+                        reorderable={false}
+                        layout="grid"
+                      />
                     ))}
-                  </SortableContent>
-                </Sortable>
+                  </div>
+                ) : (
+                  <Sortable
+                    value={inlineMediaItems}
+                    onValueChange={handleMultipleSort}
+                    getItemValue={(item) => item._id}
+                    orientation="mixed"
+                  >
+                    <SortableContent className="grid grid-cols-3 gap-2 lg:grid-cols-5">
+                      {inlineMediaItems.map((media) => (
+                        <SortableItem key={media._id} value={media._id} asChild>
+                          <div>
+                            <SelectedMediaListItem
+                              media={media}
+                              onDelete={handleMultipleDelete}
+                              layout="grid"
+                            />
+                          </div>
+                        </SortableItem>
+                      ))}
+                    </SortableContent>
+                  </Sortable>
+                )}
               </div>
             </Card>
           ) : null
@@ -616,6 +725,43 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
             </div>
           </Card>
         ) : null}
+        <Dialog open={manageMediaOpen} onOpenChange={setManageMediaOpen}>
+          <DialogContent className="max-h-[92vh] w-[calc(100vw-2rem)] max-w-7xl! overflow-hidden">
+            <DialogHeader>
+              <DialogTitle>Manage selected media</DialogTitle>
+              <DialogDescription>
+                Drag the files to reorder them or remove files from the selection.
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="h-[68vh] pr-3">
+              <Sortable
+                value={selectedMediaItems}
+                onValueChange={handleMultipleSort}
+                getItemValue={(item) => item._id}
+                orientation="mixed"
+              >
+                <SortableContent className="grid grid-cols-2 gap-3 pb-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                  {selectedMediaItems.map((media) => (
+                    <SortableItem key={media._id} value={media._id} asChild>
+                      <div>
+                        <SelectedMediaListItem
+                          media={media}
+                          onDelete={handleMultipleDelete}
+                          layout="grid"
+                        />
+                      </div>
+                    </SortableItem>
+                  ))}
+                </SortableContent>
+              </Sortable>
+            </ScrollArea>
+            <DialogFooter>
+              <Button type="button" onClick={() => setManageMediaOpen(false)}>
+                Done
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </FieldWrapper>
   )
