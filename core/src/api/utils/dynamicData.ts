@@ -618,7 +618,10 @@ const getListItemStableKey = (item: unknown): string | undefined => {
   const value = item.value;
 
   if (isRecord(value) && typeof value._id === "string") {
-    return `${name}:${value._id}`;
+    const id = value._id.startsWith(`${name}:`)
+      ? value._id.slice(name.length + 1)
+      : value._id;
+    return `${name}:${id}`;
   }
 
   if (
@@ -632,12 +635,24 @@ const getListItemStableKey = (item: unknown): string | undefined => {
   return undefined;
 };
 
+const isListValueItem = (
+  item: unknown,
+): item is { name: string; value: unknown } =>
+  isRecord(item) &&
+  typeof item.name === "string" &&
+  Object.prototype.hasOwnProperty.call(item, "value") &&
+  item.value !== undefined;
+
 export const mergeDynamicListItems = (
   currentValue: unknown,
   resolvedValue: unknown,
 ) => {
-  const currentItems = Array.isArray(currentValue) ? currentValue : [];
-  const resolvedItems = Array.isArray(resolvedValue) ? resolvedValue : [];
+  const currentItems = Array.isArray(currentValue)
+    ? currentValue.filter(isListValueItem)
+    : [];
+  const resolvedItems = Array.isArray(resolvedValue)
+    ? resolvedValue.filter(isListValueItem)
+    : [];
   const seen = new Set<string>();
   const merged: unknown[] = [];
 

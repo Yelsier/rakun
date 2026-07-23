@@ -392,6 +392,33 @@ describe("dynamic data output", () => {
     ]);
   });
 
+  it("drops invalid fallback values and normalizes generated stable ids", () => {
+    const dynamicItem = {
+      name: "Category",
+      value: {
+        _id: "Category:category-1",
+        _type: "LinkItem",
+        title: "Assistant",
+      },
+    };
+    const rawSourceDocument = {
+      _id: "category-1",
+      _type: "Category",
+      title: "Assistant",
+    };
+    const wrappedSourceDocument = {
+      name: "Category",
+      value: rawSourceDocument,
+    };
+
+    expect(
+      mergeDynamicListItems(
+        [rawSourceDocument, wrappedSourceDocument],
+        [dynamicItem],
+      ),
+    ).toEqual([dynamicItem]);
+  });
+
   it("collects and flattens related arrays while preserving order and duplicates", async () => {
     const RelatedCategory = new ContentType({
       name: "RelatedDynamicCategory",
