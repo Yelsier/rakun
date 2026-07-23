@@ -3,9 +3,14 @@ import type {
   EncodedContentType,
   EncodedFieldUnknown,
   EncodedFileField,
+  EncodedListField,
+  EncodedRelationField,
 } from '@rakun-kit/core/client'
 
-import { sourceFieldOptions } from './DynamicDataControl'
+import {
+  currentDocumentListSourceOptions,
+  sourceFieldOptions,
+} from './DynamicDataControl'
 
 const fieldState = {
   isRequired: false,
@@ -35,6 +40,7 @@ const project = {
   uniques: [],
   fields: {
     title: stringField,
+    _iterator: stringField,
     featuredImage: fileField('Image'),
     document: fileField('Document'),
     featuredImages: fileField('Image', true),
@@ -81,9 +87,52 @@ describe('dynamic data source field options', () => {
     )
 
     expect(values).toContain('title')
+    expect(values).not.toContain('_iterator')
     expect(values).toContain('featuredImage.url')
     expect(values).toContain('document.alt')
     expect(values).not.toContain('featuredImage')
     expect(values).not.toContain('featuredImages')
+  })
+})
+
+describe('current document list source options', () => {
+  test('offers block arrays with their related item content type', () => {
+    const linkItem = {
+      name: 'LinkItem',
+      uniques: [],
+      fields: {
+        title: stringField,
+      },
+    } as EncodedContentType
+    const categoryRelation = {
+      ...fieldState,
+      config: { type: 'Relation', ui: 'ContentType' },
+      contentType: linkItem,
+      only: 'new',
+    } as EncodedRelationField
+    const categories = {
+      ...fieldState,
+      config: { type: 'List', ui: 'List' },
+      fields: [{ name: 'Category', field: categoryRelation }],
+    } as EncodedListField
+    const document = {
+      name: 'Project',
+      uniques: [],
+      fields: {
+        title: stringField,
+        categories,
+        _iterator: categories,
+      },
+    } as EncodedContentType
+
+    expect(currentDocumentListSourceOptions(document)).toEqual([
+      {
+        label: 'Current document · categories',
+        value: 'current-document:categories:Category',
+        contentType: linkItem,
+        path: 'categories',
+        itemName: 'Category',
+      },
+    ])
   })
 })

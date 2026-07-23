@@ -10,6 +10,7 @@ export type {
   DynamicDataOptions,
   DynamicDocumentBindings,
   DynamicListBinding,
+  DynamicListDocumentSource,
   DynamicListMapSource,
   DynamicRelatedCollectionSource,
 } from "./lib/dynamicData";

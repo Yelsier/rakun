@@ -159,6 +159,28 @@ const getRelationTarget = (
   return undefined;
 };
 
+const getDocumentListItemContentType = (
+  field: ContentType["fields"][string] | undefined,
+  itemName?: string,
+): ContentType | undefined => {
+  if (!field || !isArraySourceField(field) || field.getIsTranslatable()) {
+    return undefined;
+  }
+
+  if (
+    (field.meta.ui === "List" || field.meta.ui === "Iterator") &&
+    "fields" in field &&
+    Array.isArray(field.fields)
+  ) {
+    if (!itemName) return undefined;
+
+    const entry = field.fields.find((item) => item.name === itemName);
+    return entry ? getRelationTarget(entry.field) : undefined;
+  }
+
+  return getRelationTarget(field);
+};
+
 const getRouteKeyForSource = (
   contentTypeName: string,
   routeKey?: string,
@@ -370,21 +392,64 @@ const resolveListBinding = async ({
   binding: DynamicListBinding;
   contextSource?: ResolveOptions["contextSource"];
 }) => {
-  const sourceContentType = getAllowedSourceContentType(binding.contentType);
+  const documentSource = binding.source;
+  const sourceContentType = documentSource
+    ? getContentTypeByName(binding.contentType)
+    : getAllowedSourceContentType(binding.contentType);
   if (!sourceContentType) {
     return undefined;
   }
 
-  const query = addPublicContentFilter(
-    parseSafeManagerQuery(sourceContentType, binding.query ?? {}),
-  );
-  const sourceItems = (await db.list(sourceContentType, query)).items;
+  let sourceItems: unknown[];
 
-  return await Promise.all(
+  if (documentSource) {
+    if (
+      !contextSource ||
+      documentSource.contentType !== contextSource.contentType.name
+    ) {
+      return undefined;
+    }
+
+    const sourceField = getDynamicSourceField(
+      contextSource.contentType,
+      documentSource.path,
+    );
+    const itemContentType = getDocumentListItemContentType(
+      sourceField,
+      documentSource.itemName,
+    );
+    if (itemContentType?.name !== sourceContentType.name) {
+      return undefined;
+    }
+
+    const value = getAtPath(contextSource.value, documentSource.path);
+    if (!Array.isArray(value)) return undefined;
+
+    sourceItems = documentSource.itemName
+      ? value.flatMap((item) =>
+          isRecord(item) &&
+          item.name === documentSource.itemName &&
+          "value" in item
+            ? [item.value]
+            : [],
+        )
+      : value;
+  } else {
+    const query = addPublicContentFilter(
+      parseSafeManagerQuery(sourceContentType, binding.query ?? {}),
+    );
+    sourceItems = (await db.list(sourceContentType, query)).items;
+  }
+
+  const resolvedItems = await Promise.all(
     sourceItems.map(async (sourceItem, index) => {
-      const populated = (await populateRelations(
-        await populateLinks(sourceItem as DBOutput<ContentType>),
-      )) as Record<string, unknown>;
+      if (!isRecord(sourceItem)) return undefined;
+
+      const populated = documentSource
+        ? sourceItem
+        : ((await populateRelations(
+            await populateLinks(sourceItem as DBOutput<ContentType>),
+          )) as Record<string, unknown>);
       const mapped = Object.fromEntries(
         await Promise.all(
           Object.entries(binding.map).map(async ([targetField, source]) => [
@@ -413,6 +478,8 @@ const resolveListBinding = async ({
       };
     }),
   );
+
+  return resolvedItems.filter((item) => item !== undefined);
 };
 
 const getListTargetContentType = (
