@@ -1,5 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query'
 import type { EncodedContentType, EncodedFieldUnknown } from '@rakun-kit/core/client'
+import type {
+  LinkedIteratorAction,
+  LinkedIteratorControl,
+} from '@rakun-kit/core/client'
 import { toast } from 'sonner'
 
 import type {
@@ -107,6 +111,11 @@ type UseContentDocumentActionsParams = {
   onAfterRestore?: () => Promise<unknown> | unknown
   readFormData: () => unknown | undefined
   replaceDraft: (nextDraft: Record<string, FieldValue>) => void
+  getLinkedIteratorControl?: (
+    data: Record<string, unknown>,
+    requestedAction?: LinkedIteratorAction,
+  ) => LinkedIteratorControl | undefined
+  onLinkedIteratorSaved?: () => Promise<unknown> | unknown
   setVisibility: (visibility: DocumentVisibility) => void
   visibilityBeforeTrash: EditableDocumentVisibility
 }
@@ -122,6 +131,8 @@ export const useContentDocumentActions = ({
   onAfterRestore,
   readFormData,
   replaceDraft,
+  getLinkedIteratorControl,
+  onLinkedIteratorSaved,
   setVisibility,
   visibilityBeforeTrash,
 }: UseContentDocumentActionsParams) => {
@@ -162,10 +173,14 @@ export const useContentDocumentActions = ({
     })
   }
 
-  const handleCreate = async (data: unknown) => {
+  const handleCreate = async (
+    data: Record<string, unknown>,
+    requestedAction?: LinkedIteratorAction,
+  ) => {
     const result = await createMutation.mutateAsync({
       contentType: contentTypeName,
       data,
+      linkedIterator: getLinkedIteratorControl?.(data, requestedAction),
     })
 
     if (result && typeof result === 'object' && '_id' in result) {
@@ -180,13 +195,17 @@ export const useContentDocumentActions = ({
     toast.success('Created successfully')
   }
 
-  const handleUpdate = async (data: unknown) => {
+  const handleUpdate = async (
+    data: Record<string, unknown>,
+    requestedAction?: LinkedIteratorAction,
+  ) => {
     if (!contentTypeId) return
 
     const result = await updateMutation.mutateAsync({
       contentType: contentTypeName,
       id: contentTypeId,
       data,
+      linkedIterator: getLinkedIteratorControl?.(data, requestedAction),
     })
 
     if (result && typeof result === 'object' && '_id' in result) {
@@ -199,20 +218,25 @@ export const useContentDocumentActions = ({
 
     await invalidateVersions()
     await invalidateContentListQueries()
+    await onLinkedIteratorSaved?.()
     toast.success('Updated successfully')
   }
 
-  const handleSave = async () => {
+  const saveDocument = async (requestedAction?: LinkedIteratorAction) => {
     const data = readFormData()
 
-    if (!data) return
+    if (!isRecord(data)) return
 
     if (defaultData) {
-      await handleUpdate(data)
+      await handleUpdate(data, requestedAction)
     } else {
-      await handleCreate(data)
+      await handleCreate(data, requestedAction)
     }
   }
+
+  const handleSave = async () => saveDocument()
+  const handleInitializeLinkedIterator = async () =>
+    saveDocument('initialize')
 
   const handleSaveAsDraft = async () => {
     const data = readFormData()
@@ -336,6 +360,7 @@ export const useContentDocumentActions = ({
     handlePermanentDelete,
     handleRestoreFromTrash,
     handleSave,
+    handleInitializeLinkedIterator,
     handleSaveAsDraft,
     handleTranslateDocument,
     pending: {

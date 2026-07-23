@@ -62,6 +62,7 @@ export const getPreviewPage = async (
       data,
       language,
       tracePrefix: "web.previewPage",
+      preferDocumentIterator: true,
     });
   } catch (error) {
     Logger.addTrace("web.previewPage: handler failed");

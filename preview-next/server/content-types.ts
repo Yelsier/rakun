@@ -1,3 +1,4 @@
+import { DataFront } from '@rakun-kit/core/types'
 import { ContentType, Fields } from '@rakun-kit/next'
 import { HelloWorld } from '@rakun-kit/next/internal-content-types'
 
@@ -58,10 +59,17 @@ export const Category = new ContentType({
     icon: 'Tags',
     category: 'Dynamic data',
   },
+  iterator: [
+    {
+      type: 'new',
+      contentType: HelloWorld,
+    },
+  ],
   fields: {
     title: Fields.string().required(),
     slug: Fields.string().type('Slug').required(),
   },
+  linkedIterator: true,
   uniques: [['slug']],
   listFields: ['title', 'slug'],
 })
@@ -138,7 +146,7 @@ export const FeatureCarousel = new ContentType({
     items: Fields.blocks([
       {
         name: FeatureCarouselItem.name,
-        field: Fields.relation(FeatureCarouselItem, 'new'),
+        field: Fields.relation(FeatureCarouselItem, 'new').required(),
       },
     ]),
   },
@@ -167,7 +175,7 @@ export const CategoriesGallery = new ContentType({
     items: Fields.blocks([
       {
         name: CategoriesGalleryItem.name,
-        field: Fields.relation(CategoriesGalleryItem, 'new'),
+        field: Fields.relation(CategoriesGalleryItem, 'new').required(),
       },
     ]),
   },
@@ -395,3 +403,27 @@ export const previewContentTypes = [
   TranslationPlayground,
   ProjectHeader,
 ]
+
+export const keyedContentTypes = {
+  Header,
+  Footer,
+  PageSection,
+  Category,
+  Project,
+  FeatureCarouselItem,
+  FeatureCarousel,
+  CategoriesGalleryItem,
+  CategoriesGallery,
+  Author,
+  Article,
+  RelationLevel3,
+  RelationLevel2,
+  RelationPlayground,
+  ImagePlayground,
+  ConditionalDemo,
+  TranslationPlayground,
+}
+
+export type Props<T extends keyof typeof keyedContentTypes> = DataFront<
+  (typeof keyedContentTypes)[T]
+>

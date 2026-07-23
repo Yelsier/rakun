@@ -5,6 +5,7 @@ import { Fields } from "../../lib/fields";
 import { registerContentType } from "../../lib/Registry";
 import type { DBService } from "../../orm/dbService";
 import {
+  getDynamicListItemContentTypeName,
   mergeDynamicListItems,
   resolveDynamicData,
   resolveRelatedCollectionValue,
@@ -198,12 +199,124 @@ describe("dynamic data output", () => {
         name: "Category",
         value: {
           _id: "Category:category-1",
-          _type: "Category",
+          _type: CurrentDocumentLinkItem.name,
           title: "News",
           href: "/news",
         },
       },
     ]);
+  });
+
+  it("resolves list query values from the current document", async () => {
+    const CurrentQueryCard = new ContentType({
+      name: "CurrentQueryCard",
+      fields: {
+        title: Fields.string(),
+      },
+    });
+    const CurrentQueryCategory = new ContentType({
+      name: "CurrentQueryCategory",
+      fields: {
+        title: Fields.string().required(),
+        slug: Fields.string().required(),
+        projects: Fields.blocks([
+          {
+            name: CurrentQueryCard.name,
+            field: Fields.relation(CurrentQueryCard, "new"),
+          },
+        ]),
+      },
+    });
+    const CurrentQueryProject = new ContentType({
+      name: "CurrentQueryProject",
+      dynamicDataSource: true,
+      fields: {
+        title: Fields.string().required(),
+        category: Fields.relation(CurrentQueryCategory, "existing").required(),
+        published: Fields.boolean(),
+      },
+    });
+    registerContentType(CurrentQueryCard);
+    registerContentType(CurrentQueryCategory);
+    registerContentType(CurrentQueryProject);
+    const list = mock(async () => ({ totalItems: 0, items: [] }));
+
+    await resolveDynamicData(
+      {
+        _id: "category-1",
+        _type: CurrentQueryCategory.name,
+        title: "Design",
+        slug: "design",
+        projects: [],
+        _bindings: {
+          lists: {
+            projects: {
+              contentType: CurrentQueryProject.name,
+              itemName: CurrentQueryCard.name,
+              query: {
+                filter: {
+                  $and: [
+                    { "category.slug": { $current: "slug" } },
+                    { published: true },
+                  ],
+                },
+                options: { limit: 10 },
+              },
+              map: {},
+            },
+          },
+        },
+      },
+      {
+        db: { list } as unknown as DBService,
+        contentType: CurrentQueryCategory,
+        surface: "web",
+      },
+    );
+
+    expect(list).toHaveBeenCalledWith(CurrentQueryProject, {
+      filter: {
+        $and: [
+          { "category.slug": "design" },
+          { published: true },
+        ],
+        _trashed: { $ne: true },
+        _visibility: { $nin: ["draft", "trash"] },
+      },
+      options: {
+        fields: undefined,
+        limit: 10,
+        page: undefined,
+        sort: undefined,
+      },
+    });
+  });
+
+  it("uses the relation content type as _type when a block name is an alias", () => {
+    const AliasedBlock = new ContentType({
+      name: "AliasedDynamicBlock",
+      fields: {
+        title: Fields.string(),
+      },
+    });
+    const AliasedBlockContainer = new ContentType({
+      name: "AliasedDynamicBlockContainer",
+      fields: {
+        modules: Fields.blocks([
+          {
+            name: "hero",
+            field: Fields.relation(AliasedBlock, "new"),
+          },
+        ]),
+      },
+    });
+
+    expect(
+      getDynamicListItemContentTypeName(
+        AliasedBlockContainer.fields.modules,
+        "hero",
+      ),
+    ).toBe(AliasedBlock.name);
   });
 
   it("merges dynamic list items with manually stored items", () => {

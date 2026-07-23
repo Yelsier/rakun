@@ -5,6 +5,7 @@ export * from "./ContentComment";
 export * from "./ContentVersion";
 export * from "./Language";
 export * from "./LiteralTranslation";
+export * from "./LinkedIteratorTemplate";
 export * from "./ManagerRole";
 export * from "./ManagerFavorite";
 export * from "./ManagerUser";

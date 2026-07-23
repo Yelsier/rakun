@@ -2,6 +2,7 @@ import { getRakunBootstrapOptions } from "../../bootstrapState";
 import type ContentType from "../../lib/ContentType";
 import {
   DYNAMIC_BINDINGS_FIELD_NAME,
+  DynamicQueryCurrentValueSchema,
   getDynamicDocumentBindings,
   isDynamicDataSourceContentTypeAllowed,
   type DynamicBindingSource,
@@ -287,6 +288,66 @@ const addPublicContentFilter = (query: Query): Query => ({
   },
 });
 
+type DynamicQueryValueResolution =
+  | { success: true; value: unknown }
+  | { success: false };
+
+const isDynamicQueryCurrentPathAllowed = (
+  contentType: ContentType,
+  path: string,
+) => path === "_id" || isDynamicSourcePathAllowed(contentType, path);
+
+const resolveDynamicQueryValue = (
+  value: unknown,
+  currentDocument: Record<string, unknown>,
+  currentDocumentContentType: ContentType,
+): DynamicQueryValueResolution => {
+  const currentValue = DynamicQueryCurrentValueSchema.safeParse(value);
+  if (currentValue.success) {
+    const path = currentValue.data.$current;
+    if (!isDynamicQueryCurrentPathAllowed(currentDocumentContentType, path)) {
+      return { success: false };
+    }
+
+    const resolved = getAtPath(currentDocument, path);
+    return resolved === undefined
+      ? { success: false }
+      : { success: true, value: resolved };
+  }
+
+  if (Array.isArray(value)) {
+    const items: unknown[] = [];
+    for (const item of value) {
+      const resolved = resolveDynamicQueryValue(
+        item,
+        currentDocument,
+        currentDocumentContentType,
+      );
+      if (!resolved.success) return resolved;
+      items.push(resolved.value);
+    }
+
+    return { success: true, value: items };
+  }
+
+  if (isRecord(value) && !(value instanceof Date)) {
+    const entries: Array<[string, unknown]> = [];
+    for (const [key, item] of Object.entries(value)) {
+      const resolved = resolveDynamicQueryValue(
+        item,
+        currentDocument,
+        currentDocumentContentType,
+      );
+      if (!resolved.success) return resolved;
+      entries.push([key, resolved.value]);
+    }
+
+    return { success: true, value: Object.fromEntries(entries) };
+  }
+
+  return { success: true, value };
+};
+
 export const resolveRelatedCollectionValue = async ({
   db,
   source,
@@ -387,10 +448,16 @@ const resolveListBinding = async ({
   db,
   binding,
   contextSource,
+  currentDocument,
+  currentDocumentContentType,
+  itemContentTypeName,
 }: {
   db: DBService;
   binding: DynamicListBinding;
   contextSource?: ResolveOptions["contextSource"];
+  currentDocument: Record<string, unknown>;
+  currentDocumentContentType: ContentType;
+  itemContentTypeName: string;
 }) => {
   const documentSource = binding.source;
   const sourceContentType = documentSource
@@ -435,8 +502,20 @@ const resolveListBinding = async ({
         )
       : value;
   } else {
+    const resolvedFilter = resolveDynamicQueryValue(
+      binding.query?.filter ?? {},
+      currentDocument,
+      currentDocumentContentType,
+    );
+    if (!resolvedFilter.success || !isRecord(resolvedFilter.value)) {
+      return [];
+    }
+
     const query = addPublicContentFilter(
-      parseSafeManagerQuery(sourceContentType, binding.query ?? {}),
+      parseSafeManagerQuery(sourceContentType, {
+        ...binding.query,
+        filter: resolvedFilter.value,
+      }),
     );
     sourceItems = (await db.list(sourceContentType, query)).items;
   }
@@ -472,7 +551,7 @@ const resolveListBinding = async ({
             typeof sourceItem._id === "string"
               ? `${binding.itemName}:${sourceItem._id}`
               : `${binding.itemName}:${index}`,
-          _type: binding.itemName,
+          _type: itemContentTypeName,
           ...mapped,
         },
       };
@@ -505,6 +584,11 @@ const getListTargetContentType = (
 
   return entry.field.contentType as ContentType;
 };
+
+export const getDynamicListItemContentTypeName = (
+  field: ContentType["fields"][string] | undefined,
+  itemName: string,
+) => getListTargetContentType(field, itemName)?.name ?? itemName;
 
 const filterListBindingMap = (
   contentType: ContentType,
@@ -616,6 +700,12 @@ const resolveRecordBindings = async ({
         db,
         binding: filteredBinding,
         contextSource,
+        currentDocument: contextSource?.value ?? next,
+        currentDocumentContentType: contextSource?.contentType ?? contentType,
+        itemContentTypeName: getDynamicListItemContentTypeName(
+          contentType.fields[field],
+          binding.itemName,
+        ),
       });
       if (resolved !== undefined) {
         next[field] = mergeDynamicListItems(next[field], resolved);

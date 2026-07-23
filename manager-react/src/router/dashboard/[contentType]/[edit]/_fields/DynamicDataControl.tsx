@@ -15,12 +15,22 @@ import type {
   EncodedSimpleListField,
 } from '@rakun-kit/core/client'
 import {
+  DYNAMIC_QUERY_CURRENT_VALUE_KEY,
   ITERATOR_FIELD_NAME,
   getListField,
   isDynamicDataSourceContentTypeAllowed,
   isTranslatableObject,
 } from '@rakun-kit/core/client'
-import { Cable, ChevronRight, HelpCircle, Link2, ListFilter, X } from 'lucide-react'
+import {
+  Cable,
+  ChevronRight,
+  HelpCircle,
+  Link2,
+  ListFilter,
+  Plus,
+  Trash2,
+  X,
+} from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -59,11 +69,29 @@ import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
 
 type FieldBinding = DynamicBindingSource | undefined
 type ListMapSource = DynamicListMapSource | undefined
-type FilterOperator = 'equals' | 'contains' | 'true' | 'false'
-type FilterState = {
+type FilterOperator =
+  | 'equals'
+  | 'notEquals'
+  | 'contains'
+  | 'in'
+  | 'notIn'
+  | 'greaterThan'
+  | 'greaterThanOrEqual'
+  | 'lessThan'
+  | 'lessThanOrEqual'
+  | 'true'
+  | 'false'
+  | 'exists'
+  | 'notExists'
+type FilterCondition = {
   field: string
   operator: FilterOperator
   value: string
+  valueSource?: 'literal' | 'current'
+}
+type FilterState = {
+  combinator: 'and' | 'or'
+  conditions: FilterCondition[]
 }
 type SourceFieldKind =
   | 'string'
@@ -265,13 +293,28 @@ const nestedSourceFieldOptions = ({
 
     if (field.config.type === 'Relation' && depth < 3) {
       const relationContentType = (field as EncodedRelationField).contentType
-
-      return nestedSourceFieldOptions({
-        contentType: relationContentType,
-        prefix: path,
+      const idOption: SourceFieldOption[] = isCompatibleSourceKind(
+        'string',
         targetField,
-        depth: depth + 1,
-      })
+      )
+        ? [
+            {
+              label: fieldLabel(`${path}._id`),
+              value: `${path}._id`,
+              kind: 'string',
+            },
+          ]
+        : []
+
+      return [
+        ...idOption,
+        ...nestedSourceFieldOptions({
+          contentType: relationContentType,
+          prefix: path,
+          targetField,
+          depth: depth + 1,
+        }),
+      ]
     }
 
     if (field.config.type === 'File') {
@@ -304,7 +347,7 @@ const nestedSourceFieldOptions = ({
 export const sourceFieldOptions = (
   contentType?: EncodedContentType,
   targetField?: EncodedFieldUnknown,
-) => {
+): SourceFieldOption[] => {
   if (!contentType) return []
 
   const fields = nestedSourceFieldOptions({ contentType, targetField })
@@ -419,17 +462,68 @@ const getSourceContentTypes = (
     isDynamicDataSourceContentTypeAllowed(sourceContentType),
   )
 
-const readFilterState = (
-  filter: Record<string, unknown> | undefined,
-): FilterState | undefined => {
-  const entry = filter ? Object.entries(filter)[0] : undefined
-  if (!entry) return undefined
+const operatorByMongoOperator: Record<string, FilterOperator> = {
+  $eq: 'equals',
+  $ne: 'notEquals',
+  $contains: 'contains',
+  $in: 'in',
+  $nin: 'notIn',
+  $gt: 'greaterThan',
+  $gte: 'greaterThanOrEqual',
+  $lt: 'lessThan',
+  $lte: 'lessThanOrEqual',
+}
 
-  const [field, value] = entry
+const readFilterOperand = (
+  value: unknown,
+): Pick<FilterCondition, 'value' | 'valueSource'> => {
+  if (
+    isRecord(value) &&
+    typeof value[DYNAMIC_QUERY_CURRENT_VALUE_KEY] === 'string'
+  ) {
+    return {
+      value: value[DYNAMIC_QUERY_CURRENT_VALUE_KEY],
+      valueSource: 'current' as const,
+    }
+  }
+
+  return {
+    value: Array.isArray(value) ? value.join(', ') : String(value ?? ''),
+  }
+}
+
+const filterConditionFromEntry = (
+  field: string,
+  value: unknown,
+): FilterCondition => {
   if (value === true) return { field, operator: 'true', value: '' }
   if (value === false) return { field, operator: 'false', value: '' }
-  if (isRecord(value) && typeof value.$contains === 'string') {
-    return { field, operator: 'contains', value: value.$contains }
+
+  const directOperand = readFilterOperand(value)
+  if (directOperand.valueSource === 'current') {
+    return { field, operator: 'equals', ...directOperand }
+  }
+
+  if (isRecord(value)) {
+    if (typeof value.$exists === 'boolean') {
+      return {
+        field,
+        operator: value.$exists ? 'exists' : 'notExists',
+        value: '',
+      }
+    }
+
+    const operatorEntry = Object.entries(value).find(
+      ([operator]) => operator in operatorByMongoOperator,
+    )
+    if (operatorEntry) {
+      const [operator, operatorValue] = operatorEntry
+      return {
+        field,
+        operator: operatorByMongoOperator[operator],
+        ...readFilterOperand(operatorValue),
+      }
+    }
   }
 
   return {
@@ -439,26 +533,150 @@ const readFilterState = (
   }
 }
 
-const buildFilter = (state: FilterState | undefined) => {
-  if (!state?.field) return undefined
-  if (state.operator === 'true') return { [state.field]: true }
-  if (state.operator === 'false') return { [state.field]: false }
-  if (!state.value.trim()) return undefined
-  if (state.operator === 'contains') {
-    return { [state.field]: { $contains: state.value } }
+export const readFilterState = (
+  filter: Record<string, unknown> | undefined,
+): FilterState => {
+  if (!filter) return { combinator: 'and', conditions: [] }
+
+  const logicalEntry = ['$and', '$or'].find((key) => Array.isArray(filter[key]))
+  if (logicalEntry) {
+    const conditions = (filter[logicalEntry] as unknown[]).flatMap((item) =>
+      isRecord(item)
+        ? Object.entries(item)
+            .filter(([field]) => !field.startsWith('$'))
+            .map(([field, value]) => filterConditionFromEntry(field, value))
+        : [],
+    )
+
+    return {
+      combinator: logicalEntry === '$or' ? 'or' : 'and',
+      conditions,
+    }
   }
 
-  return { [state.field]: state.value }
+  return {
+    combinator: 'and',
+    conditions: Object.entries(filter)
+      .filter(([field]) => !field.startsWith('$'))
+      .map(([field, value]) => filterConditionFromEntry(field, value)),
+  }
+}
+
+const operatorNeedsValue = (operator: FilterOperator) =>
+  !['true', 'false', 'exists', 'notExists'].includes(operator)
+
+const parseFilterValue = (
+  condition: FilterCondition,
+  fieldOptions: SourceFieldOption[],
+) => {
+  const kind = fieldOptions.find(
+    (option) => option.value === condition.field,
+  )?.kind
+  const parseValue = (value: string) =>
+    kind === 'number' && value.trim() !== '' && Number.isFinite(Number(value))
+      ? Number(value)
+      : value.trim()
+
+  if (condition.operator === 'in' || condition.operator === 'notIn') {
+    return condition.value
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .map(parseValue)
+  }
+
+  return parseValue(condition.value)
+}
+
+const buildFilterCondition = (
+  condition: FilterCondition,
+  fieldOptions: SourceFieldOption[],
+) => {
+  if (!condition.field) return undefined
+  if (condition.operator === 'true') return { [condition.field]: true }
+  if (condition.operator === 'false') return { [condition.field]: false }
+  if (condition.operator === 'exists') {
+    return { [condition.field]: { $exists: true } }
+  }
+  if (condition.operator === 'notExists') {
+    return { [condition.field]: { $exists: false } }
+  }
+  if (!condition.value.trim()) return undefined
+
+  const value =
+    condition.valueSource === 'current'
+      ? { [DYNAMIC_QUERY_CURRENT_VALUE_KEY]: condition.value }
+      : parseFilterValue(condition, fieldOptions)
+  const mongoOperator: Partial<Record<FilterOperator, string>> = {
+    notEquals: '$ne',
+    contains: '$contains',
+    in: '$in',
+    notIn: '$nin',
+    greaterThan: '$gt',
+    greaterThanOrEqual: '$gte',
+    lessThan: '$lt',
+    lessThanOrEqual: '$lte',
+  }
+  const operator = mongoOperator[condition.operator]
+
+  return operator
+    ? { [condition.field]: { [operator]: value } }
+    : { [condition.field]: value }
+}
+
+export const buildFilter = (
+  state: FilterState,
+  fieldOptions: SourceFieldOption[] = [],
+) => {
+  const conditions: Record<string, unknown>[] = state.conditions.flatMap(
+    (condition) => {
+      const builtCondition = buildFilterCondition(condition, fieldOptions)
+      return builtCondition ? [builtCondition] : []
+    },
+  )
+
+  if (conditions.length === 0) return undefined
+  if (conditions.length === 1) return conditions[0]
+
+  return { [state.combinator === 'or' ? '$or' : '$and']: conditions }
 }
 
 const filterSummary = (filter: Record<string, unknown> | undefined) => {
   const state = readFilterState(filter)
-  if (!state) return ''
-  if (state.operator === 'true') return `${state.field} = true`
-  if (state.operator === 'false') return `${state.field} = false`
-  if (state.operator === 'contains') return `${state.field} contains ${state.value}`
+  if (state.conditions.length === 0) return ''
 
-  return `${state.field} = ${state.value}`
+  const first = state.conditions[0]
+  const operatorLabels: Record<FilterOperator, string> = {
+    equals: '=',
+    notEquals: '!=',
+    contains: 'contains',
+    in: 'in',
+    notIn: 'not in',
+    greaterThan: '>',
+    greaterThanOrEqual: '>=',
+    lessThan: '<',
+    lessThanOrEqual: '<=',
+    true: '= true',
+    false: '= false',
+    exists: 'is set',
+    notExists: 'is not set',
+  }
+  const firstSummary = [
+    first.field,
+    operatorLabels[first.operator],
+    operatorNeedsValue(first.operator)
+      ? first.valueSource === 'current'
+        ? `Current document.${first.value}`
+        : first.value
+      : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+  const remaining = state.conditions.length - 1
+
+  return remaining > 0
+    ? `${firstSummary} + ${remaining} ${remaining === 1 ? 'condition' : 'conditions'}`
+    : firstSummary
 }
 
 const bindingSummary = ({
@@ -793,6 +1011,67 @@ const getSortFieldOptions = (
 
     return isSortable ? [{ label: fieldLabel(name), value: name, kind }] : []
   })
+
+const filterOperatorOptions: Record<
+  FilterOperator,
+  { label: string; value: FilterOperator }
+> = {
+  equals: { label: 'Equals', value: 'equals' },
+  notEquals: { label: 'Does not equal', value: 'notEquals' },
+  contains: { label: 'Contains', value: 'contains' },
+  in: { label: 'Is one of', value: 'in' },
+  notIn: { label: 'Is not one of', value: 'notIn' },
+  greaterThan: { label: 'Greater than', value: 'greaterThan' },
+  greaterThanOrEqual: {
+    label: 'Greater than or equal',
+    value: 'greaterThanOrEqual',
+  },
+  lessThan: { label: 'Less than', value: 'lessThan' },
+  lessThanOrEqual: {
+    label: 'Less than or equal',
+    value: 'lessThanOrEqual',
+  },
+  true: { label: 'Is true', value: 'true' },
+  false: { label: 'Is false', value: 'false' },
+  exists: { label: 'Is set', value: 'exists' },
+  notExists: { label: 'Is not set', value: 'notExists' },
+}
+
+const getFilterOperatorOptions = (kind: SourceFieldKind | undefined) => {
+  const operators: FilterOperator[] =
+    kind === 'boolean'
+      ? ['true', 'false', 'exists', 'notExists']
+      : kind === 'number' || kind === 'date'
+        ? [
+            'equals',
+            'notEquals',
+            'greaterThan',
+            'greaterThanOrEqual',
+            'lessThan',
+            'lessThanOrEqual',
+            'in',
+            'notIn',
+            'exists',
+            'notExists',
+          ]
+        : kind === 'string' || kind === 'richText'
+          ? [
+              'equals',
+              'notEquals',
+              'contains',
+              'in',
+              'notIn',
+              'exists',
+              'notExists',
+            ]
+          : ['equals', 'notEquals', 'exists', 'notExists']
+
+  return operators.map((operator) => filterOperatorOptions[operator])
+}
+
+const defaultFilterOperator = (
+  kind: SourceFieldKind | undefined,
+): FilterOperator => (kind === 'boolean' ? 'true' : 'equals')
 
 const createRelatedCollectionSource = ({
   contentType,
@@ -1159,7 +1438,7 @@ const ListBindingEditor = ({
   const [itemName, setItemName] = useState(
     binding?.itemName || itemOptions[0]?.name || '',
   )
-  const [filterState, setFilterState] = useState<FilterState | undefined>(
+  const [filterState, setFilterState] = useState<FilterState>(
     readFilterState(binding?.query?.filter),
   )
   const [openMappingField, setOpenMappingField] = useState<string | null>(null)
@@ -1186,6 +1465,18 @@ const ListBindingEditor = ({
   const filterFieldOptions = selectedSource
     ? sourceFieldOptions(selectedSource).filter((item) => item.value !== '$href')
     : []
+  const currentDocumentFieldOptions: SourceFieldOption[] = [
+    { label: '_id', value: '_id', kind: 'string' },
+    ...sourceFieldOptions(documentContentType).filter(
+      (item) =>
+        item.value !== '$href' &&
+        item.kind !== 'object' &&
+        item.kind !== 'array',
+    ),
+  ]
+  const sortEntry = Object.entries(binding?.query?.options?.sort ?? {})[0]
+  const sortField = sortEntry?.[0] ?? ''
+  const sortDirection = sortEntry?.[1] ?? 'desc'
 
   const emit = (patch: Partial<DynamicListBinding>) => {
     const source = selectedDocumentSource
@@ -1215,14 +1506,23 @@ const ListBindingEditor = ({
     onChange(next)
   }
 
-  const updateFilter = (nextFilterState: FilterState | undefined) => {
+  const updateFilter = (nextFilterState: FilterState) => {
     setFilterState(nextFilterState)
     emit({
       query: {
         ...binding?.query,
-        filter: buildFilter(nextFilterState),
+        filter: buildFilter(nextFilterState, filterFieldOptions),
       },
     })
+  }
+
+  const updateFilterCondition = (
+    index: number,
+    nextCondition: FilterCondition,
+  ) => {
+    const conditions = [...filterState.conditions]
+    conditions[index] = nextCondition
+    updateFilter({ ...filterState, conditions })
   }
 
   return (
@@ -1241,7 +1541,11 @@ const ListBindingEditor = ({
                   (option) => option.value === value,
                 )
                 setSourceType(value)
-                setFilterState(undefined)
+                const nextFilterState: FilterState = {
+                  combinator: 'and',
+                  conditions: [],
+                }
+                setFilterState(nextFilterState)
                 onChange({
                   contentType: documentSource?.contentType.name ?? value,
                   source: documentSource
@@ -1256,7 +1560,11 @@ const ListBindingEditor = ({
                   map: {},
                   query: documentSource
                     ? undefined
-                    : { options: { limit: 10 } },
+                    : {
+                        options: {
+                          limit: binding?.query?.options?.limit ?? 10,
+                        },
+                      },
                 })
               }}
             >
@@ -1318,12 +1626,13 @@ const ListBindingEditor = ({
 
       {selectedDocumentSource ? null : (
         <PanelSection title='Query'>
-          <div className='grid gap-3 md:grid-cols-[0.7fr_1fr_1.1fr]'>
+          <div className='grid grid-cols-[minmax(5rem,0.4fr)_minmax(0,1.2fr)_minmax(8rem,0.6fr)] items-end gap-3'>
           <Label className='grid gap-1.5'>
             Limit
             <Input
               type='number'
               min={1}
+              max={100}
               value={String(binding?.query?.options?.limit ?? 10)}
               onChange={(event) =>
                 emit({
@@ -1331,25 +1640,31 @@ const ListBindingEditor = ({
                     ...binding?.query,
                     options: {
                       ...binding?.query?.options,
-                      limit: Number(event.target.value || 10),
+                      limit: Math.min(
+                        100,
+                        Math.max(1, Number(event.target.value || 10)),
+                      ),
                     },
                   },
                 })
               }
             />
           </Label>
-          <Label className='grid gap-1.5'>
-            Sort
+          <Label className='grid min-w-0 gap-1.5'>
+            Sort by
             <Select
               disabled={sortFieldOptions.length === 0}
-              value={Object.keys(binding?.query?.options?.sort ?? {})[0] ?? ''}
+              value={sortField || '__none__'}
               onValueChange={(value) =>
                 emit({
                   query: {
                     ...binding?.query,
                     options: {
                       ...binding?.query?.options,
-                      sort: value ? { [value]: 'desc' } : undefined,
+                      sort:
+                        value === '__none__'
+                          ? undefined
+                          : { [value]: sortDirection },
                     },
                   },
                 })
@@ -1359,120 +1674,308 @@ const ListBindingEditor = ({
                 <SelectValue
                   placeholder={
                     sortFieldOptions.length > 0
-                      ? 'Field'
+                      ? 'Sort by field'
                       : 'No sortable fields'
                   }
                 />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
+                  <SelectItem value='__none__'>No sort</SelectItem>
                   {sortFieldOptions.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
           </Label>
-          <div className='grid gap-1.5'>
-            <div className='flex items-center justify-between gap-2'>
-              <span className='text-sm font-medium'>Filter</span>
+          <Label className='grid gap-1.5'>
+            Direction
+            <Select
+              disabled={!sortField}
+              value={sortDirection}
+              onValueChange={(direction) =>
+                sortField
+                  ? emit({
+                      query: {
+                        ...binding?.query,
+                        options: {
+                          ...binding?.query?.options,
+                          sort: {
+                            [sortField]: direction as 'asc' | 'desc',
+                          },
+                        },
+                      },
+                    })
+                  : undefined
+              }
+            >
+              <SelectTrigger className='w-full'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='asc'>Ascending</SelectItem>
+                <SelectItem value='desc'>Descending</SelectItem>
+              </SelectContent>
+            </Select>
+          </Label>
+        </div>
+
+        <div className='grid gap-3 rounded-md border border-border bg-background/60 p-3'>
+          <div className='flex flex-wrap items-center justify-between gap-2'>
+            <div>
+              <div className='text-sm font-medium'>Conditions</div>
+              <div className='text-xs text-muted-foreground'>
+                Filter the records used to build this list.
+              </div>
+            </div>
+            <div className='flex items-center gap-2'>
+              {filterState.conditions.length > 1 ? (
+                <Select
+                  value={filterState.combinator}
+                  onValueChange={(combinator) =>
+                    updateFilter({
+                      ...filterState,
+                      combinator: combinator as 'and' | 'or',
+                    })
+                  }
+                >
+                  <SelectTrigger className='h-8 w-36'>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='and'>Match all</SelectItem>
+                    <SelectItem value='or'>Match any</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : null}
               <Button
                 type='button'
-                size='icon'
-                variant='ghost'
-                className='size-7'
-                onClick={() => updateFilter(undefined)}
+                size='sm'
+                variant='outline'
+                disabled={
+                  filterFieldOptions.length === 0 ||
+                  filterState.conditions.length >= 25
+                }
+                onClick={() =>
+                  updateFilter({
+                    ...filterState,
+                    conditions: [
+                      ...filterState.conditions,
+                      { field: '', operator: 'equals', value: '' },
+                    ],
+                  })
+                }
               >
-                <X className='h-4 w-4' />
-                <span className='sr-only'>Clear filter</span>
+                <Plus className='h-4 w-4' />
+                Add condition
               </Button>
             </div>
-            <div className='grid gap-2 sm:grid-cols-[1fr_0.9fr_1fr]'>
-              <Select
-                disabled={filterFieldOptions.length === 0}
-                value={filterState?.field || ''}
-                onValueChange={(value) =>
-                  updateFilter(
-                    value
-                      ? {
-                          field: value,
-                          operator: filterState?.operator ?? 'equals',
-                          value: filterState?.value ?? '',
-                        }
-                      : undefined,
-                  )
-                }
-              >
-                <SelectTrigger className='w-full'>
-                  <SelectValue
-                    placeholder={
-                      filterFieldOptions.length > 0
-                        ? 'Field'
-                        : 'No filterable fields'
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {filterFieldOptions.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <Select
-                disabled={!filterState?.field}
-                value={filterState?.operator || 'equals'}
-                onValueChange={(value) =>
-                  filterState
-                    ? updateFilter({
-                        ...filterState,
-                        operator: value as FilterOperator,
-                        value:
-                          value === 'true' || value === 'false'
-                            ? ''
-                            : filterState.value,
-                      })
-                    : undefined
-                }
-              >
-                <SelectTrigger className='w-full'>
-                  <SelectValue placeholder='Operator' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value='equals'>equals</SelectItem>
-                    <SelectItem value='contains'>contains</SelectItem>
-                    <SelectItem value='true'>true</SelectItem>
-                    <SelectItem value='false'>false</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              {filterState?.operator === 'true' ||
-              filterState?.operator === 'false' ? (
-                <div className='h-9 rounded-md border border-dashed border-border bg-background/60' />
-              ) : (
-                <Input
-                  value={filterState?.value ?? ''}
-                  disabled={!filterState?.field}
-                  onChange={(event) =>
-                    filterState
-                      ? updateFilter({
-                          ...filterState,
-                          value: event.target.value,
-                        })
-                      : undefined
-                  }
-                />
-              )}
+          </div>
+
+          {filterState.conditions.length === 0 ? (
+            <div className='rounded-md border border-dashed border-border px-3 py-5 text-center text-sm text-muted-foreground'>
+              No conditions. All records from this collection will match.
             </div>
-          </div>
-          </div>
-        </PanelSection>
+          ) : (
+            <div className='grid gap-2'>
+              {filterState.conditions.map((condition, index) => {
+                const fieldOption = filterFieldOptions.find(
+                  (option) => option.value === condition.field,
+                )
+                const operatorOptions = getFilterOperatorOptions(
+                  fieldOption?.kind,
+                )
+                const needsValue = operatorNeedsValue(condition.operator)
+                const currentValueOptions = currentDocumentFieldOptions.filter(
+                  (option) =>
+                    !fieldOption || option.kind === fieldOption.kind,
+                )
+                const allowsCurrentValue =
+                  condition.operator !== 'in' &&
+                  condition.operator !== 'notIn' &&
+                  currentValueOptions.length > 0
+
+                return (
+                  <div
+                    key={`${index}-${condition.field}`}
+                    className='grid items-center gap-2 rounded-md border border-border bg-background p-2 sm:grid-cols-[1.2fr_1fr_1.8fr_auto]'
+                  >
+                    <Select
+                      disabled={filterFieldOptions.length === 0}
+                      value={condition.field}
+                      onValueChange={(value) => {
+                        const kind = filterFieldOptions.find(
+                          (option) => option.value === value,
+                        )?.kind
+                        updateFilterCondition(index, {
+                          field: value,
+                          operator: defaultFilterOperator(kind),
+                          value: '',
+                        })
+                      }}
+                    >
+                      <SelectTrigger className='w-full'>
+                        <SelectValue placeholder='Field' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {filterFieldOptions.map((item) => (
+                            <SelectItem key={item.value} value={item.value}>
+                              {item.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+
+                    <Select
+                      disabled={!condition.field}
+                      value={condition.operator}
+                      onValueChange={(operator) =>
+                        updateFilterCondition(index, {
+                          ...condition,
+                          operator: operator as FilterOperator,
+                          valueSource:
+                            operator === 'in' || operator === 'notIn'
+                              ? 'literal'
+                              : condition.valueSource,
+                          value: operatorNeedsValue(
+                            operator as FilterOperator,
+                          )
+                            ? operator === 'in' || operator === 'notIn'
+                              ? ''
+                              : condition.value
+                            : '',
+                        })
+                      }
+                    >
+                      <SelectTrigger className='w-full'>
+                        <SelectValue placeholder='Operator' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {operatorOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+
+                    {needsValue ? (
+                      <div className='grid grid-cols-[minmax(7rem,0.7fr)_minmax(0,1fr)] gap-2'>
+                        <Select
+                          value={condition.valueSource ?? 'literal'}
+                          onValueChange={(valueSource) =>
+                            updateFilterCondition(index, {
+                              ...condition,
+                              valueSource: valueSource as
+                                | 'literal'
+                                | 'current',
+                              value: '',
+                            })
+                          }
+                        >
+                          <SelectTrigger
+                            className='w-full'
+                            aria-label='Value source'
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value='literal'>Fixed value</SelectItem>
+                            {allowsCurrentValue ? (
+                              <SelectItem value='current'>
+                                Current document
+                              </SelectItem>
+                            ) : null}
+                          </SelectContent>
+                        </Select>
+                        {condition.valueSource === 'current' ? (
+                          <Select
+                            disabled={!condition.field}
+                            value={condition.value}
+                            onValueChange={(value) =>
+                              updateFilterCondition(index, {
+                                ...condition,
+                                value,
+                              })
+                            }
+                          >
+                            <SelectTrigger className='w-full'>
+                              <SelectValue placeholder='Current field' />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                {currentValueOptions.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Input
+                            type={
+                              fieldOption?.kind === 'number' &&
+                              condition.operator !== 'in' &&
+                              condition.operator !== 'notIn'
+                                ? 'number'
+                                : 'text'
+                            }
+                            value={condition.value}
+                            disabled={!condition.field}
+                            placeholder={
+                              condition.operator === 'in' ||
+                              condition.operator === 'notIn'
+                                ? 'Comma-separated values'
+                                : 'Value'
+                            }
+                            onChange={(event) =>
+                              updateFilterCondition(index, {
+                                ...condition,
+                                value: event.target.value,
+                              })
+                            }
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div className='h-9 rounded-md border border-dashed border-border bg-muted/30' />
+                    )}
+
+                    <Button
+                      type='button'
+                      size='icon'
+                      variant='ghost'
+                      className='size-9 text-muted-foreground hover:text-destructive'
+                      onClick={() =>
+                        updateFilter({
+                          ...filterState,
+                          conditions: filterState.conditions.filter(
+                            (_, conditionIndex) => conditionIndex !== index,
+                          ),
+                        })
+                      }
+                    >
+                      <Trash2 className='h-4 w-4' />
+                      <span className='sr-only'>Remove condition</span>
+                    </Button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </PanelSection>
       )}
 
       <PanelSection title='Mapping'>

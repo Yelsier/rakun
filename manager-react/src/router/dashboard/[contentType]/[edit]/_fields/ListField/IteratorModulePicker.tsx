@@ -7,26 +7,41 @@ import type {
 } from '@rakun-kit/core/client'
 import type { MaybeTranslatableValue } from '@rakun-kit/core/types'
 import { useQueries } from '@tanstack/react-query'
-import { Box, Plus } from 'lucide-react'
+import { Box, Pencil, Plus, Trash2 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 
-import { createManagerQueryOptions, useManagerClient } from '@/client/react'
+import {
+  createManagerQueryOptions,
+  useManagerClient,
+  useManagerMutation,
+} from '@/client/react'
 import { SearchInput } from '@/components/search-input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
+import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { decodeCamelCase } from '@/helpers/decodeCamelCase'
+import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { resolveLucideIcon } from '@/helpers/resolve-lucide-icon'
 import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
+import { ManagerLink } from '@/link'
 import { getEncodedContentPermissions } from '@/state/permissions'
 import { useSession } from '@/state/session'
 
@@ -55,7 +70,10 @@ type QueryableIteratorModuleDisplay = IteratorModuleDisplay & {
 }
 
 type ExistingIteratorModule = {
+  canDelete: boolean
+  canEdit: boolean
   category: string
+  contentTypeName: string
   fieldName: string
   icon?: LucideIcon
   id: string
@@ -171,10 +189,35 @@ const isQueryableOption = (
   typeof option.contentTypeName === 'string' &&
   option.contentTypeName.length > 0
 
-const hasManagerMenu = (contentType: IteratorModuleContentType) => Boolean(contentType.menu?.title)
+const isGlobalModuleContentType = (contentType: IteratorModuleContentType) =>
+  Boolean(contentType.menu?.title || contentType.modulePicker)
 
 const getReadPermissions = (contentType: IteratorModuleContentType) =>
   getEncodedContentPermissions(contentType, ['own', 'readAny'])
+
+const canPerformModuleAction = ({
+  action,
+  contentType,
+  createdBy,
+  currentUserId,
+  hasAnyPermission,
+}: {
+  action: 'updateAny' | 'deleteAny'
+  contentType: IteratorModuleContentType
+  createdBy?: unknown
+  currentUserId: string
+  hasAnyPermission: ReturnType<typeof useSession>['hasAnyPermission']
+}) => {
+  const actionPermissions = getEncodedContentPermissions(contentType, [action])
+
+  if (actionPermissions.length === 0 || hasAnyPermission(actionPermissions)) {
+    return true
+  }
+
+  const ownPermissions = getEncodedContentPermissions(contentType, ['own'])
+
+  return createdBy === currentUserId && hasAnyPermission(ownPermissions)
+}
 
 export const IteratorModulePickerDialog = ({
   fields,
@@ -185,17 +228,23 @@ export const IteratorModulePickerDialog = ({
 }) => {
   const managerClient = useManagerClient()
   const { getTranslation } = useLanguage()
-  const { hasAnyPermission } = useSession()
+  const { hasAnyPermission, user } = useSession()
+  const deleteModule = useManagerMutation('manager.delete')
   const preventCloseAutoFocus = useRef(false)
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORIES)
-  const options = useMemo(() => fields.map(getIteratorModuleDisplay).sort(sortModules), [fields])
+  const [deleteTarget, setDeleteTarget] =
+    useState<ExistingIteratorModule | null>(null)
+  const options = useMemo(
+    () => fields.map(getIteratorModuleDisplay).sort(sortModules),
+    [fields]
+  )
   const queryableOptions = useMemo(() => options.filter(isQueryableOption), [options])
   const readableOptions = useMemo(
     () =>
       queryableOptions.filter((option) => {
-        if (!hasManagerMenu(option.contentType)) return false
+        if (!isGlobalModuleContentType(option.contentType)) return false
 
         const readPermissions = getReadPermissions(option.contentType)
 
@@ -212,7 +261,10 @@ export const IteratorModulePickerDialog = ({
   )
   const existingModuleQueries = useQueries({
     queries: readableOptions.map((option) => {
-      const fields = option.labelField === '_id' ? ['_id'] : ['_id', option.labelField]
+      const fields =
+        option.labelField === '_id'
+          ? ['_id', 'createdBy']
+          : ['_id', option.labelField, 'createdBy']
 
       return {
         ...createManagerQueryOptions(managerClient, 'manager.list', {
@@ -244,7 +296,22 @@ export const IteratorModulePickerDialog = ({
           const title = String(translatedTitle || item._id)
 
           return {
+            canDelete: canPerformModuleAction({
+              action: 'deleteAny',
+              contentType: option.contentType,
+              createdBy: item.createdBy,
+              currentUserId: user._id,
+              hasAnyPermission,
+            }),
+            canEdit: canPerformModuleAction({
+              action: 'updateAny',
+              contentType: option.contentType,
+              createdBy: item.createdBy,
+              currentUserId: user._id,
+              hasAnyPermission,
+            }),
             category: option.category,
+            contentTypeName: option.contentTypeName,
             fieldName: option.fieldName,
             icon: option.icon,
             id: item._id,
@@ -266,7 +333,7 @@ export const IteratorModulePickerDialog = ({
           }
         })
       }),
-    [existingModuleQueries, getTranslation, readableOptions]
+    [existingModuleQueries, getTranslation, hasAnyPermission, readableOptions, user._id]
   )
   const searchTerm = search.trim().toLocaleLowerCase()
   const filteredOptions = useMemo(
@@ -314,93 +381,140 @@ export const IteratorModulePickerDialog = ({
     handleOpenChange(false)
   }
 
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <div className="flex w-full pb-4 lg:hidden">
-        <DialogTrigger asChild>
-          <Button
-            variant="outline"
-            className="m-0"
-            data-rakun-manager-add-module-trigger
-          >
-            <Plus />
-            Add module
-          </Button>
-        </DialogTrigger>
-      </div>
-      <DialogContent
-        className="max-h-[85vh] w-screen max-w-5xl! overflow-hidden p-0"
-        onCloseAutoFocus={(event) => {
-          if (!preventCloseAutoFocus.current) return
+  const handleDelete = async () => {
+    if (!deleteTarget) return
 
-          event.preventDefault()
-          preventCloseAutoFocus.current = false
-        }}
-      >
-        <DialogHeader className="border-b px-6 py-4">
-          <DialogTitle>Add module</DialogTitle>
-          <DialogDescription className="sr-only">
-            Select a module to add to the iterator.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid min-h-0 gap-4 px-6 pb-6">
-          <div className="grid gap-3">
-            <SearchInput
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search modules"
-            />
-            {categories.length > 1 ? (
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant={selectedCategory === ALL_CATEGORIES ? 'default' : 'outline'}
-                  onClick={() => setSelectedCategory(ALL_CATEGORIES)}
-                >
-                  All
-                </Button>
-                {categories.map((category) => (
+    try {
+      await deleteModule.mutateAsync({
+        contentType: deleteTarget.contentTypeName,
+        id: deleteTarget.id,
+      })
+      await Promise.allSettled(existingModuleQueries.map((query) => query.refetch()))
+      toast.success(`${deleteTarget.title} deleted`)
+      setDeleteTarget(null)
+    } catch (error) {
+      toast.error(getActionErrorMessage(error, 'Could not delete module'))
+    }
+  }
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <div className="flex w-full pb-4 lg:hidden">
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              className="m-0"
+              data-rakun-manager-add-module-trigger
+            >
+              <Plus />
+              Add module
+            </Button>
+          </DialogTrigger>
+        </div>
+        <DialogContent
+          className="max-h-[85vh] w-screen max-w-5xl! overflow-hidden p-0"
+          onCloseAutoFocus={(event) => {
+            if (!preventCloseAutoFocus.current) return
+
+            event.preventDefault()
+            preventCloseAutoFocus.current = false
+          }}
+        >
+          <DialogHeader className="border-b px-6 py-4">
+            <DialogTitle>Add module</DialogTitle>
+            <DialogDescription className="sr-only">
+              Select a module to add to the iterator.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid min-h-0 gap-4 px-6 pb-6">
+            <div className="grid gap-3">
+              <SearchInput
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search modules"
+              />
+              {categories.length > 1 ? (
+                <div className="flex flex-wrap gap-2">
                   <Button
-                    key={category}
                     size="sm"
-                    variant={selectedCategory === category ? 'default' : 'outline'}
-                    onClick={() => setSelectedCategory(category)}
+                    variant={selectedCategory === ALL_CATEGORIES ? 'default' : 'outline'}
+                    onClick={() => setSelectedCategory(ALL_CATEGORIES)}
                   >
-                    {category}
+                    All
                   </Button>
-                ))}
-              </div>
-            ) : null}
-          </div>
-          <ScrollArea className="h-[58vh] rounded-md border">
-            <div className="grid gap-5 p-3">
+                  {categories.map((category) => (
+                    <Button
+                      key={category}
+                      size="sm"
+                      variant={selectedCategory === category ? 'default' : 'outline'}
+                      onClick={() => setSelectedCategory(category)}
+                    >
+                      {category}
+                    </Button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <ScrollArea className="h-[58vh] rounded-md border">
+              <div className="grid gap-5 p-3">
               <section className="grid gap-3">
                 <h3 className="text-sm font-medium">Saved modules</h3>
                 {filteredExistingModules.length > 0 ? (
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredExistingModules.map((module) => (
-                      <button
-                        key={`${module.value.contentType}:${module.id}`}
-                        type="button"
-                        className="group grid min-w-0 gap-3 rounded-md border bg-card p-4 text-left shadow-xs transition-colors hover:border-primary/50 hover:bg-accent focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-hidden"
-                        onClick={() => handleAdd(module.fieldName, module.value)}
-                      >
-                        <div className="flex min-w-0 items-start gap-3">
-                          <ModuleIcon icon={module.icon} />
-                          <div className="grid min-w-0 gap-1">
-                            <span className="wrap-break-word text-sm font-medium leading-5">
-                              {module.title}
-                            </span>
-                            <span className="truncate text-xs text-muted-foreground">
-                              {module.moduleTitle}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex min-w-0 flex-wrap gap-1.5">
-                          <Badge variant="secondary">Global</Badge>
-                          <Badge variant="outline">{module.category}</Badge>
-                        </div>
-                      </button>
+                      <ContextMenu key={`${module.value.contentType}:${module.id}`}>
+                        <ContextMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className="group grid min-w-0 gap-3 rounded-md border bg-card p-4 text-left shadow-xs transition-colors hover:border-primary/50 hover:bg-accent focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-hidden"
+                            onClick={() => handleAdd(module.fieldName, module.value)}
+                          >
+                            <div className="flex min-w-0 items-start gap-3">
+                              <ModuleIcon icon={module.icon} />
+                              <div className="grid min-w-0 gap-1">
+                                <span className="wrap-break-word text-sm font-medium leading-5">
+                                  {module.title}
+                                </span>
+                                <span className="truncate text-xs text-muted-foreground">
+                                  {module.moduleTitle}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex min-w-0 flex-wrap gap-1.5">
+                              <Badge variant="secondary">Global</Badge>
+                              <Badge variant="outline">{module.category}</Badge>
+                            </div>
+                          </button>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                          <ContextMenuItem disabled={!module.canEdit} asChild={module.canEdit}>
+                            {module.canEdit ? (
+                              <ManagerLink
+                                href={`/${module.contentTypeName}/${module.id}`}
+                                onClick={() => handleOpenChange(false)}
+                              >
+                                <Pencil />
+                                Edit
+                              </ManagerLink>
+                            ) : (
+                              <>
+                                <Pencil />
+                                Edit
+                              </>
+                            )}
+                          </ContextMenuItem>
+                          <ContextMenuSeparator />
+                          <ContextMenuItem
+                            variant="destructive"
+                            disabled={!module.canDelete}
+                            onSelect={() => setDeleteTarget(module)}
+                          >
+                            <Trash2 />
+                            Delete
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
                     ))}
                   </div>
                 ) : isLoadingExistingModules ? (
@@ -466,10 +580,40 @@ export const IteratorModulePickerDialog = ({
                   </div>
                 )}
               </section>
-            </div>
-          </ScrollArea>
-        </div>
-      </DialogContent>
-    </Dialog>
+              </div>
+            </ScrollArea>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) setDeleteTarget(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete saved module</DialogTitle>
+            <DialogDescription>
+              {deleteTarget
+                ? `Permanently delete “${deleteTarget.title}”? This cannot be undone.`
+                : 'Permanently delete this saved module? This cannot be undone.'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              loading={deleteModule.isPending}
+              onClick={() => void handleDelete()}
+            >
+              Delete permanently
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

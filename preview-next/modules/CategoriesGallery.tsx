@@ -1,16 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 
-type RawGalleryItem =
-  | {
-      value?: unknown
-    }
-  | Record<string, unknown>
+import { Props } from '../server/content-types'
 
-type CategoriesGalleryProps = {
-  eyebrow?: string
-  title?: string
-  items?: RawGalleryItem[]
-}
+type CategoriesGalleryProps = Props<'CategoriesGallery'>
 
 type GalleryImage = {
   alt: string
@@ -25,20 +17,12 @@ const asRecord = (value: unknown): Record<string, unknown> =>
     ? (value as Record<string, unknown>)
     : {}
 
-const unwrapItem = (item: RawGalleryItem) => {
-  const record = asRecord(item)
-  const value = asRecord(record.value)
-  const data = asRecord(value.data)
-
-  return Object.keys(data).length > 0 ? data : Object.keys(value).length > 0 ? value : record
-}
-
 const text = (value: unknown) => {
   if (typeof value === 'string') return value
 
   const record = asRecord(value)
   const localizedValue = Object.entries(record).find(
-    ([key, entry]) => key !== '_tag' && typeof entry === 'string',
+    ([key, entry]) => key !== '_tag' && typeof entry === 'string'
   )?.[1]
 
   return typeof localizedValue === 'string' ? localizedValue : ''
@@ -69,8 +53,6 @@ export default function CategoriesGallery({
   title = 'Projects by category',
   items = [],
 }: CategoriesGalleryProps) {
-  const categories = items.map(unwrapItem)
-
   return (
     <section className="bg-stone-100 px-6 py-20 text-stone-950">
       <div className="mx-auto max-w-6xl">
@@ -86,7 +68,7 @@ export default function CategoriesGallery({
         </div>
 
         <div className="space-y-16">
-          {categories.map((category, categoryIndex) => {
+          {items.map(({ value: category }, categoryIndex) => {
             const href = text(category.href)
             const categoryTitle = text(category.title) || `Category ${categoryIndex + 1}`
             const images = galleryImages(category.images)
@@ -96,7 +78,10 @@ export default function CategoriesGallery({
                 <div className="flex items-end justify-between gap-6 border-b border-stone-300 pb-3">
                   <h3 className="text-2xl font-semibold">{categoryTitle}</h3>
                   {href ? (
-                    <a className="text-sm font-semibold text-orange-700 hover:text-orange-900" href={href}>
+                    <a
+                      className="text-sm font-semibold text-orange-700 hover:text-orange-900"
+                      href={href}
+                    >
                       View category
                     </a>
                   ) : null}
@@ -111,7 +96,7 @@ export default function CategoriesGallery({
                       >
                         <img
                           alt={image.alt}
-                          className="aspect-[4/3] h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          className="aspect-4/3 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                           height={image.height ?? 900}
                           src={image.src}
                           width={image.width ?? 1200}

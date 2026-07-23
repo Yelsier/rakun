@@ -18,6 +18,18 @@ import { checkOwnership } from "../../utils/checkOwnership";
 import { getLanguages } from "../../utils/getLanguages";
 import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
+import {
+  applyEffectiveIterator,
+  getLinkedIteratorTemplate,
+  isIteratorUnlinked,
+  saveLinkedIteratorTemplate,
+} from "../../utils/linkedIterator";
+import { ITERATOR_FIELD_NAME } from "../../../lib/systemFields";
+import {
+  canUpdateLinkedIterator,
+  requireLinkedIteratorUpdate,
+} from "./linkedIterator";
+import { revalidateContentTypePaths } from "../../utils/routes/revalidatePath";
 
 const unique = <T>(values: T[]) => Array.from(new Set(values));
 
@@ -79,7 +91,16 @@ export const translateDocumentHandler = async ({
   const targetLanguages = to.filter(
     (language): language is NonNullable<typeof language> => Boolean(language),
   );
-  const current = await db.get(contentType, input.id);
+  const storedCurrent = await db.get(contentType, input.id);
+  const current = await applyEffectiveIterator({
+    db,
+    contentType,
+    document: storedCurrent,
+  });
+  const canTranslateSharedIterator =
+    contentType.linkedIterator &&
+    !isIteratorUnlinked(storedCurrent) &&
+    canUpdateLinkedIterator(contentType, ctx);
   const effectiveInputData =
     contentType.name === "Route" ? normalizeRouteData(input.data) : input.data;
 
@@ -92,6 +113,13 @@ export const translateDocumentHandler = async ({
       ...current,
       ...(parsedData as Record<string, unknown> | undefined),
     };
+    if (
+      contentType.linkedIterator &&
+      !isIteratorUnlinked(storedCurrent) &&
+      !canTranslateSharedIterator
+    ) {
+      delete document[ITERATOR_FIELD_NAME];
+    }
     const service = getTranslationService();
     const { patch, summary } = await createDocumentTranslationPatch({
       contentType,
@@ -101,11 +129,33 @@ export const translateDocumentHandler = async ({
       overwrite: input.overwrite,
       service,
     });
-    const data = {
+    const data: Record<string, unknown> = {
       ...(parsedData as Record<string, unknown> | undefined),
       ...patch,
       updatedBy: user._id,
     };
+    let linkedIteratorChanged = false;
+    if (
+      canTranslateSharedIterator &&
+      ITERATOR_FIELD_NAME in patch
+    ) {
+      requireLinkedIteratorUpdate(contentType, ctx);
+      const template = await getLinkedIteratorTemplate(db, contentType);
+      if (template.configured) {
+        await saveLinkedIteratorTemplate({
+          action: "update",
+          contentType,
+          db,
+          expectedRevision: template.revision,
+          iterator: data[ITERATOR_FIELD_NAME],
+          options: {
+            actorId: user._id,
+            reason: "linked iterator translation",
+          },
+        });
+        linkedIteratorChanged = true;
+      }
+    }
 
     if (Object.keys(data).length === 1 && "updatedBy" in data) {
       return { item: current, summary };
@@ -128,9 +178,16 @@ export const translateDocumentHandler = async ({
       contentTypeId: updated._id,
       operation: "update",
     });
+    if (linkedIteratorChanged) {
+      await revalidateContentTypePaths(contentType.name);
+    }
 
     return {
-      item: updated,
+      item: await applyEffectiveIterator({
+        db,
+        contentType,
+        document: updated,
+      }),
       summary,
     };
   } catch (error) {

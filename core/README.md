@@ -174,14 +174,23 @@ const Page = new ContentType({
     slug: Fields.string().type("Slug").required(),
   },
   iterator: [{ contentType: PageSection, type: "existing" }],
+  linkedIterator: true,
 });
 ```
+
+Set `linkedIterator: true` when every document should use one shared module
+structure. The manager stores a canonical iterator for the content type, while
+dynamic bindings such as `Current document` continue to resolve against the
+individual page being rendered. Documents are linked by default and can be
+unlinked in the manager to keep a local copy of the iterator.
 
 Main properties:
 
 - `name`: stable type name. Also used as `_type`.
 - `fields`: field map.
 - `iterator`: page module entries. Generates the reserved `_iterator` field.
+- `linkedIterator`: shares that iterator between documents while allowing
+  explicit per-document overrides.
 - `menu`: manager metadata.
 - `uniques`: unique field groups.
 - `listFields`: preferred fields in lists and relations.
@@ -289,6 +298,23 @@ const headerBindings = {
   },
 };
 ```
+
+List query conditions can compare a source field with a value from the current
+document. The manager exposes this as `Current document`; programmatic bindings
+use `{ $current: "path.to.field" }`. For example, a category can query only the
+projects whose related category has the same slug:
+
+```ts
+query: {
+  filter: {
+    "category.slug": { $current: "slug" },
+  },
+  options: { limit: 10 },
+}
+```
+
+Current-document paths are checked against the content type's dynamic field
+rules before the query runs. `_id` is also available for relation queries.
 
 A list mapping can also collect an array through a reverse relation without
 persisting that relation on the source document. For example, a category gallery

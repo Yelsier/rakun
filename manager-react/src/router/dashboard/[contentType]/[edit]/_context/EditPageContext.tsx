@@ -10,6 +10,12 @@ import {
   useState,
 } from 'react'
 import type { LocaleVariantListOutput, LanguageSchema } from '@rakun-kit/core/client'
+import type {
+  LinkedIteratorAction,
+  LinkedIteratorControl,
+  LinkedIteratorStateOutput,
+} from '@rakun-kit/core/client'
+import { ITERATOR_FIELD_NAME } from '@rakun-kit/core/client'
 
 import { useContentDocumentActions } from '../_hooks/useContentDocumentActions'
 import {
@@ -35,6 +41,7 @@ import { useOptionalManagerNavigation } from '@/state/navigation'
 import { useLanguage } from '@/state/language'
 import { useSession } from '@/state/session'
 import { useManagerQuery } from '@/client/react'
+import { deepEqual } from '@/helpers/deepEqual'
 
 const getDefaultVisibility = (defaultData?: Record<string, FieldValue>) =>
   ((defaultData as { _visibility?: DocumentVisibility } | undefined)?._visibility ??
@@ -150,6 +157,13 @@ type EditPageContextValue = {
   translation: ReturnType<typeof useTranslationDialogState>
   translationEnabled: boolean
   moveToTrashOpen: boolean
+  linkedIterator: {
+    enabled: boolean
+    state?: LinkedIteratorStateOutput
+    mode: 'linked' | 'unlinked'
+    setMode: (mode: 'linked' | 'unlinked') => void
+    adoptShared: () => void
+  }
 }
 
 const EditPageContext = createContext<EditPageContextValue | null>(null)
@@ -213,6 +227,24 @@ export const EditPageProvider = ({
     (contentType as typeof contentType & { routes?: ContentTypeRouteMeta[] }).routes ?? []
   ).find((route) => route.hasPage)
   const contentTypeId = (defaultData as { _id?: string } | undefined)?._id
+  const linkedIteratorQuery = useManagerQuery({
+    name: 'manager.linkedIterator.get',
+    input: {
+      contentType: contentType.name,
+      ...(contentTypeId ? { documentId: contentTypeId } : {}),
+    },
+    enabled: Boolean(contentType.linkedIterator),
+  })
+  const linkedIteratorState = linkedIteratorQuery.data as LinkedIteratorStateOutput | undefined
+  const [linkedIteratorMode, setLinkedIteratorMode] = useState<'linked' | 'unlinked'>('linked')
+  const effectiveDefaultData = useMemo(() => {
+    if (defaultData) return defaultData
+    if (!linkedIteratorState?.iterator) return defaultData
+
+    return {
+      [ITERATOR_FIELD_NAME]: linkedIteratorState.iterator,
+    } as Record<string, FieldValue>
+  }, [defaultData, linkedIteratorState?.iterator])
   const hasVisibility = Boolean(contentType.documentVisibility)
   const canReadVersions = hasPermissions(['content.ContentVersion.readAny'])
   const canRestoreVersions = hasPermissions(['content.ContentVersion.updateAny'])
@@ -234,7 +266,7 @@ export const EditPageProvider = ({
   const [moveToTrashOpen, setMoveToTrashOpen] = useState(false)
   const [permanentDeleteOpen, setPermanentDeleteOpen] = useState(false)
   const form = useEditFormController({
-    defaultData,
+    defaultData: effectiveDefaultData,
     hasVisibility,
     setSaveErrorVisible: setShowSaveErrorTooltip,
     visibility,
@@ -251,6 +283,37 @@ export const EditPageProvider = ({
     onAfterRestore,
     readFormData: form.readFormData,
     replaceDraft: form.replaceDraft,
+    getLinkedIteratorControl: (
+      data: Record<string, unknown>,
+      requestedAction?: LinkedIteratorAction,
+    ): LinkedIteratorControl | undefined => {
+      if (!contentType.linkedIterator || !linkedIteratorState?.enabled) return undefined
+
+      const iteratorChanged = !deepEqual(
+        data[ITERATOR_FIELD_NAME],
+        linkedIteratorState.iterator,
+      )
+      const action =
+        linkedIteratorMode === 'linked'
+          ? requestedAction ??
+            (linkedIteratorState.configured &&
+            iteratorChanged &&
+            linkedIteratorState.canUpdateShared
+              ? 'update'
+              : undefined)
+          : undefined
+
+      return {
+        mode: linkedIteratorMode,
+        ...(action ? { action } : {}),
+        ...(linkedIteratorState.revision !== undefined
+          ? { revision: linkedIteratorState.revision }
+          : {}),
+      }
+    },
+    onLinkedIteratorSaved: async () => {
+      await linkedIteratorQuery.refetch()
+    },
     setVisibility,
     visibilityBeforeTrash,
   })
@@ -346,6 +409,12 @@ export const EditPageProvider = ({
   }, [defaultData])
 
   useEffect(() => {
+    if (linkedIteratorState?.mode) {
+      setLinkedIteratorMode(linkedIteratorState.mode)
+    }
+  }, [linkedIteratorState?.mode])
+
+  useEffect(() => {
     if (editErrors.length === 0) {
       setShowSaveErrorTooltip(false)
     }
@@ -371,6 +440,16 @@ export const EditPageProvider = ({
     setVisibility(nextVisibility)
   }
 
+  const adoptSharedIterator = () => {
+    if (!linkedIteratorState?.iterator) return
+
+    form.replaceDraft({
+      ...(form.draft.current ?? {}),
+      [ITERATOR_FIELD_NAME]: linkedIteratorState.iterator as FieldValue,
+    })
+    setLinkedIteratorMode('linked')
+  }
+
   return (
     <EditPageContext.Provider
       value={{
@@ -391,6 +470,13 @@ export const EditPageProvider = ({
         isTrashed,
         languageCode: language.code,
         languageList,
+        linkedIterator: {
+          enabled: Boolean(contentType.linkedIterator),
+          state: linkedIteratorState,
+          mode: linkedIteratorMode,
+          setMode: setLinkedIteratorMode,
+          adoptShared: adoptSharedIterator,
+        },
         moveToTrashOpen,
         onAfterRestore,
         openMoveToTrashDialog: () => setMoveToTrashOpen(true),

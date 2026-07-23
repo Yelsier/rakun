@@ -7,6 +7,7 @@ import { checkOwnership } from "../../utils/checkOwnership";
 import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
 import { prepareLocaleVariantRemoval } from "../../utils/localeVariants";
+import { forbidLinkedIteratorTemplateAccess } from "./linkedIterator";
 
 export const trashHandler = async ({
   input,
@@ -18,6 +19,7 @@ export const trashHandler = async ({
   const db = await getMongoService();
   const { contentType: contentTypeName, id } = input;
   const contentType = requireContentType(contentTypeName);
+  forbidLinkedIteratorTemplateAccess(contentType);
 
   await checkOwnership({
     ctx,

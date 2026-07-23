@@ -13,6 +13,7 @@ import { syncConfiguredRoutes } from "../../utils/routes/syncConfiguredRoutes";
 import { parseSafeManagerQuery } from "../../utils/safeManagerQuery";
 import { sanitizeManagerOutput } from "../../utils/sanitizeManagerOutput";
 import { resolveMediaRecordUrls } from "./media/resolveMediaRecordUrls";
+import { forbidLinkedIteratorTemplateAccess } from "./linkedIterator";
 
 export const listHandler = async ({
   input,
@@ -24,6 +25,7 @@ export const listHandler = async ({
   const db = await getMongoService();
   const { contentType: contentTypeName } = input;
   const contentType = requireContentType(contentTypeName);
+  forbidLinkedIteratorTemplateAccess(contentType);
   const query = parseSafeManagerQuery(contentType, input.query);
   const user = ctx.getUser();
 

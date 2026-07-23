@@ -5,6 +5,7 @@ import { useEditPageContext } from '../_context/EditPageContext'
 import VersionHistory from './Versions'
 import { RouteLayoutModuleTabContent } from './RouteLayoutModuleTabContent'
 import { LocaleVariants } from './LocaleVariants'
+import { LinkedIteratorControl } from './LinkedIteratorControl'
 
 import { TabsContent } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -22,6 +23,7 @@ export const EditTabPanels = () => {
     onAfterRestore,
     routeLayout,
     sections,
+    linkedIterator,
   } = useEditPageContext()
 
   return (
@@ -36,16 +38,34 @@ export const EditTabPanels = () => {
             data-rakun-manager-tab-panel="content"
             data-tour="content-edit-fields"
           >
-            <ContentTypeEdit
-              key={`iterables:${form.formRevision}`}
-              defaultData={form.draft.current}
-              ref={form.iterablesRef}
-              contentType={sections.iterables}
-              parentContentType={contentType}
-              id={contentTypeName}
-              collapsible
-              hideTitle
-            />
+            <LinkedIteratorControl />
+            <div
+              className={
+                linkedIterator.enabled &&
+                linkedIterator.mode === 'linked' &&
+                linkedIterator.state?.configured &&
+                !linkedIterator.state.canUpdateShared
+                  ? 'pointer-events-none opacity-70'
+                  : undefined
+              }
+              aria-disabled={
+                linkedIterator.enabled &&
+                linkedIterator.mode === 'linked' &&
+                linkedIterator.state?.configured &&
+                !linkedIterator.state.canUpdateShared
+              }
+            >
+              <ContentTypeEdit
+                key={`iterables:${form.formRevision}`}
+                defaultData={form.draft.current}
+                ref={form.iterablesRef}
+                contentType={sections.iterables}
+                parentContentType={contentType}
+                id={contentTypeName}
+                collapsible
+                hideTitle
+              />
+            </div>
           </TabsContent>
         ) : null}
         {sections.hasNonIterables ? (

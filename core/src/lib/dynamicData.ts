@@ -17,6 +17,18 @@ export type DynamicDataSourceDescriptor = {
   dynamicDataSource?: boolean;
 };
 
+export const DYNAMIC_QUERY_CURRENT_VALUE_KEY = "$current";
+
+export const DynamicQueryCurrentValueSchema = z
+  .object({
+    [DYNAMIC_QUERY_CURRENT_VALUE_KEY]: z.string().min(1),
+  })
+  .strict();
+
+export type DynamicQueryCurrentValue = z.infer<
+  typeof DynamicQueryCurrentValueSchema
+>;
+
 const dynamicBindingSourceSchema = z.object({
   kind: z.never().optional(),
   contentType: z.string(),

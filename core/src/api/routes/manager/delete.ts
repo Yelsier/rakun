@@ -9,6 +9,7 @@ import { deleteMediaStorage } from "./media/deleteMediaStorage";
 import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
 import { prepareLocaleVariantRemoval } from "../../utils/localeVariants";
+import { forbidLinkedIteratorTemplateAccess } from "./linkedIterator";
 
 export const deleteHandler = async ({
   input,
@@ -20,6 +21,7 @@ export const deleteHandler = async ({
   const db = await getMongoService();
   const { contentType: contentTypeName, id } = input;
   const contentType = requireContentType(contentTypeName);
+  forbidLinkedIteratorTemplateAccess(contentType);
 
   await checkOwnership({
     ctx,

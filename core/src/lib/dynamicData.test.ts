@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import {
   DynamicDocumentBindingsSchema,
+  DynamicQueryCurrentValueSchema,
   isDynamicDataSourceContentTypeAllowed,
 } from "./dynamicData";
 
@@ -54,6 +55,18 @@ describe("dynamic data", () => {
       limit: 12,
       sort: { title: "asc" },
     });
+  });
+
+  it("accepts current-document query value references", () => {
+    expect(DynamicQueryCurrentValueSchema.parse({ $current: "slug" })).toEqual({
+      $current: "slug",
+    });
+    expect(
+      DynamicQueryCurrentValueSchema.safeParse({
+        $current: "slug",
+        unsafe: true,
+      }).success,
+    ).toBe(false);
   });
 
   it("rejects related collection limits outside the safe range", () => {

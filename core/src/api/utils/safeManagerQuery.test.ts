@@ -10,6 +10,7 @@ const TestContent = new ContentType({
   fields: {
     title: Fields.string().required(),
     views: Fields.number(),
+    publishedAt: Fields.date(),
     password: Fields.string().type("Password"),
   },
 });
@@ -58,5 +59,14 @@ describe("parseSafeManagerQuery", () => {
       $options: "i",
     });
     expect(parsed.options?.limit).toBe(100);
+  });
+
+  it("preserves safe date values", () => {
+    const publishedAt = new Date("2026-07-22T12:00:00.000Z");
+    const parsed = parseSafeManagerQuery(TestContent, {
+      filter: { publishedAt: { $gte: publishedAt } },
+    });
+
+    expect(parsed.filter?.publishedAt).toEqual({ $gte: publishedAt });
   });
 });
