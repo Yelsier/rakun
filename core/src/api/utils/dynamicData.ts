@@ -428,12 +428,14 @@ const resolveListBinding = async ({
   contextSource,
   currentDocument,
   currentDocumentContentType,
+  itemContentTypeName,
 }: {
   db: DBService;
   binding: DynamicListBinding;
   contextSource?: ResolveOptions["contextSource"];
   currentDocument: Record<string, unknown>;
   currentDocumentContentType: ContentType;
+  itemContentTypeName: string;
 }) => {
   const sourceContentType = getAllowedSourceContentType(binding.contentType);
   if (!sourceContentType) {
@@ -484,7 +486,7 @@ const resolveListBinding = async ({
             typeof sourceItem._id === "string"
               ? `${binding.itemName}:${sourceItem._id}`
               : `${binding.itemName}:${index}`,
-          _type: binding.itemName,
+          _type: itemContentTypeName,
           ...mapped,
         },
       };
@@ -515,6 +517,11 @@ const getListTargetContentType = (
 
   return entry.field.contentType as ContentType;
 };
+
+export const getDynamicListItemContentTypeName = (
+  field: ContentType["fields"][string] | undefined,
+  itemName: string,
+) => getListTargetContentType(field, itemName)?.name ?? itemName;
 
 const filterListBindingMap = (
   contentType: ContentType,
@@ -628,6 +635,10 @@ const resolveRecordBindings = async ({
         contextSource,
         currentDocument: contextSource?.value ?? next,
         currentDocumentContentType: contextSource?.contentType ?? contentType,
+        itemContentTypeName: getDynamicListItemContentTypeName(
+          contentType.fields[field],
+          binding.itemName,
+        ),
       });
       if (resolved !== undefined) {
         next[field] = mergeDynamicListItems(next[field], resolved);

@@ -5,6 +5,7 @@ import { Fields } from "../../lib/fields";
 import { registerContentType } from "../../lib/Registry";
 import type { DBService } from "../../orm/dbService";
 import {
+  getDynamicListItemContentTypeName,
   mergeDynamicListItems,
   resolveDynamicData,
   resolveRelatedCollectionValue,
@@ -182,6 +183,33 @@ describe("dynamic data output", () => {
         sort: undefined,
       },
     });
+  });
+
+  it("uses the relation content type as _type when a block name is an alias", () => {
+    const AliasedBlock = new ContentType({
+      name: "AliasedDynamicBlock",
+      fields: {
+        title: Fields.string(),
+      },
+    });
+    const AliasedBlockContainer = new ContentType({
+      name: "AliasedDynamicBlockContainer",
+      fields: {
+        modules: Fields.blocks([
+          {
+            name: "hero",
+            field: Fields.relation(AliasedBlock, "new"),
+          },
+        ]),
+      },
+    });
+
+    expect(
+      getDynamicListItemContentTypeName(
+        AliasedBlockContainer.fields.modules,
+        "hero",
+      ),
+    ).toBe(AliasedBlock.name);
   });
 
   it("merges dynamic list items with manually stored items", () => {

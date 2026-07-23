@@ -100,8 +100,8 @@ const isManagerListQueryForContentType = (queryKey: readonly unknown[], contentT
 const getCreatePermissions = (contentType: EncodedRelationField['contentType']) =>
   getEncodedContentPermissions(contentType, ['own'])
 
-const hasManagerMenu = (contentType: EncodedRelationField['contentType']) =>
-  Boolean(contentType.menu?.title)
+const canSaveAsGlobalModule = (contentType: EncodedRelationField['contentType']) =>
+  Boolean(contentType.menu?.title || contentType.modulePicker)
 
 const canUsePermissions = (
   permissions: ReturnType<typeof getEncodedContentPermissions>,
@@ -397,7 +397,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
         return
       }
 
-      if (!hasManagerMenu(relationField.contentType)) {
+      if (!canSaveAsGlobalModule(relationField.contentType)) {
         toast.error('This module cannot be saved globally')
         return
       }
@@ -593,7 +593,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                   ? getCreatePermissions(relationField.contentType)
                   : []
                 const canSaveGlobal = relationField
-                  ? hasManagerMenu(relationField.contentType) &&
+                  ? canSaveAsGlobalModule(relationField.contentType) &&
                     canUsePermissions(createPermissions, hasAnyPermission)
                   : false
                 const moduleId = getModuleId(item)
