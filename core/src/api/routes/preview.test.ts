@@ -51,6 +51,7 @@ const PreviewPage = new ContentType({
   fields: {
     title: Fields.string().translatable().required(),
     slug: Fields.string().type("Slug").translatable().required(),
+    credits: Fields.string(),
   },
   iterator: [
     {
@@ -94,17 +95,22 @@ const seo = (title: string) => ({
 });
 
 const pageData = ({
+  credits,
   slug,
   title,
   moduleText,
+  visibleWhenCredits,
 }: {
+  credits?: string;
   slug: string;
   title: string;
   moduleText: string;
+  visibleWhenCredits?: boolean;
 }) => ({
   _type: PreviewPage.name,
   title: translatable(title),
   slug: translatable(slug),
+  credits: credits ?? null,
   [ITERATOR_FIELD_NAME]: [
     {
       name: PreviewModule.name,
@@ -116,6 +122,14 @@ const pageData = ({
           eyebrow: null,
         },
       },
+      ...(visibleWhenCredits
+        ? {
+            visibleWhen: {
+              field: "credits",
+              operator: "notEmpty" as const,
+            },
+          }
+        : {}),
     },
   ],
   [SEO_FIELD_NAME]: seo(title),
@@ -229,6 +243,51 @@ describe.serial("preview", () => {
     expect(encodeContentTypeForManager(PreviewPage).hasIterator).toBe(true);
     expect(encodeContentTypeForManager(PreviewPage).hasSeo).toBe(true);
     expect((encoded as Record<string, unknown>)[SEO_FIELD_NAME]).toBeUndefined();
+  });
+
+  it("evaluates conditional iterator modules against unsaved preview data", async () => {
+    const hiddenResult = await createPreviewHandler({
+      ctx,
+      input: {
+        contentType: PreviewPage.name,
+        languageCode: "en",
+        routeKey: "preview-pages",
+        data: pageData({
+          slug: "conditional-hidden",
+          title: "Conditional hidden",
+          moduleText: "Credits module",
+          visibleWhenCredits: true,
+        }),
+      },
+    });
+
+    const hiddenPreview = await getPreviewPage({
+      token: hiddenResult.token,
+      path: hiddenResult.path,
+    });
+    expect(hiddenPreview.modules).toHaveLength(0);
+
+    const visibleResult = await createPreviewHandler({
+      ctx,
+      input: {
+        contentType: PreviewPage.name,
+        languageCode: "en",
+        routeKey: "preview-pages",
+        data: pageData({
+          credits: "Produced by Rakun",
+          slug: "conditional-visible",
+          title: "Conditional visible",
+          moduleText: "Credits module",
+          visibleWhenCredits: true,
+        }),
+      },
+    });
+
+    const visiblePreview = await getPreviewPage({
+      token: visibleResult.token,
+      path: visibleResult.path,
+    });
+    expect(visiblePreview.modules[0]?._type).toBe(PreviewModule.name);
   });
 
   it("does not fall back to public content for invalid token or path", async () => {

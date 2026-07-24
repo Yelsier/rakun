@@ -31,6 +31,8 @@ import { validateModule } from "../../utils/validateModule";
 import { resolveSeo } from "./seo";
 import { applyEffectiveIterator } from "../../utils/linkedIterator";
 import { ITERATOR_UNLINKED_FIELD_NAME } from "../../../lib/systemFields";
+import { isIteratorItemVisible } from "../../utils/iteratorVisibility";
+import type { IteratorItemVisibilityCondition } from "../../../lib/fields/List";
 
 export const NotFoundResponse: PageOutput = {
   renderMode: "static",
@@ -46,6 +48,7 @@ export const NotFoundResponse: PageOutput = {
 type IterableContentTypes = {
   name: string;
   value: Record<string, unknown> & { _type: string; _id: string };
+  visibleWhen?: IteratorItemVisibilityCondition;
 }[];
 
 // Add trailing slash
@@ -329,9 +332,16 @@ export const buildPageOutput = async ({
           const contentModules = (
             (await Promise.all(
               [
-                ...(contentModulesSource as IterableContentTypes).map((m) => ({
-                  ...m.value,
-                })),
+                ...(contentModulesSource as IterableContentTypes)
+                  .filter((item) =>
+                    isIteratorItemVisible(
+                      item,
+                      info as Record<string, unknown>,
+                    ),
+                  )
+                  .map((m) => ({
+                    ...m.value,
+                  })),
               ].map(async (item) => {
                 const moduleContentType = getContentTypeByName(item._type);
                 if (!moduleContentType) return item;

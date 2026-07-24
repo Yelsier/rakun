@@ -36,6 +36,10 @@ export * from "./lib/fields/Select";
 export * from "./lib/fields/SelfRelation";
 export * from "./lib/fields/SimpleList";
 export * from "./lib/fields/String";
+export {
+  isIteratorItemVisible,
+  isIteratorVisibilityValueEmpty,
+} from "./api/utils/iteratorVisibility";
 export { getListField } from "./lib/utils/getListField";
 export { getTranslation } from "./lib/utils/getTranslation";
 export { Id, isId, type Id as IdType } from "./lib/utils/id";

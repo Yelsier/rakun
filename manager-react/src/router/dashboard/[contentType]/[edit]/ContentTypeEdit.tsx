@@ -20,7 +20,10 @@ import StringField from './_fields/StringField'
 import SelectField from './_fields/Select'
 import { FieldValue } from './_fields/shared'
 import { evaluateFieldCondition } from './_fields/shared/condition'
-import { ConditionFieldStateProvider } from './_fields/shared/condition-state'
+import {
+  ConditionFieldStateProvider,
+  mergeConditionFieldState,
+} from './_fields/shared/condition-state'
 import { errorStyle } from './edit.styles'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -168,6 +171,14 @@ const ContentTypeEdit = forwardRef<
     [contentType.fields, props.defaultData]
   )
   const [formState, setFormState] = useState(formStateInitialValue)
+  const conditionFieldState = useMemo(
+    () =>
+      mergeConditionFieldState(
+        props.defaultData as Record<string, unknown> | undefined,
+        formState
+      ),
+    [formState, props.defaultData]
+  )
   const [dynamicBindings, setDynamicBindings] = useState<DynamicDocumentBindings | undefined>(
     getDefaultBindings(props.defaultData)
   )
@@ -257,7 +268,12 @@ const ContentTypeEdit = forwardRef<
   )
 
   return (
-    <ConditionFieldStateProvider value={{ onFieldStateChange: handleFieldStateChange }}>
+    <ConditionFieldStateProvider
+      value={{
+        fieldState: conditionFieldState,
+        onFieldStateChange: handleFieldStateChange,
+      }}
+    >
       <div className="flex flex-1 flex-col gap-8 mx-auto w-full h-full">
         {allItems.map(([fieldName, fieldValue], i) => {
           const isVisible = visibleFieldNames.has(fieldName)

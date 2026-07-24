@@ -78,10 +78,38 @@ describe("field type inference", () => {
               _id: "64f0c0000000000000000001",
               contentType: TypeRegressionCT.name,
             },
+            visibleWhen: {
+              field: "title",
+              operator: "notEmpty",
+            },
           },
         ],
-      })[ITERATOR_FIELD_NAME],
-    ).toHaveLength(1);
+      })[ITERATOR_FIELD_NAME]?.[0]?.visibleWhen,
+    ).toEqual({
+      field: "title",
+      operator: "notEmpty",
+    });
+
+    expect(() =>
+      IteratorParamCT.validate({
+        _type: "IteratorParam",
+        title: "Page",
+        [ITERATOR_FIELD_NAME]: [
+          {
+            name: TypeRegressionCT.name,
+            value: {
+              type: "existing",
+              _id: "64f0c0000000000000000001",
+              contentType: TypeRegressionCT.name,
+            },
+            visibleWhen: {
+              field: "title",
+              operator: "unknown",
+            },
+          },
+        ],
+      }),
+    ).toThrow();
   });
 
   it("requires an iterator when linkedIterator is enabled and encodes the flag", () => {
