@@ -34,7 +34,11 @@ import { Button } from '@/components/ui/button'
 import { deepEqual } from '@/helpers/deepEqual'
 import { useTRPC } from '@/components/trpc-provider'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { DynamicDataControl, isDynamicFieldEnabled } from './_fields/DynamicDataControl'
+import {
+  DynamicDataControl,
+  isDynamicFallbackRequired,
+  isDynamicFieldEnabled,
+} from './_fields/DynamicDataControl'
 import {
   useManagerPlugins,
   type ManagerFieldEditorRef,
@@ -160,6 +164,9 @@ const ContentTypeEdit = forwardRef<
   const { refs, setRef } = useArrayRefs<FieldRef>()
   const errors = useEditErrorStore((state) => state.errors)
   const addError = useEditErrorStore((state) => state.addError)
+  const removeRelatedErrors = useEditErrorStore(
+    (state) => state.removeRelatedErrors
+  )
   const formStateInitialValue = useMemo(
     () =>
       Object.fromEntries(
@@ -300,6 +307,7 @@ const ContentTypeEdit = forwardRef<
               id={id + '.' + fieldName}
               ref={setRef(i)}
               {...fieldValue}
+              isRequired={isDynamicFallbackRequired(fieldValue, dynamicBinding)}
               defaultData={defaultDataExtractor(fieldName, props.defaultData)}
               dynamicFallbackPlaceholder={dynamicFallbackPlaceholder}
               parentContentType={dynamicSourceContentType}
@@ -317,7 +325,10 @@ const ContentTypeEdit = forwardRef<
               field={fieldValue}
               contentTypes={(contentTypesData ?? []) as EncodedContentType[]}
               bindings={dynamicBindings}
-              onChange={setDynamicBindings}
+              onChange={(bindings) => {
+                setDynamicBindings(bindings)
+                removeRelatedErrors(`${id}.${fieldName}`)
+              }}
               open={dynamicOpen}
               onOpenChange={setDynamicOpen}
               mode="trigger"
@@ -331,7 +342,10 @@ const ContentTypeEdit = forwardRef<
               field={fieldValue}
               contentTypes={(contentTypesData ?? []) as EncodedContentType[]}
               bindings={dynamicBindings}
-              onChange={setDynamicBindings}
+              onChange={(bindings) => {
+                setDynamicBindings(bindings)
+                removeRelatedErrors(`${id}.${fieldName}`)
+              }}
               open={dynamicOpen}
               onOpenChange={setDynamicOpen}
               mode="dialog"

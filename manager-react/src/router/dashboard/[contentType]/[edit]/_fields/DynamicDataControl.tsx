@@ -69,6 +69,12 @@ import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
 
 type FieldBinding = DynamicBindingSource | undefined
 type ListMapSource = DynamicListMapSource | undefined
+
+export const isDynamicFallbackRequired = (
+  field: Pick<EncodedFieldUnknown, 'isRequired'>,
+  binding: unknown,
+) => field.isRequired && !binding
+
 type FilterOperator =
   | 'equals'
   | 'notEquals'
