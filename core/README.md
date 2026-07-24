@@ -289,6 +289,34 @@ List bindings append dynamic items to manually stored items instead of replacing
 the list. If the same stable item id appears in both sources, the dynamically
 resolved item wins and the duplicate manual copy is skipped.
 
+A list inside a nested module can also use a compatible relation or blocks array
+from the current document. The manager exposes these sources as
+`Current document · <field>`, infers the content type of each array item, and
+lets each item be mapped with the same field mapping UI used for collections.
+These bindings store a `currentDocument` source alongside the inferred item
+content type:
+
+```ts
+const headerBindings = {
+  lists: {
+    categories: {
+      contentType: LinkItem.name,
+      source: {
+        kind: "currentDocument",
+        contentType: Project.name,
+        path: "categories",
+        itemName: "Category",
+      },
+      itemName: "Category",
+      map: {
+        title: { contentType: LinkItem.name, path: "title" },
+        href: { contentType: LinkItem.name, path: "href" },
+      },
+    },
+  },
+};
+```
+
 List query conditions can compare a source field with a value from the current
 document. The manager exposes this as `Current document`; programmatic bindings
 use `{ $current: "path.to.field" }`. For example, a category can query only the

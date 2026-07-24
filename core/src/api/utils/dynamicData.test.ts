@@ -100,6 +100,113 @@ describe("dynamic data output", () => {
     expect(resolved.modules[0]?.value.eyebrow).toBe("Parent title");
   });
 
+  it("builds a nested list from an array on the current document", async () => {
+    const CurrentDocumentLinkItem = new ContentType({
+      name: "CurrentDocumentLinkItem",
+      fields: {
+        title: Fields.string().required(),
+        href: Fields.string().required(),
+      },
+    });
+    const CurrentDocumentHeader = new ContentType({
+      name: "CurrentDocumentHeader",
+      fields: {
+        categories: Fields.blocks([
+          {
+            name: "Category",
+            field: Fields.relation(CurrentDocumentLinkItem, "new"),
+          },
+        ]),
+      },
+    });
+    const CurrentDocumentProject = new ContentType({
+      name: "CurrentDocumentProject",
+      fields: {
+        categories: Fields.blocks([
+          {
+            name: "Category",
+            field: Fields.relation(CurrentDocumentLinkItem, "new"),
+          },
+        ]),
+        modules: Fields.blocks([
+          {
+            name: "Header",
+            field: Fields.relation(CurrentDocumentHeader, "new"),
+          },
+        ]),
+      },
+    });
+    registerContentType(CurrentDocumentLinkItem);
+    registerContentType(CurrentDocumentHeader);
+
+    const resolved = await resolveDynamicData(
+      {
+        _id: "project-1",
+        _type: CurrentDocumentProject.name,
+        categories: [
+          {
+            name: "Category",
+            value: {
+              _id: "category-1",
+              _type: CurrentDocumentLinkItem.name,
+              title: "News",
+              href: "/news",
+            },
+          },
+        ],
+        modules: [
+          {
+            name: "Header",
+            value: {
+              _type: CurrentDocumentHeader.name,
+              _bindings: {
+                lists: {
+                  categories: {
+                    contentType: CurrentDocumentLinkItem.name,
+                    source: {
+                      kind: "currentDocument",
+                      contentType: CurrentDocumentProject.name,
+                      path: "categories",
+                      itemName: "Category",
+                    },
+                    itemName: "Category",
+                    map: {
+                      title: {
+                        contentType: CurrentDocumentLinkItem.name,
+                        path: "title",
+                      },
+                      href: {
+                        contentType: CurrentDocumentLinkItem.name,
+                        path: "href",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+      {
+        db: {} as never,
+        contentType: CurrentDocumentProject,
+        surface: "web",
+      },
+    );
+
+    expect(resolved.modules[0]?.value.categories).toEqual([
+      {
+        name: "Category",
+        value: {
+          _id: "Category:category-1",
+          _type: CurrentDocumentLinkItem.name,
+          title: "News",
+          href: "/news",
+        },
+      },
+    ]);
+  });
+
   it("resolves list query values from the current document", async () => {
     const CurrentQueryCard = new ContentType({
       name: "CurrentQueryCard",
@@ -283,6 +390,33 @@ describe("dynamic data output", () => {
     expect(mergeDynamicListItems([storedCopy], [dynamicItem])).toEqual([
       dynamicItem,
     ]);
+  });
+
+  it("drops invalid fallback values and normalizes generated stable ids", () => {
+    const dynamicItem = {
+      name: "Category",
+      value: {
+        _id: "Category:category-1",
+        _type: "LinkItem",
+        title: "Assistant",
+      },
+    };
+    const rawSourceDocument = {
+      _id: "category-1",
+      _type: "Category",
+      title: "Assistant",
+    };
+    const wrappedSourceDocument = {
+      name: "Category",
+      value: rawSourceDocument,
+    };
+
+    expect(
+      mergeDynamicListItems(
+        [rawSourceDocument, wrappedSourceDocument],
+        [dynamicItem],
+      ),
+    ).toEqual([dynamicItem]);
   });
 
   it("collects and flattens related arrays while preserving order and duplicates", async () => {

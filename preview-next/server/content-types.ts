@@ -74,6 +74,29 @@ export const Category = new ContentType({
   listFields: ['title', 'slug'],
 })
 
+export const LinkItem = new ContentType({
+  name: 'LinkItem',
+  fields: {
+    title: Fields.string().translatable().required(),
+    link: Fields.link().required(),
+  },
+  listFields: ['title'],
+})
+
+export const ProjectHeader = new ContentType({
+  name: 'ProjectHeader',
+  fields: {
+    title: Fields.string().translatable().required(),
+    categories: Fields.blocks([
+      {
+        name: 'Category',
+        field: Fields.relation(LinkItem, 'new'),
+      },
+    ]).required(),
+    company: Fields.string().translatable().required(),
+  },
+})
+
 export const Project = new ContentType({
   name: 'Project',
   dynamicDataSource: true,
@@ -88,8 +111,15 @@ export const Project = new ContentType({
     excerpt: Fields.string().type('Textarea'),
     featured: Fields.boolean(),
     category: Fields.relation(Category, 'existing').required(),
+    categories: Fields.relation(Category, 'existing').multiple(),
     images: Fields.file().type('Image').multiple(),
   },
+  iterator: [
+    {
+      contentType: ProjectHeader,
+      type: 'new',
+    },
+  ],
   uniques: [['slug']],
   listFields: ['title', 'slug', 'featured', 'category.title'],
 })
@@ -371,6 +401,7 @@ export const previewContentTypes = [
   ImagePlayground,
   ConditionalDemo,
   TranslationPlayground,
+  ProjectHeader,
 ]
 
 export const keyedContentTypes = {

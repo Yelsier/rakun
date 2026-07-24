@@ -25,6 +25,7 @@ import {
   FeatureCarousel,
   FeatureCarouselItem,
   Header,
+  ImagePlayground,
   PreviewPage as Page,
   Project,
   PageSection,
@@ -1030,13 +1031,32 @@ export const seedPreviewData = async ({
       throw new Error("Failed to create preview categories.");
     }
 
+    const galleryMediaSources = [
+      { key: "public/dynamic-data/aurora.svg", name: "Aurora gradients" },
+      { key: "public/dynamic-data/borealis.svg", name: "Borealis forms" },
+      { key: "public/dynamic-data/canopy.svg", name: "Canopy composition" },
+      { key: "public/dynamic-data/ember.svg", name: "Ember landscape" },
+      { key: "public/dynamic-data/lagoon.svg", name: "Lagoon geometry" },
+      { key: "public/dynamic-data/studio.svg", name: "Studio still life" },
+    ];
+    const galleryMediaDefinitions = galleryMediaSources.flatMap((media) =>
+      Array.from({ length: 3 }, (_, index) => {
+        const copy = index + 1;
+        const key =
+          copy === 1
+            ? media.key
+            : media.key.replace(/\.svg$/, `-copy-${copy}.svg`);
+
+        return {
+          key,
+          name: `${media.name} - copy ${copy}`,
+          sourceKey: media.key,
+          sourceUrl: `/${media.key.replace(/^public\//, "")}`,
+        };
+      }),
+    );
     const seededGalleryMedia = await Promise.all(
-      [
-        { key: "public/dynamic-data/aurora.svg", name: "Aurora gradients" },
-        { key: "public/dynamic-data/borealis.svg", name: "Borealis forms" },
-        { key: "public/dynamic-data/canopy.svg", name: "Canopy composition" },
-        { key: "public/dynamic-data/studio.svg", name: "Studio still life" },
-      ].map((media) =>
+      galleryMediaDefinitions.map((media) =>
         db.collection(Media.name).findOneAndUpdate(
           { key: media.key },
           {
@@ -1045,6 +1065,10 @@ export const seedPreviewData = async ({
               title: media.name,
               alt: media.name,
               originalName: media.key.split("/").at(-1),
+              url: media.sourceUrl,
+              previewKey: media.sourceKey,
+              previewUrl: media.sourceUrl,
+              previewMime: "image/svg+xml",
               access: "public",
               mime: "image/svg+xml",
               extension: "svg",
@@ -1085,6 +1109,32 @@ export const seedPreviewData = async ({
       if (!media) throw new Error(`Missing preview gallery media: ${key}`);
       return existingRelation(Media.name, media);
     };
+
+    const imagePlaygroundMedia = galleryMediaDefinitions.map(
+      (media) => media.key,
+    );
+    const imagePlayground = await db
+      .collection(ImagePlayground.name)
+      .findOneAndUpdate(
+        { title: "Multiple image performance" },
+        {
+          $set: {
+            singleImage: imageRelation(imagePlaygroundMedia[0]),
+            multipleImages: imagePlaygroundMedia.map(imageRelation),
+            updatedAt: now(),
+          },
+          $setOnInsert: {
+            title: "Multiple image performance",
+            _type: ImagePlayground.name,
+            createdAt: now(),
+          },
+        },
+        { upsert: true, returnDocument: "after" },
+      );
+
+    if (!imagePlayground) {
+      throw new Error("Failed to create preview image playground.");
+    }
 
     const seededProjects = await Promise.all(
       [

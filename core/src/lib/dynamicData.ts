@@ -47,6 +47,13 @@ const dynamicRelatedCollectionSourceSchema = z.object({
   sort: z.record(z.string(), z.enum(["asc", "desc"])).optional(),
 });
 
+const dynamicListDocumentSourceSchema = z.object({
+  kind: z.literal("currentDocument"),
+  contentType: z.string(),
+  path: z.string(),
+  itemName: z.string().optional(),
+});
+
 const dynamicListMapSourceSchema = z.union([
   dynamicBindingSourceSchema,
   dynamicRelatedCollectionSourceSchema,
@@ -68,6 +75,7 @@ const dynamicQuerySchema = z
 
 const dynamicListBindingSchema = z.object({
   contentType: z.string(),
+  source: dynamicListDocumentSourceSchema.optional(),
   query: dynamicQuerySchema,
   itemName: z.string(),
   map: z.record(z.string(), dynamicListMapSourceSchema),
@@ -84,6 +92,9 @@ export type DynamicBindingSource = Omit<
 >;
 export type DynamicRelatedCollectionSource = z.infer<
   typeof dynamicRelatedCollectionSourceSchema
+>;
+export type DynamicListDocumentSource = z.infer<
+  typeof dynamicListDocumentSourceSchema
 >;
 export type DynamicListMapSource =
   | DynamicBindingSource

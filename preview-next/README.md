@@ -58,6 +58,9 @@ The API route seeds preview data on first request when `SEED_PREVIEW` is not
 - a `CategoriesGallery` module that maps `Category` records and queries each
   category's related `Project.images`
 - local SVG `Media` records used by the related project galleries
+- an `ImagePlayground` record with 18 selected images (three distinct media
+  records for each of the six SVGs) for testing compact previews and
+  dialog-based reordering
 - populated `Fields.link()` examples in header and footer modules
 - `Author` and `Article`
 - `RouteLocaleVariant` assignments and route maps for `/`, `/es/`,
