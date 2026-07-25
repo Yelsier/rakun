@@ -7,6 +7,7 @@ export * from "./schemas/manager/get";
 export * from "./schemas/manager/list";
 export * from "./schemas/manager/comments";
 export * from "./schemas/manager/favorites";
+export * from "./schemas/manager/notifications";
 export * from "./schemas/manager/users";
 export * from "./schemas/manager/apiOperations";
 export * from "./schemas/manager/setDefaultLanguage";

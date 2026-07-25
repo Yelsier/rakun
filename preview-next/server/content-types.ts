@@ -214,7 +214,6 @@ export const PreviewPage = new ContentType({
   versioning: {
     maxVersions: 5,
   },
-  comments: true,
 })
 
 export const Author = new ContentType({

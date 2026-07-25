@@ -122,13 +122,22 @@ export type {
   CreateCommentOutput,
   ListCommentsInput,
   ListCommentsOutput,
+  MarkCommentsReadInput,
+  MarkCommentsReadOutput,
   ToggleCommentReactionInput,
   ToggleCommentReactionOutput,
+  UnreadCommentsCountOutput,
 } from "./schemas/manager/comments";
 export type {
   ListMentionUsersOutput,
   MentionUser,
 } from "./schemas/manager/users";
+export type {
+  ListNotificationsInput,
+  ListNotificationsOutput,
+  MarkNotificationsReadInput,
+  MarkNotificationsReadOutput,
+} from "./schemas/manager/notifications";
 export type {
   TranslateDocumentInput,
   TranslateDocumentOutput,

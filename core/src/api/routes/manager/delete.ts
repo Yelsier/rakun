@@ -1,6 +1,11 @@
 import { throwAppError } from "../../../lib/errors";
 import { Logger } from "../../../lib/Logger";
-import { ContentComment, Media } from "../../../internal-content-types";
+import {
+  ContentComment,
+  ContentCommentReadState,
+  ManagerNotification,
+  Media,
+} from "../../../internal-content-types";
 import { getMongoService } from "../../../orm";
 import { RakunRequestContext } from "../../context";
 import { DeleteInput } from "../../../schemas/manager/delete";
@@ -68,6 +73,16 @@ export const deleteHandler = async ({
   await db.delete(contentType, { _id: id }, { actorId: user._id });
   await db.delete(
     ContentComment,
+    { contentType: contentType.name, documentId: id },
+    { actorId: user._id },
+  );
+  await db.delete(
+    ContentCommentReadState,
+    { contentType: contentType.name, documentId: id },
+    { actorId: user._id },
+  );
+  await db.delete(
+    ManagerNotification,
     { contentType: contentType.name, documentId: id },
     { actorId: user._id },
   );

@@ -31,6 +31,7 @@ export const commentRecord = z.object({
 export const listCommentsOutput = z.object({
   totalItems: z.number(),
   comments: z.array(commentRecord),
+  lastReadCommentId: z.string().optional(),
 });
 
 export const createCommentInput = commentReferenceInput.extend({
@@ -51,6 +52,18 @@ export const toggleCommentReactionOutput = z.object({
   comment: commentRecord,
 });
 
+export const markCommentsReadInput = commentReferenceInput.extend({
+  commentId: z.string().min(1),
+});
+
+export const markCommentsReadOutput = z.object({
+  lastReadCommentId: z.string(),
+});
+
+export const unreadCommentsCountOutput = z.object({
+  count: z.number().int().nonnegative(),
+});
+
 export type CommentReferenceInput = z.infer<typeof commentReferenceInput>;
 export type ListCommentsInput = z.infer<typeof listCommentsInput>;
 export type CommentReactionEmoji = z.infer<typeof commentReactionEmoji>;
@@ -61,3 +74,8 @@ export type CreateCommentInput = z.infer<typeof createCommentInput>;
 export type CreateCommentOutput = z.infer<typeof createCommentOutput>;
 export type ToggleCommentReactionInput = z.infer<typeof toggleCommentReactionInput>;
 export type ToggleCommentReactionOutput = z.infer<typeof toggleCommentReactionOutput>;
+export type MarkCommentsReadInput = z.infer<typeof markCommentsReadInput>;
+export type MarkCommentsReadOutput = z.infer<typeof markCommentsReadOutput>;
+export type UnreadCommentsCountOutput = z.infer<
+  typeof unreadCommentsCountOutput
+>;

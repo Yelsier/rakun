@@ -1,9 +1,10 @@
 'use client'
 
 import { EmojiPicker } from '@ferrucc-io/emoji-picker'
-import { MessageCircle, Plus, Send } from 'lucide-react'
+import { BellRing, MessageCircle, Plus, Send } from 'lucide-react'
 import {
   Fragment,
+  type Ref,
   type ReactNode,
   type WheelEvent,
   useCallback,
@@ -246,6 +247,20 @@ const DaySeparator = ({ date }: { date?: Date | string | null }) => (
       {formatMessageDayLabel(date)}
     </span>
     <div className="h-px flex-1 bg-border" />
+  </div>
+)
+
+const UnreadSeparator = ({
+  separatorRef,
+}: {
+  separatorRef: Ref<HTMLDivElement>
+}) => (
+  <div ref={separatorRef} className="flex items-center gap-3 py-2" role="separator">
+    <div className="h-px flex-1 bg-primary" />
+    <span className="rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-primary-foreground shadow-sm">
+      Unread
+    </span>
+    <div className="h-px flex-1 bg-primary" />
   </div>
 )
 
@@ -565,6 +580,11 @@ export const ContentCommentsDrawer = ({
   const queryClient = useQueryClient()
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
+  const unreadMarkerRef = useRef<HTMLDivElement | null>(null)
+  const unreadSessionIdRef = useRef(0)
+  const lastMarkedCommentRef = useRef<string | null>(null)
+  const markReadPromiseRef = useRef<Promise<unknown> | null>(null)
+  const markedOpenRef = useRef<string | null>(null)
   const [internalOpen, setInternalOpen] = useState(false)
   const open = controlledOpen ?? internalOpen
   const setOpen = (nextOpen: boolean) => {
@@ -577,10 +597,21 @@ export const ContentCommentsDrawer = ({
   const [text, setText] = useState('')
   const [mentions, setMentions] = useState<string[]>([])
   const [composerKey, setComposerKey] = useState(0)
+  const [unreadMarkerCommentId, setUnreadMarkerCommentId] = useState<
+    string | null
+  >(null)
+  const [unreadSessionReady, setUnreadSessionReady] = useState(false)
   const commentsInput = contentTypeId
     ? {
         contentType: contentTypeName,
         documentId: contentTypeId,
+      }
+    : undefined
+  const notificationsInput = commentsInput
+    ? {
+        ...commentsInput,
+        unreadOnly: true,
+        limit: 1,
       }
     : undefined
   const commentsQuery = useManagerQuery({
@@ -592,6 +623,21 @@ export const ContentCommentsDrawer = ({
     enabled: Boolean(open && commentsInput),
     refetchInterval: open ? 5000 : false,
   })
+  const notificationsQuery = useManagerQuery({
+    name: 'manager.notifications.list',
+    input: notificationsInput,
+    enabled: Boolean(notificationsInput),
+    refetchInterval: open ? false : 15000,
+  })
+  const unreadCommentsQuery = useManagerQuery({
+    name: 'manager.comments.unreadCount',
+    input: commentsInput ?? ({
+      contentType: '',
+      documentId: '',
+    } as never),
+    enabled: Boolean(commentsInput),
+    refetchInterval: open ? false : 15000,
+  })
   const usersQuery = useManagerQuery({
     name: 'manager.users.mentions',
     input: undefined,
@@ -599,12 +645,16 @@ export const ContentCommentsDrawer = ({
   })
   const createCommentMutation = useManagerMutation('manager.comments.create')
   const toggleReactionMutation = useManagerMutation('manager.comments.toggleReaction')
+  const markCommentsReadMutation = useManagerMutation('manager.comments.markRead')
+  const markNotificationsReadMutation = useManagerMutation('manager.notifications.markRead')
   const mentionUsers = usersQuery.data ?? []
   const mentionUsersById = useMemo(
     () => new Map(mentionUsers.map((mentionUser) => [mentionUser._id, mentionUser])),
     [mentionUsers]
   )
   const comments = commentsQuery.data?.comments ?? []
+  const unreadCommentsCount = unreadCommentsQuery.data?.count ?? 0
+  const unreadNotifications = notificationsQuery.data?.totalUnread ?? 0
   const documentTitle = getDocumentTitleValue({
     data: form.draft.current,
     field: contentType.listFields?.[0],
@@ -624,10 +674,170 @@ export const ContentCommentsDrawer = ({
   }, [])
 
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      unreadSessionIdRef.current += 1
+      lastMarkedCommentRef.current = null
+      setUnreadMarkerCommentId(null)
+      setUnreadSessionReady(false)
+      return
+    }
+
+    if (!commentsInput) return
+
+    const sessionId = unreadSessionIdRef.current + 1
+    unreadSessionIdRef.current = sessionId
+    lastMarkedCommentRef.current = null
+    setUnreadMarkerCommentId(null)
+    setUnreadSessionReady(false)
+
+    void (async () => {
+      try {
+        await markReadPromiseRef.current
+        const result = await commentsQuery.refetch()
+
+        if (
+          unreadSessionIdRef.current !== sessionId ||
+          result.isError ||
+          !result.data
+        ) {
+          return
+        }
+
+        const freshComments = result.data.comments
+        const lastReadCommentId = result.data.lastReadCommentId
+        const lastReadIndex = lastReadCommentId
+          ? freshComments.findIndex(
+              (comment) => comment._id === lastReadCommentId
+            )
+          : -1
+        const unreadComments =
+          lastReadIndex >= 0
+            ? freshComments.slice(lastReadIndex + 1)
+            : freshComments
+        const firstUnreadComment = unreadComments.find(
+          (comment) =>
+            !isOwnCommentAuthor({
+              author: comment.author,
+              currentUser: user,
+            })
+        )
+
+        setUnreadMarkerCommentId(firstUnreadComment?._id ?? null)
+        setUnreadSessionReady(true)
+      } catch (error) {
+        if (unreadSessionIdRef.current === sessionId) {
+          toast.error(
+            getActionErrorMessage(error, 'Could not load comment read state')
+          )
+        }
+      }
+    })()
+  }, [contentTypeId, contentTypeName, open])
+
+  useEffect(() => {
+    if (!open || !commentsInput || !unreadSessionReady) return
+
+    const latestComment = comments[comments.length - 1]
+    if (!latestComment) return
+
+    const readKey = `${commentsInput.contentType}:${commentsInput.documentId}:${latestComment._id}`
+    if (lastMarkedCommentRef.current === readKey) return
+
+    lastMarkedCommentRef.current = readKey
+
+    const previousMarkRead = markReadPromiseRef.current
+    const markReadPromise = (
+      previousMarkRead
+        ? previousMarkRead.catch(() => undefined)
+        : Promise.resolve()
+    ).then(() =>
+      markCommentsReadMutation.mutateAsync({
+        ...commentsInput,
+        commentId: latestComment._id,
+      })
+    )
+    markReadPromiseRef.current = markReadPromise
+
+    void markReadPromise
+      .then(async (result) => {
+        await queryClient.invalidateQueries({
+          predicate: (query) =>
+            query.queryKey[0] === 'rakun-manager' &&
+            query.queryKey[1] === 'manager.comments.unreadCount',
+        })
+        return result
+      })
+      .catch((error) => {
+        toast.error(getActionErrorMessage(error, 'Could not save comment read state'))
+      })
+      .finally(() => {
+        if (markReadPromiseRef.current === markReadPromise) {
+          markReadPromiseRef.current = null
+        }
+      })
+  }, [
+    comments,
+    commentsInput,
+    markCommentsReadMutation,
+    open,
+    unreadSessionReady,
+  ])
+
+  useEffect(() => {
+    if (!open || !unreadSessionReady || unreadMarkerCommentId) return
 
     scrollMessagesToEnd('auto')
-  }, [comments.length, open, scrollMessagesToEnd])
+  }, [
+    comments.length,
+    open,
+    scrollMessagesToEnd,
+    unreadMarkerCommentId,
+    unreadSessionReady,
+  ])
+
+  useLayoutEffect(() => {
+    if (!open || !unreadMarkerCommentId) return
+
+    requestAnimationFrame(() => {
+      unreadMarkerRef.current?.scrollIntoView({
+        block: 'center',
+        behavior: 'auto',
+      })
+    })
+  }, [open, unreadMarkerCommentId])
+
+  useEffect(() => {
+    if (!open) {
+      markedOpenRef.current = null
+      return
+    }
+
+    if (!commentsInput || unreadNotifications === 0) return
+
+    const documentKey = `${commentsInput.contentType}:${commentsInput.documentId}`
+    if (markedOpenRef.current === documentKey) return
+
+    markedOpenRef.current = documentKey
+
+    void markNotificationsReadMutation
+      .mutateAsync(commentsInput)
+      .then(() =>
+        queryClient.invalidateQueries({
+          predicate: (query) =>
+            query.queryKey[0] === 'rakun-manager' &&
+            query.queryKey[1] === 'manager.notifications.list',
+        })
+      )
+      .catch((error) => {
+        toast.error(getActionErrorMessage(error, 'Could not mark notifications as read'))
+      })
+  }, [
+    commentsInput,
+    markNotificationsReadMutation,
+    open,
+    queryClient,
+    unreadNotifications,
+  ])
 
   if (!contentTypeId || !commentsInput) return null
 
@@ -699,12 +909,48 @@ export const ContentCommentsDrawer = ({
         <Tooltip>
           <TooltipTrigger asChild>
             <DrawerTrigger asChild>
-              <Button aria-label="Comments" variant="outline" size="icon">
+              <Button
+                aria-label={
+                  unreadCommentsCount || unreadNotifications
+                    ? `Comments, ${unreadCommentsCount} unread messages${
+                        unreadNotifications
+                          ? `, ${unreadNotifications} unread mentions`
+                          : ''
+                      }`
+                    : 'Comments'
+                }
+                className="relative"
+                variant="outline"
+                size="icon"
+              >
                 <MessageCircle />
+                {unreadCommentsCount || unreadNotifications ? (
+                  <span
+                    className={cn(
+                      'absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center gap-0.5 rounded-full px-1 text-[9px] font-bold leading-none shadow-sm',
+                      unreadNotifications
+                        ? 'bg-destructive text-destructive-foreground'
+                        : 'bg-primary text-primary-foreground'
+                    )}
+                  >
+                    {unreadNotifications ? <BellRing className="size-2.5" /> : null}
+                    {unreadCommentsCount ? (
+                      <span>{unreadCommentsCount > 99 ? '99+' : unreadCommentsCount}</span>
+                    ) : null}
+                  </span>
+                ) : null}
               </Button>
             </DrawerTrigger>
           </TooltipTrigger>
-          <TooltipContent>Comments</TooltipContent>
+          <TooltipContent>
+            {unreadCommentsCount || unreadNotifications
+              ? `${unreadCommentsCount} unread messages${
+                  unreadNotifications
+                    ? ` · ${unreadNotifications} unread mentions`
+                    : ''
+                }`
+              : 'Comments'}
+          </TooltipContent>
         </Tooltip>
       ) : null}
       <DrawerContent className="w-[min(92vw,520px)] sm:max-w-[520px]">
@@ -750,6 +996,9 @@ export const ContentCommentsDrawer = ({
                   return (
                     <Fragment key={comment._id}>
                       {showDaySeparator ? <DaySeparator date={comment.createdAt} /> : null}
+                      {comment._id === unreadMarkerCommentId ? (
+                        <UnreadSeparator separatorRef={unreadMarkerRef} />
+                      ) : null}
                       <Message align={ownComment ? 'end' : 'start'}>
                         <MessageAvatar className={cn(!showAuthor && 'invisible')}>
                           <UserHoverCard user={comment.author}>

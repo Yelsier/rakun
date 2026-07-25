@@ -343,8 +343,6 @@ type ContentTypeParams<
   dynamicData?: DynamicDataOptions;
   /** Makes documents of this type available as dynamic data sources. */
   dynamicDataSource?: boolean;
-  /** Enables manager comments and user mentions for saved documents. */
-  comments?: boolean;
 };
 
 type FieldSchemaMode = "input" | "db" | "populated";
@@ -455,8 +453,6 @@ export default class ContentType<
   dynamicData?: DynamicDataOptions;
   /** Whether documents of this type can be selected as dynamic data sources. */
   dynamicDataSource?: boolean;
-  /** Whether manager comments are enabled for saved documents. */
-  comments?: boolean;
   /** Whether the content type belongs to Rakun's internal registry. */
   isInternal?: boolean;
   /** Whether an iterator field was generated for this content type. */
@@ -500,7 +496,6 @@ export default class ContentType<
     this.hooks = params.hooks;
     this.dynamicData = params.dynamicData;
     this.dynamicDataSource = params.dynamicDataSource;
-    this.comments = params.comments;
   }
 
   getInputSchema() {
@@ -606,11 +601,6 @@ export default class ContentType<
     return this;
   }
 
-  enableComments() {
-    this.comments = true;
-    return this;
-  }
-
   enableDocumentVisibility() {
     this.documentVisibility = true;
     return this;
@@ -693,7 +683,6 @@ export default class ContentType<
         hooks: this.hooks,
         dynamicData: this.dynamicData,
         dynamicDataSource: this.dynamicDataSource,
-        comments: this.comments,
         linkedIterator: this.linkedIterator,
       },
       { allowSystemFields: true },
@@ -710,7 +699,6 @@ export default class ContentType<
       hooks: this.hooks,
       dynamicData: this.dynamicData,
       dynamicDataSource: this.dynamicDataSource,
-      comments: this.comments,
       modulePicker: this.modulePicker,
       isInternal: this.isInternal,
       hasIterator: this.hasIterator,
@@ -1022,7 +1010,6 @@ export const EncodedContentTypeSchema = z.object({
   documentVisibility: z.boolean().optional(),
   dynamicData: DynamicDataOptionsSchema.optional(),
   dynamicDataSource: z.boolean().optional(),
-  comments: z.boolean().optional(),
   permissions: z
     .union([
       z.literal(false),

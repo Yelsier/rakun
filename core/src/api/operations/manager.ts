@@ -18,6 +18,10 @@ import {
   toggleFavoriteHandler,
 } from "../routes/manager/favorites";
 import {
+  listNotificationsHandler,
+  markNotificationsReadHandler,
+} from "../routes/manager/notifications";
+import {
   assignLocaleVariantHandler,
   createLocaleVariantHandler,
   listLocaleVariantsHandler,
@@ -26,7 +30,9 @@ import {
 import {
   createCommentHandler,
   listCommentsHandler,
+  markCommentsReadHandler,
   toggleCommentReactionHandler,
+  unreadCommentsCountHandler,
 } from "../routes/manager/comments";
 import { listMentionUsersHandler } from "../routes/manager/users";
 import { trashHandler } from "../routes/manager/trash";
@@ -114,6 +120,12 @@ export const createManagerOperationDefinitions = () => {
     "manager.favorites.toggle": {
       resolve: toggleFavoriteHandler,
     },
+    "manager.notifications.list": {
+      resolve: listNotificationsHandler,
+    },
+    "manager.notifications.markRead": {
+      resolve: markNotificationsReadHandler,
+    },
     "manager.localeVariants.list": {
       resolve: listLocaleVariantsHandler,
     },
@@ -137,6 +149,12 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.comments.toggleReaction": {
       resolve: toggleCommentReactionHandler,
+    },
+    "manager.comments.markRead": {
+      resolve: markCommentsReadHandler,
+    },
+    "manager.comments.unreadCount": {
+      resolve: unreadCommentsCountHandler,
     },
     "manager.setDefaultLanguage": {
       resolve: setDefaultLanguageHandler,

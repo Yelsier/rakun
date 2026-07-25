@@ -4,6 +4,7 @@ import {
   BackupDocument,
   ContentComment,
   ContentVersion,
+  ManagerNotification,
   Migration,
   PreviewSnapshot,
   SchemaState,
@@ -56,6 +57,9 @@ export async function createIndexes(db: Db): Promise<void> {
     db
       .collection(ContentComment.name)
       .createIndex({ contentType: 1, documentId: 1, createdAt: 1 }),
+    db
+      .collection(ManagerNotification.name)
+      .createIndex({ "user._id": 1, createdAt: -1 }),
     db
       .collection(Migration.name)
       .createIndex({ contentType: 1, migrationId: 1 }),

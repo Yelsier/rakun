@@ -1,15 +1,24 @@
-import { ContentComment, ManagerUser } from "../../../internal-content-types";
+import {
+  ContentComment,
+  ContentCommentReadState,
+  ManagerNotification,
+  ManagerUser,
+} from "../../../internal-content-types";
 import { throwAppError } from "../../../lib/errors";
 import { getMongoService } from "../../../orm";
 import type {
   CommentReactionEmoji,
   CommentRecord,
+  CommentReferenceInput,
   CreateCommentInput,
   CreateCommentOutput,
   ListCommentsInput,
   ListCommentsOutput,
+  MarkCommentsReadInput,
+  MarkCommentsReadOutput,
   ToggleCommentReactionInput,
   ToggleCommentReactionOutput,
+  UnreadCommentsCountOutput,
 } from "../../../schemas/manager/comments";
 import type { RakunRequestContext } from "../../context";
 import { checkOwnership } from "../../utils/checkOwnership";
@@ -49,13 +58,6 @@ const requireCommentableDocument = async ({
   documentId: string;
 }) => {
   const contentType = requireContentType(contentTypeName);
-
-  if (!contentType.comments) {
-    throwAppError("FEATURE_UNSUPPORTED", {
-      feature: "comments",
-      message: `Comments are not enabled for content type ${contentType.name}`,
-    });
-  }
 
   await checkOwnership({
     ctx,
@@ -209,6 +211,7 @@ export const listCommentsHandler = async ({
 
   const limit = Math.min(input.limit ?? DEFAULT_COMMENT_LIMIT, MAX_COMMENT_LIMIT);
   const db = await getMongoService();
+  const user = ctx.getUser();
   const result = await db.list(ContentComment, {
     filter: {
       contentType: input.contentType,
@@ -219,10 +222,16 @@ export const listCommentsHandler = async ({
       sort: { createdAt: "asc" } as never,
     },
   });
+  const readState = await db.find(ContentCommentReadState, {
+    "user._id": user._id,
+    contentType: input.contentType,
+    documentId: input.documentId,
+  } as never);
 
   return {
     totalItems: result.totalItems,
     comments: await resolveComments(result.items as StoredComment[]),
+    lastReadCommentId: readState?.lastReadCommentId,
   };
 };
 
@@ -265,6 +274,36 @@ export const createCommentHandler = async ({
       updatedBy: user._id,
     },
     { actorId: user._id },
+  );
+  await Promise.all(
+    mentionIds
+      .filter((id) => id !== user._id)
+      .map((id) =>
+        db.create(
+          ManagerNotification,
+          {
+            _type: ManagerNotification.name,
+            user: {
+              type: "existing",
+              _id: id,
+              contentType: ManagerUser.name,
+            },
+            author: {
+              type: "existing",
+              _id: user._id,
+              contentType: ManagerUser.name,
+            },
+            commentId: comment._id,
+            contentType: input.contentType,
+            documentId: input.documentId,
+            text: input.text.trim(),
+            read: false,
+            createdBy: user._id,
+            updatedBy: user._id,
+          },
+          { actorId: user._id },
+        ),
+      ),
   );
 
   const [resolved] = await resolveComments([comment as StoredComment]);
@@ -325,5 +364,110 @@ export const toggleCommentReactionHandler = async ({
 
   return {
     comment: resolved,
+  };
+};
+
+export const markCommentsReadHandler = async ({
+  input,
+  ctx,
+}: {
+  input: MarkCommentsReadInput;
+  ctx: RakunRequestContext;
+}): Promise<MarkCommentsReadOutput> => {
+  await requireCommentableDocument({
+    ctx,
+    contentTypeName: input.contentType,
+    documentId: input.documentId,
+  });
+
+  const db = await getMongoService();
+  const user = ctx.getUser();
+  const comment = await db.find(ContentComment, {
+    _id: input.commentId,
+    contentType: input.contentType,
+    documentId: input.documentId,
+  } as never);
+
+  if (!comment) {
+    throwAppError("NOT_FOUND", {
+      resource: "ContentComment",
+      id: input.commentId,
+    });
+  }
+
+  await db.upsert(
+    ContentCommentReadState,
+    {
+      "user._id": user._id,
+      contentType: input.contentType,
+      documentId: input.documentId,
+    } as never,
+    {
+      _type: ContentCommentReadState.name,
+      user: {
+        type: "existing",
+        _id: user._id,
+        contentType: ManagerUser.name,
+      },
+      contentType: input.contentType,
+      documentId: input.documentId,
+      lastReadCommentId: input.commentId,
+      createdBy: user._id,
+      updatedBy: user._id,
+    },
+    { actorId: user._id },
+  );
+
+  return {
+    lastReadCommentId: input.commentId,
+  };
+};
+
+export const unreadCommentsCountHandler = async ({
+  input,
+  ctx,
+}: {
+  input: CommentReferenceInput;
+  ctx: RakunRequestContext;
+}): Promise<UnreadCommentsCountOutput> => {
+  await requireCommentableDocument({
+    ctx,
+    contentTypeName: input.contentType,
+    documentId: input.documentId,
+  });
+
+  const db = await getMongoService();
+  const user = ctx.getUser();
+  const [commentsResult, readState] = await Promise.all([
+    db.list(ContentComment, {
+      filter: {
+        contentType: input.contentType,
+        documentId: input.documentId,
+      },
+      options: {
+        fields: ["author"],
+        limit: "all",
+        sort: { createdAt: "asc" } as never,
+      },
+    }),
+    db.find(ContentCommentReadState, {
+      "user._id": user._id,
+      contentType: input.contentType,
+      documentId: input.documentId,
+    } as never),
+  ]);
+  const comments = commentsResult.items as StoredComment[];
+  const lastReadIndex = readState?.lastReadCommentId
+    ? comments.findIndex(
+        (comment) => comment._id === readState.lastReadCommentId,
+      )
+    : -1;
+  const unreadComments =
+    lastReadIndex >= 0 ? comments.slice(lastReadIndex + 1) : comments;
+
+  return {
+    count: unreadComments.filter(
+      (comment) => getRelationId(comment.author) !== user._id,
+    ).length,
   };
 };

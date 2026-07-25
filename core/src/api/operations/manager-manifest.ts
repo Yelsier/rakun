@@ -76,6 +76,16 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/favorites/toggle",
   },
+  "manager.notifications.list": {
+    kind: "query",
+    method: "post",
+    path: "/manager/notifications/list",
+  },
+  "manager.notifications.markRead": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/notifications/markRead",
+  },
   "manager.localeVariants.list": {
     kind: "query",
     method: "post",
@@ -115,6 +125,16 @@ export const managerOperationManifest = {
     kind: "mutation",
     method: "post",
     path: "/manager/comments/toggleReaction",
+  },
+  "manager.comments.markRead": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/comments/markRead",
+  },
+  "manager.comments.unreadCount": {
+    kind: "query",
+    method: "post",
+    path: "/manager/comments/unreadCount",
   },
   "manager.setDefaultLanguage": {
     kind: "mutation",
