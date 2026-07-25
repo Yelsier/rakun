@@ -121,7 +121,8 @@ const Hero = new ContentType({
 });
 ```
 
-When `preview` is omitted, the picker keeps the compact icon-based module card.
+When `preview` is omitted or cannot be loaded, the picker displays a neutral
+placeholder so module cards keep a consistent height.
 
 `ensureRakunInitialized()` prepares logger, MongoDB, media, and route syncing. It uses a singleton promise to avoid concurrent initialization; if initialization fails, the promise is cleared so the next call can retry.
 

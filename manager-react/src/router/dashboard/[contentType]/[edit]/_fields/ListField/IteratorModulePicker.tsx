@@ -190,18 +190,20 @@ const ModuleIcon = ({ icon: Icon }: { icon?: LucideIcon }) => {
 const ModulePreviewImage = ({ src }: { src?: string }) => {
   const [failed, setFailed] = useState(false)
 
-  if (!src || failed) return null
-
   return (
-    <div className="aspect-video w-full overflow-hidden border-b bg-muted">
-      <img
-        src={src}
-        alt=""
-        aria-hidden="true"
-        loading="lazy"
-        className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-        onError={() => setFailed(true)}
-      />
+    <div className="flex aspect-video w-full items-center justify-center overflow-hidden border-b bg-muted">
+      {src && !failed ? (
+        <img
+          src={src}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <Box aria-hidden="true" className="size-10 text-muted-foreground/50" />
+      )}
     </div>
   )
 }
