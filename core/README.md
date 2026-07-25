@@ -209,6 +209,24 @@ dynamic bindings such as `Current document` continue to resolve against the
 individual page being rendered. Documents are linked by default and can be
 unlinked in the manager to keep a local copy of the iterator.
 
+Iterator modules can also be made conditional from the manager. A condition is
+stored on the shared module entry and evaluated against the current document:
+
+```ts
+{
+  name: "Credits",
+  value: { /* module relation */ },
+  visibleWhen: {
+    field: "credits",
+    operator: "notEmpty",
+  },
+}
+```
+
+Supported operators are `notEmpty` and `empty`. Conditional modules remain part
+of the shared structure but are omitted from web and preview output when their
+condition does not match.
+
 Main properties:
 
 - `name`: stable type name. Also used as `_type`.

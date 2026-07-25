@@ -10,6 +10,7 @@ import type {
 import {
   buildFilter,
   currentDocumentListSourceOptions,
+  isDynamicFallbackRequired,
   readFilterState,
   sourceFieldOptions,
 } from './DynamicDataControl'
@@ -61,6 +62,24 @@ const project = {
     } as EncodedRelationField,
   },
 } as EncodedContentType
+
+describe('dynamic data fallback validation', () => {
+  test('makes the fallback optional when a required field is bound', () => {
+    const requiredField = { ...stringField, isRequired: true }
+
+    expect(isDynamicFallbackRequired(requiredField, undefined)).toBe(true)
+    expect(
+      isDynamicFallbackRequired(requiredField, {
+        contentType: 'Article',
+        path: 'title',
+      }),
+    ).toBe(false)
+  })
+
+  test('keeps optional fields optional without a binding', () => {
+    expect(isDynamicFallbackRequired(stringField, undefined)).toBe(false)
+  })
+})
 
 describe('dynamic data source field options', () => {
   test('offers a complete single file to a compatible file target', () => {

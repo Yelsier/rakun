@@ -34,19 +34,31 @@ export type EncodedListField = EncodedField & {
   fields: EncodedListFieldItem[];
 };
 
+export const IteratorItemVisibilityConditionSchema = z.object({
+  field: z.string().trim().min(1),
+  operator: z.enum(["notEmpty", "empty"]),
+});
+
+export type IteratorItemVisibilityCondition = z.infer<
+  typeof IteratorItemVisibilityConditionSchema
+>;
+
 export type ListFieldValueItem<S> = {
   name: string;
   value: S;
+  visibleWhen?: IteratorItemVisibilityCondition;
 };
 
 type ListInputValue<Entries extends readonly Entry[]> = Array<{
   name: Entries[number]["name"];
   value: InferDb<Entries[number]["field"]>;
+  visibleWhen?: IteratorItemVisibilityCondition;
 }>;
 
 type ListOutputValue<Entries extends readonly Entry[]> = Array<{
   name: Entries[number]["name"];
   value: InferOutput<Entries[number]["field"]>;
+  visibleWhen?: IteratorItemVisibilityCondition;
 }>;
 
 export type ListMeta<Entries extends readonly Entry[] = readonly Entry[]> = {
@@ -105,7 +117,7 @@ export function makeListField<
     schemas: {
       input: () => buildListDbSchema(options.fields, options.ui),
       db: () => buildListDbSchema(options.fields, options.ui),
-      output: () => buildListOutputSchema(options.fields),
+      output: () => buildListOutputSchema(options.fields, options.ui),
     },
   }) as ListFieldCore<Entries, State>;
 
@@ -131,6 +143,11 @@ function buildListDbSchema<Entries extends readonly Entry[]>(
     z.object({
       name: z.string(),
       value: unionSchemas(valueSchemas),
+      ...(ui === "Iterator"
+        ? {
+            visibleWhen: IteratorItemVisibilityConditionSchema.optional(),
+          }
+        : {}),
     }),
   ) as z.ZodType<ListInputValue<Entries>>;
 }
@@ -162,6 +179,7 @@ function getListDbValueSchema(entry: Entry, ui: ListMeta["ui"]) {
 
 function buildListOutputSchema<Entries extends readonly Entry[]>(
   fields: Entries,
+  ui: ListMeta["ui"],
 ) {
   const valueSchemas = fields.map((entry) => entry.field.getOutputSchema());
 
@@ -169,6 +187,11 @@ function buildListOutputSchema<Entries extends readonly Entry[]>(
     z.object({
       name: z.string(),
       value: unionSchemas(valueSchemas),
+      ...(ui === "Iterator"
+        ? {
+            visibleWhen: IteratorItemVisibilityConditionSchema.optional(),
+          }
+        : {}),
     }),
   ) as z.ZodType<ListOutputValue<Entries>>;
 }

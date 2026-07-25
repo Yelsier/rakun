@@ -12,6 +12,7 @@ import {
   RouteMap,
   Route,
   Language,
+  RouteLocaleVariant,
 } from "../../../internal-content-types";
 import { Page } from "../../../internal-content-types/Page";
 import { HelloWorld } from "../../../internal-content-types/HelloWorld";
@@ -34,10 +35,41 @@ import {
 } from "../../../orm";
 import type { RakunRequestContext } from "../../context";
 import { setDefaultLanguageHandler } from "../../routes/manager/setDefaultLanguage";
+import type { DBService } from "../../../orm/dbService";
 
 const mongoConfig = {
   MONGO_URI: "mongodb://localhost:27017/cms_test_routes",
   ENVIRONMENT: "test" as const,
+};
+
+const assignRouteLanguages = async ({
+  db,
+  route,
+  routeKey,
+  contentType,
+  documentId,
+  languages,
+}: {
+  db: DBService;
+  route: DBOutput<typeof Route>;
+  routeKey: string;
+  contentType: string;
+  documentId: string;
+  languages: readonly DBOutput<typeof Language>[];
+}) => {
+  await Promise.all(
+    languages.map((language) =>
+      db.create(RouteLocaleVariant, {
+        _type: "RouteLocaleVariant",
+        routeId: route._id,
+        routeKey,
+        contentType,
+        groupId: documentId,
+        languageId: language._id,
+        documentId,
+      }),
+    ),
+  );
 };
 
 describe.serial("routes", () => {
@@ -70,6 +102,7 @@ describe.serial("routes", () => {
     await db.clear(RouteMap);
     await db.clear(Route);
     await db.clear(Language);
+    await db.clear(RouteLocaleVariant);
     await db.clear(Page);
   });
 
@@ -141,6 +174,22 @@ describe.serial("routes", () => {
       slug: { en: "test-2", _tag: "Translatable" },
       _type: "TestRoute",
     });
+    await assignRouteLanguages({
+      db,
+      route: routeForTest,
+      routeKey: "test",
+      contentType: TestCT.name,
+      documentId: created1._id,
+      languages: [english],
+    });
+    await assignRouteLanguages({
+      db,
+      route: routeForTest,
+      routeKey: "test",
+      contentType: TestCT.name,
+      documentId: created2._id,
+      languages: [english],
+    });
 
     await updateRouteRouteMap(
       routeForTest as unknown as DBOutput<typeof Route>,
@@ -167,6 +216,22 @@ describe.serial("routes", () => {
       parent: { _id: english._id, type: "self", contentType: "Language" },
       _type: "Language",
     });
+    await assignRouteLanguages({
+      db,
+      route: routeForTest,
+      routeKey: "test",
+      contentType: TestCT.name,
+      documentId: created1._id,
+      languages: [spanish],
+    });
+    await assignRouteLanguages({
+      db,
+      route: routeForTest,
+      routeKey: "test",
+      contentType: TestCT.name,
+      documentId: created2._id,
+      languages: [spanish],
+    });
 
     await updateLanguageRoutesMap(spanish);
     routeMaps = (await db.list(RouteMap, { options: { limit: "all" } })).items;
@@ -188,6 +253,14 @@ describe.serial("routes", () => {
       title: "Blog Test",
       slug: { en: "test", _tag: "Translatable" },
       _type: "TestRouteTwo",
+    });
+    await assignRouteLanguages({
+      db,
+      route: routeForBlog,
+      routeKey: "blog",
+      contentType: Test2CT.name,
+      documentId: createdBlog._id,
+      languages: [english, spanish],
     });
 
     await updateRouteRouteMap(
@@ -240,7 +313,7 @@ describe.serial("routes", () => {
       default: true,
       _type: "Language",
     });
-    await db.create(Language, {
+    const spanish = await db.create(Language, {
       code: "es",
       name: "Spanish",
       default: false,
@@ -261,6 +334,14 @@ describe.serial("routes", () => {
       title: "About",
       slug: { en: "about", es: "sobre", _tag: "Translatable" },
       _type: TestCT.name,
+    });
+    await assignRouteLanguages({
+      db,
+      route,
+      routeKey: "default-language",
+      contentType: TestCT.name,
+      documentId: item._id,
+      languages: [english, spanish],
     });
 
     await updateRouteRouteMap(route as unknown as DBOutput<typeof Route>);
@@ -312,7 +393,7 @@ describe.serial("routes", () => {
 
     const db = await getMongoService(mongoConfig);
 
-    await db.create(Language, {
+    const english = await db.create(Language, {
       code: "en",
       name: "English",
       default: true,
@@ -341,6 +422,22 @@ describe.serial("routes", () => {
       slug: { en: "about", _tag: "Translatable" },
       [ITERATOR_FIELD_NAME]: [],
       _type: "Page",
+    });
+    await assignRouteLanguages({
+      db,
+      route: routeForPage,
+      routeKey: "page",
+      contentType: Page.name,
+      documentId: homePage._id,
+      languages: [english],
+    });
+    await assignRouteLanguages({
+      db,
+      route: routeForPage,
+      routeKey: "page",
+      contentType: Page.name,
+      documentId: regularPage._id,
+      languages: [english],
     });
 
     await db.create(RouteSettings, {

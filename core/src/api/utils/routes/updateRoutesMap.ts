@@ -25,6 +25,7 @@ import {
 
 const activeContentFilter = {
   _trashed: { $ne: true },
+  _visibility: { $nin: ["draft", "trash"] },
 };
 
 const getRouteLocaleVariants = async (

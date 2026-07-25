@@ -54,11 +54,24 @@ describe('route map helpers', () => {
         } satisfies TranslatableValue<string>,
       },
     ]
+    const route = makeRoute()
 
-    const routeMaps = await generateRouteMapItems(items, makeRoute(), [spanish], [], null, [
-      english,
-      spanish,
-    ])
+    const routeMaps = await generateRouteMapItems(
+      items,
+      route,
+      [spanish],
+      [],
+      null,
+      [english, spanish],
+      [
+        {
+          routeId: route._id,
+          groupId: 'article-1',
+          languageId: spanish._id,
+          documentId: 'article-1',
+        },
+      ],
+    )
 
     expect(routeMaps).toHaveLength(1)
     expect(routeMaps[0]?.path).toBe('/es/hello-world/')
@@ -119,6 +132,9 @@ describe('route map helpers', () => {
 
   it('skips draft items while keeping hidden and published items', async () => {
     const english = makeLanguage({ code: 'en', default: true })
+    const route = makeRoute({
+      basePath: { _tag: 'Translatable', en: 'articles' },
+    })
 
     const routeMaps = await generateRouteMapItems(
       [
@@ -137,10 +153,17 @@ describe('route map helpers', () => {
           slug: 'published-post',
         },
       ],
-      makeRoute({ basePath: { _tag: 'Translatable', en: 'articles' } }),
+      route,
       [english],
       [],
-      null
+      null,
+      [english],
+      ['draft', 'hidden', 'published'].map((documentId) => ({
+        routeId: route._id,
+        groupId: documentId,
+        languageId: english._id,
+        documentId,
+      })),
     )
 
     expect(routeMaps.map((item) => item.contentTypeId)).not.toContain('draft')
@@ -226,6 +249,12 @@ describe('route map helpers', () => {
         {
           routeId: route._id,
           groupId: 'home-primary',
+          languageId: english._id,
+          documentId: 'home-primary',
+        },
+        {
+          routeId: route._id,
+          groupId: 'home-primary',
           languageId: spanish._id,
           documentId: 'home-es',
         },
@@ -287,6 +316,12 @@ describe('route map helpers', () => {
         {
           routeId: route._id,
           groupId: 'home-primary',
+          languageId: english._id,
+          documentId: 'home-primary',
+        },
+        {
+          routeId: route._id,
+          groupId: 'home-primary',
           languageId: spanish._id,
           documentId: 'home-es',
         },
@@ -312,13 +347,15 @@ describe('route map helpers', () => {
       'slug',
       '_localeVariantGroupId',
       '_localeVariantRole',
+      '_visibility',
+      '_trashed',
       'createdAt',
       'updatedAt',
       'category',
     ])
   })
 
-  it('resolves locale variants through parent languages', async () => {
+  it('only generates routes for explicitly assigned languages', async () => {
     const english = makeLanguage({ code: 'en', default: true })
     const spanish = makeLanguage({ code: 'es' })
     const mexicanSpanish = makeLanguage({
@@ -354,7 +391,7 @@ describe('route map helpers', () => {
     const routeMaps = await generateRouteMapItems(
       items,
       route,
-      [mexicanSpanish],
+      [spanish, mexicanSpanish],
       [],
       null,
       [english, spanish, mexicanSpanish],
@@ -363,8 +400,8 @@ describe('route map helpers', () => {
 
     expect(routeMaps).toHaveLength(1)
     expect(routeMaps[0]?.contentTypeId).toBe('about-es')
-    expect(routeMaps[0]?.variantGroupId).toBe('about-primary')
-    expect(routeMaps[0]?.path).toBe('/es-MX/sobre-es/')
+    expect(routeMaps[0]?.languageId).toBe(spanish._id)
+    expect(routeMaps[0]?.path).toBe('/es/sobre-es/')
   })
 
   it('prefers exact locale variants over parent assignments', async () => {

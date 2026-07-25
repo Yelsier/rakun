@@ -24,6 +24,7 @@ import {
   requireLinkedIteratorUpdate,
 } from "./linkedIterator";
 import { revalidateContentTypePaths } from "../../utils/routes/revalidatePath";
+import { initializePrimaryLocaleVariantAssignments } from "../../utils/localeVariants";
 
 export const createHandler = async ({
   input,
@@ -124,6 +125,11 @@ export const createHandler = async ({
       actorId: user._id,
     });
     Logger.addTrace("manager.create: db create success", { id: created._id });
+
+    await initializePrimaryLocaleVariantAssignments({
+      contentType,
+      document: created,
+    });
 
     if (initializeLinkedIterator) {
       await saveLinkedIteratorTemplate({

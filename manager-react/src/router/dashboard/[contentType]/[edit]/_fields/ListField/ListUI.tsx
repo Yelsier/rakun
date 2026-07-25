@@ -1,18 +1,21 @@
 'use client'
 
-import { Box, ChevronsUpDown, GripVertical, Unlink, Plus, Save, Trash } from 'lucide-react'
+import { Box, ChevronsUpDown, Eye, GripVertical, Unlink, Plus, Save, Trash } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   EncodedRelationField,
+  IteratorItemVisibilityCondition,
   ListFieldValueItem,
   RelationFieldValue,
 } from '@rakun-kit/core/client'
+import { isIteratorItemVisible } from '@rakun-kit/core/client'
 import { toast } from 'sonner'
 
 import type { ListPropsRef } from '.'
 import { fieldsMap, type FieldRef } from '../../ContentTypeEdit'
 import { type FieldValue, useFieldValues } from '../shared'
+import { useConditionFieldState } from '../shared/condition-state'
 import { FieldWrapper } from '../shared/FieldWrapper'
 
 import { useManagerClient, useManagerMutation } from '@/client/react'
@@ -30,9 +33,11 @@ import {
 } from '@/components/ui/sortable'
 import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
 import { getIteratorModuleDisplay, IteratorModulePickerDialog } from './IteratorModulePicker'
+import { IteratorVisibilityDialog } from './IteratorVisibilityDialog'
 import { useSession } from '@/state/session'
 import { getEncodedContentPermissions } from '@/state/permissions'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { cn } from '@/lib/utils'
 
 type ListFieldValues = (ListFieldValueItem<FieldValue> & { uid: string })[]
 
@@ -183,6 +188,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
   const [addedModuleUid, setAddedModuleUid] = useState<string | null>(null)
   const [savingUid, setSavingUid] = useState<string | null>(null)
   const [unlinkingUid, setUnlinkingUid] = useState<string | null>(null)
+  const [visibilityUid, setVisibilityUid] = useState<string | null>(null)
   const setRef = useCallback(
     (uid: string) => (fieldRef: FieldRef | null) => {
       refs.current[uid] = fieldRef
@@ -190,6 +196,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
     []
   )
   const { language } = useLanguage()
+  const conditionFieldState = useConditionFieldState()
   const { hasAnyPermission } = useSession()
   const queryClient = useQueryClient()
   const managerClient = useManagerClient()
@@ -301,6 +308,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
         name: item.name,
         value: getItemStateValue(item),
         uid: item.uid,
+        visibleWhen: item.visibleWhen,
       })),
     [getItemStateValue]
   )
@@ -320,6 +328,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
           name: field.name,
           value:
             nestedValue === undefined ? getItemFallbackValue(field) : (nestedValue as FieldValue),
+          visibleWhen: field.visibleWhen,
         }
       })
       .filter((v) => v.value !== undefined && v.value !== null && v.value !== '')
@@ -334,6 +343,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
       name: field.name,
       value: getItemStateValue(field),
       uid: field.uid,
+      visibleWhen: field.visibleWhen,
     }))
   }
 
@@ -344,6 +354,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
           name: item.name,
           value: getItemStateValue(item),
           uid: item.uid,
+          visibleWhen: item.visibleWhen,
         }))
       )
     },
@@ -359,6 +370,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
             name: item.name,
             value: getItemStateValue(item),
             uid: item.uid,
+            visibleWhen: item.visibleWhen,
           }))
       )
       delete refs.current[uid]
@@ -453,6 +465,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                   name: currentItem.name,
                   value: existingValue as FieldValue,
                   uid: currentItem.uid,
+                  visibleWhen: currentItem.visibleWhen,
                 }
               : currentItem
           )
@@ -531,6 +544,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                   name: currentItem.name,
                   value: newValue as FieldValue,
                   uid: currentItem.uid,
+                  visibleWhen: currentItem.visibleWhen,
                 }
               : currentItem
           )
@@ -546,15 +560,42 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
     [getCurrentListState, getItemFallbackValue, managerClient, onValueChange, props.fields]
   )
 
+  const handleVisibilityChange = useCallback(
+    (uid: string, condition?: IteratorItemVisibilityCondition) => {
+      onValueChange(
+        getCurrentListState().map((item) =>
+          item.uid === uid
+            ? {
+                ...item,
+                visibleWhen: condition,
+              }
+            : item
+        )
+      )
+    },
+    [getCurrentListState, onValueChange]
+  )
+
   useEffect(() => {
     onValueChange(
       valueRef.current.map((item) => ({
         name: item.name,
         value: getItemStateValue(item),
         uid: item.uid,
+        visibleWhen: item.visibleWhen,
       }))
     )
   }, [language.code])
+
+  const visibilityItem = visibilityUid
+    ? value.find((item) => item.uid === visibilityUid)
+    : undefined
+  const visibilityField = visibilityItem
+    ? props.fields.find((field) => field.name === visibilityItem.name)
+    : undefined
+  const visibilityModuleTitle = visibilityField
+    ? (getIteratorModuleDisplay(visibilityField)?.title ?? visibilityItem?.name)
+    : visibilityItem?.name
 
   return (
     <Sortable value={value} onValueChange={handleSort} getItemValue={(item) => item.uid}>
@@ -598,6 +639,10 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                 const ModuleIcon = moduleDisplay?.icon ?? Box
                 const moduleTitle = moduleDisplay?.title ?? item.name
                 const fieldKey = `${item.uid}:${relationValue?.type ?? 'empty'}`
+                const isVisibleForCurrentDocument = isIteratorItemVisible(
+                  item,
+                  conditionFieldState?.fieldState ?? {}
+                )
 
                 return (
                   <SortableItem key={item.uid} value={item.uid} asChild>
@@ -612,7 +657,14 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                       data-rakun-manager-module-title={moduleTitle}
                     >
                       <Collapsible defaultOpen={!noModulesToRender} className="w-full">
-                        <Card className="w-full">
+                        <Card
+                          className={cn(
+                            'w-full',
+                            item.visibleWhen &&
+                              !isVisibleForCurrentDocument &&
+                              'border-dashed opacity-70'
+                          )}
+                        >
                           <CardHeader className="gap-0">
                             <CollapsibleTrigger asChild disabled={noModulesToRender}>
                               <div
@@ -649,12 +701,39 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                           Global
                                         </Badge>
                                       ) : null}
+                                      {item.visibleWhen ? (
+                                        <Badge variant="outline" className="shrink-0">
+                                          {isVisibleForCurrentDocument
+                                            ? 'Conditional'
+                                            : `Hidden for this ${
+                                                props.parentContentType?.name ?? 'document'
+                                              }`}
+                                        </Badge>
+                                      ) : null}
                                     </div>
                                   ) : (
                                     item.name
                                   )}
                                 </CardTitle>
                                 <div className="flex shrink-0 items-center gap-2">
+                                  {props.config.ui === 'Iterator' ? (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          size="icon"
+                                          variant="outline"
+                                          aria-label={`Change ${moduleTitle} visibility`}
+                                          onClick={(event) => {
+                                            event.stopPropagation()
+                                            setVisibilityUid(item.uid)
+                                          }}
+                                        >
+                                          <Eye />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top">Module visibility</TooltipContent>
+                                    </Tooltip>
+                                  ) : null}
                                   {props.config.ui === 'Iterator' &&
                                   !isSavedModule &&
                                   canSaveGlobal ? (
@@ -730,6 +809,20 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
             </div>
           </SortableContent>
         )}
+        <IteratorVisibilityDialog
+          open={visibilityItem !== undefined}
+          condition={visibilityItem?.visibleWhen}
+          contentType={props.parentContentType}
+          moduleTitle={visibilityModuleTitle ?? 'Module'}
+          onOpenChange={(open) => {
+            if (!open) setVisibilityUid(null)
+          }}
+          onSave={(condition) => {
+            if (visibilityItem) {
+              handleVisibilityChange(visibilityItem.uid, condition)
+            }
+          }}
+        />
       </FieldWrapper>
     </Sortable>
   )

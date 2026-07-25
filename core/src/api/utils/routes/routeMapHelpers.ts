@@ -11,7 +11,6 @@ import {
 import { getContentTypeByName } from "../../../lib/Registry";
 import {
   getLocaleVariantGroupId,
-  getLocaleVariantRole,
   LOCALE_VARIANT_GROUP_FIELD,
   LOCALE_VARIANT_ROLE_FIELD,
 } from "../../../lib/localeVariants";
@@ -157,6 +156,8 @@ export const getRouteFields = (route: DBOutput<Route>) => {
     route.field as string,
     LOCALE_VARIANT_GROUP_FIELD,
     LOCALE_VARIANT_ROLE_FIELD,
+    "_visibility",
+    "_trashed",
     "createdAt",
     "updatedAt",
   ];
@@ -171,35 +172,11 @@ export const getRouteMapLastModified = (item: UnknownItem): Date =>
 
 type RouteItemGroup = {
   groupId: string;
-  primary?: UnknownItem;
-  fallback?: UnknownItem;
   itemsById: Map<string, UnknownItem>;
 };
 
 const hasRouteFieldValue = (item: UnknownItem, route: DBOutput<Route>) =>
   Boolean(item[route.field as string]);
-
-const getFallbackLanguageChain = (
-  language: DBOutput<Language>,
-  languages: readonly DBOutput<Language>[],
-) => {
-  const result: DBOutput<Language>[] = [];
-  const seen = new Set<string>();
-  let current: DBOutput<Language> | undefined = language;
-
-  while (current && !seen.has(String(current._id))) {
-    result.push(current);
-    seen.add(String(current._id));
-    current = languages.find((item) => item._id === current?.parent?._id);
-  }
-
-  const defaultLanguage = languages.find((item) => item.default);
-  if (defaultLanguage && !seen.has(String(defaultLanguage._id))) {
-    result.push(defaultLanguage);
-  }
-
-  return result;
-};
 
 const groupRouteItems = (
   items: readonly UnknownItem[],
@@ -221,11 +198,6 @@ const groupRouteItems = (
 
     group.itemsById.set(item._id, item);
 
-    if (getLocaleVariantRole(item) === "primary" || item._id === groupId) {
-      group.primary = item;
-    }
-
-    group.fallback ??= item;
     groups.set(groupId, group);
   }
 
@@ -235,39 +207,26 @@ const groupRouteItems = (
 const resolveRouteItemForLanguage = ({
   group,
   language,
-  languages,
   route,
   localeVariants,
 }: {
   group: RouteItemGroup;
   language: DBOutput<Language>;
-  languages: readonly DBOutput<Language>[];
   route: DBOutput<Route>;
   localeVariants: readonly RouteLocaleVariantRecord[];
 }): UnknownItem | null => {
-  const fallbackLanguages = getFallbackLanguageChain(language, languages);
+  const assignment = localeVariants.find(
+    (item) =>
+      item.routeId === route._id &&
+      item.groupId === group.groupId &&
+      item.languageId === language._id,
+  );
+  if (!assignment) return null;
 
-  for (const fallbackLanguage of fallbackLanguages) {
-    const assignment = localeVariants.find(
-      (item) =>
-        item.routeId === route._id &&
-        item.groupId === group.groupId &&
-        item.languageId === fallbackLanguage._id,
-    );
-    if (!assignment) continue;
-
-    const item = group.itemsById.get(assignment.documentId);
-    if (item && isVisibleForRouteMap(item) && hasRouteFieldValue(item, route)) {
-      return item;
-    }
-  }
-
-  const primary = group.primary;
-  if (primary && isVisibleForRouteMap(primary) && hasRouteFieldValue(primary, route)) {
-    return primary;
-  }
-
-  return group.fallback ?? null;
+  const item = group.itemsById.get(assignment.documentId);
+  return item && isVisibleForRouteMap(item) && hasRouteFieldValue(item, route)
+    ? item
+    : null;
 };
 
 /**
@@ -305,7 +264,6 @@ export const generateRouteMapItems = (
         const item = resolveRouteItemForLanguage({
           group,
           language,
-          languages: translationLanguages,
           route,
           localeVariants,
         });
