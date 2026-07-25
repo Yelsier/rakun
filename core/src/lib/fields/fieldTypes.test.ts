@@ -346,6 +346,7 @@ describe("field type inference", () => {
         description: "Large intro block with heading, copy, and CTA.",
         category: "Marketing",
         icon: "PanelTop",
+        preview: "/images/modules/hero.webp",
         keywords: ["banner", "cover"],
       },
       fields: {
@@ -364,6 +365,7 @@ describe("field type inference", () => {
       description: "Large intro block with heading, copy, and CTA.",
       category: "Marketing",
       icon: "PanelTop",
+      preview: "/images/modules/hero.webp",
       keywords: ["banner", "cover"],
     });
   });

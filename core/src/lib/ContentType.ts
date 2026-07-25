@@ -51,6 +51,7 @@ export const ModulePicker = z
     description: z.string().optional(),
     category: z.string().optional(),
     icon: z.string().optional(),
+    preview: z.string().optional(),
     keywords: z.array(z.string()).optional(),
   })
   .optional();

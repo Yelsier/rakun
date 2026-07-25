@@ -119,7 +119,7 @@
   --font-sans: Open Sans, ui-sans-serif, sans-serif, system-ui;
   --font-serif: Georgia, serif;
   --font-mono: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
-  --radius: 1.3rem;
+  --radius: 0.5rem;
   --shadow-x: 0px;
   --shadow-y: 2px;
   --shadow-blur: 10px;
@@ -174,7 +174,7 @@
   --font-sans: Open Sans, ui-sans-serif, sans-serif, system-ui;
   --font-serif: Georgia, serif;
   --font-mono: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
-  --radius: 1.3rem;
+  --radius: 0.5rem;
   --shadow-x: 0px;
   --shadow-y: 2px;
   --shadow-blur: 20px;

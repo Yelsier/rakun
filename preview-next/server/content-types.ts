@@ -140,6 +140,9 @@ export const FeatureCarousel = new ContentType({
     icon: 'GalleryHorizontalEnd',
     category: 'Dynamic data',
   },
+  modulePicker: {
+    preview: '/dynamic-data/aurora.svg',
+  },
   fields: {
     eyebrow: Fields.string(),
     title: Fields.string().required(),

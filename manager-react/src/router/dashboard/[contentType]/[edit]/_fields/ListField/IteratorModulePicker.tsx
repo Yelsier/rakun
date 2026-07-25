@@ -57,6 +57,7 @@ type IteratorModuleDisplay = {
   icon?: LucideIcon
   keywords: string[]
   labelField: string
+  preview?: string
   props: ModuleProp[]
   technicalName: string
   title: string
@@ -79,6 +80,7 @@ type ExistingIteratorModule = {
   id: string
   keywords: string[]
   moduleTitle: string
+  preview?: string
   title: string
   value: ExistingRelationValue
 }
@@ -94,6 +96,7 @@ type ModulePickerMetadata = {
   description?: string
   category?: string
   icon?: string
+  preview?: string
   keywords?: string[]
 }
 
@@ -135,6 +138,7 @@ export const getIteratorModuleDisplay = (entry: EncodedListFieldItem): IteratorM
     cleanText(modulePicker?.category) ?? cleanText(contentType?.menu?.category) ?? FALLBACK_CATEGORY
   const description = cleanText(modulePicker?.description)
   const icon = resolveLucideIcon(modulePicker?.icon ?? contentType?.menu?.icon)
+  const preview = cleanText(modulePicker?.preview)
   const props = getModuleProps(contentType)
   const labelField = contentType?.listFields?.[0] ?? '_id'
   const keywords = uniqueText([
@@ -158,6 +162,7 @@ export const getIteratorModuleDisplay = (entry: EncodedListFieldItem): IteratorM
     icon,
     keywords,
     labelField,
+    preview,
     props,
     technicalName: entry.name,
     title,
@@ -178,6 +183,25 @@ const ModuleIcon = ({ icon: Icon }: { icon?: LucideIcon }) => {
   return (
     <div className="flex size-10 shrink-0 items-center justify-center rounded-md border bg-muted/40 text-muted-foreground">
       <ResolvedIcon className="size-5" />
+    </div>
+  )
+}
+
+const ModulePreviewImage = ({ src }: { src?: string }) => {
+  const [failed, setFailed] = useState(false)
+
+  if (!src || failed) return null
+
+  return (
+    <div className="aspect-video w-full overflow-hidden border-b bg-muted">
+      <img
+        src={src}
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+        className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+        onError={() => setFailed(true)}
+      />
     </div>
   )
 }
@@ -324,6 +348,7 @@ export const IteratorModulePickerDialog = ({
               ...option.keywords,
             ]),
             moduleTitle: option.title,
+            preview: option.preview,
             title,
             value: {
               type: 'existing',
@@ -461,29 +486,32 @@ export const IteratorModulePickerDialog = ({
               <section className="grid gap-3">
                 <h3 className="text-sm font-medium">Saved modules</h3>
                 {filteredExistingModules.length > 0 ? (
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredExistingModules.map((module) => (
                       <ContextMenu key={`${module.value.contentType}:${module.id}`}>
                         <ContextMenuTrigger asChild>
                           <button
                             type="button"
-                            className="group grid min-w-0 gap-3 rounded-md border bg-card p-4 text-left shadow-xs transition-colors hover:border-primary/50 hover:bg-accent focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-hidden"
+                            className="group flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-md border bg-card text-left shadow-xs transition-[border-color,background-color,box-shadow] duration-200 hover:border-primary/50 hover:bg-accent hover:shadow-md focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-hidden"
                             onClick={() => handleAdd(module.fieldName, module.value)}
                           >
-                            <div className="flex min-w-0 items-start gap-3">
-                              <ModuleIcon icon={module.icon} />
-                              <div className="grid min-w-0 gap-1">
-                                <span className="wrap-break-word text-sm font-medium leading-5">
-                                  {module.title}
-                                </span>
-                                <span className="truncate text-xs text-muted-foreground">
-                                  {module.moduleTitle}
-                                </span>
+                            <ModulePreviewImage src={module.preview} />
+                            <div className="grid w-full min-w-0 gap-3 p-4">
+                              <div className="flex min-w-0 items-start gap-3">
+                                <ModuleIcon icon={module.icon} />
+                                <div className="grid min-w-0 gap-1">
+                                  <span className="wrap-break-word text-sm font-medium leading-5">
+                                    {module.title}
+                                  </span>
+                                  <span className="truncate text-xs text-muted-foreground">
+                                    {module.moduleTitle}
+                                  </span>
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex min-w-0 flex-wrap gap-1.5">
-                              <Badge variant="secondary">Global</Badge>
-                              <Badge variant="outline">{module.category}</Badge>
+                              <div className="flex min-w-0 flex-wrap gap-1.5">
+                                <Badge variant="secondary">Global</Badge>
+                                <Badge variant="outline">{module.category}</Badge>
+                              </div>
                             </div>
                           </button>
                         </ContextMenuTrigger>
@@ -530,47 +558,50 @@ export const IteratorModulePickerDialog = ({
               <section className="grid gap-3">
                 <h3 className="text-sm font-medium">All modules</h3>
                 {filteredOptions.length > 0 ? (
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredOptions.map((option) => (
                       <button
                         key={option.fieldName}
                         type="button"
-                        className="group grid min-w-0 gap-3 rounded-md border bg-card p-4 text-left shadow-xs transition-colors hover:border-primary/50 hover:bg-accent focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-hidden"
+                        className="group flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-md border bg-card text-left shadow-xs transition-[border-color,background-color,box-shadow] duration-200 hover:border-primary/50 hover:bg-accent hover:shadow-md focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-hidden"
                         onClick={() => handleAdd(option.fieldName)}
                       >
-                        <div className="flex min-w-0 items-start gap-3">
-                          <ModuleIcon icon={option.icon} />
-                          <div className="grid min-w-0 gap-1">
-                            <span className="wrap-break-word text-sm font-medium leading-5">
-                              {option.title}
-                            </span>
-                            <span className="truncate text-xs text-muted-foreground">
-                              {option.category}
-                            </span>
+                        <ModulePreviewImage src={option.preview} />
+                        <div className="grid w-full min-w-0 gap-3 p-4">
+                          <div className="flex min-w-0 items-start gap-3">
+                            <ModuleIcon icon={option.icon} />
+                            <div className="grid min-w-0 gap-1">
+                              <span className="wrap-break-word text-sm font-medium leading-5">
+                                {option.title}
+                              </span>
+                              <span className="truncate text-xs text-muted-foreground">
+                                {option.category}
+                              </span>
+                            </div>
                           </div>
+                          {option.description ? (
+                            <p className="wrap-break-word text-sm leading-5 text-muted-foreground">
+                              {option.description}
+                            </p>
+                          ) : null}
+                          {option.props.length > 0 ? (
+                            <div className="flex min-w-0 flex-wrap gap-1.5">
+                              {option.props.map((prop) => (
+                                <Badge key={prop.name} variant="secondary">
+                                  <span className="truncate">{prop.label}</span>
+                                  {prop.required ? (
+                                    <>
+                                      <span aria-hidden="true" className="text-destructive">
+                                        *
+                                      </span>
+                                      <span className="sr-only">required</span>
+                                    </>
+                                  ) : null}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
-                        {option.description ? (
-                          <p className="wrap-break-word text-sm leading-5 text-muted-foreground">
-                            {option.description}
-                          </p>
-                        ) : null}
-                        {option.props.length > 0 ? (
-                          <div className="flex min-w-0 flex-wrap gap-1.5">
-                            {option.props.map((prop) => (
-                              <Badge key={prop.name} variant="secondary">
-                                <span className="truncate">{prop.label}</span>
-                                {prop.required ? (
-                                  <>
-                                    <span aria-hidden="true" className="text-destructive">
-                                      *
-                                    </span>
-                                    <span className="sr-only">required</span>
-                                  </>
-                                ) : null}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : null}
                       </button>
                     ))}
                   </div>

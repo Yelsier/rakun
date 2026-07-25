@@ -98,6 +98,31 @@ rakunBootstrap({
 The web page response includes an ordered `layout` array containing module slots
 plus the content slot.
 
+## Module picker
+
+Content types used as iterator modules can customize their card in the manager's
+add-module dialog. `modulePicker.preview` accepts an image URL available to the
+manager browser; relative URLs are also supported:
+
+```ts
+const Hero = new ContentType({
+  name: "Hero",
+  modulePicker: {
+    title: "Hero section",
+    description: "Large introduction with heading, copy, and CTA.",
+    category: "Marketing",
+    icon: "PanelTop",
+    preview: "/images/modules/hero.webp",
+    keywords: ["banner", "cover"],
+  },
+  fields: {
+    title: Fields.string().required(),
+  },
+});
+```
+
+When `preview` is omitted, the picker keeps the compact icon-based module card.
+
 `ensureRakunInitialized()` prepares logger, MongoDB, media, and route syncing. It uses a singleton promise to avoid concurrent initialization; if initialization fails, the promise is cleared so the next call can retry.
 
 `ensureRakunBootstrap(options)` only calls `rakunBootstrap` if the runtime has not been bootstrapped yet.
