@@ -231,12 +231,8 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
       nextFrame = window.requestAnimationFrame(() => {
         const navigationId = `${id}.${addedModuleUid}`
         const target = Array.from(
-          document.querySelectorAll<HTMLElement>(
-            '[data-rakun-manager-module-navigation-id]'
-          )
-        ).find(
-          (element) => element.dataset.rakunManagerModuleNavigationId === navigationId
-        )
+          document.querySelectorAll<HTMLElement>('[data-rakun-manager-module-navigation-id]')
+        ).find((element) => element.dataset.rakunManagerModuleNavigationId === navigationId)
 
         if (!target) return
 
@@ -574,8 +570,8 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
         ) : (
           <AddListButtons fields={props.fields} onAdd={handleAddItem} />
         )}
-        <SortableContent className="max-h-full mt-4">
-          {value.length > 0 && (
+        {value.length > 0 && (
+          <SortableContent className="max-h-full">
             <div className="flex flex-col gap-4">
               {value.map((item, i) => {
                 const fieldConfig = props.fields.find((f) => f.name === item.name)
@@ -732,8 +728,8 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                 )
               })}
             </div>
-          )}
-        </SortableContent>
+          </SortableContent>
+        )}
       </FieldWrapper>
     </Sortable>
   )

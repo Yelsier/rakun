@@ -218,7 +218,7 @@ export const ModuleNavigation = () => {
 
   return (
     <aside
-      className="sticky top-4 hidden h-full w-60 shrink-0 self-start overflow-hidden rounded-2xl bg-muted/40 lg:block"
+      className="sticky top-4 hidden h-full w-60 shrink-0 self-start overflow-hidden rounded-xl bg-muted/40 lg:block"
       aria-label="Module navigation"
     >
       <div className="flex h-full min-h-0 flex-col">
