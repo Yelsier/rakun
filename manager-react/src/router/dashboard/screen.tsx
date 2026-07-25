@@ -29,6 +29,15 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from '@/components/ui/drawer'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { formatDate } from '@/helpers/formatDate'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
@@ -38,6 +47,9 @@ import { useLanguage } from '@/state/language'
 type FavoriteItem = ManagerOperationOutput<'manager.favorites.list'>['favorites'][number]
 type NotificationItem =
   ManagerOperationOutput<'manager.notifications.list'>['notifications'][number]
+
+const HOME_NOTIFICATION_LIMIT = 5
+const NOTIFICATION_HISTORY_LIMIT = 50
 
 const fallbackTitle = (favorite: FavoriteItem) =>
   `${favorite.contentType} ${favorite.documentId.slice(-6)}`
@@ -223,6 +235,60 @@ const NotificationCard = ({
   )
 }
 
+const NotificationHistoryDrawer = ({
+  getTranslation,
+}: {
+  getTranslation: <T>(object: MaybeTranslatableValue<T>) => T
+}) => {
+  const [open, setOpen] = useState(false)
+  const notificationsQuery = useManagerQuery({
+    name: 'manager.notifications.list',
+    input: {
+      limit: NOTIFICATION_HISTORY_LIMIT,
+    },
+    enabled: open,
+  })
+  const notifications = notificationsQuery.data?.notifications ?? []
+
+  return (
+    <Drawer direction='right' open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
+        <Button className='ml-auto' variant='ghost' size='sm'>
+          View all
+        </Button>
+      </DrawerTrigger>
+      <DrawerContent className='h-full w-[min(92vw,520px)] sm:max-w-[520px]'>
+        <DrawerHeader className='shrink-0 border-b'>
+          <DrawerTitle>Notifications</DrawerTitle>
+          <DrawerDescription>
+            Latest {NOTIFICATION_HISTORY_LIMIT} notifications, including those already
+            viewed.
+          </DrawerDescription>
+        </DrawerHeader>
+        <ScrollArea className='min-h-0 flex-1'>
+          <div className='grid gap-3 p-4'>
+            {notificationsQuery.isLoading ? (
+              <FavoritesSkeleton />
+            ) : notifications.length > 0 ? (
+              notifications.map((notification) => (
+                <NotificationCard
+                  key={notification._id}
+                  notification={notification}
+                  title={getNotificationTitle(notification, getTranslation)}
+                />
+              ))
+            ) : (
+              <div className='rounded-md border border-dashed p-4 text-sm text-muted-foreground'>
+                No notifications yet
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </DrawerContent>
+    </Drawer>
+  )
+}
+
 export const ManagerDashboardHomeScreen = () => {
   const { getTranslation } = useLanguage()
   const queryClient = useQueryClient()
@@ -233,7 +299,10 @@ export const ManagerDashboardHomeScreen = () => {
   })
   const notificationsQuery = useManagerQuery({
     name: 'manager.notifications.list',
-    input: undefined,
+    input: {
+      unreadOnly: true,
+      limit: HOME_NOTIFICATION_LIMIT,
+    },
     refetchInterval: 15000,
   })
   const toggleFavoriteMutation = useManagerMutation('manager.favorites.toggle')
@@ -262,7 +331,7 @@ export const ManagerDashboardHomeScreen = () => {
   return (
     <div className='container mx-auto grid gap-6 px-4 py-10 lg:grid-cols-2'>
       <section className='min-w-0 space-y-4'>
-        <div className='flex items-center gap-2 border-b pb-3'>
+        <div className='flex h-11 items-center gap-2 border-b'>
           <Star className='size-4 fill-amber-400 text-amber-500' />
           <h1 className='text-sm font-semibold uppercase text-muted-foreground'>
             Favorites
@@ -291,16 +360,17 @@ export const ManagerDashboardHomeScreen = () => {
         )}
       </section>
       <section className='min-w-0 space-y-4'>
-        <div className='flex items-center gap-2 border-b pb-3'>
+        <div className='flex h-11 items-center gap-2 border-b'>
           <Bell className='size-4 text-primary' />
           <h1 className='text-sm font-semibold uppercase text-muted-foreground'>
             Notifications
           </h1>
           {totalUnread ? (
-            <Badge className='ml-auto' variant='destructive'>
+            <Badge variant='destructive'>
               {totalUnread}
             </Badge>
           ) : null}
+          <NotificationHistoryDrawer getTranslation={getTranslation} />
         </div>
         {notificationsQuery.isLoading ? (
           <FavoritesSkeleton />
@@ -316,7 +386,7 @@ export const ManagerDashboardHomeScreen = () => {
           </div>
         ) : (
           <div className='rounded-md border border-dashed p-4 text-sm text-muted-foreground'>
-            No notifications yet
+            No unread notifications
           </div>
         )}
       </section>

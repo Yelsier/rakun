@@ -34,6 +34,7 @@ type StoredNotification = {
 };
 
 const DEFAULT_NOTIFICATION_LIMIT = 50;
+const MAX_NOTIFICATION_SCAN = 500;
 
 const getRelationId = (value: unknown) =>
   value && typeof value === "object" && "_id" in value
@@ -143,7 +144,7 @@ export const listNotificationsHandler = async ({
         ...(input?.documentId ? { documentId: input.documentId } : {}),
       } as never,
       options: {
-        limit: "all",
+        limit: MAX_NOTIFICATION_SCAN,
         sort: { createdAt: "desc" } as never,
       },
     })
