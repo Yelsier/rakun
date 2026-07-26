@@ -25,6 +25,13 @@ type StoredRelation = {
 type StoredNotification = {
   _id: string;
   commentId: string;
+  kind?:
+    | "comment_mention"
+    | "review_requested"
+    | "review_approved"
+    | "review_changes_requested"
+    | "review_feedback";
+  reviewId?: string;
   contentType: string;
   documentId: string;
   text: string;
@@ -113,7 +120,12 @@ const resolveNotification = async ({
 
     return {
       _id: notification._id,
-      commentId: notification.commentId,
+      ...(notification.kind ? { kind: notification.kind } : {}),
+      commentId:
+        !notification.kind || notification.kind === "comment_mention"
+          ? notification.commentId
+          : undefined,
+      ...(notification.reviewId ? { reviewId: notification.reviewId } : {}),
       contentType: notification.contentType,
       documentId: notification.documentId,
       title: document ? getNestedValue(document, titleField) : undefined,

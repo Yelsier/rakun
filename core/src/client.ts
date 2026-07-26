@@ -107,6 +107,44 @@ export type {
   LocaleVariantUnassignInput,
 } from "./schemas/manager/localeVariants";
 export type {
+  ContentVersionDocument,
+  ContentVersionReferenceInput,
+  CreateContentVersionInput,
+  CreateContentVersionOutput,
+  ListContentVersionsOutput,
+  PromoteContentVersionInput,
+  PromoteContentVersionOutput,
+} from "./schemas/manager/contentVersions";
+export type {
+  DeleteReviewPolicyInput,
+  DeleteReviewPolicyOutput,
+  ListReviewPoliciesOutput,
+  ReviewPolicyRecord,
+  UpsertReviewPolicyInput,
+} from "./schemas/manager/reviewPolicies";
+export type {
+  CancelReviewInput,
+  CancelReviewOutput,
+  DecideReviewInput,
+  DecideReviewOutput,
+  GetReviewOutput,
+  ListReviewCandidatesOutput,
+  RequestReviewInput,
+  RequestReviewOutput,
+  ReviewCandidate,
+  ReviewDecision,
+  ReviewDecisionRecord,
+  ReviewRecord,
+  ReviewReferenceInput,
+  ReviewStatus,
+} from "./schemas/manager/reviews";
+export type {
+  RouteLayoutReferenceInput,
+  RouteLayoutStateOutput,
+  SetRouteLayoutOverrideInput,
+  SetRouteLayoutOverrideOutput,
+} from "./schemas/manager/routeLayout";
+export type {
   LinkedIteratorAction,
   LinkedIteratorControl,
   LinkedIteratorGetInput,

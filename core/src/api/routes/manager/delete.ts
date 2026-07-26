@@ -3,6 +3,8 @@ import { Logger } from "../../../lib/Logger";
 import {
   ContentComment,
   ContentCommentReadState,
+  ContentReview,
+  ContentReviewDecision,
   ManagerNotification,
   Media,
 } from "../../../internal-content-types";
@@ -69,6 +71,10 @@ export const deleteHandler = async ({
     id,
   });
   const user = ctx.getUser();
+  const reviews = await db.list(ContentReview, {
+    filter: { contentType: contentType.name, documentId: id },
+    options: { limit: "all", fields: ["_id"] },
+  });
 
   await db.delete(contentType, { _id: id }, { actorId: user._id });
   await db.delete(
@@ -83,6 +89,18 @@ export const deleteHandler = async ({
   );
   await db.delete(
     ManagerNotification,
+    { contentType: contentType.name, documentId: id },
+    { actorId: user._id },
+  );
+  if (reviews.items.length > 0) {
+    await db.delete(
+      ContentReviewDecision,
+      { reviewId: { $in: reviews.items.map((review) => review._id) } } as never,
+      { actorId: user._id },
+    );
+  }
+  await db.delete(
+    ContentReview,
     { contentType: contentType.name, documentId: id },
     { actorId: user._id },
   );

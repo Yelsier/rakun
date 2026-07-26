@@ -30,6 +30,11 @@ import {
   requireLinkedIteratorUpdate,
 } from "./linkedIterator";
 import { revalidateContentTypePaths } from "../../utils/routes/revalidatePath";
+import { isRouteableContentType } from "../../../lib/routeableContent";
+import {
+  getRelationId,
+  getReviewPolicyForRole,
+} from "../../utils/reviews";
 
 const unique = <T>(values: T[]) => Array.from(new Set(values));
 
@@ -92,6 +97,21 @@ export const translateDocumentHandler = async ({
     (language): language is NonNullable<typeof language> => Boolean(language),
   );
   const storedCurrent = await db.get(contentType, input.id);
+  const actorRoleId = getRelationId(user.role);
+  if (
+    storedCurrent._visibility === "published" &&
+    isRouteableContentType(contentType.name) &&
+    actorRoleId &&
+    (await getReviewPolicyForRole({
+      contentType: contentType.name,
+      roleId: actorRoleId,
+    }))
+  ) {
+    throwAppError("CONFLICT", {
+      key: "DRAFT_VERSION_REQUIRED",
+      message: "Create a draft version before translating this published document",
+    });
+  }
   const current = await applyEffectiveIterator({
     db,
     contentType,

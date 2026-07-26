@@ -74,6 +74,27 @@ import { listVersionsHandler } from "../routes/manager/versions/list";
 import { restoreVersionHandler } from "../routes/manager/versions/restore";
 import { translateDocumentHandler } from "../routes/manager/translateDocument";
 import { createPreviewHandler } from "../routes/manager/preview/create";
+import {
+  deleteReviewPolicyHandler,
+  listReviewPoliciesHandler,
+  upsertReviewPolicyHandler,
+} from "../routes/manager/reviewPolicies";
+import {
+  cancelReviewHandler,
+  decideReviewHandler,
+  getReviewHandler,
+  listReviewCandidatesHandler,
+  requestReviewHandler,
+} from "../routes/manager/reviews";
+import {
+  createContentVersionHandler,
+  listContentVersionsHandler,
+  promoteContentVersionHandler,
+} from "../routes/manager/contentVersions";
+import {
+  getRouteLayoutHandler,
+  setRouteLayoutOverrideHandler,
+} from "../routes/manager/routeLayout";
 
 export const createManagerOperationDefinitions = () => {
   const contracts = createManagerOperationContracts();
@@ -125,6 +146,45 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.notifications.markRead": {
       resolve: markNotificationsReadHandler,
+    },
+    "manager.reviewPolicies.list": {
+      resolve: listReviewPoliciesHandler,
+    },
+    "manager.reviewPolicies.upsert": {
+      resolve: upsertReviewPolicyHandler,
+    },
+    "manager.reviewPolicies.delete": {
+      resolve: deleteReviewPolicyHandler,
+    },
+    "manager.reviews.get": {
+      resolve: getReviewHandler,
+    },
+    "manager.reviews.candidates": {
+      resolve: listReviewCandidatesHandler,
+    },
+    "manager.reviews.request": {
+      resolve: requestReviewHandler,
+    },
+    "manager.reviews.decide": {
+      resolve: decideReviewHandler,
+    },
+    "manager.reviews.cancel": {
+      resolve: cancelReviewHandler,
+    },
+    "manager.routeLayout.get": {
+      resolve: getRouteLayoutHandler,
+    },
+    "manager.routeLayout.setOverride": {
+      resolve: setRouteLayoutOverrideHandler,
+    },
+    "manager.contentVersions.list": {
+      resolve: listContentVersionsHandler,
+    },
+    "manager.contentVersions.create": {
+      resolve: createContentVersionHandler,
+    },
+    "manager.contentVersions.promote": {
+      resolve: promoteContentVersionHandler,
     },
     "manager.localeVariants.list": {
       resolve: listLocaleVariantsHandler,

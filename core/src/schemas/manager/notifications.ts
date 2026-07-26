@@ -13,7 +13,17 @@ export const listNotificationsInput = z
 
 export const notificationItem = z.object({
   _id: z.string(),
-  commentId: z.string(),
+  kind: z
+    .enum([
+      "comment_mention",
+      "review_requested",
+      "review_approved",
+      "review_changes_requested",
+      "review_feedback",
+    ])
+    .optional(),
+  commentId: z.string().optional(),
+  reviewId: z.string().optional(),
   contentType: z.string(),
   documentId: z.string(),
   title: z.any().optional(),

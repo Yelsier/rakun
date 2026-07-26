@@ -86,6 +86,71 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/notifications/markRead",
   },
+  "manager.reviewPolicies.list": {
+    kind: "query",
+    method: "get",
+    path: "/manager/reviewPolicies/list",
+  },
+  "manager.reviewPolicies.upsert": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/reviewPolicies/upsert",
+  },
+  "manager.reviewPolicies.delete": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/reviewPolicies/delete",
+  },
+  "manager.reviews.get": {
+    kind: "query",
+    method: "post",
+    path: "/manager/reviews/get",
+  },
+  "manager.reviews.candidates": {
+    kind: "query",
+    method: "post",
+    path: "/manager/reviews/candidates",
+  },
+  "manager.reviews.request": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/reviews/request",
+  },
+  "manager.reviews.decide": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/reviews/decide",
+  },
+  "manager.reviews.cancel": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/reviews/cancel",
+  },
+  "manager.routeLayout.get": {
+    kind: "query",
+    method: "post",
+    path: "/manager/routeLayout/get",
+  },
+  "manager.routeLayout.setOverride": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/routeLayout/setOverride",
+  },
+  "manager.contentVersions.list": {
+    kind: "query",
+    method: "post",
+    path: "/manager/contentVersions/list",
+  },
+  "manager.contentVersions.create": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/contentVersions/create",
+  },
+  "manager.contentVersions.promote": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/contentVersions/promote",
+  },
   "manager.localeVariants.list": {
     kind: "query",
     method: "post",

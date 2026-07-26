@@ -5,15 +5,32 @@ import {
   Route,
   Search,
   UserRoundKey,
+  GitPullRequestArrow,
   WholeWord,
   Waypoints,
 } from 'lucide-react'
+import type { Permission } from '@rakun-kit/core/client'
+import type { ReactNode } from 'react'
 
 import { ManagerLink } from '@/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { useSession } from '@/state/session'
 
-const cards = [
+const cards: Array<{
+  title: string
+  icon: ReactNode
+  link: string
+  tour: string
+  permission?: Permission
+}> = [
+  {
+    title: 'Review Policies',
+    icon: <GitPullRequestArrow size="80" />,
+    link: '/settings/review-policies',
+    tour: 'settings-link-review-policies',
+    permission: 'review.policy.configure',
+  },
   {
     title: 'Languages',
     icon: <Languages size="80" />,
@@ -65,9 +82,13 @@ const cards = [
 ]
 
 export const ManagerSettingsHomeScreen = () => {
+  const { hasPermissions } = useSession()
+  const visibleCards = cards.filter(
+    (card) => !card.permission || hasPermissions([card.permission]),
+  )
   return (
     <div className="container mx-auto grid grid-cols-1 gap-4 py-10 sm:grid-cols-3 xl:grid-cols-6">
-      {cards.map((card) => (
+      {visibleCards.map((card) => (
         <Card key={card.title} data-tour={card.tour}>
           <CardContent className="flex flex-col items-center justify-center gap-4 px-8">
             {card.icon}

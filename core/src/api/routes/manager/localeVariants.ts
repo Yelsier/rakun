@@ -28,6 +28,10 @@ import { requireContentType } from "../../utils/requireContentType";
 import { routeSignature } from "../../utils/routes/routeDefinitions";
 import { loadRouteData } from "../../utils/routes/routeMapHelpers";
 import { updateSingleRouteMap } from "../../utils/routes/updateRoutesMap";
+import {
+  getApprovedCurrentReview,
+  getDocumentReviewPolicy,
+} from "../../utils/reviews";
 import { createHandler } from "./create";
 
 const SYSTEM_CLONE_FIELDS = new Set([
@@ -46,7 +50,7 @@ const SYSTEM_CLONE_FIELDS = new Set([
   "updatedBy",
 ]);
 
-const cloneForLocaleVariant = (
+export const cloneForLocaleVariant = (
   contentType: ContentType,
   source: Record<string, unknown> & { _id: string },
 ) => {
@@ -63,7 +67,7 @@ const cloneForLocaleVariant = (
   return data;
 };
 
-const getRouteForLocaleVariants = async ({
+export const getRouteForLocaleVariants = async ({
   contentType,
   routeKey,
 }: {
@@ -95,7 +99,7 @@ const getRouteForLocaleVariants = async ({
   return { route, routeKey: definition.key };
 };
 
-const requireLanguagesByCode = async (codes: readonly string[]) => {
+export const requireLanguagesByCode = async (codes: readonly string[]) => {
   const languages = await getLanguages();
   const languageByCode = new Map(languages.map((language) => [language.code, language]));
   const result = codes.map((code) => languageByCode.get(code));
@@ -135,7 +139,7 @@ const getDocumentLabel = ({
   return String(value || document._id || "Untitled");
 };
 
-const buildLocaleVariantList = async ({
+export const buildLocaleVariantList = async ({
   contentType,
   documentId,
   routeKey,
@@ -226,7 +230,7 @@ const buildLocaleVariantList = async ({
   };
 };
 
-const assignLocaleVariant = async ({
+export const assignLocaleVariant = async ({
   contentType,
   documentId,
   routeKey,
@@ -364,6 +368,20 @@ export const assignLocaleVariantHandler = async ({
     id: input.documentId,
     permission: "updateAny",
   });
+
+  const db = await getMongoService();
+  const document = (await db.get(contentType, input.documentId)) as Record<
+    string,
+    unknown
+  > & { _id: string };
+  if (
+    (await getDocumentReviewPolicy({ contentType, document })) &&
+    !(await getApprovedCurrentReview({ contentType, document }))
+  ) {
+    throwAppError("FORBIDDEN", {
+      reason: "This version requires an approved review before assigning locales",
+    });
+  }
 
   return await assignLocaleVariant(input);
 };

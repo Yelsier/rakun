@@ -50,7 +50,7 @@ export class DbErrorNotFound extends DbError {
     public override readonly message: string,
     public readonly details?: unknown,
   ) {
-    super(message, 404);
+    super(message, details, 404);
     this._tag = "DbErrorNotFound";
   }
 }
@@ -60,7 +60,7 @@ export class DbErrorInvalidData extends DbError {
     public override readonly message: string,
     public readonly issues?: unknown,
   ) {
-    super(message, 400);
+    super(message, issues, 400);
     this._tag = "DbErrorInvalidData";
   }
 }
@@ -70,7 +70,7 @@ export class DbErrorConflict extends DbError {
     public override readonly message: string,
     public readonly details?: unknown,
   ) {
-    super(message, 409);
+    super(message, details, 409);
     this._tag = "DbErrorConflict";
   }
 }

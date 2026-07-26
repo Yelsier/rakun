@@ -25,6 +25,12 @@ import {
   requireLinkedIteratorUpdate,
 } from "./linkedIterator";
 import { revalidateContentTypePaths } from "../../utils/routes/revalidatePath";
+import { isRouteableContentType } from "../../../lib/routeableContent";
+import {
+  getDocumentReviewPolicy,
+  getRelationId,
+  getReviewPolicyForRole,
+} from "../../utils/reviews";
 
 export const updateHandler = async ({
   input,
@@ -66,6 +72,45 @@ export const updateHandler = async ({
           return { basePath: routeData.basePath } as Record<string, unknown>;
         })()
       : data;
+
+  const currentDocument = contentType.documentVisibility
+    ? ((await db.get(contentType, id)) as Record<string, unknown> & { _id: string })
+    : undefined;
+
+  if (
+    currentDocument?._visibility === "draft" &&
+    effectiveData._visibility === "published" &&
+    (await getDocumentReviewPolicy({ contentType, document: currentDocument }))
+  ) {
+    throwAppError("FORBIDDEN", {
+      reason: "Publish this draft through the approved review promotion workflow",
+    });
+  }
+
+  const actorRoleId = getRelationId(user.role);
+  const workflowMetadata = new Set([
+    "_visibility",
+    "_trashed",
+    "_visibilityBeforeTrash",
+  ]);
+  const changesContent = Object.keys(effectiveData).some(
+    (key) => !workflowMetadata.has(key),
+  );
+  if (
+    currentDocument?._visibility === "published" &&
+    changesContent &&
+    isRouteableContentType(contentType.name) &&
+    actorRoleId &&
+    (await getReviewPolicyForRole({
+      contentType: contentType.name,
+      roleId: actorRoleId,
+    }))
+  ) {
+    throwAppError("CONFLICT", {
+      key: "DRAFT_VERSION_REQUIRED",
+      message: "Create a draft version before editing this published document",
+    });
+  }
 
   try {
     let linkedIteratorChanged = false;

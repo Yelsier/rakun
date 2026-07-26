@@ -146,6 +146,7 @@ const ListContents: React.FC<{
   const { data, refetch } = useQuery(
     trpc.manager.list.queryOptions({
       contentType,
+      ...(hasPageRoutes && !isTrash ? { languageCode: language.code } : {}),
       query: {
         filter: listFilter,
         options: {

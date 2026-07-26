@@ -1,8 +1,14 @@
 import { Logger } from "../../../lib/Logger";
 import { getContentPermission, hasPermissions } from "../../../lib/Permissions";
-import { Media } from "../../../internal-content-types";
+import {
+  Media,
+  RouteLocaleVariant,
+} from "../../../internal-content-types";
 import { getRakunBootstrapOptions } from "../../../bootstrapState";
-import { LOCALE_VARIANT_ROLE_FIELD } from "../../../lib/localeVariants";
+import {
+  getLocaleVariantGroupId,
+  LOCALE_VARIANT_ROLE_FIELD,
+} from "../../../lib/localeVariants";
 import { getMongoService } from "../../../orm";
 import { RakunRequestContext } from "../../context";
 import { ListInput } from "../../../schemas/manager/list";
@@ -14,6 +20,7 @@ import { parseSafeManagerQuery } from "../../utils/safeManagerQuery";
 import { sanitizeManagerOutput } from "../../utils/sanitizeManagerOutput";
 import { resolveMediaRecordUrls } from "./media/resolveMediaRecordUrls";
 import { forbidLinkedIteratorTemplateAccess } from "./linkedIterator";
+import { getLanguages } from "../../utils/getLanguages";
 
 export const listHandler = async ({
   input,
@@ -24,6 +31,7 @@ export const listHandler = async ({
 }) => {
   const db = await getMongoService();
   const { contentType: contentTypeName } = input;
+  const listingTrash = input.query.filter?._trashed === true;
   const contentType = requireContentType(contentTypeName);
   forbidLinkedIteratorTemplateAccess(contentType);
   const query = parseSafeManagerQuery(contentType, input.query);
@@ -81,9 +89,84 @@ export const listHandler = async ({
   Logger.addTrace("manager.list: db list success", {
     totalItems: raw.totalItems,
   });
+  let rawItems = raw.items;
+
+  if (
+    hasPageRoute &&
+    input.languageCode &&
+    rawItems.length > 0 &&
+    !listingTrash
+  ) {
+    const language = (await getLanguages()).find(
+      (item) => item.code === input.languageCode,
+    );
+
+    if (language) {
+      const groupIds = rawItems.map((item) =>
+        getLocaleVariantGroupId(item),
+      );
+      const assignments = (
+        await db.list(RouteLocaleVariant, {
+          filter: {
+            contentType: contentType.name,
+            groupId: { $in: groupIds },
+            languageId: language._id,
+          },
+          options: { limit: "all", sort: { routeKey: "asc" } },
+        } as never)
+      ).items;
+      const documentIdByGroup = new Map<string, string>();
+
+      for (const assignment of assignments) {
+        if (!documentIdByGroup.has(assignment.groupId)) {
+          documentIdByGroup.set(
+            assignment.groupId,
+            assignment.documentId,
+          );
+        }
+      }
+
+      const activeDocumentIds = Array.from(
+        new Set(
+          Array.from(documentIdByGroup.values()).filter(
+            (documentId) =>
+              !rawItems.some((item) => item._id === documentId),
+          ),
+        ),
+      );
+
+      if (activeDocumentIds.length > 0) {
+        const activeDocuments = (
+          await db.list(contentType, {
+            filter: {
+              _id: { $in: activeDocumentIds },
+              _trashed: { $ne: true },
+            },
+            options: {
+              limit: "all",
+              ...(input.query.options?.fields
+                ? { fields: input.query.options.fields }
+                : {}),
+            },
+          } as never)
+        ).items;
+        const activeDocumentById = new Map(
+          activeDocuments.map((item) => [item._id, item]),
+        );
+
+        rawItems = rawItems.map((item) => {
+          const groupId = getLocaleVariantGroupId(item);
+          const activeDocumentId = documentIdByGroup.get(groupId);
+          return activeDocumentId
+            ? activeDocumentById.get(activeDocumentId) ?? item
+            : item;
+        });
+      }
+    }
+  }
 
   const items = (await Promise.all(
-    raw.items.map((item) =>
+    rawItems.map((item) =>
       populateRelations(item, { exposePrivateMedia: true }),
     ),
   )) as {

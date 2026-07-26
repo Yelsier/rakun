@@ -16,6 +16,7 @@ import { ManagerSettingsRoutePathsScreen } from "../dashboard/settings/routes/pa
 import { ManagerSettingsRoutesScreen } from "../dashboard/settings/routes";
 import { ManagerSettingsHomeScreen } from "../dashboard/settings";
 import { ManagerSettingsSystemScreen } from "../dashboard/settings/system";
+import { ManagerSettingsReviewPoliciesScreen } from "../dashboard/settings/review-policies";
 import {
   ManagerSettingsUserRoleCreateScreen,
   ManagerSettingsUserRoleEditScreen,
@@ -107,6 +108,13 @@ export const managerRouteDefinitions = [
     layout: "dashboard",
     parse: () => ({ kind: "settings-system" }),
     render: () => <ManagerSettingsSystemScreen />,
+  }),
+  defineManagerRoute({
+    kind: "settings-review-policies",
+    path: "/settings/review-policies",
+    layout: "dashboard",
+    parse: () => ({ kind: "settings-review-policies" }),
+    render: () => <ManagerSettingsReviewPoliciesScreen />,
   }),
   defineManagerRoute({
     kind: "settings-languages",

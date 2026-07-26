@@ -5,6 +5,7 @@ import {
   Bell,
   BellRing,
   Clock3,
+  GitPullRequestArrow,
   MessageCircle,
   Star,
   StarOff,
@@ -184,8 +185,25 @@ const NotificationCard = ({
   notification: NotificationItem
   title: string
 }) => {
-  const NotificationIcon = notification.read ? MessageCircle : BellRing
+  const isReviewNotification = Boolean(
+    notification.kind && notification.kind !== 'comment_mention',
+  )
+  const NotificationIcon = notification.read
+    ? isReviewNotification
+      ? GitPullRequestArrow
+      : MessageCircle
+    : BellRing
   const author = notification.author.name?.trim() || notification.author.user
+  const authorAction =
+    notification.kind === 'review_changes_requested'
+      ? 'Changes requested by'
+      : notification.kind === 'review_approved'
+        ? 'Approved by'
+        : notification.kind === 'review_requested'
+          ? 'Review requested by'
+          : notification.kind === 'review_feedback'
+            ? 'Feedback from'
+            : 'Mentioned by'
 
   return (
     <Card
@@ -196,7 +214,9 @@ const NotificationCard = ({
       }
     >
       <ManagerLink
-        href={`/${notification.contentType}/${notification.documentId}?comments=open`}
+        href={`/${notification.contentType}/${notification.documentId}?${
+          isReviewNotification ? 'review' : 'comments'
+        }=open`}
         className='absolute inset-0 z-0 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring'
       >
         <span className='sr-only'>Open notification for {title}</span>
@@ -222,7 +242,9 @@ const NotificationCard = ({
         <p className='line-clamp-2 text-sm text-foreground'>{notification.text}</p>
         <div className='flex min-w-0 items-center gap-2'>
           <UserRound className='size-3.5 shrink-0' />
-          <span className='truncate'>Mentioned by {author}</span>
+          <span className='truncate'>
+            {authorAction} {author}
+          </span>
         </div>
         <div className='flex min-w-0 items-center gap-2'>
           <Clock3 className='size-3.5 shrink-0' />

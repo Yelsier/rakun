@@ -47,8 +47,8 @@ export type EditPageTab =
   | 'content'
   | 'info'
   | 'seo'
-  | 'locale-variants'
   | 'versions'
+  | 'history'
   | `layout:${string}`
 
 export type EditPageProps = {

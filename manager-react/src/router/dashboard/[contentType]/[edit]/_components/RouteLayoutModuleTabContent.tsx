@@ -30,14 +30,15 @@ export const RouteLayoutModuleTabContent = ({
 }: {
   layoutModule: RouteLayoutModuleRecord
 }) => {
-  const { activeTab, contentTypeId, routeLayout } = useEditPageContext()
+  const { activeTab, contentTypeId, contentTypeName, routeLayout } =
+    useEditPageContext()
   const override = routeLayout.overridesByKey.get(`${layoutModule.routeId}:${layoutModule.key}`)
   const options = routeLayout.layoutOptionsByContentType.get(layoutModule.contentType) ?? []
   const [selected, setSelected] = useState(() => getLayoutOverrideValue(override))
   const [isSaving, setIsSaving] = useState(false)
-  const createOverrideMutation = useManagerMutation('manager.create')
-  const updateOverrideMutation = useManagerMutation('manager.update')
-  const deleteOverrideMutation = useManagerMutation('manager.delete')
+  const setOverrideMutation = useManagerMutation(
+    'manager.routeLayout.setOverride',
+  )
 
   useEffect(() => {
     setSelected(getLayoutOverrideValue(override))
@@ -49,43 +50,18 @@ export const RouteLayoutModuleTabContent = ({
     setIsSaving(true)
 
     try {
-      const existing = routeLayout.overridesByKey.get(`${layoutModule.routeId}:${layoutModule.key}`)
-
-      if (selected === '__default__') {
-        if (existing) {
-          await deleteOverrideMutation.mutateAsync({
-            contentType: 'RouteLayoutModuleOverride',
-            id: existing._id,
-          })
-          await routeLayout.routeLayoutOverridesQuery.refetch()
-        }
-
-        toast.success('Layout override updated successfully')
-        return
-      }
-
-      const payload = {
-        _type: 'RouteLayoutModuleOverride' as const,
-        routeId: layoutModule.routeId,
-        routeKey: layoutModule.routeKey,
+      await setOverrideMutation.mutateAsync({
+        contentType: contentTypeName,
         contentTypeId,
+        routeId: layoutModule.routeId,
         key: layoutModule.key,
-        contentType: layoutModule.contentType,
-        moduleId: selected === '__none__' ? '' : selected,
-      }
-
-      if (existing) {
-        await updateOverrideMutation.mutateAsync({
-          contentType: 'RouteLayoutModuleOverride',
-          id: existing._id,
-          data: payload,
-        })
-      } else {
-        await createOverrideMutation.mutateAsync({
-          contentType: 'RouteLayoutModuleOverride',
-          data: payload,
-        })
-      }
+        moduleId:
+          selected === '__default__'
+            ? null
+            : selected === '__none__'
+              ? ''
+              : selected,
+      })
 
       await routeLayout.routeLayoutOverridesQuery.refetch()
       toast.success('Layout override updated successfully')

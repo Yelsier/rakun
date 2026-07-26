@@ -104,9 +104,16 @@ export const Tags = ({
   )
 }
 
-export type TagsTriggerProps = ComponentProps<typeof Button>
+export type TagsTriggerProps = ComponentProps<typeof Button> & {
+  placeholder?: ReactNode
+}
 
-export const TagsTrigger = ({ className, children, ...props }: TagsTriggerProps) => (
+export const TagsTrigger = ({
+  className,
+  children,
+  placeholder = 'Select a tag...',
+  ...props
+}: TagsTriggerProps) => (
   <PopoverTrigger asChild>
     <Button
       className={cn("h-auto w-full justify-between p-2", className)}
@@ -117,7 +124,7 @@ export const TagsTrigger = ({ className, children, ...props }: TagsTriggerProps)
     >
       <div className="flex flex-wrap items-center gap-1">
         {children}
-        <span className="px-2 py-px text-muted-foreground">Select a tag...</span>
+        <span className="px-2 py-px text-muted-foreground">{placeholder}</span>
       </div>
     </Button>
   </PopoverTrigger>

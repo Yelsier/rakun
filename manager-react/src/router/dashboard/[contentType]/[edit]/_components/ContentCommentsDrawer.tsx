@@ -24,6 +24,7 @@ import type {
 } from '@rakun-kit/core/client'
 
 import { useEditPageContext } from '../_context/EditPageContext'
+import { ContentReviewPanel } from './ContentReviewPanel'
 
 import { createManagerQueryKey, useManagerMutation, useManagerQuery } from '@/client/react'
 import { UserAvatar } from '@/components/user-avatar'
@@ -33,6 +34,7 @@ import {
   BubbleGroup,
   BubbleReactions,
 } from '@/components/ui/bubble'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Drawer,
@@ -62,6 +64,7 @@ import {
   MessageHeader,
 } from '@/components/ui/message'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
@@ -595,12 +598,23 @@ export const ContentCommentsDrawer = ({
     onOpenChange?.(nextOpen)
   }
   const [text, setText] = useState('')
+  const [activePanel, setActivePanel] = useState<'messages' | 'review'>(
+    'messages'
+  )
   const [mentions, setMentions] = useState<string[]>([])
   const [composerKey, setComposerKey] = useState(0)
   const [unreadMarkerCommentId, setUnreadMarkerCommentId] = useState<
     string | null
   >(null)
   const [unreadSessionReady, setUnreadSessionReady] = useState(false)
+
+  useEffect(() => {
+    if (!open || typeof window === 'undefined') return
+
+    const searchParams = new URLSearchParams(window.location.search)
+    setActivePanel(searchParams.has('review') ? 'review' : 'messages')
+  }, [open])
+  const messagesOpen = open && activePanel === 'messages'
   const commentsInput = contentTypeId
     ? {
         contentType: contentTypeName,
@@ -620,8 +634,8 @@ export const ContentCommentsDrawer = ({
       contentType: '',
       documentId: '',
     } as never),
-    enabled: Boolean(open && commentsInput),
-    refetchInterval: open ? 5000 : false,
+    enabled: Boolean(messagesOpen && commentsInput),
+    refetchInterval: messagesOpen ? 5000 : false,
   })
   const notificationsQuery = useManagerQuery({
     name: 'manager.notifications.list',
@@ -641,7 +655,7 @@ export const ContentCommentsDrawer = ({
   const usersQuery = useManagerQuery({
     name: 'manager.users.mentions',
     input: undefined,
-    enabled: open,
+    enabled: messagesOpen,
   })
   const createCommentMutation = useManagerMutation('manager.comments.create')
   const toggleReactionMutation = useManagerMutation('manager.comments.toggleReaction')
@@ -674,7 +688,7 @@ export const ContentCommentsDrawer = ({
   }, [])
 
   useEffect(() => {
-    if (!open) {
+    if (!messagesOpen) {
       unreadSessionIdRef.current += 1
       lastMarkedCommentRef.current = null
       setUnreadMarkerCommentId(null)
@@ -732,10 +746,10 @@ export const ContentCommentsDrawer = ({
         }
       }
     })()
-  }, [contentTypeId, contentTypeName, open])
+  }, [contentTypeId, contentTypeName, messagesOpen])
 
   useEffect(() => {
-    if (!open || !commentsInput || !unreadSessionReady) return
+    if (!messagesOpen || !commentsInput || !unreadSessionReady) return
 
     const latestComment = comments[comments.length - 1]
     if (!latestComment) return
@@ -779,24 +793,24 @@ export const ContentCommentsDrawer = ({
     comments,
     commentsInput,
     markCommentsReadMutation,
-    open,
+    messagesOpen,
     unreadSessionReady,
   ])
 
   useEffect(() => {
-    if (!open || !unreadSessionReady || unreadMarkerCommentId) return
+    if (!messagesOpen || !unreadSessionReady || unreadMarkerCommentId) return
 
     scrollMessagesToEnd('auto')
   }, [
     comments.length,
-    open,
+    messagesOpen,
     scrollMessagesToEnd,
     unreadMarkerCommentId,
     unreadSessionReady,
   ])
 
   useLayoutEffect(() => {
-    if (!open || !unreadMarkerCommentId) return
+    if (!messagesOpen || !unreadMarkerCommentId) return
 
     requestAnimationFrame(() => {
       unreadMarkerRef.current?.scrollIntoView({
@@ -804,7 +818,7 @@ export const ContentCommentsDrawer = ({
         behavior: 'auto',
       })
     })
-  }, [open, unreadMarkerCommentId])
+  }, [messagesOpen, unreadMarkerCommentId])
 
   useEffect(() => {
     if (!open) {
@@ -955,10 +969,39 @@ export const ContentCommentsDrawer = ({
       ) : null}
       <DrawerContent className="w-[min(92vw,520px)] sm:max-w-[520px]">
         <DrawerHeader className="border-b">
-          <DrawerTitle>Comments</DrawerTitle>
+          <DrawerTitle>Discussion</DrawerTitle>
           <DrawerDescription>{drawerDescription}</DrawerDescription>
         </DrawerHeader>
-        <ScrollArea className="min-h-0 flex-1">
+        <Tabs
+          value={activePanel}
+          onValueChange={(value) =>
+            setActivePanel(value === 'review' ? 'review' : 'messages')
+          }
+          className="min-h-0 flex-1 gap-0"
+        >
+          <div className="border-b px-4">
+            <TabsList variant="line" className="w-full">
+              <TabsTrigger value="messages">
+                Messages
+                {unreadCommentsCount ? (
+                  <Badge variant="secondary">
+                    {unreadCommentsCount > 99 ? '99+' : unreadCommentsCount}
+                  </Badge>
+                ) : null}
+              </TabsTrigger>
+              <TabsTrigger value="review">Review</TabsTrigger>
+            </TabsList>
+          </div>
+          <TabsContent value="review" className="min-h-0">
+            <ScrollArea className="h-full">
+              <ContentReviewPanel open={open && activePanel === 'review'} />
+            </ScrollArea>
+          </TabsContent>
+          <TabsContent
+            value="messages"
+            className="flex min-h-0 flex-col data-[state=inactive]:hidden"
+          >
+            <ScrollArea className="min-h-0 flex-1">
           <div className="flex min-h-[320px] flex-col gap-4 p-4">
             {commentsQuery.isLoading ? (
               <p className="text-sm text-muted-foreground">Loading comments...</p>
@@ -1079,7 +1122,7 @@ export const ContentCommentsDrawer = ({
             <div ref={messagesEndRef} aria-hidden="true" />
           </div>
         </ScrollArea>
-        <DrawerFooter className="border-t">
+            <DrawerFooter className="border-t">
           <Mention
             key={composerKey}
             value={mentions}
@@ -1143,7 +1186,9 @@ export const ContentCommentsDrawer = ({
             <Send />
             Send
           </Button>
-        </DrawerFooter>
+            </DrawerFooter>
+          </TabsContent>
+        </Tabs>
       </DrawerContent>
     </Drawer>
   )
