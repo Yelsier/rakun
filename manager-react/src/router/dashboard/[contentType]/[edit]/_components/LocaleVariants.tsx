@@ -88,7 +88,7 @@ const LocaleMultiSelect = ({
   )
 }
 
-export const ContentVersions = () => {
+export const ContentVariants = () => {
   const {
     contentTypeId,
     contentTypeName,
@@ -147,7 +147,7 @@ export const ContentVersions = () => {
         routeKey: localeVariantRoute.key,
       })
       await invalidate()
-      toast.success('Draft version created')
+      toast.success('Draft variant created')
       const nextId = result.document._id
       if (typeof nextId === 'string') {
         navigation.push?.({
@@ -157,7 +157,7 @@ export const ContentVersions = () => {
         })
       }
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not create draft version'))
+      toast.error(getActionErrorMessage(error, 'Could not create draft variant'))
     }
   }
 
@@ -182,7 +182,7 @@ export const ContentVersions = () => {
           routeKey: localeVariantRoute.key,
           languageCodes,
         })
-        toast.success(initialPublication ? 'Page published' : 'Version promoted')
+        toast.success(initialPublication ? 'Page published' : 'Variant promoted')
       } else {
         await assignMutation.mutateAsync({
           contentType: contentTypeName,
@@ -218,7 +218,7 @@ export const ContentVersions = () => {
   if (!contentTypeId || !localeVariantRoute) {
     return (
       <div className="text-muted-foreground text-sm">
-        Versions are available for routeable content.
+        Variants are available for routeable content.
       </div>
     )
   }
@@ -231,7 +231,7 @@ export const ContentVersions = () => {
       <div>
         <Button loading={createMutation.isPending} onClick={() => void createVersion()}>
           <GitBranchPlus />
-          Create draft version
+          Create draft variant
         </Button>
       </div>
       <div className="grid gap-3">

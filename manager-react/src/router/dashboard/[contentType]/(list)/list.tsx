@@ -50,13 +50,20 @@ const getContentRowId = (row: object, index: number) => {
 const ContentListTableSkeleton = ({
   fieldsCount,
   showVisibility,
+  showVariantCount,
   enableSelection,
 }: {
   fieldsCount: number
   showVisibility: boolean
+  showVariantCount: boolean
   enableSelection: boolean
 }) => {
-  const columnCount = 3 + fieldsCount + (showVisibility ? 1 : 0) + (enableSelection ? 1 : 0)
+  const columnCount =
+    3 +
+    fieldsCount +
+    (showVisibility ? 1 : 0) +
+    (showVariantCount ? 1 : 0) +
+    (enableSelection ? 1 : 0)
 
   return (
     <div className="w-full overflow-hidden rounded-lg border">
@@ -181,6 +188,7 @@ const ListContents: React.FC<{
   )
   const selectedCount = selectedIds.length
   const canBulkDelete = hasPermissions([`content.${contentType}.deleteAny` as Permission])
+  const showVariantCount = Boolean(hasPageRoutes)
   const canBulkTranslate =
     !isTrash &&
     languageList.length > 1 &&
@@ -438,6 +446,7 @@ const ListContents: React.FC<{
               duplicatingItemId,
               enableSelection,
               showVisibility: Boolean(documentVisibility),
+              showVariantCount,
               creatorsById,
               isTrash,
               hasPermissions,
@@ -452,6 +461,7 @@ const ListContents: React.FC<{
           <ContentListTableSkeleton
             fieldsCount={(fields || []).length}
             showVisibility={Boolean(documentVisibility)}
+            showVariantCount={showVariantCount}
             enableSelection={enableSelection}
           />
         )}

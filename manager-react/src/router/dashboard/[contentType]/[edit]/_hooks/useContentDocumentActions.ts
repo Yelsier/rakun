@@ -373,7 +373,7 @@ export const useContentDocumentActions = ({
         })
       }
       await invalidateContentListQueries()
-      toast.success('Draft version created for review')
+      toast.success('Draft variant created for review')
       return
     }
 

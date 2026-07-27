@@ -35,6 +35,7 @@ export const columns = ({
   duplicatingItemId,
   enableSelection,
   showVisibility,
+  showVariantCount,
   creatorsById,
   isTrash,
   hasPermissions,
@@ -50,6 +51,7 @@ export const columns = ({
   duplicatingItemId: string | null
   enableSelection: boolean
   showVisibility: boolean
+  showVariantCount: boolean
   creatorsById: ReadonlyMap<string, MentionUser>
   isTrash: boolean
   hasPermissions: (permissions: Permission[]) => boolean
@@ -137,31 +139,6 @@ export const columns = ({
           } satisfies ColumnDef<object>,
         ]
       : []),
-    {
-      accessorKey: 'createdBy',
-      header: () => <span className="ml-2">Created by</span>,
-      cell: ({ row }) => {
-        const creatorId = row.getValue('createdBy')
-        if (typeof creatorId !== 'string') {
-          return <span className="ml-2 text-muted-foreground">-</span>
-        }
-
-        const creator = creatorsById.get(creatorId)
-        const creatorName = creator?.name?.trim() || creator?.user || 'Unknown user'
-
-        return (
-          <span className="ml-2 flex items-center gap-2">
-            <UserAvatar
-              name={creatorName}
-              avatar={creator?.avatar}
-              className="size-6"
-              fallbackClassName="text-xs"
-            />
-            <span>{creatorName}</span>
-          </span>
-        )
-      },
-    },
     ...fields.map(
       (key, i) =>
         ({
@@ -194,6 +171,44 @@ export const columns = ({
           },
         }) as ColumnDef<object>
     ),
+    {
+      accessorKey: 'createdBy',
+      header: () => <span className="ml-2">Created by</span>,
+      cell: ({ row }) => {
+        const creatorId = row.getValue('createdBy')
+        if (typeof creatorId !== 'string') {
+          return <span className="ml-2 text-muted-foreground">-</span>
+        }
+
+        const creator = creatorsById.get(creatorId)
+        const creatorName = creator?.name?.trim() || creator?.user || 'Unknown user'
+
+        return (
+          <span className="ml-2 flex items-center gap-2">
+            <UserAvatar
+              name={creatorName}
+              avatar={creator?.avatar}
+              className="size-6"
+              fallbackClassName="text-xs"
+            />
+            <span>{creatorName}</span>
+          </span>
+        )
+      },
+    },
+    ...(showVariantCount
+      ? [
+          {
+            accessorKey: '_variantCount',
+            header: () => <span className="ml-2">Variants</span>,
+            cell: ({ row }) => (
+              <span className="ml-2">
+                {Number(row.getValue('_variantCount') ?? 0)}
+              </span>
+            ),
+          } satisfies ColumnDef<object>,
+        ]
+      : []),
     {
       id: 'actions',
       cell: ({ row }) => {

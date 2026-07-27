@@ -212,9 +212,9 @@ export const EditToolbar = () => {
             </TabsTrigger>
           ))}
           {hasLocaleVariants ? (
-            <TabsTrigger value="versions">
+            <TabsTrigger value="variants">
               <MapPinned />
-              Versions
+              Variants
             </TabsTrigger>
           ) : null}
           {hasVersioning && contentTypeId ? (

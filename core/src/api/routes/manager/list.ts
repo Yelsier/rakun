@@ -1,12 +1,10 @@
 import { Logger } from "../../../lib/Logger";
 import { getContentPermission, hasPermissions } from "../../../lib/Permissions";
-import {
-  Media,
-  RouteLocaleVariant,
-} from "../../../internal-content-types";
+import { Media, RouteLocaleVariant } from "../../../internal-content-types";
 import { getRakunBootstrapOptions } from "../../../bootstrapState";
 import {
   getLocaleVariantGroupId,
+  LOCALE_VARIANT_GROUP_FIELD,
   LOCALE_VARIANT_ROLE_FIELD,
 } from "../../../lib/localeVariants";
 import { getMongoService } from "../../../orm";
@@ -90,6 +88,9 @@ export const listHandler = async ({
     totalItems: raw.totalItems,
   });
   let rawItems = raw.items;
+  const localeVariantGroupIds = hasPageRoute
+    ? rawItems.map((item) => getLocaleVariantGroupId(item))
+    : [];
 
   if (
     hasPageRoute &&
@@ -165,17 +166,43 @@ export const listHandler = async ({
     }
   }
 
-  const items = (await Promise.all(
-    rawItems.map(async (item) => {
-      const populated = await populateRelations(item, {
-        exposePrivateMedia: true,
-      });
+  const [populatedItems, variantCounts] = await Promise.all([
+    Promise.all(
+      rawItems.map(async (item) => {
+        const populated = await populateRelations(item, {
+          exposePrivateMedia: true,
+        });
 
-      return typeof item.createdBy === "string"
-        ? { ...populated, createdBy: item.createdBy }
-        : populated;
-    }),
-  )) as {
+        return typeof item.createdBy === "string"
+          ? { ...populated, createdBy: item.createdBy }
+          : populated;
+      }),
+    ),
+    hasPageRoute && localeVariantGroupIds.length > 0
+      ? db
+          .list(contentType, {
+            filter: {
+              _trashed: { $ne: true },
+              [LOCALE_VARIANT_GROUP_FIELD]: {
+                $in: Array.from(new Set(localeVariantGroupIds)),
+              },
+              [LOCALE_VARIANT_ROLE_FIELD]: "variant",
+            },
+            options: {
+              limit: "all",
+              fields: [LOCALE_VARIANT_GROUP_FIELD],
+            },
+          } as never)
+          .then(({ items }) =>
+            items.reduce<Record<string, number>>((counts, item) => {
+              const groupId = getLocaleVariantGroupId(item);
+              counts[groupId] = (counts[groupId] ?? 0) + 1;
+              return counts;
+            }, {}),
+          )
+      : Promise.resolve({} as Record<string, number>),
+  ]);
+  const items = populatedItems as {
     [x: string]: unknown;
     _id: string;
   }[];
@@ -183,9 +210,16 @@ export const listHandler = async ({
     contentType.name === Media.name
       ? await Promise.all(items.map((item) => resolveMediaRecordUrls(item)))
       : items;
+  const itemsWithVariantCount = hasPageRoute
+    ? resolvedItems.map((item, index) => ({
+        ...item,
+        _variantCount:
+          variantCounts[localeVariantGroupIds[index] ?? item._id] ?? 0,
+      }))
+    : resolvedItems;
 
   return {
     totalItems: raw.totalItems,
-    items: sanitizeManagerOutput(resolvedItems, contentType),
+    items: sanitizeManagerOutput(itemsWithVariantCount, contentType),
   };
 };

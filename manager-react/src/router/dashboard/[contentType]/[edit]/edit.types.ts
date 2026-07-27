@@ -47,7 +47,7 @@ export type EditPageTab =
   | 'content'
   | 'info'
   | 'seo'
-  | 'versions'
+  | 'variants'
   | 'history'
   | `layout:${string}`
 
