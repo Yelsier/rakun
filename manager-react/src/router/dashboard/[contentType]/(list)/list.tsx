@@ -122,7 +122,7 @@ const ListContents: React.FC<{
   )
   const [bulkTranslationOverwrite, setBulkTranslationOverwrite] = useState(false)
   const trpc = useTRPC()
-  const { hasAnyPermission, hasPermissions } = useSession()
+  const { user, hasAnyPermission, hasPermissions } = useSession()
   const trimmedSearch = debouncedSearch.trim()
   const searchableFields = useMemo(() => {
     const searchFields = fields ?? []
@@ -448,9 +448,9 @@ const ListContents: React.FC<{
               showVisibility: Boolean(documentVisibility),
               showVariantCount,
               creatorsById,
+              currentUserId: user._id,
               isTrash,
               hasPermissions,
-              hasAnyPermission,
             })}
             data={items as object[]}
             rowSelection={rowSelection}

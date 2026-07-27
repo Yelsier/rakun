@@ -37,9 +37,9 @@ export const columns = ({
   showVisibility,
   showVariantCount,
   creatorsById,
+  currentUserId,
   isTrash,
   hasPermissions,
-  hasAnyPermission,
 }: {
   fields: string[]
   contentType: string
@@ -53,9 +53,9 @@ export const columns = ({
   showVisibility: boolean
   showVariantCount: boolean
   creatorsById: ReadonlyMap<string, MentionUser>
+  currentUserId: string
   isTrash: boolean
   hasPermissions: (permissions: Permission[]) => boolean
-  hasAnyPermission: (permissions: Permission[]) => boolean
 }): ColumnDef<object>[] => {
   type DocumentVisibility = 'draft' | 'hidden' | 'published' | 'trash'
 
@@ -214,15 +214,43 @@ export const columns = ({
       cell: ({ row }) => {
         const id = row.getValue('_id') as string
         const isDuplicating = duplicatingItemId === id
+        const item = row.original as Record<string, unknown>
+        const createdBy = item.createdBy
+        const creatorId =
+          typeof createdBy === 'string'
+            ? createdBy
+            : createdBy &&
+                typeof createdBy === 'object' &&
+                typeof (createdBy as { _id?: unknown })._id === 'string'
+              ? (createdBy as { _id: string })._id
+              : null
+        const ownsItem = creatorId === currentUserId
+        const hasOwnPermission = hasPermissions([
+          `content.${contentType}.own` as Permission,
+        ])
+        const canReadAny = hasPermissions([
+          `content.${contentType}.readAny` as Permission,
+        ])
+        const canUpdate =
+          hasPermissions([
+            `content.${contentType}.updateAny` as Permission,
+          ]) ||
+          (ownsItem && hasOwnPermission)
+        const canDelete =
+          hasPermissions([
+            `content.${contentType}.deleteAny` as Permission,
+          ]) ||
+          (ownsItem && hasOwnPermission)
+        const canDuplicate =
+          hasOwnPermission && (ownsItem || canReadAny)
+        const hasActions = isTrash
+          ? canUpdate || canDelete
+          : canUpdate || canDelete || canDuplicate
 
         return (
           <>
             <DropdownMenu>
-              {hasAnyPermission([
-                `content.${contentType}.own` as Permission,
-                `content.${contentType}.deleteAny` as Permission,
-                `content.${contentType}.updateAny` as Permission,
-              ]) && (
+              {hasActions && (
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-8 w-8 p-0">
                     <span className="sr-only">Open menu</span>
@@ -231,15 +259,15 @@ export const columns = ({
                 </DropdownMenuTrigger>
               )}
               <DropdownMenuContent align="end">
-                {isTrash && hasPermissions([`content.${contentType}.updateAny` as Permission]) && (
+                {isTrash && canUpdate && (
                   <DropdownMenuItem
-                    onClick={() => setRestoreItem(row.original as Record<string, unknown>)}
+                    onClick={() => setRestoreItem(item)}
                   >
                     <RotateCcw />
                     Restore
                   </DropdownMenuItem>
                 )}
-                {isTrash && hasPermissions([`content.${contentType}.deleteAny` as Permission]) && (
+                {isTrash && canDelete && (
                   <DropdownMenuItem
                     onClick={() => setPermanentDeleteItem({ _id: id })}
                     className="text-destructive"
@@ -248,7 +276,7 @@ export const columns = ({
                     Delete permanently
                   </DropdownMenuItem>
                 )}
-                {!isTrash && hasPermissions([`content.${contentType}.deleteAny` as Permission]) && (
+                {!isTrash && canDelete && (
                   <DropdownMenuItem
                     onClick={() => setDeleteItem({ _id: id })}
                     className="text-destructive"
@@ -257,16 +285,16 @@ export const columns = ({
                     Move to trash
                   </DropdownMenuItem>
                 )}
-                {!isTrash && hasPermissions([`content.${contentType}.own` as Permission]) && (
+                {!isTrash && canDuplicate && (
                   <DropdownMenuItem
                     disabled={isDuplicating}
-                    onClick={() => onDuplicateItem(row.original as Record<string, unknown>)}
+                    onClick={() => onDuplicateItem(item)}
                   >
                     <Copy />
                     {isDuplicating ? 'Duplicating...' : 'Duplicate'}
                   </DropdownMenuItem>
                 )}
-                {!isTrash && hasPermissions([`content.${contentType}.updateAny` as Permission]) && (
+                {!isTrash && canUpdate && (
                   <DropdownMenuItem asChild>
                     <ManagerLink
                       href={`/${contentType}/${id}`}

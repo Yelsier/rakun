@@ -7,7 +7,7 @@ import {
   User,
   type LucideIcon,
 } from 'lucide-react'
-import type { EncodedContentType } from '@rakun-kit/core/client'
+import type { EncodedContentType, Permission } from '@rakun-kit/core/client'
 import * as React from 'react'
 
 import { ManagerLink } from '@/link'
@@ -22,6 +22,7 @@ import { NavUser } from './nav-user'
 import { useManagerHelp } from '@/help/manager-help'
 import { resolveLucideIcon } from '@/helpers/resolve-lucide-icon'
 import { useManagerPlugins } from '@/plugins'
+import { getEncodedContentPermissions } from '@/state/permissions'
 import { useSession } from '@/state/session'
 import {
   Sidebar,
@@ -40,6 +41,8 @@ export type ManagerSidebarItem = {
   isActive?: boolean
   disabled?: boolean
   onClick?: () => void
+  permissions?: readonly Permission[]
+  permissionMode?: 'all' | 'any'
   items?: ManagerSidebarItem[]
 }
 
@@ -70,27 +73,48 @@ const getDefaultSecondaryNavItems = (basePath: string): ManagerSidebarItem[] => 
     title: 'Media Library',
     url: getManagerPathHref('/media', { basePath }),
     icon: Images,
+    permissions: ['content.Media.readAny', 'content.Media.own'],
+    permissionMode: 'any',
   },
   {
     title: 'Users',
     url: getManagerPathHref('/users', { basePath }),
     icon: User,
+    permissions: ['content.ManagerUser.readAny'],
   },
   {
     title: 'API Routes',
     url: getManagerPathHref('/api-routes', { basePath }),
     icon: Network,
+    permissions: ['content.ApiOperation.readAny'],
   },
   {
     title: 'Settings',
     url: getManagerPathHref('/settings', { basePath }),
     icon: Settings,
+    permissions: [
+      'review.policy.configure',
+      'content.Language.own',
+      'content.Language.readAny',
+      'content.Route.own',
+      'content.Route.readAny',
+      'content.Backup.readAny',
+      'content.Migration.readAny',
+      'content.ManagerRole.own',
+      'content.ManagerRole.readAny',
+      'content.LiteralTranslation.readAny',
+      'content.Redirect.readAny',
+      'content.RobotsRule.readAny',
+      'content.SeoSettings.readAny',
+    ],
+    permissionMode: 'any',
   },
 ]
 
 const getContentTypeNavItems = (
   contentTypes: EncodedContentType[],
   basePath: string,
+  hasAnyPermission: (permissions: Permission[]) => boolean,
   pathname?: string,
 ): ManagerSidebarItem[] => {
   const items: ManagerSidebarItem[] = []
@@ -98,6 +122,14 @@ const getContentTypeNavItems = (
 
   for (const type of contentTypes) {
     if (!type.menu) continue
+
+    const readPermissions = getEncodedContentPermissions(type, [
+      'own',
+      'readAny',
+    ])
+    if (readPermissions.length > 0 && !hasAnyPermission(readPermissions)) {
+      continue
+    }
 
     const item = {
       title: type.menu.title,
@@ -138,6 +170,34 @@ const getContentTypeNavItems = (
   return items
 }
 
+const filterSidebarItems = (
+  items: ManagerSidebarItem[],
+  hasPermissions: (permissions: Permission[]) => boolean,
+  hasAnyPermission: (permissions: Permission[]) => boolean,
+): ManagerSidebarItem[] =>
+  items.flatMap((item) => {
+    const permissions = [...(item.permissions ?? [])]
+    const allowed =
+      permissions.length === 0 ||
+      (item.permissionMode === 'any'
+        ? hasAnyPermission(permissions)
+        : hasPermissions(permissions))
+
+    if (!allowed) return []
+
+    if (!item.items) return [item]
+
+    const visibleItems = filterSidebarItems(
+      item.items,
+      hasPermissions,
+      hasAnyPermission,
+    )
+
+    return visibleItems.length > 0
+      ? [{ ...item, items: visibleItems }]
+      : []
+  })
+
 export function AppSidebar({
   contentTypes,
   pathname,
@@ -152,7 +212,13 @@ export function AppSidebar({
 }) {
   const { hasCurrentTour, startCurrentTour } = useManagerHelp()
   const pluginRegistry = useManagerPlugins()
-  const { hasPermissions } = useSession()
+  const { hasPermissions, hasAnyPermission } = useSession()
+  const contentTypeItems = getContentTypeNavItems(
+    contentTypes,
+    basePath,
+    hasAnyPermission,
+    pathname,
+  )
   const helpItem: ManagerSidebarItem = {
     title: 'Help',
     url: '#',
@@ -161,11 +227,7 @@ export function AppSidebar({
     onClick: startCurrentTour,
   }
   const pluginItems = pluginRegistry.sidebar
-    .filter(
-      (item) =>
-        !item.permissions?.length || hasPermissions([...item.permissions]),
-    )
-    .map((item) => {
+    .flatMap((item) => {
       const route = item.routeId
         ? pluginRegistry.routesById.get(`${item.pluginId}:${item.routeId}`)
         : undefined
@@ -190,12 +252,22 @@ export function AppSidebar({
       const url = external
         ? rawHref
         : getManagerPathHref(rawHref, { basePath })
+      const permissions = [
+        ...(route?.permissions ?? []),
+        ...(item.permissions ?? []),
+      ]
 
-      return {
-        ...item,
-        url,
-        isActive: external ? false : isActiveHref(url, pathname, basePath),
+      if (permissions.length > 0 && !hasPermissions(permissions)) {
+        return []
       }
+
+      return [
+        {
+          ...item,
+          url,
+          isActive: external ? false : isActiveHref(url, pathname, basePath),
+        },
+      ]
     })
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
   const primaryPluginGroups = pluginItems
@@ -232,18 +304,23 @@ export function AppSidebar({
       </SidebarHeader>
 
       <SidebarContent>
-        <NavMain
-          items={getContentTypeNavItems(contentTypes, basePath, pathname)}
-        />
+        {contentTypeItems.length > 0 ? (
+          <NavMain items={contentTypeItems} />
+        ) : null}
         {Array.from(primaryPluginGroups, ([label, items]) => (
           <NavMain key={label} label={label} items={items} />
         ))}
         <NavSecondary
-          items={[...secondaryItems, ...secondaryPluginItems, helpItem].map((item) => ({
+          items={filterSidebarItems(
+            [...secondaryItems, ...secondaryPluginItems, helpItem],
+            hasPermissions,
+            hasAnyPermission,
+          ).map((item) => ({
             ...item,
-            isActive: 'onClick' in item && item.onClick
-              ? false
-              : isActiveHref(item.url, pathname, basePath),
+            isActive:
+              'onClick' in item && item.onClick
+                ? false
+                : isActiveHref(item.url, pathname, basePath),
           }))}
           className='mt-auto'
         />
