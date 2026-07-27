@@ -31,6 +31,7 @@ import {
 import type { ContentTypeHooks } from "./hooks";
 import {
   LOCALE_VARIANT_GROUP_FIELD,
+  LOCALE_VARIANT_NAME_FIELD,
   LOCALE_VARIANT_ROLE_FIELD,
   LocaleVariantRole,
 } from "./localeVariants";
@@ -218,6 +219,7 @@ type BaseMetadata<N extends string> = {
   _trashed?: boolean;
   _revision?: number;
   [LOCALE_VARIANT_GROUP_FIELD]?: string;
+  [LOCALE_VARIANT_NAME_FIELD]?: string;
   [LOCALE_VARIANT_ROLE_FIELD]?: z.infer<typeof LocaleVariantRole>;
 };
 
@@ -355,6 +357,7 @@ const baseMetadataSchema = {
   _trashed: z.boolean().optional(),
   _revision: z.number().optional(),
   [LOCALE_VARIANT_GROUP_FIELD]: z.string().optional(),
+  [LOCALE_VARIANT_NAME_FIELD]: z.string().trim().min(1).max(120).optional(),
   [LOCALE_VARIANT_ROLE_FIELD]: LocaleVariantRole.optional(),
 } satisfies SchemaShape;
 

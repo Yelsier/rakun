@@ -24,6 +24,7 @@ import {
 } from "../dashboard/settings/user-roles";
 import { ManagerUsersScreen } from "../dashboard/users";
 import LanguageSelector from "../../components/LanguageSelector";
+import { VariantSelector } from "../../components/VariantSelector";
 
 import {
   defineManagerRoute,
@@ -214,8 +215,15 @@ export const managerRouteDefinitions = [
       contentType: params.contentType ?? "",
       id: params.id ?? "",
     }),
-    headerEnd: () => (
-      <LanguageSelector className="w-36 border-0 shadow-none" />
+    headerEnd: (route, _props, contentType) => (
+      <div className="flex items-center gap-2">
+        <VariantSelector
+          contentType={route.contentType}
+          documentId={route.id}
+          routeKey={contentType?.routes?.find((item) => item.hasPage)?.key}
+        />
+        <LanguageSelector className="w-36 border-0 shadow-none" />
+      </div>
     ),
     render: (route, props, contentType) =>
       props.renderContentEdit?.(route, contentType) ?? (

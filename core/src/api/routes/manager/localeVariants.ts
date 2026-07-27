@@ -7,8 +7,10 @@ import { getContentTypeByName } from "../../../lib/Registry";
 import { getTranslation } from "../../../lib/utils/getTranslation";
 import {
   getLocaleVariantGroupId,
+  getLocaleVariantName,
   getLocaleVariantRole,
   LOCALE_VARIANT_GROUP_FIELD,
+  LOCALE_VARIANT_NAME_FIELD,
   LOCALE_VARIANT_ROLE_FIELD,
 } from "../../../lib/localeVariants";
 import { getMongoService } from "../../../orm";
@@ -41,6 +43,7 @@ const SYSTEM_CLONE_FIELDS = new Set([
   "_trashed",
   "_visibilityBeforeTrash",
   LOCALE_VARIANT_GROUP_FIELD,
+  LOCALE_VARIANT_NAME_FIELD,
   LOCALE_VARIANT_ROLE_FIELD,
   "createdAt",
   "createdBy",
@@ -53,6 +56,7 @@ const SYSTEM_CLONE_FIELDS = new Set([
 export const cloneForLocaleVariant = (
   contentType: ContentType,
   source: Record<string, unknown> & { _id: string },
+  name: string,
 ) => {
   const data = structuredClone(source) as Record<string, unknown>;
 
@@ -62,6 +66,7 @@ export const cloneForLocaleVariant = (
 
   data._type = contentType.name;
   data[LOCALE_VARIANT_GROUP_FIELD] = getLocaleVariantGroupId(source);
+  data[LOCALE_VARIANT_NAME_FIELD] = name.trim();
   data[LOCALE_VARIANT_ROLE_FIELD] = "variant";
 
   return data;
@@ -127,6 +132,12 @@ const getDocumentLabel = ({
   document: Record<string, unknown>;
   languages: Awaited<ReturnType<typeof getLanguages>>;
 }) => {
+  const variantName =
+    getLocaleVariantRole(document) === "variant"
+      ? getLocaleVariantName(document)
+      : undefined;
+  if (variantName) return variantName;
+
   const defaultLanguage = languages.find((language) => language.default) ?? languages[0];
   const field = contentType.listFields?.[0] ?? "_id";
   const value = document[field];
@@ -215,6 +226,7 @@ export const buildLocaleVariantList = async ({
       .map((document) => ({
         documentId: document._id,
         role: getLocaleVariantRole(document),
+        name: getLocaleVariantName(document),
         label: getDocumentLabel({
           contentType: contentTypeRecord,
           document,
@@ -329,7 +341,7 @@ export const createLocaleVariantHandler = async ({
   const created = await createHandler({
     input: {
       contentType: input.contentType,
-      data: cloneForLocaleVariant(contentType, source),
+      data: cloneForLocaleVariant(contentType, source, input.name),
     },
     ctx,
   });

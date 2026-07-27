@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import type { EncodedContentType, EncodedFieldUnknown } from '@rakun-kit/core/client'
+import { useState } from 'react'
 import type {
   LinkedIteratorAction,
   LinkedIteratorControl,
@@ -152,6 +153,8 @@ export const useContentDocumentActions = ({
   const translateDocumentMutation = useManagerMutation('manager.translateDocument')
   const createContentVersionMutation = useManagerMutation('manager.contentVersions.create')
   const promoteContentVersionMutation = useManagerMutation('manager.contentVersions.promote')
+  const [pendingVariantData, setPendingVariantData] =
+    useState<Record<string, unknown> | null>(null)
   const routeableVersionRoute = contentType.routes?.find((route) => route.hasPage)
   const reviewStateQuery = useManagerQuery({
     name: 'manager.reviews.get',
@@ -220,6 +223,23 @@ export const useContentDocumentActions = ({
         contentType: contentTypeName,
         documentId: contentTypeId,
       }),
+    })
+  }
+
+  const invalidateLocaleVariantQueries = async () => {
+    await queryClient.invalidateQueries({
+      predicate: (query) => {
+        const [, name, input] = query.queryKey as [
+          string?,
+          string?,
+          { contentType?: string }?,
+        ]
+
+        return (
+          name === 'manager.localeVariants.list' &&
+          input?.contentType === contentTypeName
+        )
+      },
     })
   }
 
@@ -325,6 +345,39 @@ export const useContentDocumentActions = ({
     toast.success('Created successfully')
   }
 
+  const createReviewVariant = async (name: string) => {
+    if (!contentTypeId || !routeableVersionRoute || !pendingVariantData) return
+
+    try {
+      const result = await createContentVersionMutation.mutateAsync({
+        contentType: contentTypeName,
+        documentId: contentTypeId,
+        name,
+        routeKey: routeableVersionRoute.key,
+        data: pendingVariantData,
+      })
+      const nextId = result.document._id
+      setPendingVariantData(null)
+
+      if (typeof nextId === 'string') {
+        navigation.push?.({
+          name: 'content.edit',
+          contentType: contentTypeName,
+          id: nextId,
+        })
+      }
+      await Promise.all([
+        invalidateContentListQueries(),
+        invalidateLocaleVariantQueries(),
+      ])
+      toast.success('Draft variant created for review')
+    } catch (error) {
+      toast.error(
+        getActionErrorMessage(error, 'Could not create draft variant'),
+      )
+    }
+  }
+
   const handleUpdate = async (
     data: Record<string, unknown>,
     requestedAction?: LinkedIteratorAction,
@@ -358,22 +411,7 @@ export const useContentDocumentActions = ({
       routeableVersionRoute &&
       reviewStateQuery.data?.actorRequiresReview
     ) {
-      const result = await createContentVersionMutation.mutateAsync({
-        contentType: contentTypeName,
-        documentId: contentTypeId,
-        routeKey: routeableVersionRoute.key,
-        data,
-      })
-      const nextId = result.document._id
-      if (typeof nextId === 'string') {
-        navigation.push?.({
-          name: 'content.edit',
-          contentType: contentTypeName,
-          id: nextId,
-        })
-      }
-      await invalidateContentListQueries()
-      toast.success('Draft variant created for review')
+      setPendingVariantData(cloneRecord(data))
       return
     }
 
@@ -546,6 +584,16 @@ export const useContentDocumentActions = ({
     handleInitializeLinkedIterator,
     handleSaveAsDraft,
     handleTranslateDocument,
+    variantNameDialog: {
+      open: Boolean(pendingVariantData),
+      loading: createContentVersionMutation.isPending,
+      onOpenChange: (open: boolean) => {
+        if (!open && !createContentVersionMutation.isPending) {
+          setPendingVariantData(null)
+        }
+      },
+      onConfirm: createReviewVariant,
+    },
     pending: {
       create: createMutation.isPending,
       delete: deleteMutation.isPending,

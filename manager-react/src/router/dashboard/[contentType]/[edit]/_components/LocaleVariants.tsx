@@ -13,6 +13,7 @@ import {
 import type { ListContentVersionsOutput } from '@rakun-kit/core/client'
 
 import { useEditPageContext } from '../_context/EditPageContext'
+import { VariantNameDialog } from './VariantNameDialog'
 
 import { createManagerQueryKey, useManagerMutation, useManagerQuery } from '@/client/react'
 import { Badge } from '@/components/ui/badge'
@@ -99,6 +100,7 @@ export const ContentVariants = () => {
   } = useEditPageContext()
   const navigation = useManagerNavigation()
   const queryClient = useQueryClient()
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [localesByDocument, setLocalesByDocument] = useState<Record<string, string[]>>({})
   const listInput =
     contentTypeId && localeVariantRoute
@@ -133,20 +135,37 @@ export const ContentVariants = () => {
 
   const invalidate = async () => {
     if (!listInput) return
-    await queryClient.invalidateQueries({
-      queryKey: createManagerQueryKey('manager.contentVersions.list', listInput),
-    })
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: createManagerQueryKey('manager.contentVersions.list', listInput),
+      }),
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const [, name, input] = query.queryKey as [
+            string?,
+            string?,
+            { contentType?: string }?,
+          ]
+          return (
+            name === 'manager.localeVariants.list' &&
+            input?.contentType === contentTypeName
+          )
+        },
+      }),
+    ])
   }
 
-  const createVersion = async () => {
+  const createVersion = async (name: string) => {
     if (!contentTypeId || !localeVariantRoute) return
     try {
       const result = await createMutation.mutateAsync({
         contentType: contentTypeName,
         documentId: contentTypeId,
+        name,
         routeKey: localeVariantRoute.key,
       })
       await invalidate()
+      setCreateDialogOpen(false)
       toast.success('Draft variant created')
       const nextId = result.document._id
       if (typeof nextId === 'string') {
@@ -228,8 +247,17 @@ export const ContentVariants = () => {
 
   return (
     <div className="flex flex-col gap-4">
+      <VariantNameDialog
+        open={createDialogOpen}
+        loading={createMutation.isPending}
+        onOpenChange={setCreateDialogOpen}
+        onConfirm={createVersion}
+      />
       <div>
-        <Button loading={createMutation.isPending} onClick={() => void createVersion()}>
+        <Button
+          loading={createMutation.isPending}
+          onClick={() => setCreateDialogOpen(true)}
+        >
           <GitBranchPlus />
           Create draft variant
         </Button>

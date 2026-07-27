@@ -54,9 +54,11 @@ export {
 } from "./lib/systemFields";
 export {
   LOCALE_VARIANT_GROUP_FIELD,
+  LOCALE_VARIANT_NAME_FIELD,
   LOCALE_VARIANT_ROLE_FIELD,
   LocaleVariantRole,
   getLocaleVariantGroupId,
+  getLocaleVariantName,
   getLocaleVariantRole,
   isLocaleVariantDocument,
 } from "./lib/localeVariants";

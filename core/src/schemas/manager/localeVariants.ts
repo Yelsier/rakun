@@ -2,6 +2,8 @@ import z from "zod";
 
 import { Language } from "../../internal-content-types";
 
+export const localeVariantName = z.string().trim().min(1).max(120);
+
 export const localeVariantListInput = z.object({
   contentType: z.string(),
   documentId: z.string(),
@@ -11,6 +13,7 @@ export const localeVariantListInput = z.object({
 export const localeVariantCreateInput = z.object({
   contentType: z.string(),
   documentId: z.string(),
+  name: localeVariantName,
   routeKey: z.string().optional(),
   languageCodes: z.array(z.string()).optional(),
 });
@@ -43,6 +46,7 @@ export const localeVariantAssignment = z.object({
 export const localeVariantDocument = z.object({
   documentId: z.string(),
   role: z.enum(["primary", "variant"]),
+  name: z.string().optional(),
   label: z.string(),
   assignedLanguages: z.array(Language.getOutputSchema()),
 });

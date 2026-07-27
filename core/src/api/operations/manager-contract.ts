@@ -335,7 +335,7 @@ export const createManagerOperationContracts = () =>
     "manager.contentVersions.list": defineOperationContract({
       access: "auth",
       kind: "query",
-      description: "List routeable document versions and locale assignments",
+      description: "List routeable document variants and locale assignments",
       input: contentVersionReferenceInput,
       output: listContentVersionsOutput,
       method: "post",
@@ -343,7 +343,7 @@ export const createManagerOperationContracts = () =>
     "manager.contentVersions.create": defineOperationContract({
       access: "auth",
       kind: "mutation",
-      description: "Create an unassigned draft version",
+      description: "Create a named, unassigned draft variant",
       input: createContentVersionInput,
       output: createContentVersionOutput,
       method: "post",
@@ -351,7 +351,7 @@ export const createManagerOperationContracts = () =>
     "manager.contentVersions.promote": defineOperationContract({
       access: "auth",
       kind: "mutation",
-      description: "Publish a reviewed version and move selected locales",
+      description: "Publish a reviewed variant and move selected locales",
       input: promoteContentVersionInput,
       output: promoteContentVersionOutput,
       method: "post",

@@ -2,6 +2,7 @@ import z from 'zod'
 
 import { Language } from '../../internal-content-types'
 import { reviewStatus } from './reviews'
+import { localeVariantName } from './localeVariants'
 
 export const contentVersionReferenceInput = z.object({
   contentType: z.string().min(1),
@@ -12,6 +13,7 @@ export const contentVersionReferenceInput = z.object({
 export const contentVersionDocument = z.object({
   documentId: z.string(),
   role: z.enum(['primary', 'variant']),
+  name: z.string().optional(),
   label: z.string(),
   visibility: z.enum(['draft', 'hidden', 'published', 'trash']).optional(),
   assignedLanguages: z.array(Language.getOutputSchema()),
@@ -30,6 +32,7 @@ export const listContentVersionsOutput = z.object({
 })
 
 export const createContentVersionInput = contentVersionReferenceInput.extend({
+  name: localeVariantName,
   data: z.record(z.string(), z.unknown()).optional(),
 })
 

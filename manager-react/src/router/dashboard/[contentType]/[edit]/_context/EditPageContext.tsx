@@ -19,6 +19,7 @@ import type {
 import { ITERATOR_FIELD_NAME } from '@rakun-kit/core/client'
 
 import { useContentDocumentActions } from '../_hooks/useContentDocumentActions'
+import { VariantNameDialog } from '../_components/VariantNameDialog'
 import {
   useContentPreview,
   type PreviewModuleSelectMessage,
@@ -515,6 +516,12 @@ export const EditPageProvider = ({
       }}
     >
       {children}
+      <VariantNameDialog
+        open={documentActions.variantNameDialog.open}
+        loading={documentActions.variantNameDialog.loading}
+        onOpenChange={documentActions.variantNameDialog.onOpenChange}
+        onConfirm={documentActions.variantNameDialog.onConfirm}
+      />
     </EditPageContext.Provider>
   )
 }

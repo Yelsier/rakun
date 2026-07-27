@@ -21,6 +21,7 @@ import { requireContentType } from '../../utils/requireContentType'
 import { updateSingleRouteMap } from '../../utils/routes/updateRoutesMap'
 import {
   LOCALE_VARIANT_GROUP_FIELD,
+  LOCALE_VARIANT_NAME_FIELD,
   LOCALE_VARIANT_ROLE_FIELD,
 } from '../../../lib/localeVariants'
 import { createHandler } from './create'
@@ -131,13 +132,14 @@ export const createContentVersionHandler = async ({
     string,
     unknown
   > & { _id: string }
-  const cloned = cloneForLocaleVariant(contentType, source)
+  const cloned = cloneForLocaleVariant(contentType, source, input.name)
   const data: Record<string, unknown> = {
     ...cloned,
     ...(input.data ?? {}),
     _type: contentType.name,
     ...(contentType.documentVisibility ? { _visibility: 'draft' } : {}),
     [LOCALE_VARIANT_GROUP_FIELD]: cloned[LOCALE_VARIANT_GROUP_FIELD],
+    [LOCALE_VARIANT_NAME_FIELD]: input.name,
     [LOCALE_VARIANT_ROLE_FIELD]: cloned[LOCALE_VARIANT_ROLE_FIELD],
   }
   delete data._id
