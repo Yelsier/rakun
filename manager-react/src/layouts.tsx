@@ -87,7 +87,13 @@ export const ManagerDashboardLayout = ({
                 orientation="vertical"
                 className="mr-2 data-[orientation=vertical]:h-4"
               />
-              {headerStart ?? <BreadcrumbComponent basePath={basePath} pathname={pathname} />}
+              {headerStart ?? (
+                <BreadcrumbComponent
+                  basePath={basePath}
+                  pathname={pathname}
+                  route={route}
+                />
+              )}
             </div>
             {headerEnd}
           </SidebarHeader>
