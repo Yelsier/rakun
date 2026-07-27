@@ -28,7 +28,11 @@ import { checkOwnership } from "../../utils/checkOwnership";
 import { getLanguages } from "../../utils/getLanguages";
 import { requireContentType } from "../../utils/requireContentType";
 import { routeSignature } from "../../utils/routes/routeDefinitions";
-import { loadRouteData } from "../../utils/routes/routeMapHelpers";
+import {
+  assertRouteMapEntriesAvailable,
+  generateRouteMapItems,
+  loadRouteData,
+} from "../../utils/routes/routeMapHelpers";
 import { updateSingleRouteMap } from "../../utils/routes/updateRoutesMap";
 import {
   getApprovedCurrentReview,
@@ -80,7 +84,7 @@ export const getRouteForLocaleVariants = async ({
   routeKey?: string;
 }) => {
   const routeDefinitions = getRakunBootstrapOptions()?.routes ?? [];
-  const { routes } = await loadRouteData();
+  const { routes, routeSettings } = await loadRouteData();
   const definition = routeKey
     ? routeDefinitions.find((item) => item.key === routeKey)
     : routeDefinitions.find((item) => item.contentType === contentType && item.hasPage);
@@ -101,7 +105,12 @@ export const getRouteForLocaleVariants = async ({
     });
   }
 
-  return { route, routeKey: definition.key };
+  return {
+    route,
+    routeKey: definition.key,
+    routes,
+    routeSettings,
+  };
 };
 
 export const requireLanguagesByCode = async (codes: readonly string[]) => {
@@ -286,6 +295,51 @@ export const assignLocaleVariant = async ({
 
   await updateSingleRouteMap({ contentType, contentTypeId: documentId });
   return await buildLocaleVariantList({ contentType, documentId, routeKey });
+};
+
+export const assertLocaleVariantRoutesAvailable = async ({
+  contentType,
+  documentId,
+  routeKey,
+  languageCodes,
+}: LocaleVariantAssignInput) => {
+  const db = await getMongoService();
+  const contentTypeRecord = requireContentType(contentType);
+  const document = (await db.get(
+    contentTypeRecord,
+    documentId,
+  )) as Record<string, unknown> & { _id: string };
+  const {
+    route,
+    routeKey: resolvedRouteKey,
+    routes,
+    routeSettings,
+  } = await getRouteForLocaleVariants({
+    contentType,
+    routeKey,
+  });
+  const { languages, selected } =
+    await requireLanguagesByCode(languageCodes);
+  const groupId = getLocaleVariantGroupId(document);
+  const assignments = selected.map((language) => ({
+    routeId: route._id,
+    routeKey: resolvedRouteKey,
+    contentType,
+    groupId,
+    languageId: language._id,
+    documentId,
+  }));
+  const routesMap = await generateRouteMapItems(
+    [{ ...document, _visibility: "published" }],
+    route,
+    selected,
+    routes,
+    routeSettings,
+    languages,
+    assignments,
+  );
+
+  await assertRouteMapEntriesAvailable(routesMap);
 };
 
 export const listLocaleVariantsHandler = async ({

@@ -306,43 +306,32 @@ export async function updateRouteMapEntries(
   const db = await getMongoService();
 
   for (const route of routesMap) {
-    const identity = getRouteMapIdentity(route);
-    const existingByIdentity =
-      (await db.find(RouteMap, identity)) ??
-      (await db.find(RouteMap, {
-        contentType: route.contentType,
-        routeId: route.routeId,
-        languageId: route.languageId,
-        contentTypeId: route.variantGroupId ?? route.contentTypeId,
-      }));
+    const resolution = await resolveRouteMapEntry(db, route);
 
-    if (existingByIdentity) {
-      await db.update(RouteMap, existingByIdentity._id, route);
-      continue;
-    }
-
-    const existingByPath = await db.find(RouteMap, { path: route.path });
-
-    if (!existingByPath) {
+    if (resolution.action === "update") {
+      await db.update(RouteMap, resolution.existing._id, route);
+    } else if (resolution.action === "replace") {
+      await db.delete(RouteMap, { _id: resolution.existing._id });
       await db.create(RouteMap, route);
-      continue;
-    }
-
-    if (isSameRouteMapOwner(existingByPath, route)) {
-      await db.update(RouteMap, existingByPath._id, route);
-      continue;
-    }
-
-    if (await isStaleRouteMapEntry(db, existingByPath)) {
-      await db.delete(RouteMap, { _id: existingByPath._id });
+    } else if (resolution.action === "create") {
       await db.create(RouteMap, route);
-      continue;
+    } else {
+      throwRoutePathConflict(route, resolution.existing);
     }
+  }
+}
 
-    throw new DbErrorConflict(
-      "Route path conflict",
-      `Path ${route.path} is already used by ${existingByPath.contentType} (${existingByPath.contentTypeId})`,
-    );
+export async function assertRouteMapEntriesAvailable(
+  routesMap: RouteMapItemInput[],
+): Promise<void> {
+  const db = await getMongoService();
+
+  for (const route of routesMap) {
+    const resolution = await resolveRouteMapEntry(db, route);
+
+    if (resolution.action === "conflict") {
+      throwRoutePathConflict(route, resolution.existing);
+    }
   }
 }
 
@@ -396,6 +385,58 @@ const isSameRouteMapOwner = (
   String(existing.variantGroupId ?? existing.contentTypeId) ===
     String(next.variantGroupId ?? next.contentTypeId) &&
   String(existing.languageId) === String(next.languageId);
+
+type RouteMapEntryResolution =
+  | { action: "create" }
+  | {
+      action: "update" | "replace" | "conflict";
+      existing: DBOutput<RouteMap>;
+    };
+
+const resolveRouteMapEntry = async (
+  db: DBService,
+  route: RouteMapItemInput,
+): Promise<RouteMapEntryResolution> => {
+  const identity = getRouteMapIdentity(route);
+  const existingByIdentity =
+    (await db.find(RouteMap, identity)) ??
+    (await db.find(RouteMap, {
+      contentType: route.contentType,
+      routeId: route.routeId,
+      languageId: route.languageId,
+      contentTypeId: route.variantGroupId ?? route.contentTypeId,
+    }));
+
+  if (existingByIdentity) {
+    return { action: "update", existing: existingByIdentity };
+  }
+
+  const existingByPath = await db.find(RouteMap, { path: route.path });
+
+  if (!existingByPath) {
+    return { action: "create" };
+  }
+
+  if (isSameRouteMapOwner(existingByPath, route)) {
+    return { action: "update", existing: existingByPath };
+  }
+
+  if (await isStaleRouteMapEntry(db, existingByPath)) {
+    return { action: "replace", existing: existingByPath };
+  }
+
+  return { action: "conflict", existing: existingByPath };
+};
+
+const throwRoutePathConflict = (
+  route: RouteMapItemInput,
+  existing: DBOutput<RouteMap>,
+): never => {
+  throw new DbErrorConflict(
+    "Route path conflict",
+    `Path ${route.path} is already used by ${existing.contentType} (${existing.contentTypeId})`,
+  );
+};
 
 const isStaleRouteMapEntry = async (
   db: DBService,

@@ -18,7 +18,6 @@ import {
   useManagerMutation,
   useManagerQuery,
 } from '@/client/react'
-import { deepEqual } from '@/helpers/deepEqual'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { useManagerNavigation } from '@/state/navigation'
 
@@ -281,21 +280,6 @@ export const useContentDocumentActions = ({
       !routeableVersionRoute ||
       !canPublishApprovedDraft
     ) {
-      return
-    }
-
-    const currentData = readFormData()
-    const hasUnreviewedChanges =
-      isRecord(currentData) &&
-      Boolean(defaultData) &&
-      Object.keys(contentType.fields).some(
-        (fieldName) =>
-          !deepEqual(currentData[fieldName], defaultData?.[fieldName]),
-      )
-    if (hasUnreviewedChanges) {
-      toast.error(
-        'Save these changes and request a new review before publishing',
-      )
       return
     }
 

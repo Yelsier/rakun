@@ -28,6 +28,7 @@ import {
   updateSingleRouteMap,
   updateLanguageRoutesMap,
 } from "./updateRoutesMap";
+import { assertRouteMapEntriesAvailable } from "./routeMapHelpers";
 import {
   createMongoService,
   getMongoService,
@@ -286,6 +287,88 @@ describe.serial("routes", () => {
     expect(routeMaps.find((r) => r.path === "/es/test-2/")).toBeDefined();
     expect(routeMaps.find((r) => r.path === "/blog/test/")).toBeDefined();
     expect(routeMaps.find((r) => r.path === "/es/blog/test/")).toBeDefined();
+  });
+
+  it("detects a route conflict without mutating the existing map", async () => {
+    const TestCT = new ContentType({
+      name: "RouteConflictPreflight",
+      fields: {
+        slug: Fields.string().translatable().required(),
+      },
+    });
+
+    registerContentType(TestCT);
+
+    //@ts-expect-error reasign type
+    Route.fields.contentType = Fields.select([TestCT.name]).required();
+
+    //@ts-expect-error reasign type
+    RouteMap.fields.contentType = Fields.select([TestCT.name]).required();
+
+    const db = await getMongoService(mongoConfig);
+    const english = await db.create(Language, {
+      code: "en",
+      name: "English",
+      default: true,
+      _type: "Language",
+    });
+    const route = await db.create(Route, {
+      basePath: { en: "", _tag: "Translatable" },
+      contentType: TestCT.name,
+      field: "slug",
+      hasPage: true,
+      dynamic: false,
+      _type: "Route",
+      layoutContentOrder: 0,
+    });
+    const published = await db.create(TestCT, {
+      slug: { en: "same-path", _tag: "Translatable" },
+      _visibility: "published",
+      _type: TestCT.name,
+    });
+    const draft = await db.create(TestCT, {
+      slug: { en: "same-path", _tag: "Translatable" },
+      _visibility: "draft",
+      _type: TestCT.name,
+    });
+    const existingRouteMap = await db.create(RouteMap, {
+      contentTypeId: published._id,
+      contentType: TestCT.name,
+      variantGroupId: published._id,
+      path: "/same-path/",
+      routeId: route._id,
+      languageId: english._id,
+      _type: "RouteMap",
+    });
+
+    let conflict: unknown;
+    try {
+      await assertRouteMapEntriesAvailable([
+        {
+          contentTypeId: draft._id,
+          contentType: TestCT.name,
+          variantGroupId: draft._id,
+          path: "/same-path/",
+          routeId: route._id,
+          languageId: english._id,
+          _type: "RouteMap",
+        },
+      ]);
+    } catch (error) {
+      conflict = error;
+    }
+
+    const routeMaps = (
+      await db.list(RouteMap, { options: { limit: "all" } })
+    ).items;
+    const unchangedDraft = await db.get(TestCT, draft._id);
+
+    expect(conflict).toBeInstanceOf(Error);
+    expect((conflict as Error).message).toContain("Route path conflict");
+    expect(routeMaps).toHaveLength(1);
+    expect(routeMaps[0]?._id).toBe(existingRouteMap._id);
+    expect(routeMaps[0]?.contentTypeId).toBe(published._id);
+    expect(unchangedDraft._visibility).toBe("draft");
   });
 
   it("regenerates route maps when the default language changes", async () => {

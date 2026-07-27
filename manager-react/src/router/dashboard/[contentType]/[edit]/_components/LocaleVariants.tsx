@@ -93,6 +93,7 @@ export const ContentVariants = () => {
   const {
     contentTypeId,
     contentTypeName,
+    handleVisibilityChange,
     isTrashed,
     languageCode,
     languageList,
@@ -201,6 +202,9 @@ export const ContentVariants = () => {
           routeKey: localeVariantRoute.key,
           languageCodes,
         })
+        if (documentId === contentTypeId) {
+          handleVisibilityChange('published')
+        }
         toast.success(initialPublication ? 'Page published' : 'Variant promoted')
       } else {
         await assignMutation.mutateAsync({

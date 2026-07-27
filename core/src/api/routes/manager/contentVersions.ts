@@ -1,6 +1,7 @@
 import { throwAppError } from '../../../lib/errors'
 import { ContentReview } from '../../../internal-content-types'
 import { getMongoService } from '../../../orm'
+import { DbErrorConflict } from '../../../orm/dbService'
 import type {
   CreateContentVersionInput,
   CreateContentVersionOutput,
@@ -27,10 +28,10 @@ import {
 import { createHandler } from './create'
 import {
   assignLocaleVariant,
+  assertLocaleVariantRoutesAvailable,
   buildLocaleVariantList,
   cloneForLocaleVariant,
   getRouteForLocaleVariants,
-  requireLanguagesByCode,
 } from './localeVariants'
 
 const toContentVersions = async ({
@@ -221,13 +222,30 @@ export const promoteContentVersionHandler = async ({
 
   const isRouteable = Boolean(input.routeKey || input.languageCodes?.length)
   if (isRouteable) {
-    await getRouteForLocaleVariants(input)
     if (!input.languageCodes?.length) {
       throwAppError('VALIDATION', {
         errors: [{ path: ['languageCodes'], message: 'Select at least one locale' }],
       })
     }
-    await requireLanguagesByCode(input.languageCodes)
+    try {
+      await assertLocaleVariantRoutesAvailable({
+        contentType: input.contentType,
+        documentId: input.documentId,
+        routeKey: input.routeKey,
+        languageCodes: input.languageCodes,
+      })
+    } catch (error) {
+      if (error instanceof DbErrorConflict) {
+        throwAppError('CONFLICT', {
+          key: 'ROUTE_PATH_CONFLICT',
+          message:
+            typeof error.details === 'string'
+              ? error.details
+              : error.message,
+        })
+      }
+      throw error
+    }
   }
 
   const updated =
