@@ -11,6 +11,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import type { MentionUser } from '@rakun-kit/core/client'
 
 import { useEditPageContext } from '../_context/EditPageContext'
 
@@ -31,6 +32,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { UserAvatar } from '@/components/user-avatar'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { useSession } from '@/state/session'
+import { useManagerUsers } from '@/state/users'
 import { useQueryClient } from '@tanstack/react-query'
 
 const statusVariant = (status?: string) => {
@@ -47,6 +49,7 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
     languageCode,
   } = useEditPageContext()
   const { user } = useSession()
+  const { usersById } = useManagerUsers()
   const queryClient = useQueryClient()
   const [selectedReviewers, setSelectedReviewers] = useState<string[]>([])
   const [reviewerPickerOpen, setReviewerPickerOpen] = useState(false)
@@ -67,7 +70,35 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
   const requestMutation = useManagerMutation('manager.reviews.request')
   const decideMutation = useManagerMutation('manager.reviews.decide')
   const cancelMutation = useManagerMutation('manager.reviews.cancel')
-  const review = reviewQuery.data?.review
+  const review = useMemo(() => {
+    const value = reviewQuery.data?.review
+    if (!value) return value
+
+    const resolveUser = (reviewUser: MentionUser) =>
+      usersById.get(reviewUser._id) ?? reviewUser
+
+    return {
+      ...value,
+      requestedBy: resolveUser(value.requestedBy),
+      author: resolveUser(value.author),
+      reviewers: value.reviewers.map((reviewer) => ({
+        ...reviewer,
+        user: resolveUser(reviewer.user),
+      })),
+      decisions: value.decisions.map((decision) => ({
+        ...decision,
+        reviewer: resolveUser(decision.reviewer),
+      })),
+    }
+  }, [reviewQuery.data?.review, usersById])
+  const candidates = useMemo(
+    () =>
+      (candidatesQuery.data ?? []).map((candidate) => ({
+        ...candidate,
+        user: usersById.get(candidate.user._id) ?? candidate.user,
+      })),
+    [candidatesQuery.data, usersById],
+  )
   const currentDecision = review?.decisions.find(
     (decision) => decision.reviewer._id === user._id,
   )
@@ -80,18 +111,18 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
     reviewQuery.data?.policy?.requiredApprovals ?? review?.requiredApprovals ?? 1
   const approvingCandidates = useMemo(
     () =>
-      (candidatesQuery.data ?? []).filter(
+      candidates.filter(
         (candidate) =>
           selectedReviewers.includes(candidate.user._id) && candidate.canApprove,
       ).length,
-    [candidatesQuery.data, selectedReviewers],
+    [candidates, selectedReviewers],
   )
   const selectedCandidates = useMemo(
     () =>
-      (candidatesQuery.data ?? []).filter((candidate) =>
+      candidates.filter((candidate) =>
         selectedReviewers.includes(candidate.user._id),
       ),
-    [candidatesQuery.data, selectedReviewers],
+    [candidates, selectedReviewers],
   )
 
   const toggleReviewer = (reviewerId: string) => {
@@ -335,7 +366,7 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
                 <CommandList>
                   <CommandEmpty>No reviewers found.</CommandEmpty>
                   <CommandGroup heading="Reviewers">
-                    {(candidatesQuery.data ?? []).map((candidate) => {
+                    {candidates.map((candidate) => {
                       const selected = selectedReviewers.includes(
                         candidate.user._id,
                       )

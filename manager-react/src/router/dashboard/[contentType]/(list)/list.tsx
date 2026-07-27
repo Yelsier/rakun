@@ -40,6 +40,7 @@ import { useTRPC } from '@/components/trpc-provider'
 import { useSession } from '@/state/session'
 import { useManagerMutation } from '@/client/react'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
+import { useManagerUsers } from '@/state/users'
 
 const getContentRowId = (row: object, index: number) => {
   const id = (row as { _id?: unknown })._id
@@ -55,7 +56,7 @@ const ContentListTableSkeleton = ({
   showVisibility: boolean
   enableSelection: boolean
 }) => {
-  const columnCount = 2 + fieldsCount + (showVisibility ? 1 : 0) + (enableSelection ? 1 : 0)
+  const columnCount = 3 + fieldsCount + (showVisibility ? 1 : 0) + (enableSelection ? 1 : 0)
 
   return (
     <div className="w-full overflow-hidden rounded-lg border">
@@ -153,12 +154,19 @@ const ListContents: React.FC<{
           limit: itemsPerPage,
           page,
           fields: fields
-            ? [...fields, '_trashed', '_visibility', '_visibilityBeforeTrash']
+            ? [
+                ...fields,
+                'createdBy',
+                '_trashed',
+                '_visibility',
+                '_visibilityBeforeTrash',
+              ]
             : undefined,
         },
       },
     })
   )
+  const { usersById: creatorsById } = useManagerUsers()
   const restoreMutation = useManagerMutation('manager.update')
   const duplicateMutation = useManagerMutation('manager.duplicate')
   const trashMutation = useManagerMutation('manager.trash')
@@ -430,6 +438,7 @@ const ListContents: React.FC<{
               duplicatingItemId,
               enableSelection,
               showVisibility: Boolean(documentVisibility),
+              creatorsById,
               isTrash,
               hasPermissions,
               hasAnyPermission,

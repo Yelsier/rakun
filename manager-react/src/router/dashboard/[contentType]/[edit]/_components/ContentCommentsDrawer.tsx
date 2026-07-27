@@ -70,6 +70,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { cn } from '@/lib/utils'
 import { useSession } from '@/state/session'
+import { useManagerUsers } from '@/state/users'
 
 const displayUserName = (user: MentionUser) => user.name?.trim() || user.user
 
@@ -652,20 +653,15 @@ export const ContentCommentsDrawer = ({
     enabled: Boolean(commentsInput),
     refetchInterval: open ? false : 15000,
   })
-  const usersQuery = useManagerQuery({
-    name: 'manager.users.mentions',
-    input: undefined,
-    enabled: messagesOpen,
-  })
+  const {
+    users: mentionUsers,
+    usersById: mentionUsersById,
+    isLoading: usersLoading,
+  } = useManagerUsers()
   const createCommentMutation = useManagerMutation('manager.comments.create')
   const toggleReactionMutation = useManagerMutation('manager.comments.toggleReaction')
   const markCommentsReadMutation = useManagerMutation('manager.comments.markRead')
   const markNotificationsReadMutation = useManagerMutation('manager.notifications.markRead')
-  const mentionUsers = usersQuery.data ?? []
-  const mentionUsersById = useMemo(
-    () => new Map(mentionUsers.map((mentionUser) => [mentionUser._id, mentionUser])),
-    [mentionUsers]
-  )
   const comments = commentsQuery.data?.comments ?? []
   const unreadCommentsCount = unreadCommentsQuery.data?.count ?? 0
   const unreadNotifications = notificationsQuery.data?.totalUnread ?? 0
@@ -1146,7 +1142,7 @@ export const ContentCommentsDrawer = ({
               />
             </MentionInput>
             <MentionContent className="max-h-64 min-w-64 overflow-y-auto">
-              {usersQuery.isLoading ? (
+              {usersLoading ? (
                 <div className="px-2 py-1.5 text-sm text-muted-foreground">
                   Loading users...
                 </div>

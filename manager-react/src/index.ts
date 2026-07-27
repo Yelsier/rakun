@@ -3,6 +3,7 @@ export * from "./app/bootstrap";
 export * from "./components/login-form";
 export * from "./client/http";
 export * from "./state/language";
+export * from "./state/users";
 export * from "./state/theme";
 export * from "./layouts";
 export * from "./media";

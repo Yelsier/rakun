@@ -166,9 +166,15 @@ export const listHandler = async ({
   }
 
   const items = (await Promise.all(
-    rawItems.map((item) =>
-      populateRelations(item, { exposePrivateMedia: true }),
-    ),
+    rawItems.map(async (item) => {
+      const populated = await populateRelations(item, {
+        exposePrivateMedia: true,
+      });
+
+      return typeof item.createdBy === "string"
+        ? { ...populated, createdBy: item.createdBy }
+        : populated;
+    }),
   )) as {
     [x: string]: unknown;
     _id: string;

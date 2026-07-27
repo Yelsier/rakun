@@ -2,11 +2,16 @@
 
 import type { ColumnDef } from '@tanstack/react-table'
 import { Copy, Edit, MoreHorizontal, RotateCcw, Trash } from 'lucide-react'
-import type { MaybeTranslatableValue, Permission } from '@rakun-kit/core/client'
+import type {
+  MaybeTranslatableValue,
+  MentionUser,
+  Permission,
+} from '@rakun-kit/core/client'
 
 import IDColumn from '../../../../components/IDColumnt'
 
 import { BooleanIndicator } from '@/components/boolean-indicator'
+import { UserAvatar } from '@/components/user-avatar'
 import { ManagerLink } from '@/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -30,6 +35,7 @@ export const columns = ({
   duplicatingItemId,
   enableSelection,
   showVisibility,
+  creatorsById,
   isTrash,
   hasPermissions,
   hasAnyPermission,
@@ -44,6 +50,7 @@ export const columns = ({
   duplicatingItemId: string | null
   enableSelection: boolean
   showVisibility: boolean
+  creatorsById: ReadonlyMap<string, MentionUser>
   isTrash: boolean
   hasPermissions: (permissions: Permission[]) => boolean
   hasAnyPermission: (permissions: Permission[]) => boolean
@@ -130,6 +137,31 @@ export const columns = ({
           } satisfies ColumnDef<object>,
         ]
       : []),
+    {
+      accessorKey: 'createdBy',
+      header: () => <span className="ml-2">Created by</span>,
+      cell: ({ row }) => {
+        const creatorId = row.getValue('createdBy')
+        if (typeof creatorId !== 'string') {
+          return <span className="ml-2 text-muted-foreground">-</span>
+        }
+
+        const creator = creatorsById.get(creatorId)
+        const creatorName = creator?.name?.trim() || creator?.user || 'Unknown user'
+
+        return (
+          <span className="ml-2 flex items-center gap-2">
+            <UserAvatar
+              name={creatorName}
+              avatar={creator?.avatar}
+              className="size-6"
+              fallbackClassName="text-xs"
+            />
+            <span>{creatorName}</span>
+          </span>
+        )
+      },
+    },
     ...fields.map(
       (key, i) =>
         ({
