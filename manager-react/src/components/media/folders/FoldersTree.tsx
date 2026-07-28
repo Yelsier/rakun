@@ -1,7 +1,7 @@
 'use client'
 
 import { ChevronRight, Folder, FolderOpen } from 'lucide-react'
-import { memo, useEffect, useMemo, useState } from 'react'
+import { memo, startTransition, useCallback, useEffect, useMemo, useState } from 'react'
 
 import { Collapsible, CollapsibleContent } from '../../ui/collapsible'
 import {
@@ -82,7 +82,9 @@ const FolderSearchInput = memo(function FolderSearchInput({
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
-      onSearchChange(value)
+      startTransition(() => {
+        onSearchChange(value)
+      })
     }, FOLDER_SEARCH_DEBOUNCE_MS)
 
     return () => window.clearTimeout(timeoutId)
@@ -110,6 +112,11 @@ export default function FoldersTree({ isModal = false }: { isModal?: boolean }) 
 
   const folderTree = useMemo(() => buildFolderTree(folders ?? []), [folders])
   const [searchTerm, setSearchTerm] = useState('')
+  const handleSearchChange = useCallback((value: string) => {
+    startTransition(() => {
+      setSearchTerm(value)
+    })
+  }, [])
   const normalizedSearch = searchTerm.trim().toLowerCase()
 
   const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(() => new Set())
@@ -218,7 +225,7 @@ export default function FoldersTree({ isModal = false }: { isModal?: boolean }) 
       )}
     >
       <div className="sticky top-0 z-10 -mx-1 mb-3 bg-background px-1 pb-1">
-        <FolderSearchInput onSearchChange={setSearchTerm} />
+        <FolderSearchInput onSearchChange={handleSearchChange} />
       </div>
 
       <button

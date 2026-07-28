@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { keepPreviousData } from '@tanstack/react-query'
+import { startTransition, useCallback, useState, type Dispatch, type SetStateAction } from 'react'
 
 import { columns, type ManagerUserRecord } from './columns'
 import CreateUser from './create'
@@ -26,6 +27,7 @@ export function ManagerUsersScreen() {
       contentType: 'ManagerUser',
       query: { options: { limit: itemsPerPage, page } },
     },
+    placeholderData: keepPreviousData,
   })
   const { hasPermissions, hasAnyPermission } = useSession()
   const { refetch: refetchManagerUsers } = useManagerUsers()
@@ -33,8 +35,24 @@ export function ManagerUsersScreen() {
     void Promise.all([listQuery.refetch(), refetchManagerUsers()])
   }
 
+  const setPageTransition = useCallback<Dispatch<SetStateAction<number>>>((value) => {
+    startTransition(() => {
+      setPage(value)
+    })
+  }, [])
+
+  const setItemsPerPageTransition = useCallback<Dispatch<SetStateAction<number>>>((value) => {
+    startTransition(() => {
+      setItemsPerPage(value)
+    })
+  }, [])
+
   if (!hasPermissions(['content.ManagerUser.readAny'])) {
     return <UnauthorizedMessage neededPermission={['content.ManagerUser.readAny']} />
+  }
+
+  if (listQuery.isPending && !listQuery.data) {
+    return <Loading />
   }
 
   if (!listQuery.data) {
@@ -42,9 +60,9 @@ export function ManagerUsersScreen() {
   }
 
   return (
-    <div className='container mx-auto flex flex-col items-start gap-6 px-4 py-10'>
+    <div className="container mx-auto flex flex-col items-start gap-6 px-4 py-10">
       {hasPermissions(['content.ManagerUser.updateAny']) ? (
-        <div className='self-end' data-tour='users-create'>
+        <div className="self-end" data-tour="users-create">
           <CreateUser refetch={refetchUsers} />
         </div>
       ) : null}
@@ -58,7 +76,7 @@ export function ManagerUsersScreen() {
         setDeleteUser={setDeleteUser}
         user={deleteUser}
       />
-      <div className='w-full' data-tour='users-table'>
+      <div className="w-full" data-tour="users-table">
         <DataTable
           columns={columns({
             setEdit,
@@ -71,10 +89,10 @@ export function ManagerUsersScreen() {
       </div>
       <PaginationController
         page={page}
-        setPage={setPage}
+        setPage={setPageTransition}
         totalItems={listQuery.data.totalItems}
         itemsPerPage={itemsPerPage}
-        setItemsPerPage={setItemsPerPage}
+        setItemsPerPage={setItemsPerPageTransition}
       />
     </div>
   )

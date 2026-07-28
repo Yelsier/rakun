@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { keepPreviousData } from '@tanstack/react-query'
+import { startTransition, useCallback, useState, type Dispatch, type SetStateAction } from 'react'
 
 import { ManagerLink } from '@/link'
 import { columns, type ManagerRoleRecord } from './columns'
@@ -23,20 +24,35 @@ export const ManagerSettingsUserRolesScreen = () => {
       contentType: 'ManagerRole',
       query: { options: { limit: itemsPerPage, page } },
     },
+    placeholderData: keepPreviousData,
   })
   const { hasPermissions, hasAnyPermission } = useSession()
+
+  const setPageTransition = useCallback<Dispatch<SetStateAction<number>>>((value) => {
+    startTransition(() => {
+      setPage(value)
+    })
+  }, [])
+
+  const setItemsPerPageTransition = useCallback<Dispatch<SetStateAction<number>>>((value) => {
+    startTransition(() => {
+      setItemsPerPage(value)
+    })
+  }, [])
+
+  if (listQuery.isPending && !listQuery.data) {
+    return <Loading />
+  }
 
   if (!listQuery.data) {
     return <Loading />
   }
 
   return (
-    <div className='container mx-auto flex flex-col items-start gap-6 py-10'>
+    <div className="container mx-auto flex flex-col items-start gap-6 py-10">
       {hasPermissions(['content.ManagerRole.updateAny']) && (
-        <Button asChild className='self-end'>
-          <ManagerLink href='/settings/user-roles/create'>
-            Add Role
-          </ManagerLink>
+        <Button asChild className="self-end">
+          <ManagerLink href="/settings/user-roles/create">Add Role</ManagerLink>
         </Button>
       )}
       <DeleteRole
@@ -54,10 +70,10 @@ export const ManagerSettingsUserRolesScreen = () => {
       />
       <PaginationController
         page={page}
-        setPage={setPage}
+        setPage={setPageTransition}
         totalItems={listQuery.data.totalItems}
         itemsPerPage={itemsPerPage}
-        setItemsPerPage={setItemsPerPage}
+        setItemsPerPage={setItemsPerPageTransition}
       />
     </div>
   )
