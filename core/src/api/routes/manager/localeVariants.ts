@@ -7,8 +7,10 @@ import { getContentTypeByName } from "../../../lib/Registry";
 import { getTranslation } from "../../../lib/utils/getTranslation";
 import {
   getLocaleVariantGroupId,
+  getLocaleVariantName,
   getLocaleVariantRole,
   LOCALE_VARIANT_GROUP_FIELD,
+  LOCALE_VARIANT_NAME_FIELD,
   LOCALE_VARIANT_ROLE_FIELD,
 } from "../../../lib/localeVariants";
 import { getMongoService } from "../../../orm";
@@ -18,6 +20,10 @@ import type {
   LocaleVariantCreateOutput,
   LocaleVariantListInput,
   LocaleVariantListOutput,
+  LocaleVariantMutationOutput,
+  LocaleVariantRestoreInput,
+  LocaleVariantSetPrimaryInput,
+  LocaleVariantTrashInput,
   LocaleVariantUnassignInput,
 } from "../../../schemas/manager/localeVariants";
 import type { RakunRequestContext } from "../../context";
@@ -26,9 +32,20 @@ import { checkOwnership } from "../../utils/checkOwnership";
 import { getLanguages } from "../../utils/getLanguages";
 import { requireContentType } from "../../utils/requireContentType";
 import { routeSignature } from "../../utils/routes/routeDefinitions";
-import { loadRouteData } from "../../utils/routes/routeMapHelpers";
+import {
+  assertRouteMapEntriesAvailable,
+  generateRouteMapItems,
+  loadRouteData,
+} from "../../utils/routes/routeMapHelpers";
 import { updateSingleRouteMap } from "../../utils/routes/updateRoutesMap";
+import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
+import { prepareLocaleVariantRemoval } from "../../utils/localeVariants";
+import {
+  getApprovedCurrentReview,
+  getDocumentReviewPolicy,
+} from "../../utils/reviews";
 import { createHandler } from "./create";
+import { buildTrashUpdate } from "./trash";
 
 const SYSTEM_CLONE_FIELDS = new Set([
   "_id",
@@ -37,6 +54,7 @@ const SYSTEM_CLONE_FIELDS = new Set([
   "_trashed",
   "_visibilityBeforeTrash",
   LOCALE_VARIANT_GROUP_FIELD,
+  LOCALE_VARIANT_NAME_FIELD,
   LOCALE_VARIANT_ROLE_FIELD,
   "createdAt",
   "createdBy",
@@ -46,9 +64,10 @@ const SYSTEM_CLONE_FIELDS = new Set([
   "updatedBy",
 ]);
 
-const cloneForLocaleVariant = (
+export const cloneForLocaleVariant = (
   contentType: ContentType,
   source: Record<string, unknown> & { _id: string },
+  name: string,
 ) => {
   const data = structuredClone(source) as Record<string, unknown>;
 
@@ -58,12 +77,13 @@ const cloneForLocaleVariant = (
 
   data._type = contentType.name;
   data[LOCALE_VARIANT_GROUP_FIELD] = getLocaleVariantGroupId(source);
+  data[LOCALE_VARIANT_NAME_FIELD] = name.trim();
   data[LOCALE_VARIANT_ROLE_FIELD] = "variant";
 
   return data;
 };
 
-const getRouteForLocaleVariants = async ({
+export const getRouteForLocaleVariants = async ({
   contentType,
   routeKey,
 }: {
@@ -71,7 +91,7 @@ const getRouteForLocaleVariants = async ({
   routeKey?: string;
 }) => {
   const routeDefinitions = getRakunBootstrapOptions()?.routes ?? [];
-  const { routes } = await loadRouteData();
+  const { routes, routeSettings } = await loadRouteData();
   const definition = routeKey
     ? routeDefinitions.find((item) => item.key === routeKey)
     : routeDefinitions.find((item) => item.contentType === contentType && item.hasPage);
@@ -92,10 +112,15 @@ const getRouteForLocaleVariants = async ({
     });
   }
 
-  return { route, routeKey: definition.key };
+  return {
+    route,
+    routeKey: definition.key,
+    routes,
+    routeSettings,
+  };
 };
 
-const requireLanguagesByCode = async (codes: readonly string[]) => {
+export const requireLanguagesByCode = async (codes: readonly string[]) => {
   const languages = await getLanguages();
   const languageByCode = new Map(languages.map((language) => [language.code, language]));
   const result = codes.map((code) => languageByCode.get(code));
@@ -123,6 +148,12 @@ const getDocumentLabel = ({
   document: Record<string, unknown>;
   languages: Awaited<ReturnType<typeof getLanguages>>;
 }) => {
+  const variantName =
+    getLocaleVariantRole(document) === "variant"
+      ? getLocaleVariantName(document)
+      : undefined;
+  if (variantName) return variantName;
+
   const defaultLanguage = languages.find((language) => language.default) ?? languages[0];
   const field = contentType.listFields?.[0] ?? "_id";
   const value = document[field];
@@ -135,7 +166,7 @@ const getDocumentLabel = ({
   return String(value || document._id || "Untitled");
 };
 
-const buildLocaleVariantList = async ({
+export const buildLocaleVariantList = async ({
   contentType,
   documentId,
   routeKey,
@@ -164,7 +195,6 @@ const buildLocaleVariantList = async ({
   const documents = (
     await db.list(contentTypeRecord, {
       filter: {
-        _trashed: { $ne: true },
         $or: [{ _id: groupId }, { [LOCALE_VARIANT_GROUP_FIELD]: groupId }],
       },
       options: { limit: "all" },
@@ -211,6 +241,7 @@ const buildLocaleVariantList = async ({
       .map((document) => ({
         documentId: document._id,
         role: getLocaleVariantRole(document),
+        name: getLocaleVariantName(document),
         label: getDocumentLabel({
           contentType: contentTypeRecord,
           document,
@@ -226,7 +257,7 @@ const buildLocaleVariantList = async ({
   };
 };
 
-const assignLocaleVariant = async ({
+export const assignLocaleVariant = async ({
   contentType,
   documentId,
   routeKey,
@@ -270,6 +301,51 @@ const assignLocaleVariant = async ({
 
   await updateSingleRouteMap({ contentType, contentTypeId: documentId });
   return await buildLocaleVariantList({ contentType, documentId, routeKey });
+};
+
+export const assertLocaleVariantRoutesAvailable = async ({
+  contentType,
+  documentId,
+  routeKey,
+  languageCodes,
+}: LocaleVariantAssignInput) => {
+  const db = await getMongoService();
+  const contentTypeRecord = requireContentType(contentType);
+  const document = (await db.get(
+    contentTypeRecord,
+    documentId,
+  )) as Record<string, unknown> & { _id: string };
+  const {
+    route,
+    routeKey: resolvedRouteKey,
+    routes,
+    routeSettings,
+  } = await getRouteForLocaleVariants({
+    contentType,
+    routeKey,
+  });
+  const { languages, selected } =
+    await requireLanguagesByCode(languageCodes);
+  const groupId = getLocaleVariantGroupId(document);
+  const assignments = selected.map((language) => ({
+    routeId: route._id,
+    routeKey: resolvedRouteKey,
+    contentType,
+    groupId,
+    languageId: language._id,
+    documentId,
+  }));
+  const routesMap = await generateRouteMapItems(
+    [{ ...document, _visibility: "published" }],
+    route,
+    selected,
+    routes,
+    routeSettings,
+    languages,
+    assignments,
+  );
+
+  await assertRouteMapEntriesAvailable(routesMap);
 };
 
 export const listLocaleVariantsHandler = async ({
@@ -325,7 +401,7 @@ export const createLocaleVariantHandler = async ({
   const created = await createHandler({
     input: {
       contentType: input.contentType,
-      data: cloneForLocaleVariant(contentType, source),
+      data: cloneForLocaleVariant(contentType, source, input.name),
     },
     ctx,
   });
@@ -364,6 +440,20 @@ export const assignLocaleVariantHandler = async ({
     id: input.documentId,
     permission: "updateAny",
   });
+
+  const db = await getMongoService();
+  const document = (await db.get(contentType, input.documentId)) as Record<
+    string,
+    unknown
+  > & { _id: string };
+  if (
+    (await getDocumentReviewPolicy({ contentType, document })) &&
+    !(await getApprovedCurrentReview({ contentType, document }))
+  ) {
+    throwAppError("FORBIDDEN", {
+      reason: "This version requires an approved review before assigning locales",
+    });
+  }
 
   return await assignLocaleVariant(input);
 };
@@ -412,4 +502,250 @@ export const unassignLocaleVariantHandler = async ({
   });
 
   return await buildLocaleVariantList(input);
+};
+
+export const setPrimaryLocaleVariantHandler = async ({
+  input,
+  ctx,
+}: {
+  input: LocaleVariantSetPrimaryInput;
+  ctx: RakunRequestContext;
+}): Promise<LocaleVariantMutationOutput> => {
+  const db = await getMongoService();
+  const contentType = requireContentType(input.contentType);
+  const user = ctx.getUser();
+  const target = (await db.get(contentType, input.documentId)) as Record<
+    string,
+    unknown
+  > & { _id: string };
+
+  if (getLocaleVariantRole(target) !== "variant") {
+    throwAppError("CONFLICT", {
+      key: "LOCALE_VARIANT_ALREADY_PRIMARY",
+      message: "This document is already the primary locale variant",
+    });
+  }
+  if (target._trashed === true || target._visibility === "trash") {
+    throwAppError("CONFLICT", {
+      key: "LOCALE_VARIANT_TRASHED",
+      message: "Restore this variant before setting it as primary",
+    });
+  }
+
+  await getRouteForLocaleVariants(input);
+  const previousPrimaryDocumentId = getLocaleVariantGroupId(target);
+  const documents = (
+    await db.list(contentType, {
+      filter: {
+        _trashed: { $ne: true },
+        $or: [
+          { _id: previousPrimaryDocumentId },
+          { [LOCALE_VARIANT_GROUP_FIELD]: previousPrimaryDocumentId },
+        ],
+      },
+      options: { limit: "all" },
+    })
+  ).items as Array<Record<string, unknown> & { _id: string }>;
+
+  for (const document of documents) {
+    await checkOwnership({
+      ctx,
+      contentType,
+      id: document._id,
+      permission: "updateAny",
+    });
+  }
+
+  await Promise.all(
+    documents.map((document) =>
+      db.update(
+        contentType,
+        document._id,
+        {
+          [LOCALE_VARIANT_GROUP_FIELD]: input.documentId,
+          [LOCALE_VARIANT_ROLE_FIELD]:
+            document._id === input.documentId ? "primary" : "variant",
+        },
+        {
+          actorId: user._id,
+          reason: "set primary locale variant",
+        },
+      ),
+    ),
+  );
+
+  const assignments = (
+    await db.list(RouteLocaleVariant, {
+      filter: {
+        contentType: input.contentType,
+        groupId: previousPrimaryDocumentId,
+      },
+      options: { limit: "all" },
+    })
+  ).items;
+  await Promise.all(
+    assignments.map((assignment) =>
+      db.update(RouteLocaleVariant, assignment._id, {
+        groupId: input.documentId,
+      }),
+    ),
+  );
+
+  await updateSingleRouteMap({
+    contentType: input.contentType,
+    contentTypeId: input.documentId,
+    previousGroupIds: [previousPrimaryDocumentId],
+  });
+
+  return { primaryDocumentId: input.documentId };
+};
+
+export const trashLocaleVariantHandler = async ({
+  input,
+  ctx,
+}: {
+  input: LocaleVariantTrashInput;
+  ctx: RakunRequestContext;
+}): Promise<LocaleVariantMutationOutput> => {
+  const db = await getMongoService();
+  const contentType = requireContentType(input.contentType);
+  const document = (await db.get(contentType, input.documentId)) as Record<
+    string,
+    unknown
+  > & {
+    _id: string;
+    _visibility?: string;
+    _visibilityBeforeTrash?: string;
+  };
+
+  if (getLocaleVariantRole(document) !== "variant") {
+    throwAppError("CONFLICT", {
+      key: "PRIMARY_LOCALE_VARIANT_REQUIRED",
+      message:
+        "Set another variant as primary before moving this document to trash",
+    });
+  }
+  if (document._trashed === true || document._visibility === "trash") {
+    throwAppError("CONFLICT", {
+      key: "LOCALE_VARIANT_ALREADY_TRASHED",
+      message: "This locale variant is already in trash",
+    });
+  }
+
+  await getRouteForLocaleVariants(input);
+  await checkOwnership({
+    ctx,
+    contentType,
+    id: input.documentId,
+    permission: "deleteAny",
+  });
+
+  const dependencies = await db.findDependencies(contentType, input.documentId);
+  if (dependencies.length > 0) {
+    throwAppError("CONFLICT", {
+      message: `Cannot move variant to trash. It is referenced by other items: ${dependencies
+        .map((dependency) => `${dependency.contentType} (${dependency._id})`)
+        .join(", ")}`,
+      key: "DEPENDENCIES_FOUND",
+    });
+  }
+
+  const primaryDocumentId = getLocaleVariantGroupId(document);
+  await prepareLocaleVariantRemoval({
+    contentType,
+    id: input.documentId,
+  });
+  const user = ctx.getUser();
+  await db.update(
+    contentType,
+    input.documentId,
+    buildTrashUpdate({
+      contentType,
+      document,
+      userId: user._id,
+    }),
+    {
+      actorId: user._id,
+      reason: "move locale variant to trash",
+    },
+  );
+  await checkRevalidatePath({
+    contentType: input.contentType,
+    contentTypeId: primaryDocumentId,
+    operation: "update",
+  });
+
+  return { primaryDocumentId };
+};
+
+export const restoreLocaleVariantHandler = async ({
+  input,
+  ctx,
+}: {
+  input: LocaleVariantRestoreInput;
+  ctx: RakunRequestContext;
+}): Promise<LocaleVariantMutationOutput> => {
+  const db = await getMongoService();
+  const contentType = requireContentType(input.contentType);
+  const document = (await db.get(contentType, input.documentId)) as Record<
+    string,
+    unknown
+  > & {
+    _id: string;
+    _visibility?: string;
+    _visibilityBeforeTrash?: string;
+  };
+
+  if (getLocaleVariantRole(document) !== "variant") {
+    throwAppError("CONFLICT", {
+      key: "PRIMARY_LOCALE_VARIANT_REQUIRED",
+      message: "Only secondary locale variants can be restored independently",
+    });
+  }
+  if (document._trashed !== true && document._visibility !== "trash") {
+    throwAppError("CONFLICT", {
+      key: "LOCALE_VARIANT_NOT_TRASHED",
+      message: "This locale variant is not in trash",
+    });
+  }
+
+  await getRouteForLocaleVariants(input);
+  await checkOwnership({
+    ctx,
+    contentType,
+    id: input.documentId,
+    permission: "updateAny",
+  });
+
+  const primaryDocumentId = getLocaleVariantGroupId(document);
+  const visibilityBeforeTrash = document._visibilityBeforeTrash;
+  const user = ctx.getUser();
+  await db.update(
+    contentType,
+    input.documentId,
+    {
+      _trashed: false,
+      ...(contentType.documentVisibility
+        ? {
+            _visibility:
+              visibilityBeforeTrash === "draft" ||
+              visibilityBeforeTrash === "hidden" ||
+              visibilityBeforeTrash === "published"
+                ? visibilityBeforeTrash
+                : "draft",
+          }
+        : {}),
+    },
+    {
+      actorId: user._id,
+      reason: "restore locale variant from trash",
+    },
+  );
+  await checkRevalidatePath({
+    contentType: input.contentType,
+    contentTypeId: primaryDocumentId,
+    operation: "update",
+  });
+
+  return { primaryDocumentId };
 };

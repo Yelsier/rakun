@@ -38,8 +38,16 @@ export const updateHandler =
     const hookDb = getService();
     const parsedId = parseId(id);
     const versioned = !!contentType.versioning && !options?.skipVersioning;
+    const uniqueGroups = getPersistedUniqueGroups(
+      contentType.name,
+      contentType.uniques,
+    );
+    const requestedUniqueGroups = uniqueGroups.filter((fields) =>
+      fields.some((field) => field in data),
+    );
     const needsPrevious =
       versioned ||
+      requestedUniqueGroups.length > 0 ||
       hasContentHooks(contentType, ["beforeUpdate", "afterUpdate"]);
     const rawBefore = needsPrevious
       ? await db.collection(contentType.name).findOne({ _id: parsedId })
@@ -65,54 +73,49 @@ export const updateHandler =
       throw error;
     }
 
-    const uniqueGroups = getPersistedUniqueGroups(
-      contentType.name,
-      contentType.uniques,
+    const affectedUniqueGroups = uniqueGroups.filter((fields) =>
+      fields.some((field) => field in effectiveData),
     );
 
-    if (
-      uniqueGroups.length &&
-      uniqueGroups.some((fields) =>
-        fields.some((f) => f in effectiveData),
-      )
-    ) {
+    if (affectedUniqueGroups.length) {
       try {
         const filter: Record<string, unknown> = {
           $and: [
             { _id: { $ne: parseId(id) } },
             {
-              $or: uniqueGroups.map((fields) => {
+              $or: affectedUniqueGroups.map((fields) => {
                 const subFilter: Record<string, unknown> = {};
                 fields.forEach((field) => {
-                  if (field in effectiveData) {
-                    const fieldValue = (
-                      effectiveData as Record<string, unknown>
-                    )[field];
-                    const fieldSchema = contentType.fields[field];
+                  const fieldValue =
+                    field in effectiveData
+                      ? (effectiveData as Record<string, unknown>)[field]
+                      : (current as Record<string, unknown> | undefined)?.[
+                          field
+                        ];
+                  const fieldSchema = contentType.fields[field];
 
-                    // Si el campo es translatable, necesitamos comparar cada idioma
-                    if (
-                      fieldSchema &&
-                      fieldSchema.getIsTranslatable() &&
-                      typeof fieldValue === "object" &&
-                      fieldValue !== null
-                    ) {
-                      // Para campos translatables, creamos condiciones para cada idioma
-                      Object.entries(
-                        fieldValue as Record<string, unknown>,
-                      ).forEach(([lang, value]) => {
-                        if (
-                          value !== undefined &&
-                          value !== null &&
-                          value !== ""
-                        ) {
-                          subFilter[`${field}.${lang}`] = value;
-                        }
-                      });
-                    } else {
-                      // Para campos normales, comparación directa
-                      subFilter[field] = fieldValue;
-                    }
+                  // Si el campo es translatable, necesitamos comparar cada idioma
+                  if (
+                    fieldSchema &&
+                    fieldSchema.getIsTranslatable() &&
+                    typeof fieldValue === "object" &&
+                    fieldValue !== null
+                  ) {
+                    // Para campos translatables, creamos condiciones para cada idioma
+                    Object.entries(
+                      fieldValue as Record<string, unknown>,
+                    ).forEach(([lang, value]) => {
+                      if (
+                        value !== undefined &&
+                        value !== null &&
+                        value !== ""
+                      ) {
+                        subFilter[`${field}.${lang}`] = value;
+                      }
+                    });
+                  } else {
+                    // Para campos normales, comparación directa
+                    subFilter[field] = fieldValue;
                   }
                 });
                 return subFilter;
@@ -127,7 +130,7 @@ export const updateHandler =
         if (checkUniques) {
           throw new DbErrorConflict(
             `Unique constraint violation`,
-            `The combination of fields ${uniqueGroups
+            `The combination of fields ${affectedUniqueGroups
               .map((fields) => fields.join(", "))
               .join(" or ")} must be unique.`,
           );

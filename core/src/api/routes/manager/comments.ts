@@ -1,7 +1,6 @@
 import {
   ContentComment,
   ContentCommentReadState,
-  ManagerNotification,
   ManagerUser,
 } from "../../../internal-content-types";
 import { throwAppError } from "../../../lib/errors";
@@ -27,6 +26,13 @@ import {
   fallbackMentionUser,
   toMentionUser,
 } from "./users";
+import { createManagerNotification } from "../../utils/managerNotifications";
+import {
+  findLatestReview,
+  getDocumentRevisionToken,
+  getRelationId as getReviewRelationId,
+  type StoredReview,
+} from "../../utils/reviews";
 
 type StoredRelation = {
   _id?: string;
@@ -242,7 +248,7 @@ export const createCommentHandler = async ({
   input: CreateCommentInput;
   ctx: RakunRequestContext;
 }): Promise<CreateCommentOutput> => {
-  await requireCommentableDocument({
+  const contentType = await requireCommentableDocument({
     ctx,
     contentTypeName: input.contentType,
     documentId: input.documentId,
@@ -275,35 +281,46 @@ export const createCommentHandler = async ({
     },
     { actorId: user._id },
   );
+  const canLoadDocument =
+    typeof (db as unknown as { get?: unknown }).get === "function";
+  const document = canLoadDocument
+    ? ((await db.get(contentType, input.documentId)) as Record<string, unknown>)
+    : undefined;
+  const revisionToken = document
+    ? getDocumentRevisionToken(document)
+    : undefined;
+  const activeReview = revisionToken
+    ? ((await findLatestReview({
+        contentType: input.contentType,
+        documentId: input.documentId,
+        revisionToken,
+      })) as StoredReview | null)
+    : null;
+  const notificationKinds = new Map<
+    string,
+    "comment_mention" | "review_feedback"
+  >(mentionIds.map((id) => [id, "comment_mention"]));
+  if (
+    activeReview &&
+    activeReview.revisionToken === revisionToken &&
+    activeReview.status === "pending"
+  ) {
+    const reviewAuthorId = getReviewRelationId(activeReview.author);
+    if (reviewAuthorId) notificationKinds.set(reviewAuthorId, "review_feedback");
+  }
   await Promise.all(
-    mentionIds
-      .filter((id) => id !== user._id)
-      .map((id) =>
-        db.create(
-          ManagerNotification,
-          {
-            _type: ManagerNotification.name,
-            user: {
-              type: "existing",
-              _id: id,
-              contentType: ManagerUser.name,
-            },
-            author: {
-              type: "existing",
-              _id: user._id,
-              contentType: ManagerUser.name,
-            },
-            commentId: comment._id,
-            contentType: input.contentType,
-            documentId: input.documentId,
-            text: input.text.trim(),
-            read: false,
-            createdBy: user._id,
-            updatedBy: user._id,
-          },
-          { actorId: user._id },
-        ),
-      ),
+    Array.from(notificationKinds.entries()).map(([id, kind]) =>
+      createManagerNotification({
+        userId: id,
+        authorId: user._id,
+        eventId: comment._id,
+        kind,
+        reviewId: kind === "review_feedback" ? activeReview?._id : undefined,
+        contentType: input.contentType,
+        documentId: input.documentId,
+        text: input.text.trim(),
+      }),
+    ),
   );
 
   const [resolved] = await resolveComments([comment as StoredComment]);

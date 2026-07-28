@@ -4,7 +4,7 @@ import ContentTypeEdit from '../ContentTypeEdit'
 import { useEditPageContext } from '../_context/EditPageContext'
 import VersionHistory from './Versions'
 import { RouteLayoutModuleTabContent } from './RouteLayoutModuleTabContent'
-import { LocaleVariants } from './LocaleVariants'
+import { ContentVariants } from './LocaleVariants'
 import { LinkedIteratorControl } from './LinkedIteratorControl'
 
 import { TabsContent } from '@/components/ui/tabs'
@@ -107,12 +107,12 @@ export const EditTabPanels = () => {
           <RouteLayoutModuleTabContent key={layoutModule._id} layoutModule={layoutModule} />
         ))}
         {hasLocaleVariants ? (
-          <TabsContent value="locale-variants">
-            <LocaleVariants />
+          <TabsContent value="variants">
+            <ContentVariants />
           </TabsContent>
         ) : null}
         {hasVersioning && contentTypeId ? (
-          <TabsContent value="versions">
+          <TabsContent value="history">
             <VersionHistory
               contentType={contentTypeName}
               documentId={contentTypeId}

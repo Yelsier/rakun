@@ -21,10 +21,21 @@ import {
   ITERATOR_UNLINKED_FIELD_NAME,
 } from "../../../lib/systemFields";
 import {
+  getLocaleVariantGroupId,
+  getLocaleVariantRole,
+  LOCALE_VARIANT_GROUP_FIELD,
+} from "../../../lib/localeVariants";
+import {
   forbidLinkedIteratorTemplateAccess,
   requireLinkedIteratorUpdate,
 } from "./linkedIterator";
 import { revalidateContentTypePaths } from "../../utils/routes/revalidatePath";
+import { isRouteableContentType } from "../../../lib/routeableContent";
+import {
+  getDocumentReviewPolicy,
+  getRelationId,
+  getReviewPolicyForRole,
+} from "../../utils/reviews";
 
 export const updateHandler = async ({
   input,
@@ -66,6 +77,76 @@ export const updateHandler = async ({
           return { basePath: routeData.basePath } as Record<string, unknown>;
         })()
       : data;
+
+  const routeableContentType = isRouteableContentType(contentType.name);
+  const currentDocument = contentType.documentVisibility || routeableContentType
+    ? ((await db.get(contentType, id)) as Record<string, unknown> & { _id: string })
+    : undefined;
+  const localeVariantsToRestore =
+    currentDocument?._trashed === true &&
+    effectiveData._trashed === false &&
+    routeableContentType &&
+    getLocaleVariantRole(currentDocument) === "primary"
+      ? ((
+          await db.list(contentType, {
+            filter: {
+              _trashed: true,
+              [LOCALE_VARIANT_GROUP_FIELD]:
+                getLocaleVariantGroupId(currentDocument),
+            },
+            options: { limit: "all" },
+          })
+        ).items as Array<
+          Record<string, unknown> & {
+            _id: string;
+            _visibilityBeforeTrash?: string;
+          }
+        >)
+      : [];
+
+  for (const localeVariant of localeVariantsToRestore) {
+    await checkOwnership({
+      ctx,
+      contentType,
+      id: localeVariant._id,
+      permission: "updateAny",
+    });
+  }
+
+  if (
+    currentDocument?._visibility === "draft" &&
+    effectiveData._visibility === "published" &&
+    (await getDocumentReviewPolicy({ contentType, document: currentDocument }))
+  ) {
+    throwAppError("FORBIDDEN", {
+      reason: "Publish this draft through the approved review promotion workflow",
+    });
+  }
+
+  const actorRoleId = getRelationId(user.role);
+  const workflowMetadata = new Set([
+    "_visibility",
+    "_trashed",
+    "_visibilityBeforeTrash",
+  ]);
+  const changesContent = Object.keys(effectiveData).some(
+    (key) => !workflowMetadata.has(key),
+  );
+  if (
+    currentDocument?._visibility === "published" &&
+    changesContent &&
+    routeableContentType &&
+    actorRoleId &&
+    (await getReviewPolicyForRole({
+      contentType: contentType.name,
+      roleId: actorRoleId,
+    }))
+  ) {
+    throwAppError("CONFLICT", {
+      key: "DRAFT_VERSION_REQUIRED",
+      message: "Create a draft version before editing this published document",
+    });
+  }
 
   try {
     let linkedIteratorChanged = false;
@@ -139,6 +220,32 @@ export const updateHandler = async ({
     const updated = await db.update(contentType, id, parsedInput, {
       actorId: user._id,
     });
+    await Promise.all(
+      localeVariantsToRestore.map((localeVariant) => {
+        const visibilityBeforeTrash = localeVariant._visibilityBeforeTrash;
+        return db.update(
+          contentType,
+          localeVariant._id,
+          {
+            _trashed: false,
+            ...(contentType.documentVisibility
+              ? {
+                  _visibility:
+                    visibilityBeforeTrash === "draft" ||
+                    visibilityBeforeTrash === "hidden" ||
+                    visibilityBeforeTrash === "published"
+                      ? visibilityBeforeTrash
+                      : "published",
+                }
+              : {}),
+          },
+          {
+            actorId: user._id,
+            reason: "restore locale variant group from trash",
+          },
+        );
+      }),
+    );
     Logger.addTrace("manager.update: db update success", { id: updated._id });
 
     await checkRevalidatePath({

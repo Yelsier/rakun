@@ -3,6 +3,9 @@ import {
   Backup,
   BackupDocument,
   ContentComment,
+  ContentReview,
+  ContentReviewDecision,
+  ContentReviewPolicy,
   ContentVersion,
   ManagerNotification,
   Migration,
@@ -43,6 +46,12 @@ export async function createIndexes(db: Db): Promise<void> {
 
   await copyLegacyInternalCollections(db);
 
+  try {
+    await db
+      .collection(ContentReviewPolicy.name)
+      .dropIndex("unique_role_contentType");
+  } catch {}
+
   await Promise.all([
     db.collection(Backup.name).createIndex({ createdAt: -1 }),
     db
@@ -57,6 +66,21 @@ export async function createIndexes(db: Db): Promise<void> {
     db
       .collection(ContentComment.name)
       .createIndex({ contentType: 1, documentId: 1, createdAt: 1 }),
+    db
+      .collection(ContentReview.name)
+      .createIndex({ contentType: 1, documentId: 1, createdAt: -1 }),
+    db
+      .collection(ContentReviewDecision.name)
+      .createIndex({ reviewId: 1, createdAt: 1 }),
+    db
+      .collection(ContentReviewPolicy.name)
+      .createIndex(
+        { "role._id": 1, contentTypes: 1 },
+        {
+          unique: true,
+          partialFilterExpression: { contentTypes: { $exists: true } },
+        },
+      ),
     db
       .collection(ManagerNotification.name)
       .createIndex({ "user._id": 1, createdAt: -1 }),

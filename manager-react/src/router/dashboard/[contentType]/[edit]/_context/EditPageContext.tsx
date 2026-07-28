@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import type { LocaleVariantListOutput, LanguageSchema } from '@rakun-kit/core/client'
@@ -18,6 +19,7 @@ import type {
 import { ITERATOR_FIELD_NAME } from '@rakun-kit/core/client'
 
 import { useContentDocumentActions } from '../_hooks/useContentDocumentActions'
+import { VariantNameDialog } from '../_components/VariantNameDialog'
 import {
   useContentPreview,
   type PreviewModuleSelectMessage,
@@ -56,7 +58,7 @@ const getInitialTab = ({
   hasNonIterables: boolean
   hasSeo: boolean
 }): EditPageTab =>
-  hasNonIterables ? 'info' : hasIterables ? 'content' : hasSeo ? 'seo' : 'versions'
+  hasNonIterables ? 'info' : hasIterables ? 'content' : hasSeo ? 'seo' : 'history'
 
 const managerPreviewSelectedClassName = 'rakun-manager-preview-selected'
 
@@ -280,6 +282,7 @@ export const EditPageProvider = ({
     contentTypeName: contentType.name,
     defaultData,
     hasVersioning,
+    languageCode: language.code,
     onAfterRestore,
     readFormData: form.readFormData,
     replaceDraft: form.replaceDraft,
@@ -351,6 +354,8 @@ export const EditPageProvider = ({
       }),
     [language, languageList, localeVariantsQuery.data],
   )
+  const previousLanguageCodeRef = useRef(language.code)
+  const requestedVariantLanguageCodeRef = useRef<string | null>(null)
   const handlePreviewModuleSelect = useCallback(
     (message: PreviewModuleSelectMessage) => {
       if (message.entryType === 'content') {
@@ -421,7 +426,17 @@ export const EditPageProvider = ({
   }, [editErrors.length])
 
   useEffect(() => {
+    if (previousLanguageCodeRef.current === language.code) return
+
+    previousLanguageCodeRef.current = language.code
+    requestedVariantLanguageCodeRef.current = language.code
+  }, [language.code])
+
+  useEffect(() => {
+    if (requestedVariantLanguageCodeRef.current !== language.code) return
     if (!targetLocaleVariantDocumentId || !contentTypeId) return
+
+    requestedVariantLanguageCodeRef.current = null
     if (targetLocaleVariantDocumentId === contentTypeId) return
 
     navigation?.replace?.({
@@ -429,7 +444,13 @@ export const EditPageProvider = ({
       contentType: contentType.name,
       id: targetLocaleVariantDocumentId,
     })
-  }, [contentType.name, contentTypeId, navigation, targetLocaleVariantDocumentId])
+  }, [
+    contentType.name,
+    contentTypeId,
+    language.code,
+    navigation,
+    targetLocaleVariantDocumentId,
+  ])
 
   const handleTabChange = (value: string) => {
     form.saveState()
@@ -495,6 +516,12 @@ export const EditPageProvider = ({
       }}
     >
       {children}
+      <VariantNameDialog
+        open={documentActions.variantNameDialog.open}
+        loading={documentActions.variantNameDialog.loading}
+        onOpenChange={documentActions.variantNameDialog.onOpenChange}
+        onConfirm={documentActions.variantNameDialog.onConfirm}
+      />
     </EditPageContext.Provider>
   )
 }

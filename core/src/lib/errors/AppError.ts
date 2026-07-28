@@ -19,7 +19,7 @@ export class AppError<K extends ErrorKey = ErrorKey> extends Error {
 }
 
 export const isAppError = (error: unknown): error is AppError => {
-  return error instanceof AppError;
+  return getAppErrorShape(error) !== null;
 };
 
 export const getAppErrorShape = (error: unknown): AppErrorShape | null => {
@@ -29,6 +29,15 @@ export const getAppErrorShape = (error: unknown): AppErrorShape | null => {
 
   if (instanceofAppErrorShape(error)) {
     return error;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "appError" in error &&
+    instanceofAppErrorShape(error.appError)
+  ) {
+    return error.appError;
   }
 
   return null;

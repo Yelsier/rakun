@@ -154,7 +154,13 @@ export const EditToolbar = () => {
   } = useEditPageContext()
   const VisibilityIcon = visibilityIcons[editableVisibility]
   const pending = documentActions.pending
-  const savePending = pending.create || pending.update || pending.delete || pending.trash
+  const savePending =
+    pending.create ||
+    pending.update ||
+    pending.delete ||
+    pending.trash ||
+    pending.version ||
+    pending.promote
   const canSaveAsDraft = hasVisibility && contentTypeId && !isTrashed
   const commentsEnabled = Boolean(contentTypeId)
   const hasMoreActions = Boolean(contentTypeId) || canPreview || translationEnabled || isTrashed
@@ -162,7 +168,10 @@ export const EditToolbar = () => {
     Boolean(contentTypeId && !isTrashed) || canPreview || translationEnabled
 
   useEffect(() => {
-    setCommentsOpen(new URLSearchParams(window.location.search).get('comments') === 'open')
+    const search = new URLSearchParams(window.location.search)
+    setCommentsOpen(
+      search.get('comments') === 'open' || search.get('review') === 'open',
+    )
   }, [contentTypeId])
 
   const openTranslationDialog = () => {
@@ -203,15 +212,15 @@ export const EditToolbar = () => {
             </TabsTrigger>
           ))}
           {hasLocaleVariants ? (
-            <TabsTrigger value="locale-variants">
+            <TabsTrigger value="variants">
               <MapPinned />
-              Locales
+              Variants
             </TabsTrigger>
           ) : null}
           {hasVersioning && contentTypeId ? (
-            <TabsTrigger value="versions">
+            <TabsTrigger value="history">
               <GitBranch />
-              Versions
+              History
             </TabsTrigger>
           ) : null}
         </TabsList>

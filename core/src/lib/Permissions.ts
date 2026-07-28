@@ -15,6 +15,14 @@ const contentPermissionActions: ContentPermissionAction[] = [
 
 export type Permission = string;
 
+export const REVIEW_POLICY_CONFIGURE_PERMISSION = "review.policy.configure";
+export const REVIEW_SELF_APPROVE_PERMISSION = "review.workflow.selfApprove";
+
+const builtInPermissions: Permission[] = [
+  REVIEW_POLICY_CONFIGURE_PERMISSION,
+  REVIEW_SELF_APPROVE_PERMISSION,
+];
+
 const getContentPermissionConfig = (contentType: ContentType) => {
   const config = contentType.permissions;
 
@@ -72,6 +80,7 @@ export const getPermissionList = () =>
   Array.from(
     new Set([
       ...getDynamicContentPermissions(),
+      ...builtInPermissions,
       ...(getRakunBootstrapOptions()?.permissions ?? []),
     ]),
   );

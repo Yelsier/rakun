@@ -49,12 +49,26 @@ import { useTRPC } from '@/components/trpc-provider'
 import { useSession } from '@/state/session'
 import { useManagerMutation } from '@/client/react'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
+import { useManagerUsers } from '@/state/users'
 
 const SEARCH_DEBOUNCE_MS = 300
 
 const getContentRowId = (row: object, index: number) => {
   const id = (row as { _id?: unknown })._id
   return typeof id === 'string' ? id : String(index)
+}
+
+const getContentOwnerId = (row: object) => {
+  const createdBy = (row as { createdBy?: unknown }).createdBy
+  if (typeof createdBy === 'string') return createdBy
+  if (
+    createdBy &&
+    typeof createdBy === 'object' &&
+    typeof (createdBy as { _id?: unknown })._id === 'string'
+  ) {
+    return (createdBy as { _id: string })._id
+  }
+  return null
 }
 
 const ContentListSearch = memo(function ContentListSearch({
@@ -153,13 +167,20 @@ const ContentListToolbar = memo(function ContentListToolbar({
 const ContentListTableSkeleton = ({
   fieldsCount,
   showVisibility,
+  showVariantCount,
   enableSelection,
 }: {
   fieldsCount: number
   showVisibility: boolean
+  showVariantCount: boolean
   enableSelection: boolean
 }) => {
-  const columnCount = 2 + fieldsCount + (showVisibility ? 1 : 0) + (enableSelection ? 1 : 0)
+  const columnCount =
+    3 +
+    fieldsCount +
+    (showVisibility ? 1 : 0) +
+    (showVariantCount ? 1 : 0) +
+    (enableSelection ? 1 : 0)
 
   return (
     <div className="w-full overflow-hidden rounded-lg border">
@@ -198,6 +219,7 @@ const ListContents: React.FC<{
   const [page, setPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [creatorFilterIds, setCreatorFilterIds] = useState<string[]>([])
   const [isTrash, setIsTrash] = useState(false)
   const [deleteItem, setDeleteItem] = useState<{ _id: string } | null>(null)
   const [permanentDeleteItem, setPermanentDeleteItem] = useState<{
@@ -217,7 +239,7 @@ const ListContents: React.FC<{
   )
   const [bulkTranslationOverwrite, setBulkTranslationOverwrite] = useState(false)
   const trpc = useTRPC()
-  const { hasAnyPermission, hasPermissions } = useSession()
+  const { user, hasAnyPermission, hasPermissions } = useSession()
   const trimmedSearch = debouncedSearch.trim()
   const searchableFields = useMemo(() => {
     const searchFields = fields ?? []
@@ -234,6 +256,7 @@ const ListContents: React.FC<{
     const filter: Record<string, unknown> = {
       ...(isTrash ? { _trashed: true } : {}),
       ...(hasPageRoutes ? { [LOCALE_VARIANT_ROLE_FIELD]: { $ne: 'variant' } } : {}),
+      ...(creatorFilterIds.length ? { createdBy: { $in: creatorFilterIds } } : {}),
     }
 
     if (trimmedSearch && searchableFields.length > 0) {
@@ -245,23 +268,25 @@ const ListContents: React.FC<{
     }
 
     return Object.keys(filter).length > 0 ? filter : undefined
-  }, [hasPageRoutes, isTrash, searchableFields, trimmedSearch])
+  }, [creatorFilterIds, hasPageRoutes, isTrash, searchableFields, trimmedSearch])
   const { data, refetch, isPending } = useQuery({
     ...trpc.manager.list.queryOptions({
       contentType,
+      ...(hasPageRoutes && !isTrash ? { languageCode: language.code } : {}),
       query: {
         filter: listFilter,
         options: {
           limit: itemsPerPage,
           page,
           fields: fields
-            ? [...fields, '_trashed', '_visibility', '_visibilityBeforeTrash']
+            ? [...fields, 'createdBy', '_trashed', '_visibility', '_visibilityBeforeTrash']
             : undefined,
         },
       },
     }),
     placeholderData: keepPreviousData,
   })
+  const { users: creators, usersById: creatorsById } = useManagerUsers()
   const restoreMutation = useManagerMutation('manager.update')
   const duplicateMutation = useManagerMutation('manager.duplicate')
   const trashMutation = useManagerMutation('manager.trash')
@@ -275,7 +300,21 @@ const ListContents: React.FC<{
     [rowSelection]
   )
   const selectedCount = selectedIds.length
-  const canBulkDelete = hasPermissions([`content.${contentType}.deleteAny` as Permission])
+  const typedData = data as { totalItems: number; items: object[] } | undefined
+  const totalItems = typedData?.totalItems ?? 0
+  const items = typedData?.items ?? []
+  const hasDeleteAnyPermission = hasPermissions([`content.${contentType}.deleteAny` as Permission])
+  const hasOwnPermission = hasPermissions([`content.${contentType}.own` as Permission])
+  const selectedItems = selectedIds
+    .map((id) => items.find((item) => (item as { _id?: unknown })._id === id))
+    .filter((item): item is object => Boolean(item))
+  const ownsEverySelectedItem =
+    selectedCount > 0 &&
+    selectedItems.length === selectedCount &&
+    selectedItems.every((item) => getContentOwnerId(item) === user._id)
+  const canBulkDelete = hasDeleteAnyPermission || (hasOwnPermission && ownsEverySelectedItem)
+  const canSelectForBulkDelete = hasDeleteAnyPermission || hasOwnPermission
+  const showVariantCount = Boolean(hasPageRoutes)
   const canBulkTranslate =
     !isTrash &&
     languageList.length > 1 &&
@@ -283,24 +322,25 @@ const ListContents: React.FC<{
       `content.${contentType}.own` as Permission,
       `content.${contentType}.updateAny` as Permission,
     ])
-  const enableSelection = canBulkDelete || canBulkTranslate
+  const enableSelection = canSelectForBulkDelete || canBulkTranslate
   const bulkTranslationTargetOptions = languageList.filter(
     (item) => item.code !== bulkTranslationSource
   )
 
   useEffect(() => {
     setRowSelection((previous) => (Object.keys(previous).length === 0 ? previous : {}))
-  }, [contentType, isTrash, debouncedSearch])
+  }, [contentType, creatorFilterIds, isTrash, debouncedSearch])
 
   useEffect(() => {
     startTransition(() => {
       setDebouncedSearch((previous) => (previous === '' ? previous : ''))
+      setCreatorFilterIds((previous) => (previous.length ? [] : previous))
     })
   }, [contentType])
 
   useEffect(() => {
     setPage((previous) => (previous === 1 ? previous : 1))
-  }, [contentType, isTrash, debouncedSearch])
+  }, [contentType, creatorFilterIds, isTrash, debouncedSearch])
 
   useEffect(() => {
     if (!enableSelection) {
@@ -468,9 +508,6 @@ const ListContents: React.FC<{
     setIsBulkTranslating(false)
   }
 
-  const typedData = data as { totalItems: number; items: object[] } | undefined
-  const totalItems = typedData?.totalItems ?? 0
-  const items = typedData?.items ?? []
   const showInitialSkeleton = isPending && !typedData
   const canCreate = hasAnyPermission([
     `content.${contentType}.own` as Permission,
@@ -515,9 +552,14 @@ const ListContents: React.FC<{
               duplicatingItemId,
               enableSelection,
               showVisibility: Boolean(documentVisibility),
+              showVariantCount,
+              creators,
+              creatorsById,
+              creatorFilterIds,
+              onCreatorFilterChange: setCreatorFilterIds,
+              currentUserId: user._id,
               isTrash,
               hasPermissions,
-              hasAnyPermission,
             })}
             data={items as object[]}
             rowSelection={rowSelection}
@@ -528,6 +570,7 @@ const ListContents: React.FC<{
           <ContentListTableSkeleton
             fieldsCount={(fields || []).length}
             showVisibility={Boolean(documentVisibility)}
+            showVariantCount={showVariantCount}
             enableSelection={enableSelection}
           />
         )}

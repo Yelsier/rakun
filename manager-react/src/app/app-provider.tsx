@@ -20,6 +20,7 @@ import {
 } from '@/state/navigation'
 import { ManagerProvider, type ManagerProviderProps } from '@/client/react'
 import { SessionProvider } from '@/state/session'
+import { ManagerUsersProvider } from '@/state/users'
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
@@ -170,12 +171,14 @@ export const ManagerAppProvider = ({
 
   const content = (
     <SessionProvider initialUser={initialUser}>
-      <LanguageProvider
-        languages={languages}
-        initialLanguage={fallbackLanguage}
-      >
-        {children}
-      </LanguageProvider>
+      <ManagerUsersProvider>
+        <LanguageProvider
+          languages={languages}
+          initialLanguage={fallbackLanguage}
+        >
+          {children}
+        </LanguageProvider>
+      </ManagerUsersProvider>
     </SessionProvider>
   )
 

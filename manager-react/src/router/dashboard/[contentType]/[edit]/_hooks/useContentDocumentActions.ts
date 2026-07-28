@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import type { EncodedContentType, EncodedFieldUnknown } from '@rakun-kit/core/client'
+import { useState } from 'react'
 import type {
   LinkedIteratorAction,
   LinkedIteratorControl,
@@ -12,7 +13,11 @@ import type {
 } from '../edit.types'
 import type { FieldValue } from '../_fields/shared'
 
-import { createManagerQueryKey, useManagerMutation } from '@/client/react'
+import {
+  createManagerQueryKey,
+  useManagerMutation,
+  useManagerQuery,
+} from '@/client/react'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { useManagerNavigation } from '@/state/navigation'
 
@@ -108,6 +113,7 @@ type UseContentDocumentActionsParams = {
   contentTypeName: string
   defaultData?: Record<string, FieldValue>
   hasVersioning: boolean
+  languageCode: string
   onAfterRestore?: () => Promise<unknown> | unknown
   readFormData: () => unknown | undefined
   replaceDraft: (nextDraft: Record<string, FieldValue>) => void
@@ -128,6 +134,7 @@ export const useContentDocumentActions = ({
   contentTypeName,
   defaultData,
   hasVersioning,
+  languageCode,
   onAfterRestore,
   readFormData,
   replaceDraft,
@@ -143,6 +150,52 @@ export const useContentDocumentActions = ({
   const deleteMutation = useManagerMutation('manager.delete')
   const trashMutation = useManagerMutation('manager.trash')
   const translateDocumentMutation = useManagerMutation('manager.translateDocument')
+  const createContentVersionMutation = useManagerMutation('manager.contentVersions.create')
+  const promoteContentVersionMutation = useManagerMutation('manager.contentVersions.promote')
+  const [pendingVariantData, setPendingVariantData] =
+    useState<Record<string, unknown> | null>(null)
+  const routeableVersionRoute = contentType.routes?.find((route) => route.hasPage)
+  const reviewStateQuery = useManagerQuery({
+    name: 'manager.reviews.get',
+    input: contentTypeId
+      ? { contentType: contentTypeName, documentId: contentTypeId }
+      : ({ contentType: contentTypeName, documentId: '' } as never),
+    enabled: Boolean(contentTypeId),
+  })
+  const contentVersionsQuery = useManagerQuery({
+    name: 'manager.contentVersions.list',
+    input:
+      contentTypeId && routeableVersionRoute
+        ? {
+            contentType: contentTypeName,
+            documentId: contentTypeId,
+            routeKey: routeableVersionRoute.key,
+          }
+        : ({
+            contentType: contentTypeName,
+            documentId: '',
+          } as never),
+    enabled: Boolean(contentTypeId && routeableVersionRoute),
+  })
+  const currentVersion = contentVersionsQuery.data?.documents.find(
+    (document) => document.documentId === contentTypeId,
+  )
+  const persistedVisibility = currentVersion?.visibility ?? defaultData?._visibility
+  const hasPublishedSibling = Boolean(
+    contentVersionsQuery.data?.documents.some(
+      (document) =>
+        document.documentId !== contentTypeId &&
+        document.visibility === 'published',
+    ),
+  )
+  const canPublishApprovedDraft = Boolean(
+    routeableVersionRoute &&
+      contentVersionsQuery.data &&
+      persistedVisibility === 'draft' &&
+      currentVersion?.visibility === 'draft' &&
+      reviewStateQuery.data?.review?.status === 'approved' &&
+      !hasPublishedSibling,
+  )
 
   const invalidateContentListQueries = async () => {
     await queryClient.invalidateQueries({
@@ -173,6 +226,89 @@ export const useContentDocumentActions = ({
     })
   }
 
+  const invalidateLocaleVariantQueries = async () => {
+    await queryClient.invalidateQueries({
+      predicate: (query) => {
+        const [, name, input] = query.queryKey as [
+          string?,
+          string?,
+          { contentType?: string }?,
+        ]
+
+        return (
+          name === 'manager.localeVariants.list' &&
+          input?.contentType === contentTypeName
+        )
+      },
+    })
+  }
+
+  const refreshReviewState = async () => {
+    if (!contentTypeId) return
+
+    const reviewInput = {
+      contentType: contentTypeName,
+      documentId: contentTypeId,
+    }
+    await Promise.all([
+      reviewStateQuery.refetch(),
+      queryClient.invalidateQueries({
+        queryKey: createManagerQueryKey(
+          'manager.reviews.candidates',
+          reviewInput,
+        ),
+      }),
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const [, name, input] = query.queryKey as [
+            string?,
+            string?,
+            { contentType?: string; documentId?: string }?,
+          ]
+          return (
+            name === 'manager.contentVersions.list' &&
+            input?.contentType === contentTypeName &&
+            input.documentId === contentTypeId
+          )
+        },
+      }),
+    ])
+  }
+
+  const handlePublishApprovedDraft = async () => {
+    if (
+      !contentTypeId ||
+      !routeableVersionRoute ||
+      !canPublishApprovedDraft
+    ) {
+      return
+    }
+
+    try {
+      const assignedLanguageCodes =
+        currentVersion?.assignedLanguages.map((language) => language.code) ?? []
+      await promoteContentVersionMutation.mutateAsync({
+        contentType: contentTypeName,
+        documentId: contentTypeId,
+        routeKey: routeableVersionRoute.key,
+        languageCodes: assignedLanguageCodes.length
+          ? assignedLanguageCodes
+          : [languageCode],
+      })
+      setVisibility('published')
+      await Promise.all([
+        invalidateContentListQueries(),
+        invalidateVersions(),
+        contentVersionsQuery.refetch(),
+        onAfterRestore?.(),
+      ])
+      await refreshReviewState()
+      toast.success(`Published in ${languageCode}`)
+    } catch (error) {
+      toast.error(getActionErrorMessage(error, 'Could not publish page'))
+    }
+  }
+
   const handleCreate = async (
     data: Record<string, unknown>,
     requestedAction?: LinkedIteratorAction,
@@ -195,11 +331,75 @@ export const useContentDocumentActions = ({
     toast.success('Created successfully')
   }
 
+  const createReviewVariant = async (name: string) => {
+    if (!contentTypeId || !routeableVersionRoute || !pendingVariantData) return
+
+    try {
+      const result = await createContentVersionMutation.mutateAsync({
+        contentType: contentTypeName,
+        documentId: contentTypeId,
+        name,
+        routeKey: routeableVersionRoute.key,
+        data: pendingVariantData,
+      })
+      const nextId = result.document._id
+      setPendingVariantData(null)
+
+      if (typeof nextId === 'string') {
+        navigation.push?.({
+          name: 'content.edit',
+          contentType: contentTypeName,
+          id: nextId,
+        })
+      }
+      await Promise.all([
+        invalidateContentListQueries(),
+        invalidateLocaleVariantQueries(),
+      ])
+      toast.success('Draft variant created for review')
+    } catch (error) {
+      toast.error(
+        getActionErrorMessage(error, 'Could not create draft variant'),
+      )
+    }
+  }
+
   const handleUpdate = async (
     data: Record<string, unknown>,
     requestedAction?: LinkedIteratorAction,
   ) => {
     if (!contentTypeId) return
+
+    if (
+      persistedVisibility === 'draft' &&
+      data._visibility === 'published' &&
+      reviewStateQuery.data?.policy &&
+      reviewStateQuery.data.review?.status === 'approved'
+    ) {
+      if (routeableVersionRoute && canPublishApprovedDraft) {
+        await handlePublishApprovedDraft()
+        return
+      }
+      if (!routeableVersionRoute) {
+        await promoteContentVersionMutation.mutateAsync({
+          contentType: contentTypeName,
+          documentId: contentTypeId,
+        })
+        await invalidateContentListQueries()
+        await reviewStateQuery.refetch()
+        toast.success('Published approved draft')
+        return
+      }
+    }
+
+    if (
+      persistedVisibility === 'published' &&
+      routeableVersionRoute &&
+      reviewStateQuery.data?.actorRequiresReview
+    ) {
+      setPendingVariantData(cloneRecord(data))
+      return
+    }
 
     const result = await updateMutation.mutateAsync({
       contentType: contentTypeName,
@@ -218,6 +418,7 @@ export const useContentDocumentActions = ({
 
     await invalidateVersions()
     await invalidateContentListQueries()
+    await refreshReviewState()
     await onLinkedIteratorSaved?.()
     toast.success('Updated successfully')
   }
@@ -227,10 +428,14 @@ export const useContentDocumentActions = ({
 
     if (!isRecord(data)) return
 
-    if (defaultData) {
-      await handleUpdate(data, requestedAction)
-    } else {
-      await handleCreate(data, requestedAction)
+    try {
+      if (defaultData) {
+        await handleUpdate(data, requestedAction)
+      } else {
+        await handleCreate(data, requestedAction)
+      }
+    } catch (error) {
+      toast.error(getActionErrorMessage(error, 'Could not save document'))
     }
   }
 
@@ -356,19 +561,33 @@ export const useContentDocumentActions = ({
   }
 
   return {
+    canPublishApprovedDraft,
     handleMoveToTrash,
     handlePermanentDelete,
+    handlePublishApprovedDraft,
     handleRestoreFromTrash,
     handleSave,
     handleInitializeLinkedIterator,
     handleSaveAsDraft,
     handleTranslateDocument,
+    variantNameDialog: {
+      open: Boolean(pendingVariantData),
+      loading: createContentVersionMutation.isPending,
+      onOpenChange: (open: boolean) => {
+        if (!open && !createContentVersionMutation.isPending) {
+          setPendingVariantData(null)
+        }
+      },
+      onConfirm: createReviewVariant,
+    },
     pending: {
       create: createMutation.isPending,
       delete: deleteMutation.isPending,
       trash: trashMutation.isPending,
       translate: translateDocumentMutation.isPending,
       update: updateMutation.isPending,
+      version: createContentVersionMutation.isPending,
+      promote: promoteContentVersionMutation.isPending,
     },
   }
 }

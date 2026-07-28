@@ -14,6 +14,7 @@ import { PaginationController } from '@/components/PaginationController'
 import { DataTable } from '@/components/ui/data-table'
 import UnauthorizedMessage from '@/components/unauthorized'
 import { useSession } from '@/state/session'
+import { useManagerUsers } from '@/state/users'
 
 export function ManagerUsersScreen() {
   const [page, setPage] = useState(1)
@@ -29,6 +30,10 @@ export function ManagerUsersScreen() {
     placeholderData: keepPreviousData,
   })
   const { hasPermissions, hasAnyPermission } = useSession()
+  const { refetch: refetchManagerUsers } = useManagerUsers()
+  const refetchUsers = () => {
+    void Promise.all([listQuery.refetch(), refetchManagerUsers()])
+  }
 
   const setPageTransition = useCallback<Dispatch<SetStateAction<number>>>((value) => {
     startTransition(() => {
@@ -58,16 +63,16 @@ export function ManagerUsersScreen() {
     <div className="container mx-auto flex flex-col items-start gap-6 px-4 py-10">
       {hasPermissions(['content.ManagerUser.updateAny']) ? (
         <div className="self-end" data-tour="users-create">
-          <CreateUser refetch={() => void listQuery.refetch()} />
+          <CreateUser refetch={refetchUsers} />
         </div>
       ) : null}
       <EditUser
-        refetch={() => void listQuery.refetch()}
+        refetch={refetchUsers}
         setEdit={setEdit}
         defaultValues={edit}
       />
       <DeleteUser
-        refetch={() => void listQuery.refetch()}
+        refetch={refetchUsers}
         setDeleteUser={setDeleteUser}
         user={deleteUser}
       />

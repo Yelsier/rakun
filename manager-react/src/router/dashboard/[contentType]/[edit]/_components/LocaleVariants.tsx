@@ -1,31 +1,112 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { GitBranchPlus, Link2Off, Plus } from 'lucide-react'
-import type { LocaleVariantListOutput } from '@rakun-kit/core/client'
+import {
+  CheckIcon,
+  Eye,
+  EyeOff,
+  GitBranchPlus,
+  Link2Off,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Rocket,
+  Star,
+  Trash2,
+} from 'lucide-react'
+import type { ListContentVersionsOutput } from '@rakun-kit/core/client'
 
 import { useEditPageContext } from '../_context/EditPageContext'
+import { VariantNameDialog } from './VariantNameDialog'
 
 import { createManagerQueryKey, useManagerMutation, useManagerQuery } from '@/client/react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Tags,
+  TagsContent,
+  TagsEmpty,
+  TagsGroup,
+  TagsInput,
+  TagsItem,
+  TagsList,
+  TagsTrigger,
+  TagsValue,
+} from '@/components/ui/shadcn-io/tags'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { useManagerNavigation } from '@/state/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 
-export const LocaleVariants = () => {
+const reviewBadgeVariant = (status?: string) => {
+  if (status === 'approved') return 'default' as const
+  if (status === 'changes_requested') return 'destructive' as const
+  return 'secondary' as const
+}
+
+const LocaleMultiSelect = ({
+  options,
+  value,
+  onValueChange,
+}: {
+  options: Array<{ value: string; label: string; active: boolean }>
+  value: string[]
+  onValueChange: (value: string[]) => void
+}) => {
+  const labelsByValue = new Map(options.map((option) => [option.value, option.label]))
+  const remove = (removedValue: string) =>
+    onValueChange(value.filter((item) => item !== removedValue))
+  const toggle = (selectedValue: string) =>
+    value.includes(selectedValue) ? remove(selectedValue) : onValueChange([...value, selectedValue])
+
+  return (
+    <Tags className="min-w-64 max-w-md">
+      <TagsTrigger placeholder="Select locales...">
+        {value.map((selectedValue) => (
+          <TagsValue key={selectedValue} onRemove={() => remove(selectedValue)}>
+            {labelsByValue.get(selectedValue) ?? selectedValue}
+          </TagsValue>
+        ))}
+      </TagsTrigger>
+      <TagsContent>
+        <TagsInput placeholder="Search locale..." />
+        <TagsList>
+          <TagsEmpty>No locales found.</TagsEmpty>
+          <TagsGroup>
+            {options.map((option) => (
+              <TagsItem key={option.value} value={option.value} onSelect={toggle}>
+                <span>
+                  {option.label}
+                  {option.active ? (
+                    <span className="text-muted-foreground"> · currently active</span>
+                  ) : null}
+                </span>
+                {value.includes(option.value) ? (
+                  <CheckIcon className="text-muted-foreground" size={14} />
+                ) : null}
+              </TagsItem>
+            ))}
+          </TagsGroup>
+        </TagsList>
+      </TagsContent>
+    </Tags>
+  )
+}
+
+export const ContentVariants = () => {
   const {
     contentTypeId,
     contentTypeName,
+    handleVisibilityChange,
     isTrashed,
     languageCode,
     languageList,
@@ -33,10 +114,17 @@ export const LocaleVariants = () => {
   } = useEditPageContext()
   const navigation = useManagerNavigation()
   const queryClient = useQueryClient()
-  const [createLanguage, setCreateLanguage] = useState<string>('')
-  const [assignLanguageByDocument, setAssignLanguageByDocument] = useState<
-    Record<string, string>
-  >({})
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [showTrashed, setShowTrashed] = useState(false)
+  const [variantToTrash, setVariantToTrash] = useState<{
+    documentId: string
+    label: string
+  } | null>(null)
+  const [variantToDelete, setVariantToDelete] = useState<{
+    documentId: string
+    label: string
+  } | null>(null)
+  const [localesByDocument, setLocalesByDocument] = useState<Record<string, string[]>>({})
   const listInput =
     contentTypeId && localeVariantRoute
       ? {
@@ -45,61 +133,73 @@ export const LocaleVariants = () => {
           routeKey: localeVariantRoute.key,
         }
       : undefined
-  const variantsQuery = useManagerQuery({
-    name: 'manager.localeVariants.list',
+  const versionsQuery = useManagerQuery({
+    name: 'manager.contentVersions.list',
     input: listInput ?? ({ contentType: contentTypeName, documentId: '' } as never),
     enabled: Boolean(listInput && !isTrashed),
   })
-  const createMutation = useManagerMutation('manager.localeVariants.create')
+  const createMutation = useManagerMutation('manager.contentVersions.create')
+  const promoteMutation = useManagerMutation('manager.contentVersions.promote')
   const assignMutation = useManagerMutation('manager.localeVariants.assign')
   const unassignMutation = useManagerMutation('manager.localeVariants.unassign')
-  const variants = variantsQuery.data as LocaleVariantListOutput | undefined
+  const setPrimaryMutation = useManagerMutation('manager.localeVariants.setPrimary')
+  const trashVariantMutation = useManagerMutation('manager.localeVariants.trash')
+  const restoreVariantMutation = useManagerMutation('manager.localeVariants.restore')
+  const deleteVariantMutation = useManagerMutation('manager.delete')
+  const versions = versionsQuery.data as ListContentVersionsOutput | undefined
+  const documents = versions?.documents ?? []
+  const trashedVariantsCount = documents.filter(
+    (document) => document.visibility === 'trash'
+  ).length
+  const visibleDocuments = showTrashed
+    ? documents
+    : documents.filter((document) => document.visibility !== 'trash')
+  const hasPublishedVersion = (versions?.documents ?? []).some(
+    (document) => document.visibility === 'published'
+  )
   const assignedLanguageCodes = useMemo(
-    () => new Set((variants?.assignments ?? []).map((item) => item.language.code)),
-    [variants?.assignments],
+    () =>
+      new Set(
+        (versions?.documents ?? []).flatMap((document) =>
+          document.assignedLanguages.map((language) => language.code)
+        )
+      ),
+    [versions?.documents]
   )
-  const unassignedLanguages = languageList.filter(
-    (language) => !assignedLanguageCodes.has(language.code),
-  )
-  const hasUnassignedLanguages = unassignedLanguages.length > 0
-
-  useEffect(() => {
-    if (
-      createLanguage &&
-      !unassignedLanguages.some((language) => language.code === createLanguage)
-    ) {
-      setCreateLanguage('')
-    }
-  }, [createLanguage, unassignedLanguages])
 
   const invalidate = async () => {
     if (!listInput) return
-
-    await queryClient.invalidateQueries({
-      queryKey: createManagerQueryKey('manager.localeVariants.list', listInput),
-    })
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: createManagerQueryKey('manager.contentVersions.list', listInput),
+      }),
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const [, name, input] = query.queryKey as [string?, string?, { contentType?: string }?]
+          return name === 'manager.localeVariants.list' && input?.contentType === contentTypeName
+        },
+      }),
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const [, name, input] = query.queryKey as [string?, string?, { contentType?: string }?]
+          return name === 'manager.list' && input?.contentType === contentTypeName
+        },
+      }),
+    ])
   }
 
-  const createVariant = async () => {
-    if (
-      !contentTypeId ||
-      !localeVariantRoute ||
-      !createLanguage ||
-      !unassignedLanguages.some((language) => language.code === createLanguage)
-    ) {
-      return
-    }
-
+  const createVersion = async (name: string) => {
+    if (!contentTypeId || !localeVariantRoute) return
     try {
       const result = await createMutation.mutateAsync({
         contentType: contentTypeName,
         documentId: contentTypeId,
+        name,
         routeKey: localeVariantRoute.key,
-        languageCodes: createLanguage ? [createLanguage] : [],
       })
       await invalidate()
-      toast.success('Locale variant created')
-
+      setCreateDialogOpen(false)
+      toast.success('Draft variant created')
       const nextId = result.document._id
       if (typeof nextId === 'string') {
         navigation.push?.({
@@ -109,44 +209,59 @@ export const LocaleVariants = () => {
         })
       }
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not create locale variant'))
+      toast.error(getActionErrorMessage(error, 'Could not create draft variant'))
     }
   }
 
-  const assignLanguage = async (documentId: string) => {
-    const languageCode = assignLanguageByDocument[documentId]
-    if (
-      !languageCode ||
-      !localeVariantRoute ||
-      !unassignedLanguages.some((language) => language.code === languageCode)
-    ) {
-      return
-    }
-
+  const moveLocale = async (
+    documentId: string,
+    approved: boolean,
+    initialPublication: boolean,
+    assignedLocales: string[]
+  ) => {
+    const selectedLocales = localesByDocument[documentId] ?? []
+    const languageCodes = initialPublication
+      ? assignedLocales.length
+        ? assignedLocales
+        : [languageCode]
+      : selectedLocales
+    if (!languageCodes.length || !localeVariantRoute) return
     try {
-      await assignMutation.mutateAsync({
-        contentType: contentTypeName,
-        documentId,
-        routeKey: localeVariantRoute.key,
-        languageCodes: [languageCode],
-      })
+      if (approved) {
+        await promoteMutation.mutateAsync({
+          contentType: contentTypeName,
+          documentId,
+          routeKey: localeVariantRoute.key,
+          languageCodes,
+        })
+        if (documentId === contentTypeId) {
+          handleVisibilityChange('published')
+        }
+        toast.success(initialPublication ? 'Page published' : 'Variant promoted')
+      } else {
+        await assignMutation.mutateAsync({
+          contentType: contentTypeName,
+          documentId,
+          routeKey: localeVariantRoute.key,
+          languageCodes,
+        })
+        toast.success('Locale moved')
+      }
+      setLocalesByDocument((current) => ({ ...current, [documentId]: [] }))
       await invalidate()
-      setAssignLanguageByDocument((current) => ({ ...current, [documentId]: '' }))
-      toast.success('Locale assigned')
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not assign locale'))
+      toast.error(getActionErrorMessage(error, 'Could not move locale'))
     }
   }
 
-  const unassignLanguage = async (documentId: string, languageCode: string) => {
+  const unassignLanguage = async (documentId: string, locale: string) => {
     if (!localeVariantRoute) return
-
     try {
       await unassignMutation.mutateAsync({
         contentType: contentTypeName,
         documentId,
         routeKey: localeVariantRoute.key,
-        languageCodes: [languageCode],
+        languageCodes: [locale],
       })
       await invalidate()
       toast.success('Locale unassigned')
@@ -155,76 +270,217 @@ export const LocaleVariants = () => {
     }
   }
 
+  const setAsPrimary = async (documentId: string) => {
+    if (!localeVariantRoute) return
+    try {
+      await setPrimaryMutation.mutateAsync({
+        contentType: contentTypeName,
+        documentId,
+        routeKey: localeVariantRoute.key,
+      })
+      await invalidate()
+      toast.success('Primary variant updated')
+    } catch (error) {
+      toast.error(getActionErrorMessage(error, 'Could not set primary variant'))
+    }
+  }
+
+  const trashVariant = async () => {
+    if (!variantToTrash || !localeVariantRoute) return
+    try {
+      const documentId = variantToTrash.documentId
+      const result = await trashVariantMutation.mutateAsync({
+        contentType: contentTypeName,
+        documentId,
+        routeKey: localeVariantRoute.key,
+      })
+      setVariantToTrash(null)
+      await invalidate()
+      toast.success('Variant moved to trash')
+
+      if (documentId === contentTypeId) {
+        navigation.replace?.({
+          name: 'content.edit',
+          contentType: contentTypeName,
+          id: result.primaryDocumentId,
+        })
+      }
+    } catch (error) {
+      toast.error(getActionErrorMessage(error, 'Could not move variant to trash'))
+    }
+  }
+
+  const restoreVariant = async (documentId: string) => {
+    if (!localeVariantRoute) return
+    try {
+      await restoreVariantMutation.mutateAsync({
+        contentType: contentTypeName,
+        documentId,
+        routeKey: localeVariantRoute.key,
+      })
+      await invalidate()
+      toast.success('Variant restored. Assign its locales when ready.')
+    } catch (error) {
+      toast.error(getActionErrorMessage(error, 'Could not restore variant'))
+    }
+  }
+
+  const deleteVariantPermanently = async () => {
+    if (!variantToDelete) return
+    try {
+      await deleteVariantMutation.mutateAsync({
+        contentType: contentTypeName,
+        id: variantToDelete.documentId,
+      })
+      setVariantToDelete(null)
+      await invalidate()
+      toast.success('Variant permanently deleted')
+    } catch (error) {
+      toast.error(
+        getActionErrorMessage(error, 'Could not permanently delete variant')
+      )
+    }
+  }
+
   if (!contentTypeId || !localeVariantRoute) {
     return (
       <div className="text-muted-foreground text-sm">
-        Locale variants are available for routeable content.
+        Variants are available for routeable content.
       </div>
     )
   }
-
-  if (variantsQuery.isLoading) {
+  if (versionsQuery.isLoading) {
     return <div className="text-muted-foreground text-sm">Loading...</div>
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end gap-3">
-        <Select
-          value={createLanguage || undefined}
-          onValueChange={setCreateLanguage}
-          disabled={!hasUnassignedLanguages}
-        >
-          <SelectTrigger className="w-52">
-            <SelectValue
-              placeholder={
-                hasUnassignedLanguages ? 'Assign locale' : 'All locales assigned'
-              }
-            />
-          </SelectTrigger>
-          {hasUnassignedLanguages ? (
-            <SelectContent>
-              {unassignedLanguages.map((language) => (
-                <SelectItem key={language.code} value={language.code}>
-                  {language.code} {language.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          ) : null}
-        </Select>
-        <Button
-          loading={createMutation.isPending}
-          disabled={!createLanguage}
-          onClick={() => void createVariant()}
-        >
+      <VariantNameDialog
+        open={createDialogOpen}
+        loading={createMutation.isPending}
+        onOpenChange={setCreateDialogOpen}
+        onConfirm={createVersion}
+      />
+      <Dialog
+        open={Boolean(variantToTrash)}
+        onOpenChange={(open) => {
+          if (!open && !trashVariantMutation.isPending) {
+            setVariantToTrash(null)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Move variant to trash?</DialogTitle>
+            <DialogDescription>
+              {variantToTrash
+                ? `“${variantToTrash.label}” will be removed from this page group and its locale assignments will be cleared. The other variants will not be affected.`
+                : null}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              disabled={trashVariantMutation.isPending}
+              onClick={() => setVariantToTrash(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              loading={trashVariantMutation.isPending}
+              onClick={() => void trashVariant()}
+            >
+              <Trash2 />
+              Move variant to trash
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={Boolean(variantToDelete)}
+        onOpenChange={(open) => {
+          if (!open && !deleteVariantMutation.isPending) {
+            setVariantToDelete(null)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete variant permanently?</DialogTitle>
+            <DialogDescription>
+              {variantToDelete
+                ? `“${variantToDelete.label}” will be permanently deleted. This action cannot be undone.`
+                : null}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              disabled={deleteVariantMutation.isPending}
+              onClick={() => setVariantToDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              loading={deleteVariantMutation.isPending}
+              onClick={() => void deleteVariantPermanently()}
+            >
+              <Trash2 />
+              Delete permanently
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <div className="flex flex-wrap gap-2">
+        <Button loading={createMutation.isPending} onClick={() => setCreateDialogOpen(true)}>
           <GitBranchPlus />
-          Create variant
+          Create draft variant
         </Button>
+        {trashedVariantsCount ? (
+          <Button variant="outline" onClick={() => setShowTrashed((current) => !current)}>
+            {showTrashed ? <EyeOff /> : <Eye />}
+            {showTrashed
+              ? 'Hide trashed'
+              : `Show trashed (${trashedVariantsCount})`}
+          </Button>
+        ) : null}
       </div>
       <div className="grid gap-3">
-        {(variants?.documents ?? []).map((document) => {
-          const selectedLanguage = assignLanguageByDocument[document.documentId] ?? ''
-          const selectedLanguageAvailable = unassignedLanguages.some(
-            (language) => language.code === selectedLanguage,
-          )
-          const isCurrentDocument =
-            document.documentId === variants?.currentDocumentId ||
-            document.documentId === contentTypeId
+        {visibleDocuments.map((document) => {
+          const selectedLocales = localesByDocument[document.documentId] ?? []
+          const isCurrent = document.documentId === contentTypeId
+          const approved = document.reviewStatus === 'approved'
+          const reviewPending =
+            document.reviewStatus === 'pending' ||
+            document.reviewStatus === 'changes_requested' ||
+            document.reviewStatus === 'outdated'
+          const reviewBlocked = document.reviewRequired && !approved
+          const initialPublication =
+            approved && document.visibility === 'draft' && !hasPublishedVersion
+          const assignedLocales = document.assignedLanguages.map((language) => language.code)
+          const isVariantTrashed = document.visibility === 'trash'
 
           return (
             <Card
               key={document.documentId}
-              className={`rounded-lg py-4 ${
-                isCurrentDocument ? 'border-primary bg-primary/5' : ''
-              }`}
+              className={`rounded-lg py-4 ${isCurrent ? 'border-primary bg-primary/5' : ''}`}
             >
               <CardHeader className="flex-row items-start justify-between gap-4 px-4">
                 <div className="min-w-0">
-                  <CardTitle className="flex min-w-0 items-center gap-2 text-sm">
+                  <CardTitle className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
                     <span className="truncate">{document.label}</span>
-                    {isCurrentDocument ? (
-                      <Badge variant="default" className="shrink-0">
-                        current
+                    {isCurrent ? <Badge>current</Badge> : null}
+                    <Badge variant={document.role === 'primary' ? 'default' : 'secondary'}>
+                      {document.role}
+                    </Badge>
+                    {document.visibility ? (
+                      <Badge variant="outline">{document.visibility}</Badge>
+                    ) : null}
+                    {document.reviewStatus ? (
+                      <Badge variant={reviewBadgeVariant(document.reviewStatus)}>
+                        {document.reviewStatus.replaceAll('_', ' ')}
                       </Badge>
                     ) : null}
                   </CardTitle>
@@ -232,78 +488,200 @@ export const LocaleVariants = () => {
                     {document.documentId}
                   </div>
                 </div>
-                <Badge variant={document.role === 'primary' ? 'default' : 'secondary'}>
-                  {document.role}
-                </Badge>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-3 px-4">
-                <div className="flex flex-wrap gap-2">
-                  {document.assignedLanguages.length > 0 ? (
-                    document.assignedLanguages.map((language) => (
+                <div className="flex flex-wrap items-center justify-start gap-2">
+                  {!isCurrent && !isVariantTrashed ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        navigation.push?.({
+                          name: 'content.edit',
+                          contentType: contentTypeName,
+                          id: document.documentId,
+                        })
+                      }
+                    >
+                      <Pencil />
+                      Edit
+                    </Button>
+                  ) : null}
+                  {document.role === 'variant' && isVariantTrashed ? (
+                    <>
                       <Button
-                        key={language.code}
                         variant="outline"
                         size="sm"
-                        disabled={unassignMutation.isPending}
+                        loading={
+                          restoreVariantMutation.isPending &&
+                          restoreVariantMutation.variables?.documentId ===
+                            document.documentId
+                        }
+                        disabled={
+                          restoreVariantMutation.isPending ||
+                          deleteVariantMutation.isPending ||
+                          setPrimaryMutation.isPending ||
+                          trashVariantMutation.isPending
+                        }
+                        onClick={() => void restoreVariant(document.documentId)}
+                      >
+                        <RotateCcw />
+                        Restore
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={
+                          restoreVariantMutation.isPending ||
+                          deleteVariantMutation.isPending
+                        }
                         onClick={() =>
-                          void unassignLanguage(document.documentId, language.code)
+                          setVariantToDelete({
+                            documentId: document.documentId,
+                            label: document.label,
+                          })
                         }
                       >
-                        <Link2Off />
-                        {language.code}
-                        {language.code === languageCode ? (
-                          <Badge variant="secondary" className="ml-1">
-                            current
-                          </Badge>
-                        ) : null}
+                        <Trash2 />
+                        Delete permanently
                       </Button>
-                    ))
-                  ) : (
-                    <span className="text-muted-foreground text-sm">
-                      No explicit locale assignments.
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Select
-                    value={selectedLanguage || undefined}
-                    disabled={!hasUnassignedLanguages}
-                    onValueChange={(value) =>
-                      setAssignLanguageByDocument((current) => ({
-                        ...current,
-                        [document.documentId]: value,
-                      }))
-                    }
-                  >
-                    <SelectTrigger className="w-52">
-                      <SelectValue
-                        placeholder={
-                          hasUnassignedLanguages
-                            ? 'Assign locale'
-                            : 'All locales assigned'
+                    </>
+                  ) : document.role === 'variant' ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        loading={
+                          setPrimaryMutation.isPending &&
+                          setPrimaryMutation.variables?.documentId === document.documentId
                         }
-                      />
-                    </SelectTrigger>
-                    {hasUnassignedLanguages ? (
-                      <SelectContent>
-                        {unassignedLanguages.map((language) => (
-                          <SelectItem key={language.code} value={language.code}>
-                            {language.code} {language.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    ) : null}
-                  </Select>
-                  <Button
-                    variant="outline"
-                    loading={assignMutation.isPending}
-                    disabled={!selectedLanguageAvailable || !hasUnassignedLanguages}
-                    onClick={() => void assignLanguage(document.documentId)}
-                  >
-                    <Plus />
-                    Assign
-                  </Button>
+                        disabled={setPrimaryMutation.isPending || trashVariantMutation.isPending}
+                        onClick={() => void setAsPrimary(document.documentId)}
+                      >
+                        <Star />
+                        Set as primary
+                      </Button>
+                      <Button
+                        aria-label={`Move ${document.label} to trash`}
+                        title={`Move ${document.label} to trash`}
+                        variant="destructive"
+                        size="sm"
+                        disabled={setPrimaryMutation.isPending || trashVariantMutation.isPending}
+                        onClick={() =>
+                          setVariantToTrash({
+                            documentId: document.documentId,
+                            label: document.label,
+                          })
+                        }
+                      >
+                        <Trash2 />
+                        Move to trash
+                      </Button>
+                    </>
+                  ) : null}
                 </div>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3 px-4">
+                {isVariantTrashed ? (
+                  <p className="text-sm text-muted-foreground">
+                    This variant is in trash. Restore it before editing or assigning locales.
+                    Previous locale assignments were cleared when it was moved to trash.
+                  </p>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      {document.assignedLanguages.length ? (
+                        document.assignedLanguages.map((language) => (
+                          <Button
+                            key={language.code}
+                            variant="outline"
+                            size="sm"
+                            disabled={unassignMutation.isPending}
+                            onClick={() =>
+                              void unassignLanguage(document.documentId, language.code)
+                            }
+                          >
+                            <Link2Off />
+                            {language.code}
+                            {language.code === languageCode ? (
+                              <Badge variant="secondary" className="ml-1">
+                                current
+                              </Badge>
+                            ) : null}
+                          </Button>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground text-sm">
+                          No locale assignments.
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {!initialPublication ? (
+                        <div className="flex min-w-64 flex-col gap-1">
+                          <LocaleMultiSelect
+                            options={languageList.map((language) => ({
+                              value: language.code,
+                              label: `${language.code} ${language.name}`,
+                              active: assignedLanguageCodes.has(language.code),
+                            }))}
+                            value={selectedLocales}
+                            onValueChange={(value) =>
+                              setLocalesByDocument((current) => ({
+                                ...current,
+                                [document.documentId]: value,
+                              }))
+                            }
+                          />
+                          {assignedLanguageCodes.size ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="self-start"
+                              onClick={() =>
+                                setLocalesByDocument((current) => ({
+                                  ...current,
+                                  [document.documentId]: Array.from(assignedLanguageCodes),
+                                }))
+                              }
+                            >
+                              Select all active locales
+                            </Button>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <div className="text-muted-foreground flex items-center text-sm">
+                          This is a new page. It will be published in {languageCode}.
+                        </div>
+                      )}
+                      <Button
+                        variant={approved ? 'default' : 'outline'}
+                        loading={promoteMutation.isPending || assignMutation.isPending}
+                        disabled={
+                          (!initialPublication && !selectedLocales.length) ||
+                          reviewPending ||
+                          reviewBlocked
+                        }
+                        onClick={() =>
+                          void moveLocale(
+                            document.documentId,
+                            approved,
+                            initialPublication,
+                            assignedLocales
+                          )
+                        }
+                      >
+                        {approved ? <Rocket /> : <Plus />}
+                        {approved
+                          ? initialPublication
+                            ? 'Publish page'
+                            : 'Promote'
+                          : reviewBlocked
+                            ? 'Review required'
+                            : 'Move locale'}
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           )

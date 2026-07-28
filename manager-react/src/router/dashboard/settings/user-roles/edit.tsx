@@ -191,6 +191,7 @@ export const EditRole = ({
                       {permissions.map((permission) => {
                         const fullPermission = `${group}.${permission}`
                         const disabledWrite =
+                          group.startsWith('content.') &&
                           permission !== 'own' &&
                           permission !== 'readAny' &&
                           !form.watch('permissions')?.includes(`${group}.own`) &&

@@ -54,9 +54,11 @@ export {
 } from "./lib/systemFields";
 export {
   LOCALE_VARIANT_GROUP_FIELD,
+  LOCALE_VARIANT_NAME_FIELD,
   LOCALE_VARIANT_ROLE_FIELD,
   LocaleVariantRole,
   getLocaleVariantGroupId,
+  getLocaleVariantName,
   getLocaleVariantRole,
   isLocaleVariantDocument,
 } from "./lib/localeVariants";
@@ -104,8 +106,50 @@ export type {
   LocaleVariantDocument,
   LocaleVariantListInput,
   LocaleVariantListOutput,
+  LocaleVariantMutationOutput,
+  LocaleVariantRestoreInput,
+  LocaleVariantSetPrimaryInput,
+  LocaleVariantTrashInput,
   LocaleVariantUnassignInput,
 } from "./schemas/manager/localeVariants";
+export type {
+  ContentVersionDocument,
+  ContentVersionReferenceInput,
+  CreateContentVersionInput,
+  CreateContentVersionOutput,
+  ListContentVersionsOutput,
+  PromoteContentVersionInput,
+  PromoteContentVersionOutput,
+} from "./schemas/manager/contentVersions";
+export type {
+  DeleteReviewPolicyInput,
+  DeleteReviewPolicyOutput,
+  ListReviewPoliciesOutput,
+  ReviewPolicyRecord,
+  UpsertReviewPolicyInput,
+} from "./schemas/manager/reviewPolicies";
+export type {
+  CancelReviewInput,
+  CancelReviewOutput,
+  DecideReviewInput,
+  DecideReviewOutput,
+  GetReviewOutput,
+  ListReviewCandidatesOutput,
+  RequestReviewInput,
+  RequestReviewOutput,
+  ReviewCandidate,
+  ReviewDecision,
+  ReviewDecisionRecord,
+  ReviewRecord,
+  ReviewReferenceInput,
+  ReviewStatus,
+} from "./schemas/manager/reviews";
+export type {
+  RouteLayoutReferenceInput,
+  RouteLayoutStateOutput,
+  SetRouteLayoutOverrideInput,
+  SetRouteLayoutOverrideOutput,
+} from "./schemas/manager/routeLayout";
 export type {
   LinkedIteratorAction,
   LinkedIteratorControl,

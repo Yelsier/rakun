@@ -37,20 +37,27 @@ export const getActionErrorMessage = (
   error: unknown,
   fallback = 'Action failed',
 ) => {
-  if (error instanceof Error) {
-    return cleanMessage(error.message) ?? fallback
-  }
-
   const appErrorMessage = getAppErrorMessage(error)
 
   if (appErrorMessage) return appErrorMessage
+
+  if (isRecord(error)) {
+    const bodyAppErrorMessage = getAppErrorMessage(error.body)
+    if (bodyAppErrorMessage) return bodyAppErrorMessage
+
+    const causeAppErrorMessage = getAppErrorMessage(error.cause)
+    if (causeAppErrorMessage) return causeAppErrorMessage
+  }
+
+  if (error instanceof Error) {
+    return cleanMessage(error.message) ?? fallback
+  }
 
   if (!isRecord(error)) return fallback
 
   return (
     cleanMessage(error.message) ??
     getCauseMessage(error.cause) ??
-    getAppErrorMessage(error.body) ??
     fallback
   )
 }

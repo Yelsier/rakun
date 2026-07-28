@@ -24,15 +24,12 @@ import type {
 } from '@rakun-kit/core/client'
 
 import { useEditPageContext } from '../_context/EditPageContext'
+import { ContentReviewPanel } from './ContentReviewPanel'
 
 import { createManagerQueryKey, useManagerMutation, useManagerQuery } from '@/client/react'
 import { UserAvatar } from '@/components/user-avatar'
-import {
-  Bubble,
-  BubbleContent,
-  BubbleGroup,
-  BubbleReactions,
-} from '@/components/ui/bubble'
+import { Bubble, BubbleContent, BubbleGroup, BubbleReactions } from '@/components/ui/bubble'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Drawer,
@@ -44,30 +41,18 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/components/ui/drawer'
-import {
-  Mention,
-  MentionContent,
-  MentionInput,
-  MentionItem,
-} from '@/components/ui/mention'
+import { Mention, MentionContent, MentionInput, MentionItem } from '@/components/ui/mention'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from '@/components/ui/hover-card'
-import {
-  Message,
-  MessageAvatar,
-  MessageContent,
-  MessageHeader,
-} from '@/components/ui/message'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
+import { Message, MessageAvatar, MessageContent, MessageHeader } from '@/components/ui/message'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { cn } from '@/lib/utils'
 import { useSession } from '@/state/session'
+import { useManagerUsers } from '@/state/users'
 
 const displayUserName = (user: MentionUser) => user.name?.trim() || user.user
 
@@ -120,9 +105,7 @@ const COMMENT_REACTION_OPTIONS: Array<{
   },
 ]
 
-const FREQUENTLY_USED_REACTIONS = COMMENT_REACTION_OPTIONS.map(
-  (option) => option.emoji
-)
+const FREQUENTLY_USED_REACTIONS = COMMENT_REACTION_OPTIONS.map((option) => option.emoji)
 const REACTION_PICKER_MIN_ANCHOR_WIDTH = 160
 
 const isOwnCommentAuthor = ({
@@ -165,17 +148,15 @@ const hasCurrentUserReaction = ({
       isCurrentUserMention({
         currentUser,
         mentionUser: reactionUser,
-      }),
-    ),
+      })
+    )
   )
 
 const getReactionUserLabel = (reaction: CommentReactionRecord) =>
   reaction.users.map(displayUserName).join(', ')
 
 const scrollEmojiPickerViewport = (event: WheelEvent<HTMLElement>) => {
-  const viewport = event.currentTarget.querySelector(
-    '[tabindex="0"]'
-  ) as HTMLElement | null
+  const viewport = event.currentTarget.querySelector('[tabindex="0"]') as HTMLElement | null
 
   if (!viewport) return
 
@@ -251,11 +232,7 @@ const DaySeparator = ({ date }: { date?: Date | string | null }) => (
   </div>
 )
 
-const UnreadSeparator = ({
-  separatorRef,
-}: {
-  separatorRef: Ref<HTMLDivElement>
-}) => (
+const UnreadSeparator = ({ separatorRef }: { separatorRef: Ref<HTMLDivElement> }) => (
   <div ref={separatorRef} className="flex items-center gap-3 py-2" role="separator">
     <div className="h-px flex-1 bg-primary" />
     <span className="rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-primary-foreground shadow-sm">
@@ -265,22 +242,12 @@ const UnreadSeparator = ({
   </div>
 )
 
-const UserHoverCard = ({
-  children,
-  user,
-}: {
-  children: ReactNode
-  user: MentionUser
-}) => (
+const UserHoverCard = ({ children, user }: { children: ReactNode; user: MentionUser }) => (
   <HoverCard openDelay={150}>
     <HoverCardTrigger asChild>{children}</HoverCardTrigger>
     <HoverCardContent align="start" className="w-64">
       <div className="flex min-w-0 items-center gap-3">
-        <UserAvatar
-          name={displayUserName(user)}
-          avatar={user.avatar}
-          className="size-10"
-        />
+        <UserAvatar name={displayUserName(user)} avatar={user.avatar} className="size-10" />
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{displayUserName(user)}</p>
           <p className="truncate text-xs text-muted-foreground">@{user.user}</p>
@@ -300,7 +267,7 @@ const CommentText = ({
   text: string
 }) => {
   const mentionsByUsername = new Map(
-    mentions.map((mentionUser) => [mentionUser.user.toLowerCase(), mentionUser]),
+    mentions.map((mentionUser) => [mentionUser.user.toLowerCase(), mentionUser])
   )
   const usernames = Array.from(mentionsByUsername.keys())
     .sort((a, b) => b.length - a.length)
@@ -340,7 +307,7 @@ const CommentText = ({
         >
           @{mentionUser.user}
         </span>
-      </UserHoverCard>,
+      </UserHoverCard>
     )
     lastIndex = pattern.lastIndex
   }
@@ -575,8 +542,7 @@ export const ContentCommentsDrawer = ({
   onOpenChange?: (open: boolean) => void
   trigger?: boolean
 } = {}) => {
-  const { contentType, contentTypeId, contentTypeName, form, languageCode } =
-    useEditPageContext()
+  const { contentType, contentTypeId, contentTypeName, form, languageCode } = useEditPageContext()
   const { user } = useSession()
   const queryClient = useQueryClient()
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -596,12 +562,19 @@ export const ContentCommentsDrawer = ({
     onOpenChange?.(nextOpen)
   }
   const [text, setText] = useState('')
+  const [activePanel, setActivePanel] = useState<'messages' | 'review'>('messages')
   const [mentions, setMentions] = useState<string[]>([])
   const [composerKey, setComposerKey] = useState(0)
-  const [unreadMarkerCommentId, setUnreadMarkerCommentId] = useState<
-    string | null
-  >(null)
+  const [unreadMarkerCommentId, setUnreadMarkerCommentId] = useState<string | null>(null)
   const [unreadSessionReady, setUnreadSessionReady] = useState(false)
+
+  useEffect(() => {
+    if (!open || typeof window === 'undefined') return
+
+    const searchParams = new URLSearchParams(window.location.search)
+    setActivePanel(searchParams.has('review') ? 'review' : 'messages')
+  }, [open])
+  const messagesOpen = open && activePanel === 'messages'
   const commentsInput = contentTypeId
     ? {
         contentType: contentTypeName,
@@ -617,12 +590,14 @@ export const ContentCommentsDrawer = ({
     : undefined
   const commentsQuery = useManagerQuery({
     name: 'manager.comments.list',
-    input: commentsInput ?? ({
-      contentType: '',
-      documentId: '',
-    } as never),
-    enabled: Boolean(open && commentsInput),
-    refetchInterval: open ? 5000 : false,
+    input:
+      commentsInput ??
+      ({
+        contentType: '',
+        documentId: '',
+      } as never),
+    enabled: Boolean(messagesOpen && commentsInput),
+    refetchInterval: messagesOpen ? 5000 : false,
   })
   const notificationsQuery = useManagerQuery({
     name: 'manager.notifications.list',
@@ -632,27 +607,24 @@ export const ContentCommentsDrawer = ({
   })
   const unreadCommentsQuery = useManagerQuery({
     name: 'manager.comments.unreadCount',
-    input: commentsInput ?? ({
-      contentType: '',
-      documentId: '',
-    } as never),
+    input:
+      commentsInput ??
+      ({
+        contentType: '',
+        documentId: '',
+      } as never),
     enabled: Boolean(commentsInput),
     refetchInterval: open ? false : 15000,
   })
-  const usersQuery = useManagerQuery({
-    name: 'manager.users.mentions',
-    input: undefined,
-    enabled: open,
-  })
+  const {
+    users: mentionUsers,
+    usersById: mentionUsersById,
+    isLoading: usersLoading,
+  } = useManagerUsers()
   const createCommentMutation = useManagerMutation('manager.comments.create')
   const toggleReactionMutation = useManagerMutation('manager.comments.toggleReaction')
   const markCommentsReadMutation = useManagerMutation('manager.comments.markRead')
   const markNotificationsReadMutation = useManagerMutation('manager.notifications.markRead')
-  const mentionUsers = usersQuery.data ?? []
-  const mentionUsersById = useMemo(
-    () => new Map(mentionUsers.map((mentionUser) => [mentionUser._id, mentionUser])),
-    [mentionUsers]
-  )
   const comments = commentsQuery.data?.comments ?? []
   const unreadCommentsCount = unreadCommentsQuery.data?.count ?? 0
   const unreadNotifications = notificationsQuery.data?.totalUnread ?? 0
@@ -675,7 +647,7 @@ export const ContentCommentsDrawer = ({
   }, [])
 
   useEffect(() => {
-    if (!open) {
+    if (!messagesOpen) {
       unreadSessionIdRef.current += 1
       lastMarkedCommentRef.current = null
       setUnreadMarkerCommentId(null)
@@ -696,25 +668,17 @@ export const ContentCommentsDrawer = ({
         await markReadPromiseRef.current
         const result = await commentsQuery.refetch()
 
-        if (
-          unreadSessionIdRef.current !== sessionId ||
-          result.isError ||
-          !result.data
-        ) {
+        if (unreadSessionIdRef.current !== sessionId || result.isError || !result.data) {
           return
         }
 
         const freshComments = result.data.comments
         const lastReadCommentId = result.data.lastReadCommentId
         const lastReadIndex = lastReadCommentId
-          ? freshComments.findIndex(
-              (comment) => comment._id === lastReadCommentId
-            )
+          ? freshComments.findIndex((comment) => comment._id === lastReadCommentId)
           : -1
         const unreadComments =
-          lastReadIndex >= 0
-            ? freshComments.slice(lastReadIndex + 1)
-            : freshComments
+          lastReadIndex >= 0 ? freshComments.slice(lastReadIndex + 1) : freshComments
         const firstUnreadComment = unreadComments.find(
           (comment) =>
             !isOwnCommentAuthor({
@@ -727,16 +691,14 @@ export const ContentCommentsDrawer = ({
         setUnreadSessionReady(true)
       } catch (error) {
         if (unreadSessionIdRef.current === sessionId) {
-          toast.error(
-            getActionErrorMessage(error, 'Could not load comment read state')
-          )
+          toast.error(getActionErrorMessage(error, 'Could not load comment read state'))
         }
       }
     })()
-  }, [contentTypeId, contentTypeName, open])
+  }, [contentTypeId, contentTypeName, messagesOpen])
 
   useEffect(() => {
-    if (!open || !commentsInput || !unreadSessionReady) return
+    if (!messagesOpen || !commentsInput || !unreadSessionReady) return
 
     const latestComment = comments[comments.length - 1]
     if (!latestComment) return
@@ -748,9 +710,7 @@ export const ContentCommentsDrawer = ({
 
     const previousMarkRead = markReadPromiseRef.current
     const markReadPromise = (
-      previousMarkRead
-        ? previousMarkRead.catch(() => undefined)
-        : Promise.resolve()
+      previousMarkRead ? previousMarkRead.catch(() => undefined) : Promise.resolve()
     ).then(() =>
       markCommentsReadMutation.mutateAsync({
         ...commentsInput,
@@ -776,28 +736,22 @@ export const ContentCommentsDrawer = ({
           markReadPromiseRef.current = null
         }
       })
-  }, [
-    comments,
-    commentsInput,
-    markCommentsReadMutation,
-    open,
-    unreadSessionReady,
-  ])
+  }, [comments, commentsInput, markCommentsReadMutation, messagesOpen, unreadSessionReady])
 
   useEffect(() => {
-    if (!open || !unreadSessionReady || unreadMarkerCommentId) return
+    if (!messagesOpen || !unreadSessionReady || unreadMarkerCommentId) return
 
     scrollMessagesToEnd('auto')
   }, [
     comments.length,
-    open,
+    messagesOpen,
     scrollMessagesToEnd,
     unreadMarkerCommentId,
     unreadSessionReady,
   ])
 
   useLayoutEffect(() => {
-    if (!open || !unreadMarkerCommentId) return
+    if (!messagesOpen || !unreadMarkerCommentId) return
 
     requestAnimationFrame(() => {
       unreadMarkerRef.current?.scrollIntoView({
@@ -805,7 +759,7 @@ export const ContentCommentsDrawer = ({
         behavior: 'auto',
       })
     })
-  }, [open, unreadMarkerCommentId])
+  }, [messagesOpen, unreadMarkerCommentId])
 
   useEffect(() => {
     if (!open) {
@@ -832,13 +786,7 @@ export const ContentCommentsDrawer = ({
       .catch((error) => {
         toast.error(getActionErrorMessage(error, 'Could not mark notifications as read'))
       })
-  }, [
-    commentsInput,
-    markNotificationsReadMutation,
-    open,
-    queryClient,
-    unreadNotifications,
-  ])
+  }, [commentsInput, markNotificationsReadMutation, open, queryClient, unreadNotifications])
 
   if (!contentTypeId || !commentsInput) return null
 
@@ -914,9 +862,7 @@ export const ContentCommentsDrawer = ({
                 aria-label={
                   unreadCommentsCount || unreadNotifications
                     ? `Comments, ${unreadCommentsCount} unread messages${
-                        unreadNotifications
-                          ? `, ${unreadNotifications} unread mentions`
-                          : ''
+                        unreadNotifications ? `, ${unreadNotifications} unread mentions` : ''
                       }`
                     : 'Comments'
                 }
@@ -946,9 +892,7 @@ export const ContentCommentsDrawer = ({
           <TooltipContent>
             {unreadCommentsCount || unreadNotifications
               ? `${unreadCommentsCount} unread messages${
-                  unreadNotifications
-                    ? ` · ${unreadNotifications} unread mentions`
-                    : ''
+                  unreadNotifications ? ` · ${unreadNotifications} unread mentions` : ''
                 }`
               : 'Comments'}
           </TooltipContent>
@@ -975,192 +919,219 @@ export const ContentCommentsDrawer = ({
             </DrawerClose>
           </div>
         </DrawerHeader>
-        <ScrollArea className="min-h-0 flex-1">
-          <div className="flex min-h-[320px] flex-col gap-4 p-4">
-            {commentsQuery.isLoading ? (
-              <p className="text-sm text-muted-foreground">Loading comments...</p>
-            ) : commentsQuery.isError ? (
-              <div className="flex flex-col items-start gap-3">
-                <p className="text-sm text-destructive">Could not load comments.</p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void commentsQuery.refetch()}
-                >
-                  Retry
-                </Button>
-              </div>
-            ) : comments.length ? (
-              <BubbleGroup>
-                {comments.map((comment, index) => {
-                  const previousComment = comments[index - 1]
-                  const showDaySeparator =
-                    !previousComment ||
-                    getMessageDayKey(previousComment.createdAt) !==
-                      getMessageDayKey(comment.createdAt)
-                  const showAuthor =
-                    !previousComment ||
-                    showDaySeparator ||
-                    !isSameCommentAuthor(previousComment.author, comment.author)
-                  const ownComment = isOwnCommentAuthor({
-                    author: comment.author,
-                    currentUser: user,
-                  })
-                  const createdAt = getCommentDate(comment.createdAt)
-                  const messageTime = formatMessageTime(createdAt)
+        <Tabs
+          value={activePanel}
+          onValueChange={(value) => setActivePanel(value === 'review' ? 'review' : 'messages')}
+          className="min-h-0 flex-1 gap-0"
+        >
+          <div className="border-b px-4">
+            <TabsList variant="line" className="w-full">
+              <TabsTrigger value="messages">
+                Messages
+                {unreadCommentsCount ? (
+                  <Badge variant="secondary">
+                    {unreadCommentsCount > 99 ? '99+' : unreadCommentsCount}
+                  </Badge>
+                ) : null}
+              </TabsTrigger>
+              <TabsTrigger value="review">Review</TabsTrigger>
+            </TabsList>
+          </div>
+          <TabsContent value="review" className="min-h-0">
+            <ScrollArea className="h-full">
+              <ContentReviewPanel open={open && activePanel === 'review'} />
+            </ScrollArea>
+          </TabsContent>
+          <TabsContent
+            value="messages"
+            className="flex min-h-0 flex-col data-[state=inactive]:hidden"
+          >
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="flex min-h-[320px] flex-col gap-4 p-4">
+                {commentsQuery.isLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading comments...</p>
+                ) : commentsQuery.isError ? (
+                  <div className="flex flex-col items-start gap-3">
+                    <p className="text-sm text-destructive">Could not load comments.</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void commentsQuery.refetch()}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                ) : comments.length ? (
+                  <BubbleGroup>
+                    {comments.map((comment, index) => {
+                      const previousComment = comments[index - 1]
+                      const showDaySeparator =
+                        !previousComment ||
+                        getMessageDayKey(previousComment.createdAt) !==
+                          getMessageDayKey(comment.createdAt)
+                      const showAuthor =
+                        !previousComment ||
+                        showDaySeparator ||
+                        !isSameCommentAuthor(previousComment.author, comment.author)
+                      const ownComment = isOwnCommentAuthor({
+                        author: comment.author,
+                        currentUser: user,
+                      })
+                      const createdAt = getCommentDate(comment.createdAt)
+                      const messageTime = formatMessageTime(createdAt)
 
-                  return (
-                    <Fragment key={comment._id}>
-                      {showDaySeparator ? <DaySeparator date={comment.createdAt} /> : null}
-                      {comment._id === unreadMarkerCommentId ? (
-                        <UnreadSeparator separatorRef={unreadMarkerRef} />
-                      ) : null}
-                      <Message align={ownComment ? 'end' : 'start'}>
-                        <MessageAvatar className={cn(!showAuthor && 'invisible')}>
-                          <UserHoverCard user={comment.author}>
-                            <span className="inline-flex cursor-default rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                              <UserAvatar
-                                name={displayUserName(comment.author)}
-                                avatar={comment.author.avatar}
-                                className="size-8"
-                              />
-                            </span>
-                          </UserHoverCard>
-                        </MessageAvatar>
-                        <MessageContent className={cn(ownComment && 'items-end')}>
-                          {showAuthor ? (
-                            <MessageHeader className={cn(ownComment && 'justify-end')}>
+                      return (
+                        <Fragment key={comment._id}>
+                          {showDaySeparator ? <DaySeparator date={comment.createdAt} /> : null}
+                          {comment._id === unreadMarkerCommentId ? (
+                            <UnreadSeparator separatorRef={unreadMarkerRef} />
+                          ) : null}
+                          <Message align={ownComment ? 'end' : 'start'}>
+                            <MessageAvatar className={cn(!showAuthor && 'invisible')}>
                               <UserHoverCard user={comment.author}>
-                                <span className="cursor-default rounded-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                                  {displayUserName(comment.author)}
+                                <span className="inline-flex cursor-default rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                  <UserAvatar
+                                    name={displayUserName(comment.author)}
+                                    avatar={comment.author.avatar}
+                                    className="size-8"
+                                  />
                                 </span>
                               </UserHoverCard>
-                            </MessageHeader>
-                          ) : null}
-                          <Bubble
-                            align={ownComment ? 'end' : 'start'}
-                            variant="muted"
-                            className={cn('max-w-[82%]', comment.reactions.length && 'mb-3')}
-                          >
-                            <CommentBubbleContent
-                              currentUser={user}
-                              disabled={toggleReactionMutation.isPending}
-                              ownComment={ownComment}
-                              reactions={comment.reactions}
-                              onToggleReaction={(emoji) =>
-                                void handleToggleReaction({
-                                  commentId: comment._id,
-                                  emoji,
-                                })
-                              }
-                            >
-                              <BubbleContent className="bg-muted whitespace-pre-wrap text-left">
-                                <CommentText
+                            </MessageAvatar>
+                            <MessageContent className={cn(ownComment && 'items-end')}>
+                              {showAuthor ? (
+                                <MessageHeader className={cn(ownComment && 'justify-end')}>
+                                  <UserHoverCard user={comment.author}>
+                                    <span className="cursor-default rounded-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                      {displayUserName(comment.author)}
+                                    </span>
+                                  </UserHoverCard>
+                                </MessageHeader>
+                              ) : null}
+                              <Bubble
+                                align={ownComment ? 'end' : 'start'}
+                                variant="muted"
+                                className={cn('max-w-[82%]', comment.reactions.length && 'mb-3')}
+                              >
+                                <CommentBubbleContent
                                   currentUser={user}
-                                  mentions={comment.mentions}
-                                  text={comment.text}
+                                  disabled={toggleReactionMutation.isPending}
+                                  ownComment={ownComment}
+                                  reactions={comment.reactions}
+                                  onToggleReaction={(emoji) =>
+                                    void handleToggleReaction({
+                                      commentId: comment._id,
+                                      emoji,
+                                    })
+                                  }
+                                >
+                                  <BubbleContent className="bg-muted whitespace-pre-wrap text-left">
+                                    <CommentText
+                                      currentUser={user}
+                                      mentions={comment.mentions}
+                                      text={comment.text}
+                                    />
+                                    {createdAt && messageTime ? (
+                                      <time
+                                        dateTime={createdAt.toISOString()}
+                                        className="mt-1 block text-right text-[10px] font-medium leading-none text-muted-foreground"
+                                      >
+                                        {messageTime}
+                                      </time>
+                                    ) : null}
+                                  </BubbleContent>
+                                </CommentBubbleContent>
+                                <CommentReactionSummary
+                                  currentUser={user}
+                                  disabled={toggleReactionMutation.isPending}
+                                  ownComment={ownComment}
+                                  reactions={comment.reactions}
+                                  onToggle={(emoji) =>
+                                    void handleToggleReaction({
+                                      commentId: comment._id,
+                                      emoji,
+                                    })
+                                  }
                                 />
-                                {createdAt && messageTime ? (
-                                  <time
-                                    dateTime={createdAt.toISOString()}
-                                    className="mt-1 block text-right text-[10px] font-medium leading-none text-muted-foreground"
-                                  >
-                                    {messageTime}
-                                  </time>
-                                ) : null}
-                              </BubbleContent>
-                            </CommentBubbleContent>
-                            <CommentReactionSummary
-                              currentUser={user}
-                              disabled={toggleReactionMutation.isPending}
-                              ownComment={ownComment}
-                              reactions={comment.reactions}
-                              onToggle={(emoji) =>
-                                void handleToggleReaction({
-                                  commentId: comment._id,
-                                  emoji,
-                                })
-                              }
-                            />
-                          </Bubble>
-                        </MessageContent>
-                      </Message>
-                    </Fragment>
-                  )
-                })}
-              </BubbleGroup>
-            ) : (
-              <p className="text-sm text-muted-foreground">No comments yet.</p>
-            )}
-            <div ref={messagesEndRef} aria-hidden="true" />
-          </div>
-        </ScrollArea>
-        <DrawerFooter className="border-t">
-          <Mention
-            key={composerKey}
-            value={mentions}
-            onValueChange={setMentions}
-            inputValue={text}
-            onInputValueChange={setText}
-            trigger="@"
-            onFilter={filterMentionUsers}
-          >
-            <MentionInput asChild>
-              <Textarea
-                ref={textareaRef}
-                placeholder="Write a comment..."
-                className="max-h-40 min-h-24 resize-none"
-                onKeyDown={(event) => {
-                  if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-                    event.preventDefault()
-                    void handleSubmit()
-                  }
-                }}
-              />
-            </MentionInput>
-            <MentionContent className="max-h-64 min-w-64 overflow-y-auto">
-              {usersQuery.isLoading ? (
-                <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                  Loading users...
-                </div>
-              ) : mentionUsers.length ? (
-                mentionUsers.map((mentionUser) => (
-                  <MentionItem
-                    key={mentionUser._id}
-                    value={mentionUser._id}
-                    label={mentionLabel(mentionUser)}
-                  >
-                    <UserAvatar
-                      name={displayUserName(mentionUser)}
-                      avatar={mentionUser.avatar}
-                      className="size-6"
-                    />
-                    <span className="min-w-0">
-                      <span className="block truncate">{displayUserName(mentionUser)}</span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        @{mentionUser.user}
-                      </span>
-                    </span>
-                  </MentionItem>
-                ))
-              ) : (
-                <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                  No users found
-                </div>
-              )}
-            </MentionContent>
-          </Mention>
-          <Button
-            type="button"
-            loading={createCommentMutation.isPending}
-            disabled={!trimmedText}
-            onClick={() => void handleSubmit()}
-          >
-            <Send />
-            Send
-          </Button>
-        </DrawerFooter>
+                              </Bubble>
+                            </MessageContent>
+                          </Message>
+                        </Fragment>
+                      )
+                    })}
+                  </BubbleGroup>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No comments yet.</p>
+                )}
+                <div ref={messagesEndRef} aria-hidden="true" />
+              </div>
+            </ScrollArea>
+            <DrawerFooter className="border-t">
+              <Mention
+                key={composerKey}
+                value={mentions}
+                onValueChange={setMentions}
+                inputValue={text}
+                onInputValueChange={setText}
+                trigger="@"
+                onFilter={filterMentionUsers}
+              >
+                <MentionInput asChild>
+                  <Textarea
+                    ref={textareaRef}
+                    placeholder="Write a comment..."
+                    className="max-h-40 min-h-24 resize-none"
+                    onKeyDown={(event) => {
+                      if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                        event.preventDefault()
+                        void handleSubmit()
+                      }
+                    }}
+                  />
+                </MentionInput>
+                <MentionContent className="max-h-64 min-w-64 overflow-y-auto">
+                  {usersLoading ? (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      Loading users...
+                    </div>
+                  ) : mentionUsers.length ? (
+                    mentionUsers.map((mentionUser) => (
+                      <MentionItem
+                        key={mentionUser._id}
+                        value={mentionUser._id}
+                        label={mentionLabel(mentionUser)}
+                      >
+                        <UserAvatar
+                          name={displayUserName(mentionUser)}
+                          avatar={mentionUser.avatar}
+                          className="size-6"
+                        />
+                        <span className="min-w-0">
+                          <span className="block truncate">{displayUserName(mentionUser)}</span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            @{mentionUser.user}
+                          </span>
+                        </span>
+                      </MentionItem>
+                    ))
+                  ) : (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">No users found</div>
+                  )}
+                </MentionContent>
+              </Mention>
+              <Button
+                type="button"
+                loading={createCommentMutation.isPending}
+                disabled={!trimmedText}
+                onClick={() => void handleSubmit()}
+              >
+                <Send />
+                Send
+              </Button>
+            </DrawerFooter>
+          </TabsContent>
+        </Tabs>
       </DrawerContent>
     </Drawer>
   )

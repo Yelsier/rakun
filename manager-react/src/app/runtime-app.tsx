@@ -22,6 +22,7 @@ import type { ManagerProviderProps } from "../client/react";
 import { ManagerApp } from "../router";
 import { SessionProvider } from "@/state/session";
 import { LanguageProvider } from "@/state/language";
+import { ManagerUsersProvider } from "@/state/users";
 import { ManagerRootProviders } from "@/app/root-providers";
 import { ManagerLoadingFallback } from "@/components/manager-loading-fallback";
 import { ManagerLinkProvider, type ManagerLinkComponent } from "@/link";
@@ -242,21 +243,23 @@ export const ManagerRuntimeApp = ({
                       initialUser={state.user}
                       contentTypes={state.contentTypes}
                     >
-                      <LanguageProvider
-                        languages={state.languages}
-                        initialLanguage={state.initialLanguage}
-                      >
-                        <ManagerApp
-                          pathname={pathname}
-                          basePath={basePath}
-                          searchParams={searchParams}
-                          contentTypes={state.contentTypes}
-                          authenticated
-                          preview={preview}
-                          plugins={plugins}
-                          {...overrides}
-                        />
-                      </LanguageProvider>
+                      <ManagerUsersProvider>
+                        <LanguageProvider
+                          languages={state.languages}
+                          initialLanguage={state.initialLanguage}
+                        >
+                          <ManagerApp
+                            pathname={pathname}
+                            basePath={basePath}
+                            searchParams={searchParams}
+                            contentTypes={state.contentTypes}
+                            authenticated
+                            preview={preview}
+                            plugins={plugins}
+                            {...overrides}
+                          />
+                        </LanguageProvider>
+                      </ManagerUsersProvider>
                     </SessionProvider>
                   ) : null}
                 </ManagerMediaProvider>

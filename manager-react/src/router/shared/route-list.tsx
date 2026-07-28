@@ -16,6 +16,7 @@ import { ManagerSettingsRoutePathsScreen } from "../dashboard/settings/routes/pa
 import { ManagerSettingsRoutesScreen } from "../dashboard/settings/routes";
 import { ManagerSettingsHomeScreen } from "../dashboard/settings";
 import { ManagerSettingsSystemScreen } from "../dashboard/settings/system";
+import { ManagerSettingsReviewPoliciesScreen } from "../dashboard/settings/review-policies";
 import {
   ManagerSettingsUserRoleCreateScreen,
   ManagerSettingsUserRoleEditScreen,
@@ -23,6 +24,7 @@ import {
 } from "../dashboard/settings/user-roles";
 import { ManagerUsersScreen } from "../dashboard/users";
 import LanguageSelector from "../../components/LanguageSelector";
+import { VariantSelector } from "../../components/VariantSelector";
 
 import {
   defineManagerRoute,
@@ -107,6 +109,13 @@ export const managerRouteDefinitions = [
     layout: "dashboard",
     parse: () => ({ kind: "settings-system" }),
     render: () => <ManagerSettingsSystemScreen />,
+  }),
+  defineManagerRoute({
+    kind: "settings-review-policies",
+    path: "/settings/review-policies",
+    layout: "dashboard",
+    parse: () => ({ kind: "settings-review-policies" }),
+    render: () => <ManagerSettingsReviewPoliciesScreen />,
   }),
   defineManagerRoute({
     kind: "settings-languages",
@@ -206,8 +215,15 @@ export const managerRouteDefinitions = [
       contentType: params.contentType ?? "",
       id: params.id ?? "",
     }),
-    headerEnd: () => (
-      <LanguageSelector className="w-36 border-0 shadow-none" />
+    headerEnd: (route, _props, contentType) => (
+      <div className="flex items-center gap-2">
+        <VariantSelector
+          contentType={route.contentType}
+          documentId={route.id}
+          routeKey={contentType?.routes?.find((item) => item.hasPage)?.key}
+        />
+        <LanguageSelector className="w-36 border-0 shadow-none" />
+      </div>
     ),
     render: (route, props, contentType) =>
       props.renderContentEdit?.(route, contentType) ?? (

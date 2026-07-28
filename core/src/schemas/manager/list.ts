@@ -2,6 +2,7 @@ import z from 'zod'
 
 export const listInput = z.object({
   contentType: z.string(),
+  languageCode: z.string().optional(),
   query: z.object({
     filter: z.record(z.string(), z.any()).optional(),
     options: z

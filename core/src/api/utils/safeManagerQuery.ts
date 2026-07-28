@@ -17,6 +17,7 @@ const systemFields = new Set([
   "_trashed",
   "_revision",
   "_localeVariantGroupId",
+  "_localeVariantName",
   "_localeVariantRole",
   "createdAt",
   "createdBy",
