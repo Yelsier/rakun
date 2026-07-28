@@ -2,7 +2,7 @@
 
 import type { ListLiteralsOutput } from "@rakun-kit/core/client";
 import { AlertTriangle, Info, Save } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, startTransition, useState } from "react";
 import { toast } from "sonner";
 
 import { useManagerMutation, useManagerQuery } from "@/client/react";
@@ -263,7 +263,12 @@ export const ManagerSettingsLiteralsScreen = () => {
           <SearchInput
             placeholder="Search by key, description or module"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              const nextValue = event.target.value
+              startTransition(() => {
+                setSearch(nextValue)
+              })
+            }}
             className="max-w-sm"
           />
           <Badge variant="outline">Default locale: {data.defaultLocale}</Badge>

@@ -1,8 +1,17 @@
 'use client'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { RowSelectionState } from '@tanstack/react-table'
 import { Archive, Languages, Plus, RotateCcw, Trash } from 'lucide-react'
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  memo,
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react'
 import { LOCALE_VARIANT_ROLE_FIELD, type Permission } from '@rakun-kit/core/client'
 import { toast } from 'sonner'
 
@@ -65,7 +74,9 @@ const ContentListSearch = memo(function ContentListSearch({
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
-      onDebouncedChange(value)
+      startTransition(() => {
+        onDebouncedChange(value)
+      })
     }, SEARCH_DEBOUNCE_MS)
 
     return () => window.clearTimeout(timeoutId)
@@ -235,8 +246,8 @@ const ListContents: React.FC<{
 
     return Object.keys(filter).length > 0 ? filter : undefined
   }, [hasPageRoutes, isTrash, searchableFields, trimmedSearch])
-  const { data, refetch } = useQuery(
-    trpc.manager.list.queryOptions({
+  const { data, refetch, isPending } = useQuery({
+    ...trpc.manager.list.queryOptions({
       contentType,
       query: {
         filter: listFilter,
@@ -248,8 +259,9 @@ const ListContents: React.FC<{
             : undefined,
         },
       },
-    })
-  )
+    }),
+    placeholderData: keepPreviousData,
+  })
   const restoreMutation = useManagerMutation('manager.update')
   const duplicateMutation = useManagerMutation('manager.duplicate')
   const trashMutation = useManagerMutation('manager.trash')
@@ -281,7 +293,9 @@ const ListContents: React.FC<{
   }, [contentType, isTrash, debouncedSearch])
 
   useEffect(() => {
-    setDebouncedSearch((previous) => (previous === '' ? previous : ''))
+    startTransition(() => {
+      setDebouncedSearch((previous) => (previous === '' ? previous : ''))
+    })
   }, [contentType])
 
   useEffect(() => {
@@ -295,12 +309,28 @@ const ListContents: React.FC<{
   }, [enableSelection])
 
   const handleDebouncedSearch = useCallback((value: string) => {
-    setDebouncedSearch((previous) => (previous === value ? previous : value))
+    startTransition(() => {
+      setDebouncedSearch((previous) => (previous === value ? previous : value))
+    })
   }, [])
 
   const handleTrashChange = useCallback((value: string) => {
-    setIsTrash(value === 'trash')
-    setPage(1)
+    startTransition(() => {
+      setIsTrash(value === 'trash')
+      setPage(1)
+    })
+  }, [])
+
+  const setPageTransition = useCallback<Dispatch<SetStateAction<number>>>((value) => {
+    startTransition(() => {
+      setPage(value)
+    })
+  }, [])
+
+  const setItemsPerPageTransition = useCallback<Dispatch<SetStateAction<number>>>((value) => {
+    startTransition(() => {
+      setItemsPerPage(value)
+    })
   }, [])
 
   const restore = async () => {
@@ -441,6 +471,7 @@ const ListContents: React.FC<{
   const typedData = data as { totalItems: number; items: object[] } | undefined
   const totalItems = typedData?.totalItems ?? 0
   const items = typedData?.items ?? []
+  const showInitialSkeleton = isPending && !typedData
   const canCreate = hasAnyPermission([
     `content.${contentType}.own` as Permission,
     `content.${contentType}.updateAny` as Permission,
@@ -471,7 +502,7 @@ const ListContents: React.FC<{
         mode="delete"
       />
       <div data-tour="content-list-table">
-        {typedData ? (
+        {!showInitialSkeleton ? (
           <DataTable
             columns={columns({
               fields: fields || [],
@@ -667,14 +698,14 @@ const ListContents: React.FC<{
           </Button>
         </div>
       ) : null}
-      {typedData ? (
+      {!showInitialSkeleton ? (
         <div className="mt-6">
           <PaginationController
-            setPage={setPage}
+            setPage={setPageTransition}
             page={page}
             totalItems={totalItems}
             itemsPerPage={itemsPerPage}
-            setItemsPerPage={setItemsPerPage}
+            setItemsPerPage={setItemsPerPageTransition}
           />
         </div>
       ) : null}

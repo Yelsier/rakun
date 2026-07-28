@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react'
+import { startTransition } from 'react'
 
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -34,6 +35,12 @@ export const PaginationController: React.FC<{
   const firstItem = totalItems === 0 ? 0 : (page - 1) * itemsPerPage + 1
   const lastItem = Math.min(page * itemsPerPage, totalItems)
 
+  const updatePage = (value: SetStateAction<number>) => {
+    startTransition(() => {
+      setPage(value)
+    })
+  }
+
   const ellipsis = (className?: string) => {
     return (
       <PaginationItem className={className}>
@@ -52,7 +59,7 @@ export const PaginationController: React.FC<{
                     if (e.key === 'Enter') {
                       const val = parseInt(e.currentTarget.value)
                       if (!isNaN(val)) {
-                        setPage(Math.min(totalPages, Math.max(1, val)))
+                        updatePage(Math.min(totalPages, Math.max(1, val)))
                       }
                     }
                   }}
@@ -77,7 +84,7 @@ export const PaginationController: React.FC<{
         <PaginationContent>
           <PaginationItem
             className="cursor-pointer select-none"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            onClick={() => updatePage((p) => Math.max(1, p - 1))}
           >
             <PaginationPrevious />
           </PaginationItem>
@@ -85,7 +92,7 @@ export const PaginationController: React.FC<{
           {page > 1 && (
             <PaginationItem
               className={`cursor-pointer select-none ${compactPagination ? '' : 'hidden sm:block'}`}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => updatePage((p) => Math.max(1, p - 1))}
             >
               <PaginationLink>{page - 1}</PaginationLink>
             </PaginationItem>
@@ -96,7 +103,7 @@ export const PaginationController: React.FC<{
           {page < totalPages && (
             <PaginationItem
               className={`cursor-pointer select-none ${compactPagination ? '' : 'hidden sm:block'}`}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => updatePage((p) => Math.min(totalPages, p + 1))}
             >
               <PaginationLink>{page + 1}</PaginationLink>
             </PaginationItem>
@@ -104,7 +111,7 @@ export const PaginationController: React.FC<{
           {totalPages > 3 && page < totalPages - 1 && ellipsis('hidden sm:block')}
           <PaginationItem
             className="cursor-pointer select-none"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            onClick={() => updatePage((p) => Math.min(totalPages, p + 1))}
           >
             <PaginationNext />
           </PaginationItem>
@@ -118,8 +125,10 @@ export const PaginationController: React.FC<{
             value={String(itemsPerPage)}
             disabled={!setItemsPerPage}
             onValueChange={(value) => {
-              setItemsPerPage?.(Number(value))
-              setPage(1)
+              startTransition(() => {
+                setItemsPerPage?.(Number(value))
+                setPage(1)
+              })
             }}
           >
             <SelectTrigger className="h-9 w-20">
