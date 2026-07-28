@@ -1,7 +1,12 @@
-import { createContext, useContext } from 'react'
+'use client'
+
+import { createContext, useContext, useMemo, type ReactNode } from 'react'
 
 type ConditionFieldStateContextValue = {
   fieldState: Record<string, unknown>
+}
+
+type ConditionFieldDispatchContextValue = {
   onFieldStateChange: (id: string, state: unknown) => void
 }
 
@@ -16,7 +21,34 @@ export const mergeConditionFieldState = (
 const ConditionFieldStateContext =
   createContext<ConditionFieldStateContextValue | null>(null)
 
-export const ConditionFieldStateProvider = ConditionFieldStateContext.Provider
+const ConditionFieldDispatchContext =
+  createContext<ConditionFieldDispatchContextValue | null>(null)
 
-export const useConditionFieldState = () =>
-  useContext(ConditionFieldStateContext)
+export const ConditionFieldStateProvider = ({
+  fieldState,
+  onFieldStateChange,
+  children,
+}: {
+  fieldState: Record<string, unknown>
+  onFieldStateChange: (id: string, state: unknown) => void
+  children: ReactNode
+}) => {
+  const dispatchValue = useMemo(
+    () => ({ onFieldStateChange }),
+    [onFieldStateChange]
+  )
+  const stateValue = useMemo(() => ({ fieldState }), [fieldState])
+
+  return (
+    <ConditionFieldDispatchContext.Provider value={dispatchValue}>
+      <ConditionFieldStateContext.Provider value={stateValue}>
+        {children}
+      </ConditionFieldStateContext.Provider>
+    </ConditionFieldDispatchContext.Provider>
+  )
+}
+
+export const useConditionFieldState = () => useContext(ConditionFieldStateContext)
+
+export const useConditionFieldDispatch = () =>
+  useContext(ConditionFieldDispatchContext)

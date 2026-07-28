@@ -196,7 +196,7 @@ export function ManagerHelpProvider({ route, children }: ManagerHelpProviderProp
       {children}
 
       <Dialog open={promptOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" onClick={() => void handleTutorialPreference(false)}>
           <DialogHeader>
             <DialogTitle>¿Quieres activar tutoriales?</DialogTitle>
             <DialogDescription>

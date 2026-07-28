@@ -27,67 +27,67 @@ with Express and Next.js integrations available.
 
 ## Packages
 
-| Package | Purpose |
-| --- | --- |
-| `@rakun-kit/core` | Content types, fields, schemas, runtime bootstrap, operations, auth, media, routes, redirects and shared contracts. |
-| `@rakun-kit/manager-react` | React manager application, manager clients, navigation helpers and styles. |
-| `@rakun-kit/express` | Express adapter for Rakun APIs, media routes and optional tRPC support. |
-| `@rakun-kit/next` | Next.js adapter for APIs, media routes and mounting the manager. |
-| `@rakun-kit/trpc` | tRPC router adapter for Rakun operations. |
-| `@rakun-kit/s3` | S3 media storage adapter. |
-| `@rakun-kit/openai` | OpenAI automatic translation adapter. |
-| `@rakun-kit/preview` | Local development app, not intended for publication. |
+| Package                    | Purpose                                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `@rakun-kit/core`          | Content types, fields, schemas, runtime bootstrap, operations, auth, media, routes, redirects and shared contracts. |
+| `@rakun-kit/manager-react` | React manager application, manager clients, navigation helpers and styles.                                          |
+| `@rakun-kit/express`       | Express adapter for Rakun APIs, media routes and optional tRPC support.                                             |
+| `@rakun-kit/next`          | Next.js adapter for APIs, media routes and mounting the manager.                                                    |
+| `@rakun-kit/trpc`          | tRPC router adapter for Rakun operations.                                                                           |
+| `@rakun-kit/s3`            | S3 media storage adapter.                                                                                           |
+| `@rakun-kit/openai`        | OpenAI automatic translation adapter.                                                                               |
+| `@rakun-kit/preview`       | Local development app, not intended for publication.                                                                |
 
 ## Basic Shape
 
 Define content types in application code:
 
 ```ts
-import { ContentType, Fields } from "@rakun-kit/core";
+import { ContentType, Fields } from '@rakun-kit/core'
 
 export const Post = new ContentType({
-  name: "Post",
+  name: 'Post',
   menu: {
-    title: "Posts",
-    icon: "newspaper",
-    category: "Content",
+    title: 'Posts',
+    icon: 'newspaper',
+    category: 'Content',
   },
   fields: {
     title: Fields.string().required(),
-    slug: Fields.string().type("Slug").required(),
-    body: Fields.string().type("RichText"),
+    slug: Fields.string().type('Slug').required(),
+    body: Fields.string().type('RichText'),
     published: Fields.boolean(),
   },
-  uniques: [["slug"]],
-  listFields: ["title", "slug", "published"],
-});
+  uniques: [['slug']],
+  listFields: ['title', 'slug', 'published'],
+})
 ```
 
 Bootstrap Rakun once in your server/runtime:
 
 ```ts
-import { rakunBootstrap } from "@rakun-kit/core";
+import { rakunBootstrap } from '@rakun-kit/core'
 
 rakunBootstrap({
   literals: {},
   contentTypes: [Post],
   mongo: {
     MONGO_URI: process.env.MONGO_URI!,
-    ENVIRONMENT: "production",
+    ENVIRONMENT: 'production',
   },
-});
+})
 ```
 
 Then expose the runtime through an adapter. With Express:
 
 ```ts
-import express from "express";
-import { rakunExpress } from "@rakun-kit/express";
+import express from 'express'
+import { rakunExpress } from '@rakun-kit/express'
 
-const app = express();
+const app = express()
 
-app.use("/api/rakun", rakunExpress());
-app.listen(3000);
+app.use('/api/rakun', rakunExpress())
+app.listen(3000)
 ```
 
 ## Framework Agnostic By Design
@@ -118,24 +118,17 @@ mount it directly, or a custom integration can provide:
 - the bundled stylesheet
 
 ```tsx
-import {
-  ManagerBrowserApp,
-  createHttpManagerClient,
-} from "@rakun-kit/manager-react";
-import "@rakun-kit/manager-react/styles.css";
+import { ManagerBrowserApp, createHttpManagerClient } from '@rakun-kit/manager-react'
+import '@rakun-kit/manager-react/styles.css'
 
 const client = createHttpManagerClient({
-  baseUrl: "/api/rakun",
-});
+  baseUrl: '/api/rakun',
+})
 
 export function ManagerPage() {
   return (
-    <ManagerBrowserApp
-      client={client}
-      pathname={window.location.pathname}
-      basePath="/manager"
-    />
-  );
+    <ManagerBrowserApp client={client} pathname={window.location.pathname} basePath="/manager" />
+  )
 }
 ```
 
@@ -150,14 +143,28 @@ bun install
 Build all published packages:
 
 ```sh
-bun run build
+bun build
+```
+
+Run the seeding if you want some base info:
+
+```sh
+bun preview:next:seed
 ```
 
 Run the local preview app:
 
 ```sh
-bun run preview
+bun preview
 ```
+
+or
+
+```sh
+bun preview:next
+```
+
+For a comprehensive list of commands check the root `package.json`.
 
 ## License
 

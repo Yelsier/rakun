@@ -12,13 +12,14 @@
         "@types/qrcode": "^1.5.6",
         "bcrypt": "^6.0.0",
         "mongodb": "^7.1.1",
+        "prettier": "^3.8.5",
         "sharp": "^0.34.5",
         "typescript": "^6.0.2",
       },
     },
     "core": {
       "name": "@rakun-kit/core",
-      "version": "1.4.3",
+      "version": "1.4.11",
       "dependencies": {
         "@simplewebauthn/server": "^13.3.0",
         "otpauth": "^9.5.0",
@@ -55,7 +56,7 @@
     },
     "manager-react": {
       "name": "@rakun-kit/manager-react",
-      "version": "1.4.4",
+      "version": "1.4.11",
       "dependencies": {
         "@diceui/mention": "^0.8.0",
         "@diceui/tags-input": "^0.7.2",
@@ -149,7 +150,7 @@
     },
     "next": {
       "name": "@rakun-kit/next",
-      "version": "1.3.11",
+      "version": "1.4.0",
       "dependencies": {
         "@rakun-kit/core": "^1.3.8",
         "@rakun-kit/react": "^1.2.2",
@@ -183,7 +184,7 @@
     },
     "plugin-code-editor": {
       "name": "@rakun-kit/plugin-code-editor",
-      "version": "0.2.0",
+      "version": "1.0.0",
       "dependencies": {
         "prismjs": "^1.30.0",
       },
@@ -269,7 +270,7 @@
     },
     "react": {
       "name": "@rakun-kit/react",
-      "version": "1.2.5",
+      "version": "1.4.0",
       "dependencies": {
         "@rakun-kit/core": "^1.3.8",
       },
@@ -1733,6 +1734,8 @@
     "postcss": ["postcss@8.5.14", "", { "dependencies": { "nanoid": "^3.3.11", "picocolors": "^1.1.1", "source-map-js": "^1.2.1" } }, "sha512-SoSL4+OSEtR99LHFZQiJLkT59C5B1amGO1NzTwj7TT1qCUgUO6hxOvzkOYxD+vMrXBM3XJIKzokoERdqQq/Zmg=="],
 
     "prelude-ls": ["prelude-ls@1.2.1", "", {}, "sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g=="],
+
+    "prettier": ["prettier@3.8.5", "", { "bin": { "prettier": "bin/prettier.cjs" } }, "sha512-zxcTTCedNGJM4R8sj/Cq/F0W/c4iE0afWBcBwMTRtw4WHYP9TWkYjdiH3npPRUYsXQCPR0hTU9yjovOu+E6EQA=="],
 
     "prismjs": ["prismjs@1.30.0", "", {}, "sha512-DEvV2ZF2r2/63V+tK8hQvrR2ZGn10srHbXviTlcv7Kpzw8jWiNTqbVgjO3IY8RxrrOUF8VPMQQFysYYYv0YZxw=="],
 

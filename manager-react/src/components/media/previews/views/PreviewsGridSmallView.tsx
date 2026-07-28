@@ -17,12 +17,12 @@ export default function PreviewsGridSmallView({ media }: PreviewsGridSmallViewPr
   const { onMediaClick, renderPreview, formatFileSize, isSelected } = useMediaPreview()
 
   return (
-    <div className="relative grid w-full grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+    <div className="relative grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {media.map((item) => (
         <ContextMenu key={item._id}>
           <ContextMenuTrigger asChild>
             <Card
-              className="relative overflow-hidden cursor-pointer p-2 hover:bg-accent/40 data-[state=open]:bg-accent/60 data-[state=open]:ring-1 data-[state=open]:ring-primary/30"
+              className="relative contain-paint md:overflow-hidden cursor-pointer p-2 hover:bg-accent/40 data-[state=open]:bg-accent/60 data-[state=open]:ring-1 data-[state=open]:ring-primary/30 [content-visibility:auto] [contain-intrinsic-size:auto_11rem]"
               onClick={() => onMediaClick(item)}
             >
               {isSelected(item._id) ? (
