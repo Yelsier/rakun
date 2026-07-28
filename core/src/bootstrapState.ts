@@ -6,6 +6,11 @@ import type { TranslationServiceConfig } from "./translation";
 import type { MongoConfig } from "./orm/database";
 import type { RouteDefinition } from "./api/utils/routes/routeDefinitions";
 import type { RakunOperationMap } from "./api/operations/types";
+import type {
+  RakunPluginDefinition,
+  RakunPluginFieldDefinition,
+  RakunResolvedPluginContributions,
+} from './plugins'
 
 export interface RakunBootstrapOptions {
   literals: LiteralCatalogInput;
@@ -15,6 +20,8 @@ export interface RakunBootstrapOptions {
   };
   routes?: readonly RouteDefinition[];
   apiOperations?: RakunOperationMap;
+  plugins?: readonly RakunPluginDefinition[];
+  permissions?: readonly string[];
   mongo?: MongoConfig;
   media?: MediaServiceConfig;
   translation?: TranslationServiceConfig;
@@ -31,14 +38,22 @@ export interface RakunBootstrapOptions {
 
 export type RakunContentType = ContentType;
 
-let bootstrapOptions: RakunBootstrapOptions | null = null;
+export type ResolvedRakunBootstrapOptions = Omit<
+  RakunBootstrapOptions,
+  'contentTypes' | 'routes' | 'apiOperations' | 'literals' | 'permissions'
+> &
+  RakunResolvedPluginContributions & {
+    fields: RakunPluginFieldDefinition[]
+  }
+
+let bootstrapOptions: ResolvedRakunBootstrapOptions | null = null;
 let bootstrapped = false;
 
-export const getRakunBootstrapOptions = (): RakunBootstrapOptions | null =>
+export const getRakunBootstrapOptions = (): ResolvedRakunBootstrapOptions | null =>
   bootstrapOptions;
 
 export const setRakunBootstrapOptions = (
-  options: RakunBootstrapOptions,
+  options: ResolvedRakunBootstrapOptions,
 ): void => {
   bootstrapOptions = options;
   bootstrapped = true;

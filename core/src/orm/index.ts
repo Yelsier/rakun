@@ -56,7 +56,7 @@ export async function createMongoService(config: MongoConfig): Promise<DBService
       update: updateHandler(db, () => dbService),
       delete: deleteHandler(db, () => dbService),
       find: findHandler(db),
-      clear: clearHandler(db),
+      clear: clearHandler(db, () => dbService),
       updateMany: updateManyHandler(db, () => dbService),
       findDependencies: findDependenciesHandler(db),
       upsert: upsertHandler(db, () => dbService),

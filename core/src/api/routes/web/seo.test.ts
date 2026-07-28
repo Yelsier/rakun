@@ -41,17 +41,17 @@ describe("resolveSeo", () => {
         titleTemplate: "%s | Example",
       },
       alternatePaths: {
-        en: "/en/home/",
+        en: "/home/",
         es: "/es/inicio/",
       },
-      path: "/en/home/",
+      path: "/home/",
     });
 
     expect(result?.title).toBe("Home | Example");
     expect(result?.description).toBe("Default description");
-    expect(result?.canonicalUrl).toBe("https://example.com/en/home/");
+    expect(result?.canonicalUrl).toBe("https://example.com/home/");
     expect(result?.alternates).toEqual({
-      en: "https://example.com/en/home/",
+      en: "https://example.com/home/",
       es: "https://example.com/es/inicio/",
     });
     expect(result?.openGraphTitle).toBe("Home | Example");

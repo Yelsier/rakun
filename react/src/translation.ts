@@ -12,4 +12,5 @@ export {
 } from './pageInfoStore'
 export { PageInfoClientSync } from './PageInfoClientSync'
 export { PageInfoProvider, usePageInfo } from './PageInfoProvider'
+export { useClientT } from './useClientT'
 export { useT } from './useT'

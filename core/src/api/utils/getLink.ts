@@ -1,15 +1,23 @@
 import { Route, RouteMap } from "../../internal-content-types";
 import { getRakunBootstrapOptions } from "../../bootstrapState";
 import { throwAppError } from "../../lib/errors";
-import { TranslatableValue } from "../../lib/types";
+import type { TranslatableValue } from "../../lib/types";
 import { getMongoService } from "../../orm";
-import { RouteKeys } from "./routes/routeDefinitions";
+import { getLanguages } from "./getLanguages";
+import type { RouteKeys } from "./routes/routeDefinitions";
 
 export const getLink = async (
   key: RouteKeys,
   id: string,
 ): Promise<TranslatableValue<string>> => {
   const db = await getMongoService();
+  const languages = await getLanguages();
+  const defaultLanguageCode = languages.find(
+    (language) => language.default,
+  )?.code;
+  const languageCodeById = new Map(
+    languages.map((language) => [String(language._id), language.code]),
+  );
 
   const configuredRoute = getRakunBootstrapOptions()?.routes?.find(
     (route) => route.key === key,
@@ -32,19 +40,35 @@ export const getLink = async (
     });
   }
 
-  const { items } = await db.list(RouteMap, {
+  const routeMapsByGroup = await db.list(RouteMap, {
     filter: {
       routeId: route._id,
-      contentTypeId: id,
+      variantGroupId: id,
     },
-    options: { limit: "all", fields: ["path"] },
+    options: { limit: "all", fields: ["path", "languageId"] },
   });
+  const { items } =
+    routeMapsByGroup.items.length > 0
+      ? routeMapsByGroup
+      : await db.list(RouteMap, {
+          filter: {
+            routeId: route._id,
+            contentTypeId: id,
+          },
+          options: { limit: "all", fields: ["path", "languageId"] },
+        });
 
-  return Object.fromEntries(
-    items
-      .map((item) => [item.path.split("/")[1], item.path])
-      .concat([["_tag", "Translatable"]]),
-  );
+  const result: TranslatableValue<string> = { _tag: "Translatable" };
+
+  for (const item of items) {
+    const code =
+      languageCodeById.get(String(item.languageId)) ?? defaultLanguageCode;
+    if (code) {
+      result[code] = item.path;
+    }
+  }
+
+  return result;
 };
 
 export const getTranslatedLink = async (

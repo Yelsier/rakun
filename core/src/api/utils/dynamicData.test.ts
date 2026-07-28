@@ -1,9 +1,15 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, mock } from "bun:test";
 
 import ContentType from "../../lib/ContentType";
 import { Fields } from "../../lib/fields";
 import { registerContentType } from "../../lib/Registry";
-import { mergeDynamicListItems, resolveDynamicData } from "./dynamicData";
+import type { DBService } from "../../orm/dbService";
+import {
+  getDynamicListItemContentTypeName,
+  mergeDynamicListItems,
+  resolveDynamicData,
+  resolveRelatedCollectionValue,
+} from "./dynamicData";
 
 describe("dynamic data output", () => {
   it("does not resolve field bindings from the same root document", async () => {
@@ -94,6 +100,225 @@ describe("dynamic data output", () => {
     expect(resolved.modules[0]?.value.eyebrow).toBe("Parent title");
   });
 
+  it("builds a nested list from an array on the current document", async () => {
+    const CurrentDocumentLinkItem = new ContentType({
+      name: "CurrentDocumentLinkItem",
+      fields: {
+        title: Fields.string().required(),
+        href: Fields.string().required(),
+      },
+    });
+    const CurrentDocumentHeader = new ContentType({
+      name: "CurrentDocumentHeader",
+      fields: {
+        categories: Fields.blocks([
+          {
+            name: "Category",
+            field: Fields.relation(CurrentDocumentLinkItem, "new"),
+          },
+        ]),
+      },
+    });
+    const CurrentDocumentProject = new ContentType({
+      name: "CurrentDocumentProject",
+      fields: {
+        categories: Fields.blocks([
+          {
+            name: "Category",
+            field: Fields.relation(CurrentDocumentLinkItem, "new"),
+          },
+        ]),
+        modules: Fields.blocks([
+          {
+            name: "Header",
+            field: Fields.relation(CurrentDocumentHeader, "new"),
+          },
+        ]),
+      },
+    });
+    registerContentType(CurrentDocumentLinkItem);
+    registerContentType(CurrentDocumentHeader);
+
+    const resolved = await resolveDynamicData(
+      {
+        _id: "project-1",
+        _type: CurrentDocumentProject.name,
+        categories: [
+          {
+            name: "Category",
+            value: {
+              _id: "category-1",
+              _type: CurrentDocumentLinkItem.name,
+              title: "News",
+              href: "/news",
+            },
+          },
+        ],
+        modules: [
+          {
+            name: "Header",
+            value: {
+              _type: CurrentDocumentHeader.name,
+              _bindings: {
+                lists: {
+                  categories: {
+                    contentType: CurrentDocumentLinkItem.name,
+                    source: {
+                      kind: "currentDocument",
+                      contentType: CurrentDocumentProject.name,
+                      path: "categories",
+                      itemName: "Category",
+                    },
+                    itemName: "Category",
+                    map: {
+                      title: {
+                        contentType: CurrentDocumentLinkItem.name,
+                        path: "title",
+                      },
+                      href: {
+                        contentType: CurrentDocumentLinkItem.name,
+                        path: "href",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+      {
+        db: {} as never,
+        contentType: CurrentDocumentProject,
+        surface: "web",
+      },
+    );
+
+    expect(resolved.modules[0]?.value.categories).toEqual([
+      {
+        name: "Category",
+        value: {
+          _id: "Category:category-1",
+          _type: CurrentDocumentLinkItem.name,
+          title: "News",
+          href: "/news",
+        },
+      },
+    ]);
+  });
+
+  it("resolves list query values from the current document", async () => {
+    const CurrentQueryCard = new ContentType({
+      name: "CurrentQueryCard",
+      fields: {
+        title: Fields.string(),
+      },
+    });
+    const CurrentQueryCategory = new ContentType({
+      name: "CurrentQueryCategory",
+      fields: {
+        title: Fields.string().required(),
+        slug: Fields.string().required(),
+        projects: Fields.blocks([
+          {
+            name: CurrentQueryCard.name,
+            field: Fields.relation(CurrentQueryCard, "new"),
+          },
+        ]),
+      },
+    });
+    const CurrentQueryProject = new ContentType({
+      name: "CurrentQueryProject",
+      dynamicDataSource: true,
+      fields: {
+        title: Fields.string().required(),
+        category: Fields.relation(CurrentQueryCategory, "existing").required(),
+        published: Fields.boolean(),
+      },
+    });
+    registerContentType(CurrentQueryCard);
+    registerContentType(CurrentQueryCategory);
+    registerContentType(CurrentQueryProject);
+    const list = mock(async () => ({ totalItems: 0, items: [] }));
+
+    await resolveDynamicData(
+      {
+        _id: "category-1",
+        _type: CurrentQueryCategory.name,
+        title: "Design",
+        slug: "design",
+        projects: [],
+        _bindings: {
+          lists: {
+            projects: {
+              contentType: CurrentQueryProject.name,
+              itemName: CurrentQueryCard.name,
+              query: {
+                filter: {
+                  $and: [
+                    { "category.slug": { $current: "slug" } },
+                    { published: true },
+                  ],
+                },
+                options: { limit: 10 },
+              },
+              map: {},
+            },
+          },
+        },
+      },
+      {
+        db: { list } as unknown as DBService,
+        contentType: CurrentQueryCategory,
+        surface: "web",
+      },
+    );
+
+    expect(list).toHaveBeenCalledWith(CurrentQueryProject, {
+      filter: {
+        $and: [
+          { "category.slug": "design" },
+          { published: true },
+        ],
+        _trashed: { $ne: true },
+        _visibility: { $nin: ["draft", "trash"] },
+      },
+      options: {
+        fields: undefined,
+        limit: 10,
+        page: undefined,
+        sort: undefined,
+      },
+    });
+  });
+
+  it("uses the relation content type as _type when a block name is an alias", () => {
+    const AliasedBlock = new ContentType({
+      name: "AliasedDynamicBlock",
+      fields: {
+        title: Fields.string(),
+      },
+    });
+    const AliasedBlockContainer = new ContentType({
+      name: "AliasedDynamicBlockContainer",
+      fields: {
+        modules: Fields.blocks([
+          {
+            name: "hero",
+            field: Fields.relation(AliasedBlock, "new"),
+          },
+        ]),
+      },
+    });
+
+    expect(
+      getDynamicListItemContentTypeName(
+        AliasedBlockContainer.fields.modules,
+        "hero",
+      ),
+    ).toBe(AliasedBlock.name);
+  });
+
   it("merges dynamic list items with manually stored items", () => {
     const dynamicItem = {
       name: "CarouselItem",
@@ -165,5 +390,212 @@ describe("dynamic data output", () => {
     expect(mergeDynamicListItems([storedCopy], [dynamicItem])).toEqual([
       dynamicItem,
     ]);
+  });
+
+  it("drops invalid fallback values and normalizes generated stable ids", () => {
+    const dynamicItem = {
+      name: "Category",
+      value: {
+        _id: "Category:category-1",
+        _type: "LinkItem",
+        title: "Assistant",
+      },
+    };
+    const rawSourceDocument = {
+      _id: "category-1",
+      _type: "Category",
+      title: "Assistant",
+    };
+    const wrappedSourceDocument = {
+      name: "Category",
+      value: rawSourceDocument,
+    };
+
+    expect(
+      mergeDynamicListItems(
+        [rawSourceDocument, wrappedSourceDocument],
+        [dynamicItem],
+      ),
+    ).toEqual([dynamicItem]);
+  });
+
+  it("collects and flattens related arrays while preserving order and duplicates", async () => {
+    const RelatedCategory = new ContentType({
+      name: "RelatedDynamicCategory",
+      dynamicDataSource: true,
+      fields: {
+        title: Fields.string().required(),
+      },
+    });
+    const RelatedProject = new ContentType({
+      name: "RelatedDynamicProject",
+      dynamicDataSource: true,
+      fields: {
+        title: Fields.string().required(),
+        category: Fields.relation(RelatedCategory, "existing").required(),
+        images: Fields.file().type("Image").multiple().required(),
+      },
+    });
+    registerContentType(RelatedCategory);
+    registerContentType(RelatedProject);
+
+    const repeatedImage = { key: "shared", url: "/shared.webp" };
+    const list = mock(async () => ({
+      totalItems: 2,
+      items: [
+        {
+          _id: "project-1",
+          _type: RelatedProject.name,
+          title: "First",
+          images: [
+            { key: "first", url: "/first.webp" },
+            repeatedImage,
+          ],
+        },
+        {
+          _id: "project-2",
+          _type: RelatedProject.name,
+          title: "Second",
+          images: [repeatedImage, { key: "last", url: "/last.webp" }],
+        },
+      ],
+    }));
+
+    const resolved = await resolveRelatedCollectionValue({
+      db: { list } as unknown as DBService,
+      source: {
+        kind: "relatedCollection",
+        contentType: RelatedProject.name,
+        relation: "category",
+        path: "images",
+        limit: 20,
+        sort: { title: "asc" },
+      },
+      currentSource: {
+        _id: "category-1",
+        _type: RelatedCategory.name,
+        title: "Category",
+      },
+      currentContentType: RelatedCategory,
+      populateDocument: async (item) => item as Record<string, unknown>,
+    });
+
+    expect(resolved).toEqual([
+      { key: "first", url: "/first.webp" },
+      repeatedImage,
+      repeatedImage,
+      { key: "last", url: "/last.webp" },
+    ]);
+    expect(list).toHaveBeenCalledWith(RelatedProject, {
+      filter: {
+        "category._id": "category-1",
+        _trashed: { $ne: true },
+        _visibility: { $nin: ["draft", "trash"] },
+      },
+      options: {
+        fields: undefined,
+        limit: 20,
+        page: undefined,
+        sort: { title: "asc" },
+      },
+    });
+  });
+
+  it("supports multiple relations and returns an empty array without matches", async () => {
+    const RelatedCategory = new ContentType({
+      name: "MultipleRelatedDynamicCategory",
+      dynamicDataSource: true,
+      fields: { title: Fields.string().required() },
+    });
+    const RelatedProject = new ContentType({
+      name: "MultipleRelatedDynamicProject",
+      dynamicDataSource: true,
+      fields: {
+        categories: Fields.relation(
+          RelatedCategory,
+          "existing",
+        ).multiple(),
+        images: Fields.file().type("Image").multiple(),
+      },
+    });
+    registerContentType(RelatedCategory);
+    registerContentType(RelatedProject);
+    const list = mock(async () => ({ totalItems: 0, items: [] }));
+
+    const resolved = await resolveRelatedCollectionValue({
+      db: { list } as unknown as DBService,
+      source: {
+        kind: "relatedCollection",
+        contentType: RelatedProject.name,
+        relation: "categories",
+        path: "images",
+        limit: 10,
+      },
+      currentSource: { _id: "category-2" },
+      currentContentType: RelatedCategory,
+      populateDocument: async (item) => item as Record<string, unknown>,
+    });
+
+    expect(resolved).toEqual([]);
+  });
+
+  it("rejects unrelated fields and non-array source paths", async () => {
+    const RelatedCategory = new ContentType({
+      name: "RejectedRelatedDynamicCategory",
+      dynamicDataSource: true,
+      fields: { title: Fields.string().required() },
+    });
+    const OtherCategory = new ContentType({
+      name: "RejectedRelatedDynamicOther",
+      dynamicDataSource: true,
+      fields: { title: Fields.string().required() },
+    });
+    const RelatedProject = new ContentType({
+      name: "RejectedRelatedDynamicProject",
+      dynamicDataSource: true,
+      fields: {
+        title: Fields.string().required(),
+        category: Fields.relation(RelatedCategory, "existing"),
+        otherCategory: Fields.relation(OtherCategory, "existing"),
+        images: Fields.file().type("Image").multiple(),
+      },
+    });
+    registerContentType(RelatedCategory);
+    registerContentType(OtherCategory);
+    registerContentType(RelatedProject);
+    const list = mock(async () => ({ totalItems: 0, items: [] }));
+    const base = {
+      db: { list } as unknown as DBService,
+      currentSource: { _id: "category-3" },
+      currentContentType: RelatedCategory,
+      populateDocument: async (item: unknown) =>
+        item as Record<string, unknown>,
+    };
+
+    expect(
+      await resolveRelatedCollectionValue({
+        ...base,
+        source: {
+          kind: "relatedCollection",
+          contentType: RelatedProject.name,
+          relation: "otherCategory",
+          path: "images",
+          limit: 10,
+        },
+      }),
+    ).toBeUndefined();
+    expect(
+      await resolveRelatedCollectionValue({
+        ...base,
+        source: {
+          kind: "relatedCollection",
+          contentType: RelatedProject.name,
+          relation: "category",
+          path: "title",
+          limit: 10,
+        },
+      }),
+    ).toBeUndefined();
+    expect(list).not.toHaveBeenCalled();
   });
 });

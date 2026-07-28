@@ -28,14 +28,23 @@ export const populateLinks = async <T extends ContentType>(
       const routeId = value.routeId as string;
       const contentTypeId = value.contentTypeId as string;
 
+      const routeMapsByGroup = await db.list(RouteMap, {
+        filter: {
+          routeId,
+          variantGroupId: contentTypeId,
+        },
+        options: { limit: "all" },
+      });
       const items = (
-        await db.list(RouteMap, {
-          filter: {
-            routeId,
-            contentTypeId,
-          },
-          options: { limit: "all" },
-        })
+        routeMapsByGroup.items.length > 0
+          ? routeMapsByGroup
+          : await db.list(RouteMap, {
+              filter: {
+                routeId,
+                contentTypeId,
+              },
+              options: { limit: "all" },
+            })
       ).items;
 
       if (items.length === 0) {

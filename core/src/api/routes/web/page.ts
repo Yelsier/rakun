@@ -29,6 +29,10 @@ import { populateRelations } from "../../utils/populates/populateRelations";
 import { resolveRedirect } from "../../utils/redirects/resolveRedirect";
 import { validateModule } from "../../utils/validateModule";
 import { resolveSeo } from "./seo";
+import { applyEffectiveIterator } from "../../utils/linkedIterator";
+import { ITERATOR_UNLINKED_FIELD_NAME } from "../../../lib/systemFields";
+import { isIteratorItemVisible } from "../../utils/iteratorVisibility";
+import type { IteratorItemVisibilityCondition } from "../../../lib/fields/List";
 
 export const NotFoundResponse: PageOutput = {
   renderMode: "static",
@@ -44,6 +48,7 @@ export const NotFoundResponse: PageOutput = {
 type IterableContentTypes = {
   name: string;
   value: Record<string, unknown> & { _type: string; _id: string };
+  visibleWhen?: IteratorItemVisibilityCondition;
 }[];
 
 // Add trailing slash
@@ -69,11 +74,13 @@ type PageContentData = Record<string, unknown> & {
 const getSeoAlternatePaths = async ({
   contentType,
   contentTypeId,
+  variantGroupId,
   routeId,
   languages,
 }: {
   contentType: string;
   contentTypeId: string;
+  variantGroupId?: string;
   routeId: string;
   languages: readonly DBOutput<Language>[];
 }): Promise<Record<string, string> | undefined> => {
@@ -85,8 +92,15 @@ const getSeoAlternatePaths = async ({
     await db.list(RouteMap, {
       filter: {
         contentType,
-        contentTypeId,
         routeId,
+        ...(variantGroupId
+          ? { variantGroupId }
+          : {
+              $or: [
+                { contentTypeId },
+                { variantGroupId: contentTypeId },
+              ],
+            }),
       },
       options: {
         limit: "all",
@@ -111,22 +125,34 @@ export const buildPageOutput = async ({
   route,
   contentType,
   contentTypeId,
+  variantGroupId,
   data,
   language,
   tracePrefix = "web.page",
+  preferDocumentIterator = false,
 }: {
   path: string;
   route: DBOutput<Route>;
   contentType: ContentType;
   contentTypeId: string;
+  variantGroupId?: string;
   data: PageContentData;
   language: DBOutput<Language>;
   tracePrefix?: string;
+  preferDocumentIterator?: boolean;
 }): Promise<PageOutput> => {
   const db = await getMongoService();
   const surface = tracePrefix === "web.previewPage" ? "preview" : "web";
   const localeCode = language.code || "en";
-  const iterator = contentType.hasIterator ? data[ITERATOR_FIELD_NAME] : [];
+  const effectiveData = await applyEffectiveIterator({
+    db,
+    contentType,
+    document: data,
+    preferDocument: preferDocumentIterator,
+  });
+  const iterator = contentType.hasIterator
+    ? effectiveData[ITERATOR_FIELD_NAME]
+    : [];
   const iteratorModules = Array.isArray(iterator) ? iterator : [];
 
   return runContentHookContext(
@@ -141,7 +167,9 @@ export const buildPageOutput = async ({
       },
     },
     async () => {
-      const linksPopulated = await populateLinks(data as DBOutput<ContentType>);
+      const linksPopulated = await populateLinks(
+        effectiveData as DBOutput<ContentType>,
+      );
       Logger.addTrace(`${tracePrefix}: links populated`);
 
       const populated = await populateRelations(
@@ -187,6 +215,7 @@ export const buildPageOutput = async ({
 
       const {
         [ITERATOR_FIELD_NAME]: modules = iteratorModules,
+        [ITERATOR_UNLINKED_FIELD_NAME]: _iteratorUnlinked,
         [SEO_FIELD_NAME]: seo,
         ...info
       } = populatedTranslated;
@@ -220,6 +249,7 @@ export const buildPageOutput = async ({
           const alternatePaths = await getSeoAlternatePaths({
             contentType: contentType.name,
             contentTypeId,
+            variantGroupId,
             routeId: route._id,
             languages,
           });
@@ -302,9 +332,16 @@ export const buildPageOutput = async ({
           const contentModules = (
             (await Promise.all(
               [
-                ...(contentModulesSource as IterableContentTypes).map((m) => ({
-                  ...m.value,
-                })),
+                ...(contentModulesSource as IterableContentTypes)
+                  .filter((item) =>
+                    isIteratorItemVisible(
+                      item,
+                      info as Record<string, unknown>,
+                    ),
+                  )
+                  .map((m) => ({
+                    ...m.value,
+                  })),
               ].map(async (item) => {
                 const moduleContentType = getContentTypeByName(item._type);
                 if (!moduleContentType) return item;
@@ -347,6 +384,7 @@ export const buildPageOutput = async ({
             info: {
               ...info,
               locale: localeCode,
+              variantGroupId: variantGroupId ?? contentTypeId,
               literals: literalMap,
             },
           };
@@ -422,6 +460,7 @@ export const getPage = async (input: PageInput): Promise<PageOutput> => {
       route,
       contentType,
       contentTypeId: routeMapEntry.contentTypeId,
+      variantGroupId: routeMapEntry.variantGroupId,
       data,
       language,
     });

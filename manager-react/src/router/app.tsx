@@ -7,11 +7,15 @@ import {
   getManagerRelativePathname,
   useManagerNavigation,
 } from "../state/navigation";
+import {
+  ManagerPluginProvider,
+  useManagerPlugins,
+} from '../plugins'
 
 const isAuthRoute = (route: ManagerResolvedRoute) =>
   route.kind === "login" || route.kind === "mfa";
 
-export const ManagerApp = ({
+const ManagerAppContent = ({
   pathname,
   basePath,
   searchParams,
@@ -19,7 +23,14 @@ export const ManagerApp = ({
   ...props
 }: ManagerAppProps) => {
   const navigation = useManagerNavigation();
-  const route = resolveManagerPath({ pathname, basePath, searchParams });
+  const pluginRegistry = useManagerPlugins()
+  const route = resolveManagerPath({
+    pathname,
+    basePath,
+    searchParams,
+    pluginRegistry,
+    contentTypes: props.contentTypes,
+  });
   const managerPathname = getManagerRelativePathname(pathname, { basePath });
   const shouldRedirectToLogin = !authenticated && !isAuthRoute(route);
 
@@ -38,6 +49,7 @@ export const ManagerApp = ({
         pathname="/login"
         basePath={basePath}
         {...props}
+        searchParams={searchParams}
       />
     );
   }
@@ -48,6 +60,13 @@ export const ManagerApp = ({
       pathname={managerPathname}
       basePath={basePath}
       {...props}
+      searchParams={searchParams}
     />
   );
 };
+
+export const ManagerApp = ({ plugins, ...props }: ManagerAppProps) => (
+  <ManagerPluginProvider plugins={plugins}>
+    <ManagerAppContent {...props} plugins={plugins} />
+  </ManagerPluginProvider>
+)

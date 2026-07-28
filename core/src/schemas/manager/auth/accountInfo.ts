@@ -1,6 +1,7 @@
 import z from 'zod'
 
 export const updateAccountInput = z.object({
+  name: z.string().max(120).nullable().optional(),
   user: z.string().min(1).max(120),
   avatarId: z.string().min(1).nullable().optional(),
 })

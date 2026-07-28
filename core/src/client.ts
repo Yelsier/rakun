@@ -10,10 +10,16 @@ export type {
   DynamicDataOptions,
   DynamicDocumentBindings,
   DynamicListBinding,
+  DynamicListDocumentSource,
+  DynamicListMapSource,
+  DynamicQueryCurrentValue,
+  DynamicRelatedCollectionSource,
 } from "./lib/dynamicData";
 export {
+  DYNAMIC_QUERY_CURRENT_VALUE_KEY,
   DYNAMIC_BINDINGS_FIELD_NAME,
   DynamicDocumentBindingsSchema,
+  DynamicQueryCurrentValueSchema,
   isDynamicDataSourceContentTypeAllowed,
 } from "./lib/dynamicData";
 export { Fields } from "./lib/fields";
@@ -31,13 +37,29 @@ export * from "./lib/fields/Select";
 export * from "./lib/fields/SelfRelation";
 export * from "./lib/fields/SimpleList";
 export * from "./lib/fields/String";
+export {
+  isIteratorItemVisible,
+  isIteratorVisibilityValueEmpty,
+} from "./api/utils/iteratorVisibility";
 export { getListField } from "./lib/utils/getListField";
 export { getTranslation } from "./lib/utils/getTranslation";
 export { Id, isId, type Id as IdType } from "./lib/utils/id";
 export { isTranslatableObject } from "./lib/utils/isTranslatableObject";
 export { slugify } from "./lib/utils/slugify";
 export { encodeContentTypeForManager } from "./lib/Registry";
-export { ITERATOR_FIELD_NAME, SEO_FIELD_NAME } from "./lib/systemFields";
+export {
+  ITERATOR_FIELD_NAME,
+  ITERATOR_UNLINKED_FIELD_NAME,
+  SEO_FIELD_NAME,
+} from "./lib/systemFields";
+export {
+  LOCALE_VARIANT_GROUP_FIELD,
+  LOCALE_VARIANT_ROLE_FIELD,
+  LocaleVariantRole,
+  getLocaleVariantGroupId,
+  getLocaleVariantRole,
+  isLocaleVariantDocument,
+} from "./lib/localeVariants";
 export {
   instanceofAppErrorShape,
   type AppErrorShape,
@@ -74,7 +96,48 @@ export type {
   RestoreVersionInput,
   RestoreVersionOutput,
 } from "./schemas/manager/versions";
+export type {
+  LocaleVariantAssignInput,
+  LocaleVariantAssignment,
+  LocaleVariantCreateInput,
+  LocaleVariantCreateOutput,
+  LocaleVariantDocument,
+  LocaleVariantListInput,
+  LocaleVariantListOutput,
+  LocaleVariantUnassignInput,
+} from "./schemas/manager/localeVariants";
+export type {
+  LinkedIteratorAction,
+  LinkedIteratorControl,
+  LinkedIteratorGetInput,
+  LinkedIteratorMode,
+  LinkedIteratorStateOutput,
+} from "./schemas/manager/linkedIterator";
 export type { DuplicateInput } from "./schemas/manager/duplicate";
+export type {
+  CommentRecord,
+  CommentReactionEmoji,
+  CommentReactionRecord,
+  CreateCommentInput,
+  CreateCommentOutput,
+  ListCommentsInput,
+  ListCommentsOutput,
+  MarkCommentsReadInput,
+  MarkCommentsReadOutput,
+  ToggleCommentReactionInput,
+  ToggleCommentReactionOutput,
+  UnreadCommentsCountOutput,
+} from "./schemas/manager/comments";
+export type {
+  ListMentionUsersOutput,
+  MentionUser,
+} from "./schemas/manager/users";
+export type {
+  ListNotificationsInput,
+  ListNotificationsOutput,
+  MarkNotificationsReadInput,
+  MarkNotificationsReadOutput,
+} from "./schemas/manager/notifications";
 export type {
   TranslateDocumentInput,
   TranslateDocumentOutput,
@@ -100,4 +163,8 @@ export type {
 } from "./schemas/manager/media/prepareUpload";
 export { Seo } from "./internal-content-types/Seo";
 export type { LanguageSchema } from "./internal-content-types/Language";
+export {
+  ADMIN_ROLE_NAME,
+  isAdminRole,
+} from "./lib/ManagerRolePolicy";
 export type { ManagerUserSchema } from "./internal-content-types/ManagerUser";

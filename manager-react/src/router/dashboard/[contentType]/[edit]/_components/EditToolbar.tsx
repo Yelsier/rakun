@@ -8,6 +8,7 @@ import {
   GitBranch,
   Globe,
   Languages,
+  MapPinned,
   LayoutPanelTop,
   Monitor,
   MoreVertical,
@@ -17,10 +18,12 @@ import {
   Star,
   Trash,
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { DocumentTranslationDialog } from './DocumentTranslationDialog'
+import { ContentCommentsDrawer } from './ContentCommentsDrawer'
 import { useEditPageContext } from '../_context/EditPageContext'
 import type { EditableDocumentVisibility } from '../edit.types'
 
@@ -126,13 +129,16 @@ const FavoriteMenuItem = () => {
 }
 
 export const EditToolbar = () => {
+  const [commentsOpen, setCommentsOpen] = useState(false)
   const {
     canPreview,
+    contentType,
     contentTypeId,
     documentActions,
     editableVisibility,
     handleVisibilityChange,
     hasVersioning,
+    hasLocaleVariants,
     hasVisibility,
     isTrashed,
     languageCode,
@@ -150,9 +156,14 @@ export const EditToolbar = () => {
   const pending = documentActions.pending
   const savePending = pending.create || pending.update || pending.delete || pending.trash
   const canSaveAsDraft = hasVisibility && contentTypeId && !isTrashed
+  const commentsEnabled = Boolean(contentTypeId)
   const hasMoreActions = Boolean(contentTypeId) || canPreview || translationEnabled || isTrashed
   const hasPrimaryMenuActions =
     Boolean(contentTypeId && !isTrashed) || canPreview || translationEnabled
+
+  useEffect(() => {
+    setCommentsOpen(new URLSearchParams(window.location.search).get('comments') === 'open')
+  }, [contentTypeId])
 
   const openTranslationDialog = () => {
     translation.reset()
@@ -191,6 +202,12 @@ export const EditToolbar = () => {
               {layoutModule.contentType}
             </TabsTrigger>
           ))}
+          {hasLocaleVariants ? (
+            <TabsTrigger value="locale-variants">
+              <MapPinned />
+              Locales
+            </TabsTrigger>
+          ) : null}
           {hasVersioning && contentTypeId ? (
             <TabsTrigger value="versions">
               <GitBranch />
@@ -272,6 +289,9 @@ export const EditToolbar = () => {
             </TooltipContent>
           </Tooltip>
         )}
+        {commentsEnabled ? (
+          <ContentCommentsDrawer open={commentsOpen} onOpenChange={setCommentsOpen} />
+        ) : null}
         {hasMoreActions ? (
           <>
             <DocumentTranslationDialog trigger={false} />
@@ -296,8 +316,15 @@ export const EditToolbar = () => {
                 ) : null}
                 {canPreview ? (
                   <DropdownMenuItem
-                    disabled={previewState.isPreviewPending}
-                    onSelect={() => void previewState.handlePreview()}
+                    disabled={!previewState.previewOpen && previewState.isPreviewPending}
+                    onSelect={() => {
+                      if (previewState.previewOpen) {
+                        previewState.setPreviewOpen(false)
+                        return
+                      }
+
+                      void previewState.handlePreview()
+                    }}
                   >
                     <Monitor />
                     {previewState.previewOpen ? 'Close preview' : 'Preview'}

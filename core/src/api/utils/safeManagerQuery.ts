@@ -16,6 +16,8 @@ const systemFields = new Set([
   "_visibilityBeforeTrash",
   "_trashed",
   "_revision",
+  "_localeVariantGroupId",
+  "_localeVariantRole",
   "createdAt",
   "createdBy",
   "updatedAt",
@@ -54,6 +56,13 @@ const hasOperatorKeys = (value: Record<string, unknown>) =>
 const assertPlainValue = (value: unknown, path: string): unknown => {
   if (value instanceof RegExp || typeof value === "function") {
     validationError(`Invalid value for ${path}`);
+  }
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) {
+      validationError(`Invalid date for ${path}`);
+    }
+    return value;
   }
 
   if (Array.isArray(value)) {

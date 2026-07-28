@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "composite": true,
+    "rootDir": "src",
+    "outDir": "dist/esm",
+    "paths": {
+      "@rakun-kit/core": ["../core/dist/esm/index.d.ts"],
+      "@rakun-kit/core/client": ["../core/dist/esm/client.d.ts"],
+      "@rakun-kit/core/manager": ["../core/dist/esm/manager.d.ts"],
+      "@rakun-kit/core/types": ["../core/dist/esm/lib/types/index.d.ts"],
+      "@rakun-kit/manager-react": ["../manager-react/dist/esm/index.d.ts"],
+      "@rakun-kit/manager-react/plugins": ["../manager-react/dist/esm/plugins.d.ts"],
+      "@rakun-kit/manager-react/rich-text": ["../manager-react/dist/esm/rich-text.d.ts"]
+    }
+  },
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+}

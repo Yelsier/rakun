@@ -21,7 +21,7 @@ export const SearchInput = ({
 }: SearchInputProps) => (
   <div
     className={cn(
-      'flex h-10 w-full min-w-0 items-center gap-2 rounded-md border bg-card pl-3 pr-1 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
+      'flex h-10 w-full min-w-0 items-center gap-2 rounded-md border bg-card pl-2.5 pr-1 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
       className
     )}
   >

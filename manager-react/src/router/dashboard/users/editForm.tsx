@@ -43,6 +43,7 @@ const managerUserRoleInput = z.object({
 
 const managerUserInput = z.object({
   email: z.string().email(),
+  name: z.string().optional(),
   password: z.string(),
   user: z.string().min(1),
   role: managerUserRoleInput.nullable().optional(),
@@ -72,6 +73,7 @@ export function EditUserForm({ defaultValues, refetch, setOpen }: Props) {
     resolver: zodResolver(managerUserInput),
     defaultValues: {
       email: defaultValues?.email || '',
+      name: defaultValues?.name || '',
       password: '',
       user: defaultValues?.user || '',
       role: defaultValues?.role
@@ -89,6 +91,7 @@ export function EditUserForm({ defaultValues, refetch, setOpen }: Props) {
   useEffect(() => {
     form.reset({
       email: defaultValues?.email || '',
+      name: defaultValues?.name || '',
       password: '',
       user: defaultValues?.user || '',
       role: defaultValues?.role
@@ -141,6 +144,19 @@ export function EditUserForm({ defaultValues, refetch, setOpen }: Props) {
               <FormLabel>Email</FormLabel>
               <FormControl>
                 <Input autoComplete='off' placeholder='user@example.com' {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name='name'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input autoComplete='off' placeholder='Name' {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

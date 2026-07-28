@@ -1,23 +1,74 @@
-import { RouteMap, Language, Route } from "../../../internal-content-types";
-import ContentType from "../../../lib/ContentType";
+import {
+  RouteMap,
+  Language,
+  Route,
+  RouteLocaleVariant,
+} from "../../../internal-content-types";
 import { Logger } from "../../../lib/Logger";
 import { getContentTypeByName } from "../../../lib/Registry";
-import { DBOutput } from "../../../lib/types";
 import {
-  buildRoutePath,
+  getLocaleVariantGroupId,
+  LOCALE_VARIANT_GROUP_FIELD,
+} from "../../../lib/localeVariants";
+import { DBOutput } from "../../../lib/types";
+import type { DBService } from "../../../orm/dbService";
+import {
+  deleteMissingRouteMapEntries,
   generateRouteMapItems,
-  getParentPath,
-  getRouteMapLastModified,
   getRouteFields,
-  isVisibleForRouteMap,
   loadRouteData,
   revalidateRoutePaths,
   updateRouteMapEntries,
   type RouteMapItemInput,
+  type RouteLocaleVariantRecord,
 } from "./routeMapHelpers";
 
 const activeContentFilter = {
   _trashed: { $ne: true },
+  _visibility: { $nin: ["draft", "trash"] },
+};
+
+const getRouteLocaleVariants = async (
+  db: DBService,
+  routeId: string,
+): Promise<RouteLocaleVariantRecord[]> => {
+  return (
+    await db.list(RouteLocaleVariant, {
+      filter: { routeId },
+      options: {
+        limit: "all",
+        fields: ["routeId", "groupId", "languageId", "documentId"],
+      },
+    })
+  ).items;
+};
+
+const getGroupRouteItems = async ({
+  db,
+  contentType,
+  groupIds,
+  route,
+}: {
+  db: DBService;
+  contentType: string;
+  groupIds: readonly string[];
+  route: DBOutput<Route>;
+}) => {
+  const contentTypeRecord = getContentTypeByName(contentType)!;
+  const fields = getRouteFields(route);
+
+  return (
+    await db.list(contentTypeRecord, {
+      filter: {
+        ...activeContentFilter,
+        $or: [
+          { _id: { $in: groupIds } },
+          { [LOCALE_VARIANT_GROUP_FIELD]: { $in: groupIds } },
+        ],
+      },
+      options: { limit: "all", fields },
+    })
+  ).items;
 };
 
 export const regenerateAllRoutesMap = async (): Promise<void> => {
@@ -40,6 +91,7 @@ export const regenerateAllRoutesMap = async (): Promise<void> => {
         .filter((r) => r.hasPage)
         .map(async (route) => {
           const routFields = getRouteFields(route);
+          const localeVariants = await getRouteLocaleVariants(db, route._id);
           const routesItems = (
             await db.list(getContentTypeByName(route.contentType), {
               filter: activeContentFilter,
@@ -53,6 +105,8 @@ export const regenerateAllRoutesMap = async (): Promise<void> => {
             languages,
             routes,
             routeSettings,
+            languages,
+            localeVariants,
           );
         }),
     )
@@ -99,7 +153,16 @@ export async function updateSingleRouteMap({
     return;
   }
 
-  const prevRoutesMap = (
+  const route = routes.find((r) => r.contentType === contentType && r.hasPage);
+  if (!route) {
+    Logger.addTrace("routes.updateSingle: route not found", {
+      contentType,
+      contentTypeId,
+    });
+    return;
+  }
+
+  const initialPrevRoutesMap = (
     await db.list(RouteMap, {
       filter: {
         contentType,
@@ -108,54 +171,51 @@ export async function updateSingleRouteMap({
       options: { limit: "all" },
     })
   ).items;
+  const groupIds = Array.from(
+    new Set([
+      getLocaleVariantGroupId(item),
+      ...initialPrevRoutesMap
+        .map((routeMap) => routeMap.variantGroupId)
+        .filter((value): value is string => typeof value === "string"),
+    ]),
+  );
+  const prevRoutesMap = (
+    await db.list(RouteMap, {
+      filter: {
+        contentType,
+        routeId: route._id,
+        $or: [
+          { variantGroupId: { $in: groupIds } },
+          { contentTypeId: { $in: groupIds } },
+          { contentTypeId },
+        ],
+      } as never,
+      options: { limit: "all" },
+    })
+  ).items;
   Logger.addTrace("routes.updateSingle: previous map loaded", {
     items: prevRoutesMap.length,
+    groups: groupIds.length,
   });
 
-  if (!isVisibleForRouteMap(item)) {
-    await db.delete(RouteMap, { contentType, contentTypeId });
-    await revalidateRoutePaths([], prevRoutesMap);
-    Logger.addTrace("routes.updateSingle: hidden draft removed from map");
-    return;
-  }
-
-  const routesMap: RouteMapItemInput[] = (
-    await Promise.all(
-      languages.map(async (language) => {
-        const route = routes.find(
-          (r) => r.contentType === contentType && r.hasPage,
-        );
-        if (!route) return null;
-        const parentPath = await getParentPath(
-          item,
-          route,
-          language,
-          routes,
-          languages,
-        );
-        return {
-          contentTypeId,
-          contentType,
-          path: buildRoutePath(
-            item,
-            route,
-            language,
-            parentPath,
-            languages,
-            routeSettings,
-          ),
-          routeId: route._id as string,
-          languageId: language._id as string,
-          lastModified: getRouteMapLastModified(item),
-          _type: "RouteMap" as const,
-        };
-      }),
-    )
-  ).filter((r) => r !== null);
+  const [routesItems, localeVariants] = await Promise.all([
+    getGroupRouteItems({ db, contentType, groupIds, route }),
+    getRouteLocaleVariants(db, route._id),
+  ]);
+  const routesMap = await generateRouteMapItems(
+    [...routesItems],
+    route,
+    languages,
+    routes,
+    routeSettings,
+    languages,
+    localeVariants,
+  );
 
   Logger.addTrace("routes.updateSingle: map generated", {
     items: routesMap.length,
   });
+  await deleteMissingRouteMapEntries(routesMap, prevRoutesMap);
   await updateRouteMapEntries(routesMap);
   Logger.addTrace("routes.updateSingle: entries updated");
   await revalidateRoutePaths(routesMap, prevRoutesMap);
@@ -192,6 +252,7 @@ export async function updateLanguageRoutesMap(
         .filter((r) => r.hasPage as boolean)
         .map(async (route) => {
           const routFields = getRouteFields(route);
+          const localeVariants = await getRouteLocaleVariants(db, route._id);
           const routesItems = (
             await db.list(getContentTypeByName(route.contentType)!, {
               filter: activeContentFilter,
@@ -206,6 +267,7 @@ export async function updateLanguageRoutesMap(
             routes,
             routeSettings,
             languages,
+            localeVariants,
           );
         }),
     )
@@ -216,6 +278,7 @@ export async function updateLanguageRoutesMap(
   Logger.addTrace("routes.updateLanguage: map generated", {
     items: routesMap.length,
   });
+  await deleteMissingRouteMapEntries(routesMap, prevRoutesMap);
   await updateRouteMapEntries(routesMap);
   Logger.addTrace("routes.updateLanguage: entries updated");
   await revalidateRoutePaths(routesMap, prevRoutesMap);
@@ -271,6 +334,7 @@ export async function updateRouteRouteMap(
   const routesMap: RouteMapItemInput[] = (
     await (async () => {
       const routFields = getRouteFields(route);
+      const localeVariants = await getRouteLocaleVariants(db, route._id);
       const routesItems = (
         await db.list(getContentTypeByName(route.contentType)!, {
           filter: activeContentFilter,
@@ -284,6 +348,8 @@ export async function updateRouteRouteMap(
         languages,
         routes,
         routeSettings,
+        languages,
+        localeVariants,
       );
     })()
   ).filter((r): r is RouteMapItemInput => r !== null);
@@ -291,6 +357,7 @@ export async function updateRouteRouteMap(
   Logger.addTrace("routes.updateRoute: map generated", {
     items: routesMap.length,
   });
+  await deleteMissingRouteMapEntries(routesMap, prevRoutesMap);
   await updateRouteMapEntries(routesMap);
   Logger.addTrace("routes.updateRoute: entries updated");
   await revalidateRoutePaths(routesMap, prevRoutesMap);

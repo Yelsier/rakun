@@ -27,11 +27,36 @@ import { LinkPlugin } from '@/components/editor/plugins/toolbar/link-plugin'
 import { LinkToolbarPlugin } from '@/components/editor/plugins/toolbar/link-toolbar-plugin'
 import { ToolbarPlugin } from '@/components/editor/plugins/toolbar/toolbar-plugin'
 import { Separator } from '@/components/ui/separator'
+import type {
+  ManagerFieldEditorProps,
+  ManagerRichTextPluginPlacement,
+  ResolvedManagerRichTextPlugin,
+} from '@/plugins'
+
+const ExtensionPlugins = ({
+  extensions,
+  placement,
+  pluginProps,
+}: {
+  extensions: readonly ResolvedManagerRichTextPlugin[]
+  placement: ManagerRichTextPluginPlacement
+  pluginProps: ManagerFieldEditorProps
+}) =>
+  extensions
+    .filter((extension) => extension.placement === placement)
+    .map((extension) => {
+      const Component = extension.component
+      return <Component key={extension.id} {...pluginProps} />
+    })
 
 export function Plugins({
   placeholder = 'Start typing ...',
+  extensions,
+  pluginProps,
 }: {
   placeholder?: string
+  extensions: readonly ResolvedManagerRichTextPlugin[]
+  pluginProps: ManagerFieldEditorProps
 }) {
   const [floatingAnchorElem, setFloatingAnchorElem] = useState<HTMLDivElement | null>(null)
   const [isLinkEditMode, setIsLinkEditMode] = useState<boolean>(false)
@@ -56,6 +81,11 @@ export function Plugins({
               <FormatNumberedList />
               <FormatBulletedList />
               <FormatCheckList />
+              <ExtensionPlugins
+                extensions={extensions}
+                placement="block-format"
+                pluginProps={pluginProps}
+              />
               <FormatQuote />
             </BlockFormatDropDown>
             <Separator orientation="vertical" className="!h-7" />
@@ -69,6 +99,11 @@ export function Plugins({
             <FontFormatToolbarPlugin format="strikethrough" />
             <Separator orientation="vertical" className="!h-7" />
             <ElementFormatToolbarPlugin />
+            <ExtensionPlugins
+              extensions={extensions}
+              placement="toolbar"
+              pluginProps={pluginProps}
+            />
           </div>
         )}
       </ToolbarPlugin>
@@ -100,16 +135,33 @@ export function Plugins({
           isLinkEditMode={isLinkEditMode}
           setIsLinkEditMode={setIsLinkEditMode}
         />
+        <ExtensionPlugins
+          extensions={extensions}
+          placement="editor"
+          pluginProps={pluginProps}
+        />
       </div>
       {/* actions plugins */}
       <ActionsPlugin>
         <div className="clear-both flex items-center justify-between gap-2 overflow-auto border-t p-1">
-          <div className="flex flex-1 justify-start">{/* left side action buttons */}</div>
+          <div className="flex flex-1 justify-start">
+            <ExtensionPlugins
+              extensions={extensions}
+              placement="actions-start"
+              pluginProps={pluginProps}
+            />
+          </div>
           <div>
             <CounterCharacterPlugin charset="UTF-16" />
             {/* center action buttons */}
           </div>
-          <div className="flex flex-1 justify-end">{/* right side action buttons */}</div>
+          <div className="flex flex-1 justify-end">
+            <ExtensionPlugins
+              extensions={extensions}
+              placement="actions-end"
+              pluginProps={pluginProps}
+            />
+          </div>
         </div>
       </ActionsPlugin>
     </div>

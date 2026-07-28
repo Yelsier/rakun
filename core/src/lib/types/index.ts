@@ -154,6 +154,14 @@ export type Prettify<T> = {
   [K in keyof T]: T[K];
 } & {};
 
+type PrettifyDeep<T> = T extends Primitive
+  ? T
+  : T extends readonly unknown[]
+    ? { [K in keyof T]: PrettifyDeep<T[K]> }
+    : T extends object
+      ? { [K in keyof T]: PrettifyDeep<T[K]> }
+      : T;
+
 export type IsRequired<F> = F extends { schema: z.ZodOptional<any> }
   ? false
   : true;
@@ -192,6 +200,8 @@ export type DBMetadata = {
   _visibility?: "draft" | "hidden" | "published" | "trash";
   _visibilityBeforeTrash?: "draft" | "hidden" | "published";
   _trashed?: boolean;
+  _localeVariantGroupId?: string;
+  _localeVariantRole?: "primary" | "variant";
   trashedAt?: Date;
   trashedBy?: string;
   _revision?: number;
@@ -219,7 +229,7 @@ export type DataPopulatedWithoutApiOnly<T extends ContentType> = Prettify<
   Omit<DataPopulated<T>, ApiOnlyKeys<T["fields"]>>
 >;
 
-export type DataFront<T extends ContentType> = Prettify<
+export type DataFront<T extends ContentType> = PrettifyDeep<
   Simplify<z.infer<ReturnType<T["getOutputSchema"]>>> & FrontMetadata
 >;
 

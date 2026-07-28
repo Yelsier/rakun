@@ -14,11 +14,12 @@ export {
   runWithPageInfo,
   tFromInfo,
   usePageInfo,
-  useT,
   type PageInfo,
   type TFromInfoArgs,
   type TranslationValues,
 } from "@rakun-kit/react/translation";
+
+export { useClientT as useT } from "@rakun-kit/react/translation";
 
 export {
   createModuleRegistry,

@@ -17,8 +17,27 @@ import {
   listFavoritesHandler,
   toggleFavoriteHandler,
 } from "../routes/manager/favorites";
+import {
+  listNotificationsHandler,
+  markNotificationsReadHandler,
+} from "../routes/manager/notifications";
+import {
+  assignLocaleVariantHandler,
+  createLocaleVariantHandler,
+  listLocaleVariantsHandler,
+  unassignLocaleVariantHandler,
+} from "../routes/manager/localeVariants";
+import {
+  createCommentHandler,
+  listCommentsHandler,
+  markCommentsReadHandler,
+  toggleCommentReactionHandler,
+  unreadCommentsCountHandler,
+} from "../routes/manager/comments";
+import { listMentionUsersHandler } from "../routes/manager/users";
 import { trashHandler } from "../routes/manager/trash";
 import { getHandler } from "../routes/manager/get";
+import { linkedIteratorGetHandler } from "../routes/manager/linkedIterator";
 import { listHandler } from "../routes/manager/list";
 import { languagesHandler } from "../routes/manager/languages";
 import { listMigrationsHandler } from "../routes/manager/migrations/list";
@@ -89,6 +108,9 @@ export const createManagerOperationDefinitions = () => {
     "manager.get": {
       resolve: getHandler,
     },
+    "manager.linkedIterator.get": {
+      resolve: linkedIteratorGetHandler,
+    },
     "manager.list": {
       resolve: listHandler,
     },
@@ -97,6 +119,42 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.favorites.toggle": {
       resolve: toggleFavoriteHandler,
+    },
+    "manager.notifications.list": {
+      resolve: listNotificationsHandler,
+    },
+    "manager.notifications.markRead": {
+      resolve: markNotificationsReadHandler,
+    },
+    "manager.localeVariants.list": {
+      resolve: listLocaleVariantsHandler,
+    },
+    "manager.localeVariants.create": {
+      resolve: createLocaleVariantHandler,
+    },
+    "manager.localeVariants.assign": {
+      resolve: assignLocaleVariantHandler,
+    },
+    "manager.localeVariants.unassign": {
+      resolve: unassignLocaleVariantHandler,
+    },
+    "manager.users.mentions": {
+      resolve: listMentionUsersHandler,
+    },
+    "manager.comments.list": {
+      resolve: listCommentsHandler,
+    },
+    "manager.comments.create": {
+      resolve: createCommentHandler,
+    },
+    "manager.comments.toggleReaction": {
+      resolve: toggleCommentReactionHandler,
+    },
+    "manager.comments.markRead": {
+      resolve: markCommentsReadHandler,
+    },
+    "manager.comments.unreadCount": {
+      resolve: unreadCommentsCountHandler,
     },
     "manager.setDefaultLanguage": {
       resolve: setDefaultLanguageHandler,

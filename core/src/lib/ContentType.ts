@@ -14,7 +14,11 @@ import {
   type EntryContentType,
   type IteratorField,
 } from "./fields/Iterator";
-import { ITERATOR_FIELD_NAME, SEO_FIELD_NAME } from "./systemFields";
+import {
+  ITERATOR_FIELD_NAME,
+  ITERATOR_UNLINKED_FIELD_NAME,
+  SEO_FIELD_NAME,
+} from "./systemFields";
 import { isNeverOptional } from "./utils/isNeverOptional";
 import type { DBService } from "../orm/dbService";
 import {
@@ -25,6 +29,11 @@ import {
   type DynamicDataOptions,
 } from "./dynamicData";
 import type { ContentTypeHooks } from "./hooks";
+import {
+  LOCALE_VARIANT_GROUP_FIELD,
+  LOCALE_VARIANT_ROLE_FIELD,
+  LocaleVariantRole,
+} from "./localeVariants";
 
 export const Menu = z
   .object({
@@ -42,6 +51,7 @@ export const ModulePicker = z
     description: z.string().optional(),
     category: z.string().optional(),
     icon: z.string().optional(),
+    preview: z.string().optional(),
     keywords: z.array(z.string()).optional(),
   })
   .optional();
@@ -60,6 +70,7 @@ export type DocumentVisibility = z.infer<typeof DocumentVisibility>;
 const DocumentVisibilityBeforeTrash = DocumentVisibility.exclude(["trash"]);
 
 export type VersioningOptions = {
+  /** Maximum number of saved versions retained for each document. */
   maxVersions?: number;
 };
 
@@ -73,22 +84,33 @@ export type ContentTypePermissions =
   | false
   | string
   | {
+      /** Resource segment used in generated `content.<resource>.*` permissions. */
       resource: string;
+      /** Permission actions generated for this content type. Defaults to all actions. */
       actions?: ContentTypePermissionAction[];
     };
 
 export type ContentTypeMigrationContext = {
+  /** Database service configured for the current Rakun instance. */
   db: DBService;
+  /** Underlying database instance for migrations that need direct access. */
   rawDB: unknown;
+  /** Content type being migrated. */
   contentType: ContentType;
+  /** Identifier of the backup created before the migration, when available. */
   backupId?: string;
 };
 
 export type ContentTypeMigration = {
+  /** Stable identifier for the migration. */
   id?: string;
+  /** Schema version expected before the migration runs. */
   from: number;
+  /** Schema version produced by the migration. */
   to: number;
+  /** Human-readable summary of the migration. */
   description?: string;
+  /** Applies the data changes required to move from `from` to `to`. */
   migrate: (
     context: ContentTypeMigrationContext,
   ) => Promise<void> | void;
@@ -195,6 +217,8 @@ type BaseMetadata<N extends string> = {
   _visibilityBeforeTrash?: Exclude<DocumentVisibility, "trash">;
   _trashed?: boolean;
   _revision?: number;
+  [LOCALE_VARIANT_GROUP_FIELD]?: string;
+  [LOCALE_VARIANT_ROLE_FIELD]?: z.infer<typeof LocaleVariantRole>;
 };
 
 type IdMetadata = {
@@ -216,8 +240,15 @@ type AuthorMetadata = {
   updatedBy?: string;
 };
 
+type IteratorLinkMetadata = {
+  [ITERATOR_UNLINKED_FIELD_NAME]?: boolean;
+};
+
 type ContentTypeInputShape<F extends FieldRecord, N extends string> =
-  ContentTypeShape<InputFields<F>, BaseMetadata<N> & AuthorMetadata>;
+  ContentTypeShape<
+    InputFields<F>,
+    BaseMetadata<N> & AuthorMetadata & IteratorLinkMetadata
+  >;
 
 type ContentTypeDbShape<F extends FieldRecord, N extends string> =
   ContentTypeShape<
@@ -226,7 +257,8 @@ type ContentTypeDbShape<F extends FieldRecord, N extends string> =
       IdMetadata &
       TrashMetadata &
       TimestampMetadata &
-      AuthorMetadata
+      AuthorMetadata &
+      IteratorLinkMetadata
   >;
 
 type ContentTypeOutputShape<F extends FieldRecord, N extends string> =
@@ -248,7 +280,8 @@ type ContentTypePopulatedShape<
       IdMetadata &
       TrashMetadata &
       TimestampMetadata &
-      AuthorMetadata
+      AuthorMetadata &
+      IteratorLinkMetadata
   >;
 
 type ContentTypeParams<
@@ -256,20 +289,59 @@ type ContentTypeParams<
   N extends string,
   I extends readonly EntryContentType[] | undefined,
 > = {
+  /**
+   * Stable name of the content type. It identifies the collection and is stored
+   * as `_type` on every document.
+   */
   name: N;
+  /** User-defined fields keyed by their persisted property name. */
   fields: F;
+  /**
+   * Content types allowed as ordered modules. Defining this property adds the
+   * reserved `_iterator` field automatically.
+   */
   iterator?: I;
+  /**
+   * Makes the generated iterator use one shared template for all documents.
+   * Individual documents can opt out and keep a local iterator.
+   */
+  linkedIterator?: boolean;
+  /** Controls how the content type appears in the manager navigation. */
   menu?: Menu;
+  /** Customizes how this content type appears in an iterator module picker. */
   modulePicker?: ModulePicker;
+  /**
+   * Groups of fields that must be unique. Multiple fields in one group form a
+   * compound uniqueness constraint.
+   */
   uniques?: Array<Array<keyof ContentTypeFields<F, I>>>;
+  /**
+   * Field paths displayed as the document summary in manager lists and relation
+   * selectors. Nested paths use dot notation.
+   */
   listFields?: NestedPaths<ContentTypePopulatedShape<ContentTypeFields<F, I>, N>>[];
+  /** Current schema version stored in the document's `_schemaVersion` metadata. */
   schemaVersion?: number;
+  /** Ordered data migrations used to move documents between schema versions. */
   migrations?: ContentTypeMigration[];
+  /** Enables document history, optionally limiting the versions retained. */
   versioning?: boolean | VersioningOptions;
+  /** Enables the draft, hidden, published, and trash visibility workflow. */
   documentVisibility?: boolean;
+  /**
+   * Configures manager permissions for this content type. Use `false` to disable
+   * generated permissions, a string to share a resource name, or an object to
+   * select the resource and actions.
+   */
   permissions?: ContentTypePermissions;
+  /** Lifecycle hooks run around mutations and public output resolution. */
   hooks?: ContentTypeHooks;
+  /**
+   * Configures dynamic field and list bindings. Dynamic bindings are available
+   * by default; use `false` to disable them for the content type.
+   */
   dynamicData?: DynamicDataOptions;
+  /** Makes documents of this type available as dynamic data sources. */
   dynamicDataSource?: boolean;
 };
 
@@ -282,6 +354,8 @@ const baseMetadataSchema = {
   _visibilityBeforeTrash: DocumentVisibilityBeforeTrash.optional(),
   _trashed: z.boolean().optional(),
   _revision: z.number().optional(),
+  [LOCALE_VARIANT_GROUP_FIELD]: z.string().optional(),
+  [LOCALE_VARIANT_ROLE_FIELD]: LocaleVariantRole.optional(),
 } satisfies SchemaShape;
 
 const idMetadataSchema = {
@@ -304,6 +378,10 @@ const authorMetadataSchema = {
 
 const dynamicBindingsMetadataSchema = {
   [DYNAMIC_BINDINGS_FIELD_NAME]: DynamicDocumentBindingsSchema.optional(),
+} satisfies SchemaShape;
+
+const iteratorLinkMetadataSchema = {
+  [ITERATOR_UNLINKED_FIELD_NAME]: z.boolean().nullish(),
 } satisfies SchemaShape;
 
 export type ContentTypeInput<CT> = CT extends ContentType<
@@ -343,32 +421,66 @@ export default class ContentType<
   N extends string = string,
   I extends readonly EntryContentType[] | undefined = undefined,
 > {
+  /** Stable content type name, also stored as `_type` on its documents. */
   name: N;
+  /** Fields available on documents of this type, including generated system fields. */
   fields: ContentTypeFields<F, I>;
+  /** Manager navigation metadata. */
   menu?: Menu;
+  /** Iterator module picker metadata. */
   modulePicker?: ModulePicker;
+  /** Unique field groups, represented as persisted property names. */
   uniques: Array<Array<string>> = [];
+  /** Field paths used to summarize documents in manager lists and selectors. */
   listFields?: string[];
+  /** Fields marked for collapsed presentation by manager integrations. */
   collapseFields?: string[];
+  /** Whether the content type is omitted from manager content type lists. */
   isHiddenFromManager?: boolean;
+  /** Current persisted document schema version. */
   schemaVersion?: number;
+  /** Data migrations registered for this content type. */
   migrations: ContentTypeMigration[] = [];
+  /** Document history configuration. */
   versioning?: boolean | VersioningOptions;
+  /** Whether the document visibility workflow is enabled. */
   documentVisibility?: boolean;
+  /** Manager permission configuration. */
   permissions?: ContentTypePermissions;
+  /** Lifecycle hooks registered for this content type. */
   hooks?: ContentTypeHooks;
+  /** Dynamic field and list binding configuration. */
   dynamicData?: DynamicDataOptions;
+  /** Whether documents of this type can be selected as dynamic data sources. */
   dynamicDataSource?: boolean;
+  /** Whether the content type belongs to Rakun's internal registry. */
   isInternal?: boolean;
+  /** Whether an iterator field was generated for this content type. */
   hasIterator = false;
+  /** Whether documents use a shared iterator template by default. */
+  linkedIterator = false;
+  /** Whether the reserved SEO field has been added to this content type. */
   hasSeo = false;
 
   constructor(
     params: ContentTypeParams<F, N, I>,
     options?: { allowSystemFields?: boolean },
   ) {
+    const hasProvidedIterator =
+      params.iterator !== undefined ||
+      (options?.allowSystemFields === true &&
+        Object.values(params.fields).some(
+          (field) => field.meta.ui === "Iterator",
+        ));
+    if (params.linkedIterator && !hasProvidedIterator) {
+      throw new Error(
+        "ContentType.linkedIterator requires ContentType.iterator.",
+      );
+    }
+
     this.name = params.name;
     this.hasIterator = params.iterator !== undefined;
+    this.linkedIterator = params.linkedIterator === true;
     this.fields = this.bindSelfRelations(
       this.buildFields(params, options),
     ) as ContentTypeFields<F, I>;
@@ -396,6 +508,7 @@ export default class ContentType<
     const schema = this.documentSchema(this.fieldSchemas("input"), {
       ...authorMetadataSchema,
       ...this.dynamicBindingsMetadataSchema(),
+      ...this.iteratorLinkMetadataSchema(),
     });
 
     const inputSchema = partial ? schema.partial() : schema;
@@ -410,6 +523,7 @@ export default class ContentType<
     return this.documentSchema(this.fieldSchemas("db"), {
       ...trashMetadataSchema,
       ...this.dynamicBindingsMetadataSchema(),
+      ...this.iteratorLinkMetadataSchema(),
     }) as unknown as ContentTypeSchema<
       ContentTypeDbShape<ContentTypeFields<F, I>, N>
     >;
@@ -421,6 +535,7 @@ export default class ContentType<
       ...trashMetadataSchema,
       ...authorMetadataSchema,
       ...this.dynamicBindingsMetadataSchema(),
+      ...this.iteratorLinkMetadataSchema(),
     }) as unknown as ContentTypeSchema<
       ContentTypePopulatedShape<ContentTypeFields<F, I>, N>
     >;
@@ -534,6 +649,10 @@ export default class ContentType<
     return this.hasDynamicBindableFields() ? dynamicBindingsMetadataSchema : {};
   }
 
+  private iteratorLinkMetadataSchema() {
+    return this.linkedIterator ? iteratorLinkMetadataSchema : {};
+  }
+
   private buildOutputSchema<Fields extends FieldRecord>(fields: Fields) {
     return this.documentSchema(this.outputFieldSchemas(fields), {
       ...idMetadataSchema,
@@ -564,6 +683,7 @@ export default class ContentType<
         hooks: this.hooks,
         dynamicData: this.dynamicData,
         dynamicDataSource: this.dynamicDataSource,
+        linkedIterator: this.linkedIterator,
       },
       { allowSystemFields: true },
     );
@@ -582,6 +702,7 @@ export default class ContentType<
       modulePicker: this.modulePicker,
       isInternal: this.isInternal,
       hasIterator: this.hasIterator,
+      linkedIterator: this.linkedIterator,
       hasSeo: this.hasSeo,
     });
   }
@@ -622,6 +743,12 @@ export default class ContentType<
     if (DYNAMIC_BINDINGS_FIELD_NAME in fields) {
       throw new Error(
         `Field ${DYNAMIC_BINDINGS_FIELD_NAME} is reserved for dynamic data bindings.`,
+      );
+    }
+
+    if (ITERATOR_UNLINKED_FIELD_NAME in fields) {
+      throw new Error(
+        `Field ${ITERATOR_UNLINKED_FIELD_NAME} is reserved for linked iterator state.`,
       );
     }
 
@@ -896,6 +1023,7 @@ export const EncodedContentTypeSchema = z.object({
     ])
     .optional(),
   hasIterator: z.boolean().optional(),
+  linkedIterator: z.boolean().optional(),
   hasSeo: z.boolean().optional(),
   routes: z
     .array(

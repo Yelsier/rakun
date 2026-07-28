@@ -4,3 +4,4 @@ export * from "./LazyViewport";
 export * from "./ModuleRenderer";
 export * from "./registry";
 export * from "./translation";
+export * from './plugins'

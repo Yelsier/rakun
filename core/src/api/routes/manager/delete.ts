@@ -1,6 +1,11 @@
 import { throwAppError } from "../../../lib/errors";
 import { Logger } from "../../../lib/Logger";
-import { Media } from "../../../internal-content-types";
+import {
+  ContentComment,
+  ContentCommentReadState,
+  ManagerNotification,
+  Media,
+} from "../../../internal-content-types";
 import { getMongoService } from "../../../orm";
 import { RakunRequestContext } from "../../context";
 import { DeleteInput } from "../../../schemas/manager/delete";
@@ -8,6 +13,8 @@ import { checkOwnership } from "../../utils/checkOwnership";
 import { deleteMediaStorage } from "./media/deleteMediaStorage";
 import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
+import { prepareLocaleVariantRemoval } from "../../utils/localeVariants";
+import { forbidLinkedIteratorTemplateAccess } from "./linkedIterator";
 
 export const deleteHandler = async ({
   input,
@@ -19,6 +26,7 @@ export const deleteHandler = async ({
   const db = await getMongoService();
   const { contentType: contentTypeName, id } = input;
   const contentType = requireContentType(contentTypeName);
+  forbidLinkedIteratorTemplateAccess(contentType);
 
   await checkOwnership({
     ctx,
@@ -56,13 +64,35 @@ export const deleteHandler = async ({
     });
   }
 
-  await db.delete(contentType, { _id: id }, { actorId: ctx.getUser()._id });
+  const localeVariantRemoval = await prepareLocaleVariantRemoval({
+    contentType,
+    id,
+  });
+  const user = ctx.getUser();
+
+  await db.delete(contentType, { _id: id }, { actorId: user._id });
+  await db.delete(
+    ContentComment,
+    { contentType: contentType.name, documentId: id },
+    { actorId: user._id },
+  );
+  await db.delete(
+    ContentCommentReadState,
+    { contentType: contentType.name, documentId: id },
+    { actorId: user._id },
+  );
+  await db.delete(
+    ManagerNotification,
+    { contentType: contentType.name, documentId: id },
+    { actorId: user._id },
+  );
   Logger.addTrace("manager.delete: db delete success");
 
   await checkRevalidatePath({
     contentType: contentType.name,
-    contentTypeId: id,
-    operation: "delete",
+    contentTypeId: localeVariantRemoval.revalidateContentTypeId,
+    operation:
+      localeVariantRemoval.revalidateContentTypeId === id ? "delete" : "update",
   });
 
   return { ok: true };

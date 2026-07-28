@@ -1,4 +1,5 @@
 import {
+  isAdminRole,
   mapPermissions,
   type EncodedContentType,
   type ManagerUserSchema,
@@ -137,11 +138,7 @@ const hasGrantedPermission = (
   permission: Permission,
   granted: Set<Permission>,
 ) => {
-  if (isContentPermission(permission)) {
-    return granted.has(permission)
-  }
-
-  return false
+  return granted.has(permission)
 }
 
 export const hasManagerPermissions = (
@@ -152,6 +149,7 @@ export const hasManagerPermissions = (
   const resolved = resolvePermissions(permissions, contentTypes)
 
   if (!resolved) return false
+  if (isAdminRole(user.role)) return true
 
   const granted = getGrantedPermissions(user, contentTypes)
 
@@ -168,6 +166,7 @@ export const hasAnyManagerPermissionIfDefined = (
   const resolved = resolveDefinedPermissions(permissions, contentTypes)
 
   if (resolved.length === 0) return true
+  if (isAdminRole(user.role)) return true
 
   const granted = getGrantedPermissions(user, contentTypes)
 
@@ -182,6 +181,7 @@ export const hasManagerPermissionsIfDefined = (
   const resolved = resolveDefinedPermissions(permissions, contentTypes)
 
   if (resolved.length === 0) return true
+  if (isAdminRole(user.role)) return true
 
   const granted = getGrantedPermissions(user, contentTypes)
 

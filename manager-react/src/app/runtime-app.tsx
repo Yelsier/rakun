@@ -36,6 +36,7 @@ import {
 } from "@/media";
 import type { ManagerAppOverrides } from "../router";
 import type { ManagerPreviewConfig } from "../router";
+import type { RakunManagerPluginDefinition } from '../plugins'
 
 type BootstrapState =
   | { status: "loading" }
@@ -69,6 +70,7 @@ export type ManagerRuntimeAppProps = {
   preview?: ManagerPreviewConfig;
   linkComponent?: ManagerLinkComponent;
   renderMediaPicker?: (args: ManagerMediaPickerRenderArgs) => ReactNode;
+  plugins?: readonly RakunManagerPluginDefinition[];
 };
 
 export type ManagerBrowserAppProps = Omit<
@@ -92,6 +94,7 @@ export const ManagerRuntimeApp = ({
   preview,
   linkComponent,
   renderMediaPicker,
+  plugins,
 }: ManagerRuntimeAppProps) => {
   const queryClient = useMemo(() => createManagerQueryClient(), []);
   const scopedNavigation = useMemo<ManagerNavigation>(
@@ -227,6 +230,7 @@ export const ManagerRuntimeApp = ({
                           basePath={basePath}
                           searchParams={searchParams}
                           preview={preview}
+                          plugins={plugins}
                           {...overrides}
                         />
                       )}
@@ -249,6 +253,7 @@ export const ManagerRuntimeApp = ({
                           contentTypes={state.contentTypes}
                           authenticated
                           preview={preview}
+                          plugins={plugins}
                           {...overrides}
                         />
                       </LanguageProvider>

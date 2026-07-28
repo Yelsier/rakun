@@ -21,6 +21,8 @@ import { NavSecondary } from './nav-secondary'
 import { NavUser } from './nav-user'
 import { useManagerHelp } from '@/help/manager-help'
 import { resolveLucideIcon } from '@/helpers/resolve-lucide-icon'
+import { useManagerPlugins } from '@/plugins'
+import { useSession } from '@/state/session'
 import {
   Sidebar,
   SidebarContent,
@@ -149,6 +151,8 @@ export function AppSidebar({
   secondaryItems?: ManagerSidebarItem[]
 }) {
   const { hasCurrentTour, startCurrentTour } = useManagerHelp()
+  const pluginRegistry = useManagerPlugins()
+  const { hasPermissions } = useSession()
   const helpItem: ManagerSidebarItem = {
     title: 'Help',
     url: '#',
@@ -156,6 +160,56 @@ export function AppSidebar({
     disabled: !hasCurrentTour,
     onClick: startCurrentTour,
   }
+  const pluginItems = pluginRegistry.sidebar
+    .filter(
+      (item) =>
+        !item.permissions?.length || hasPermissions([...item.permissions]),
+    )
+    .map((item) => {
+      const route = item.routeId
+        ? pluginRegistry.routesById.get(`${item.pluginId}:${item.routeId}`)
+        : undefined
+      if (item.routeId && !route) {
+        throw new Error(
+          `Rakun manager sidebar item "${item.pluginId}:${item.id}" references unknown route "${item.routeId}".`,
+        )
+      }
+      if (route?.path.includes(':')) {
+        throw new Error(
+          `Rakun manager sidebar item "${item.pluginId}:${item.id}" cannot target parameterized route "${route.path}".`,
+        )
+      }
+
+      const rawHref = route?.path ?? item.href
+      if (!rawHref) {
+        throw new Error(
+          `Rakun manager sidebar item "${item.pluginId}:${item.id}" must define href or routeId.`,
+        )
+      }
+      const external = /^(?:[a-z]+:|#)/i.test(rawHref)
+      const url = external
+        ? rawHref
+        : getManagerPathHref(rawHref, { basePath })
+
+      return {
+        ...item,
+        url,
+        isActive: external ? false : isActiveHref(url, pathname, basePath),
+      }
+    })
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+  const primaryPluginGroups = pluginItems
+    .filter((item) => (item.position ?? 'secondary') === 'primary')
+    .reduce((groups, item) => {
+      const group = item.group ?? 'Plugins'
+      const items = groups.get(group) ?? []
+      items.push(item)
+      groups.set(group, items)
+      return groups
+    }, new Map<string, typeof pluginItems>())
+  const secondaryPluginItems = pluginItems.filter(
+    (item) => (item.position ?? 'secondary') === 'secondary',
+  )
 
   return (
     <Sidebar variant='inset' data-tour="manager-sidebar" {...props}>
@@ -181,10 +235,13 @@ export function AppSidebar({
         <NavMain
           items={getContentTypeNavItems(contentTypes, basePath, pathname)}
         />
+        {Array.from(primaryPluginGroups, ([label, items]) => (
+          <NavMain key={label} label={label} items={items} />
+        ))}
         <NavSecondary
-          items={[...secondaryItems, helpItem].map((item) => ({
+          items={[...secondaryItems, ...secondaryPluginItems, helpItem].map((item) => ({
             ...item,
-            isActive: item.onClick
+            isActive: 'onClick' in item && item.onClick
               ? false
               : isActiveHref(item.url, pathname, basePath),
           }))}

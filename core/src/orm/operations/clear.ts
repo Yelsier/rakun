@@ -1,12 +1,11 @@
 import type { Db } from "mongodb";
 
-import { checkFailureCase } from "../dbService";
+import type { DBService } from "../dbService";
 import ContentType from "../../lib/ContentType";
+import { deleteHandler } from "./delete";
 
 export const clearHandler =
-  (db: Db) =>
+  (db: Db, getService: () => DBService) =>
   async <T extends ContentType>(contentType: T): Promise<void> => {
-    checkFailureCase("DeletionError");
-
-    await db.collection(contentType.name).deleteMany({});
+    await deleteHandler(db, getService)(contentType, {});
   };

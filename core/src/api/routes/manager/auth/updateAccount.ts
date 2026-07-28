@@ -21,6 +21,9 @@ export const updateAccountHandler = async ({
       : undefined;
 
   const updated = await db.update(ManagerUser, user._id, {
+    ...(input.name !== undefined
+      ? { name: input.name?.trim() ?? "" }
+      : {}),
     user: input.user.trim(),
     avatarId: avatar?._id ?? user.avatarId,
     avatarKey: avatar?.key ?? user.avatarKey,

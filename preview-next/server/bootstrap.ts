@@ -1,6 +1,13 @@
 import { createLocalMediaServiceConfig, type RakunBootstrapOptions } from '@rakun-kit/next'
 
-import { Footer, Header, PreviewPage, Project, previewContentTypes } from './content-types'
+import {
+  Category,
+  Footer,
+  Header,
+  PreviewPage,
+  Project,
+  previewContentTypes,
+} from './content-types'
 import { apiOperations } from './api-operations'
 import { createOpenAITranslationServiceConfig } from '@rakun-kit/openai'
 
@@ -60,6 +67,20 @@ export const createPreviewBootstrap = () =>
         dynamic: false,
         defaultBasePath: 'projects',
         infoSchema: Project.getPopulatedSchema(),
+        layout: [
+          { type: 'module', key: 'header', contentType: Header.name },
+          { type: 'content' },
+          { type: 'module', key: 'footer', contentType: Footer.name },
+        ],
+      },
+      {
+        key: 'category',
+        contentType: Category.name,
+        field: 'slug',
+        hasPage: true,
+        dynamic: false,
+        defaultBasePath: 'categories',
+        infoSchema: Category.getPopulatedSchema(),
         layout: [
           { type: 'module', key: 'header', contentType: Header.name },
           { type: 'content' },

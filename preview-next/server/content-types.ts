@@ -1,3 +1,4 @@
+import { DataFront } from '@rakun-kit/core/types'
 import { ContentType, Fields } from '@rakun-kit/next'
 import { HelloWorld } from '@rakun-kit/next/internal-content-types'
 
@@ -50,6 +51,52 @@ export const PageSection = new ContentType({
   listFields: ['title'],
 })
 
+export const Category = new ContentType({
+  name: 'Category',
+  dynamicDataSource: true,
+  menu: {
+    title: 'Categories',
+    icon: 'Tags',
+    category: 'Dynamic data',
+  },
+  iterator: [
+    {
+      type: 'new',
+      contentType: HelloWorld,
+    },
+  ],
+  fields: {
+    title: Fields.string().required(),
+    slug: Fields.string().type('Slug').required(),
+  },
+  linkedIterator: true,
+  uniques: [['slug']],
+  listFields: ['title', 'slug'],
+})
+
+export const LinkItem = new ContentType({
+  name: 'LinkItem',
+  fields: {
+    title: Fields.string().translatable().required(),
+    link: Fields.link().required(),
+  },
+  listFields: ['title'],
+})
+
+export const ProjectHeader = new ContentType({
+  name: 'ProjectHeader',
+  fields: {
+    title: Fields.string().translatable().required(),
+    categories: Fields.blocks([
+      {
+        name: 'Category',
+        field: Fields.relation(LinkItem, 'new'),
+      },
+    ]).required(),
+    company: Fields.string().translatable().required(),
+  },
+})
+
 export const Project = new ContentType({
   name: 'Project',
   dynamicDataSource: true,
@@ -63,9 +110,18 @@ export const Project = new ContentType({
     slug: Fields.string().type('Slug').required(),
     excerpt: Fields.string().type('Textarea'),
     featured: Fields.boolean(),
+    category: Fields.relation(Category, 'existing').required(),
+    categories: Fields.relation(Category, 'existing').multiple(),
+    images: Fields.file().type('Image').multiple(),
   },
+  iterator: [
+    {
+      contentType: ProjectHeader,
+      type: 'new',
+    },
+  ],
   uniques: [['slug']],
-  listFields: ['title', 'slug', 'featured'],
+  listFields: ['title', 'slug', 'featured', 'category.title'],
 })
 
 export const FeatureCarouselItem = new ContentType({
@@ -84,13 +140,45 @@ export const FeatureCarousel = new ContentType({
     icon: 'GalleryHorizontalEnd',
     category: 'Dynamic data',
   },
+  modulePicker: {
+    preview: '/dynamic-data/aurora.svg',
+  },
   fields: {
     eyebrow: Fields.string(),
     title: Fields.string().required(),
     items: Fields.blocks([
       {
         name: FeatureCarouselItem.name,
-        field: Fields.relation(FeatureCarouselItem, 'new'),
+        field: Fields.relation(FeatureCarouselItem, 'new').required(),
+      },
+    ]),
+  },
+  listFields: ['title', 'eyebrow'],
+})
+
+export const CategoriesGalleryItem = new ContentType({
+  name: 'CategoriesGalleryItem',
+  fields: {
+    title: Fields.string().required(),
+    href: Fields.link().required(),
+    images: Fields.file().type('Image').multiple().required(),
+  },
+}).hideFromManager()
+
+export const CategoriesGallery = new ContentType({
+  name: 'CategoriesGallery',
+  menu: {
+    title: 'Category galleries',
+    icon: 'Images',
+    category: 'Dynamic data',
+  },
+  fields: {
+    eyebrow: Fields.string(),
+    title: Fields.string().required(),
+    items: Fields.blocks([
+      {
+        name: CategoriesGalleryItem.name,
+        field: Fields.relation(CategoriesGalleryItem, 'new').required(),
       },
     ]),
   },
@@ -99,7 +187,7 @@ export const FeatureCarousel = new ContentType({
 
 export const PreviewPage = new ContentType({
   name: 'Page',
-  permissions: 'Route',
+  permissions: 'Page',
   fields: {
     title: Fields.string().translatable().required(),
     slug: Fields.string().type('Slug').required().translatable(),
@@ -111,6 +199,10 @@ export const PreviewPage = new ContentType({
     },
     {
       contentType: FeatureCarousel,
+      type: 'new',
+    },
+    {
+      contentType: CategoriesGallery,
       type: 'new',
     },
   ],
@@ -297,9 +389,12 @@ export const previewContentTypes = [
   Header,
   Footer,
   PageSection,
+  Category,
   Project,
   FeatureCarouselItem,
   FeatureCarousel,
+  CategoriesGalleryItem,
+  CategoriesGallery,
   Author,
   Article,
   RelationLevel3,
@@ -308,4 +403,29 @@ export const previewContentTypes = [
   ImagePlayground,
   ConditionalDemo,
   TranslationPlayground,
+  ProjectHeader,
 ]
+
+export const keyedContentTypes = {
+  Header,
+  Footer,
+  PageSection,
+  Category,
+  Project,
+  FeatureCarouselItem,
+  FeatureCarousel,
+  CategoriesGalleryItem,
+  CategoriesGallery,
+  Author,
+  Article,
+  RelationLevel3,
+  RelationLevel2,
+  RelationPlayground,
+  ImagePlayground,
+  ConditionalDemo,
+  TranslationPlayground,
+}
+
+export type Props<T extends keyof typeof keyedContentTypes> = DataFront<
+  (typeof keyedContentTypes)[T]
+>

@@ -22,6 +22,7 @@ export function ManagerAccountScreen() {
   const managerClient = useManagerClient()
   const { user, setUser } = useSession()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [name, setName] = useState(user.name || '')
   const [username, setUsername] = useState(user.user)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
@@ -32,8 +33,9 @@ export function ManagerAccountScreen() {
   const updateAccountMutation = useManagerMutation('manager.auth.updateAccount')
 
   useEffect(() => {
+    setName(user.name || '')
     setUsername(user.user)
-  }, [user.user])
+  }, [user.name, user.user])
 
   useEffect(
     () => () => {
@@ -91,6 +93,7 @@ export function ManagerAccountScreen() {
       }
 
       const updated = await updateAccountMutation.mutateAsync({
+        name,
         user: username,
         avatarId,
       })
@@ -121,7 +124,7 @@ export function ManagerAccountScreen() {
         <CardContent className="flex flex-col gap-5 md:flex-row">
           <div className="flex items-center gap-4">
             <UserAvatar
-              name={username}
+              name={name || username}
               email={user.email}
               avatar={previewAvatar}
               className="size-16"
@@ -141,6 +144,15 @@ export function ManagerAccountScreen() {
                 Upload image
               </Button>
             </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="account-name">Name</Label>
+            <Input
+              id="account-name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
           </div>
 
           <div className="flex flex-col gap-2">

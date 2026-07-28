@@ -56,6 +56,11 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/get",
   },
+  "manager.linkedIterator.get": {
+    kind: "query",
+    method: "post",
+    path: "/manager/linkedIterator/get",
+  },
   "manager.list": {
     kind: "query",
     method: "post",
@@ -70,6 +75,66 @@ export const managerOperationManifest = {
     kind: "mutation",
     method: "post",
     path: "/manager/favorites/toggle",
+  },
+  "manager.notifications.list": {
+    kind: "query",
+    method: "post",
+    path: "/manager/notifications/list",
+  },
+  "manager.notifications.markRead": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/notifications/markRead",
+  },
+  "manager.localeVariants.list": {
+    kind: "query",
+    method: "post",
+    path: "/manager/localeVariants/list",
+  },
+  "manager.localeVariants.create": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/localeVariants/create",
+  },
+  "manager.localeVariants.assign": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/localeVariants/assign",
+  },
+  "manager.localeVariants.unassign": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/localeVariants/unassign",
+  },
+  "manager.users.mentions": {
+    kind: "query",
+    method: "get",
+    path: "/manager/users/mentions",
+  },
+  "manager.comments.list": {
+    kind: "query",
+    method: "post",
+    path: "/manager/comments/list",
+  },
+  "manager.comments.create": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/comments/create",
+  },
+  "manager.comments.toggleReaction": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/comments/toggleReaction",
+  },
+  "manager.comments.markRead": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/comments/markRead",
+  },
+  "manager.comments.unreadCount": {
+    kind: "query",
+    method: "post",
+    path: "/manager/comments/unreadCount",
   },
   "manager.setDefaultLanguage": {
     kind: "mutation",

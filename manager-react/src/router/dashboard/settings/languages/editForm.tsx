@@ -38,7 +38,8 @@ const languageFormSchema = z.object({
       _id: z.string(),
       type: z.literal('self'),
     })
-    .nullable(),
+    .nullable()
+    .optional(),
   default: z.boolean().optional(),
 })
 
@@ -97,18 +98,24 @@ export const EditLanguageForm = ({
   }, [defaultValues, form])
 
   const onSubmit = async (values: LanguageFormValues) => {
+    const data = { ...values }
+
+    if (!defaultValues?._id && data.parent === null) {
+      delete data.parent
+    }
+
     try {
       if (defaultValues?._id) {
         await updateMutation.mutateAsync({
           contentType: 'Language',
           id: defaultValues._id,
-          data: values,
+          data,
         })
         toast.success('Language updated successfully!')
       } else {
         await createMutation.mutateAsync({
           contentType: 'Language',
-          data: values,
+          data,
         })
         toast.success('Language created successfully!')
       }
@@ -205,4 +212,3 @@ export const EditLanguageForm = ({
     </Form>
   )
 }
-

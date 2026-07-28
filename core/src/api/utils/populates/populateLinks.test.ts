@@ -41,7 +41,7 @@ const makeRouteMap = (overrides: Partial<RouteMapRow>): RouteMapRow =>
   ({
     _id: `${overrides.routeId ?? "route-id"}-${overrides.languageId ?? "language-en"}`,
     _type: "RouteMap",
-    path: "/en/fallback/",
+    path: "/fallback/",
     contentType: "Page",
     contentTypeId: "content-id",
     routeId: "route-id",
@@ -53,12 +53,20 @@ const setRouteMaps = (routeMaps: RouteMapRow[]) => {
   const list = mock(
     async (
       _contentType: unknown,
-      params: { filter: { routeId: string; contentTypeId: string } },
+      params: {
+        filter: {
+          routeId: string;
+          contentTypeId?: string;
+          variantGroupId?: string;
+        };
+      },
     ) => ({
       items: routeMaps.filter(
         (routeMap) =>
           routeMap.routeId === params.filter.routeId &&
-          routeMap.contentTypeId === params.filter.contentTypeId,
+          (params.filter.variantGroupId
+            ? routeMap.variantGroupId === params.filter.variantGroupId
+            : routeMap.contentTypeId === params.filter.contentTypeId),
       ),
     }),
   );
@@ -81,7 +89,7 @@ describe("populateLinks", () => {
         routeId: "route-about",
         contentTypeId: "about-id",
         languageId: "language-en",
-        path: "/en/about/",
+        path: "/about/",
       }),
       makeRouteMap({
         routeId: "route-about",
@@ -93,7 +101,7 @@ describe("populateLinks", () => {
         routeId: "route-contact",
         contentTypeId: "contact-id",
         languageId: "language-en",
-        path: "/en/contact/",
+        path: "/contact/",
       }),
       makeRouteMap({
         routeId: "route-contact",
@@ -130,14 +138,14 @@ describe("populateLinks", () => {
       title: "Docs",
       primaryLink: {
         _tag: "Translatable",
-        en: "/en/about/",
+        en: "/about/",
         es: "/es/sobre/",
       },
       blocks: [
         {
           ctaLink: {
             _tag: "Translatable",
-            en: "/en/contact/",
+            en: "/contact/",
             es: "/es/contacto/",
           },
         },
@@ -146,11 +154,25 @@ describe("populateLinks", () => {
         routeId: "route-about",
       },
     });
-    expect(list).toHaveBeenCalledTimes(2);
+    expect(list).toHaveBeenCalledTimes(4);
+    expect(list).toHaveBeenCalledWith(RouteMap, {
+      filter: {
+        routeId: "route-about",
+        variantGroupId: "about-id",
+      },
+      options: { limit: "all" },
+    });
     expect(list).toHaveBeenCalledWith(RouteMap, {
       filter: {
         routeId: "route-about",
         contentTypeId: "about-id",
+      },
+      options: { limit: "all" },
+    });
+    expect(list).toHaveBeenCalledWith(RouteMap, {
+      filter: {
+        routeId: "route-contact",
+        variantGroupId: "contact-id",
       },
       options: { limit: "all" },
     });
@@ -189,6 +211,52 @@ describe("populateLinks", () => {
         _tag: "Translatable",
         en: "/fallback/about/",
       },
+    });
+  });
+
+  it("resolves links through locale variant groups", async () => {
+    const list = setRouteMaps([
+      makeRouteMap({
+        routeId: "route-about",
+        contentTypeId: "about-id",
+        variantGroupId: "about-id",
+        languageId: "language-en",
+        path: "/about/",
+      }),
+      makeRouteMap({
+        routeId: "route-about",
+        contentTypeId: "about-es-id",
+        variantGroupId: "about-id",
+        languageId: "language-es",
+        path: "/es/sobre/",
+      }),
+    ]);
+
+    const result = await populateLinks({
+      _id: "page-id",
+      _type: "TestPage",
+      primaryLink: {
+        routeId: "route-about",
+        contentTypeId: "about-id",
+      },
+    } as DBOutput<ContentType>);
+
+    expect(result).toEqual({
+      _id: "page-id",
+      _type: "TestPage",
+      primaryLink: {
+        _tag: "Translatable",
+        en: "/about/",
+        es: "/es/sobre/",
+      },
+    });
+    expect(list).toHaveBeenCalledTimes(1);
+    expect(list).toHaveBeenCalledWith(RouteMap, {
+      filter: {
+        routeId: "route-about",
+        variantGroupId: "about-id",
+      },
+      options: { limit: "all" },
     });
   });
 
@@ -243,6 +311,6 @@ describe("populateLinks", () => {
         contentTypeId: "about-id",
       },
     });
-    expect(list).toHaveBeenCalledTimes(1);
+    expect(list).toHaveBeenCalledTimes(2);
   });
 });

@@ -4,6 +4,7 @@ import { ManagerBrowserApp } from "@rakun-kit/manager-react/app/runtime-app";
 import { createHttpManagerClient } from "@rakun-kit/manager-react/client/http";
 import type { ManagerClient } from "@rakun-kit/manager-react/client/request";
 import type { ManagerPreviewConfig } from "@rakun-kit/manager-react";
+import type { RakunManagerPluginDefinition } from '@rakun-kit/manager-react'
 import "@rakun-kit/manager-react/styles.css";
 import { useMemo, useSyncExternalStore, type ReactNode } from "react";
 
@@ -24,6 +25,7 @@ export type RakunManagerClientPageProps = {
   loadingFallback?: ReactNode;
   unauthenticatedFallback?: ReactNode;
   preview?: ManagerPreviewConfig;
+  plugins?: readonly RakunManagerPluginDefinition[];
 };
 
 const subscribeToLocation = (onStoreChange: () => void) => {
@@ -52,6 +54,7 @@ export function RakunManagerClientPage({
   loadingFallback,
   unauthenticatedFallback,
   preview,
+  plugins,
 }: RakunManagerClientPageProps) {
   const locationKey = useSyncExternalStore(
     subscribeToLocation,
@@ -87,6 +90,7 @@ export function RakunManagerClientPage({
       loadingFallback={loadingFallback}
       unauthenticatedFallback={unauthenticatedFallback}
       preview={preview}
+      plugins={plugins}
     />
   );
 }

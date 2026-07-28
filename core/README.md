@@ -98,9 +98,72 @@ rakunBootstrap({
 The web page response includes an ordered `layout` array containing module slots
 plus the content slot.
 
+## Module picker
+
+Content types used as iterator modules can customize their card in the manager's
+add-module dialog. `modulePicker.preview` accepts an image URL available to the
+manager browser; relative URLs are also supported:
+
+```ts
+const Hero = new ContentType({
+  name: "Hero",
+  modulePicker: {
+    title: "Hero section",
+    description: "Large introduction with heading, copy, and CTA.",
+    category: "Marketing",
+    icon: "PanelTop",
+    preview: "/images/modules/hero.webp",
+    keywords: ["banner", "cover"],
+  },
+  fields: {
+    title: Fields.string().required(),
+  },
+});
+```
+
+When `preview` is omitted or cannot be loaded, the picker displays a neutral
+placeholder so module cards keep a consistent height.
+
 `ensureRakunInitialized()` prepares logger, MongoDB, media, and route syncing. It uses a singleton promise to avoid concurrent initialization; if initialization fails, the promise is cleared so the next call can retry.
 
 `ensureRakunBootstrap(options)` only calls `rakunBootstrap` if the runtime has not been bootstrapped yet.
+
+## Plugins
+
+Trusted server plugins contribute to the same bootstrap registry without coupling
+core to React:
+
+```ts
+import { defineRakunPlugin, rakunBootstrap } from '@rakun-kit/core'
+
+export const analyticsPlugin = defineRakunPlugin({
+  id: '@acme/rakun-analytics',
+  contentTypes: [AnalyticsEvent],
+  routes: analyticsRoutes,
+  apiOperations: analyticsOperations,
+  permissions: ['plugin.analytics.view'],
+  literals: {},
+  initialize: async ({ db }) => {
+    // Services and migrations are ready here. Keep initialization idempotent.
+  },
+})
+
+rakunBootstrap({
+  plugins: [analyticsPlugin],
+  contentTypes: [],
+  literals: {},
+  mongo,
+})
+```
+
+Plugin ids and contributed content types, routes, operations, literals, and
+custom field editor ids must be unique. Rakun reports both owners on conflicts.
+Visual manager and web facets are registered separately in their browser
+runtimes.
+
+Custom field factories can use `createPluginField`. Their serializable
+`meta.editor` must match a field declaration in the server plugin and a React
+editor registered by its manager facet.
 
 ## Content Types
 
@@ -136,20 +199,48 @@ const Page = new ContentType({
     slug: Fields.string().type("Slug").required(),
   },
   iterator: [{ contentType: PageSection, type: "existing" }],
+  linkedIterator: true,
 });
 ```
+
+Set `linkedIterator: true` when every document should use one shared module
+structure. The manager stores a canonical iterator for the content type, while
+dynamic bindings such as `Current document` continue to resolve against the
+individual page being rendered. Documents are linked by default and can be
+unlinked in the manager to keep a local copy of the iterator.
+
+Iterator modules can also be made conditional from the manager. A condition is
+stored on the shared module entry and evaluated against the current document:
+
+```ts
+{
+  name: "Credits",
+  value: { /* module relation */ },
+  visibleWhen: {
+    field: "credits",
+    operator: "notEmpty",
+  },
+}
+```
+
+Supported operators are `notEmpty` and `empty`. Conditional modules remain part
+of the shared structure but are omitted from web and preview output when their
+condition does not match.
 
 Main properties:
 
 - `name`: stable type name. Also used as `_type`.
 - `fields`: field map.
 - `iterator`: page module entries. Generates the reserved `_iterator` field.
+- `linkedIterator`: shares that iterator between documents while allowing
+  explicit per-document overrides.
 - `menu`: manager metadata.
 - `uniques`: unique field groups.
 - `listFields`: preferred fields in lists and relations.
 - `hideFromManager()`: hides the content type from manager content type lists.
 - `apiOnly()`: applies `.apiOnly()` to every field in the content type.
 - `managerOnly()`: applies `.managerOnly()` to every field in the content type.
+- Saved manager documents support comments and user mentions by default.
 - `withHooks()`: attaches lifecycle hooks such as `beforeInsert`, `beforeUpdate`, and `onGet`.
 - Dynamic data bindings are available on manager-visible fields by default; use
   field-level `.noDynamic()` to opt out.
@@ -222,6 +313,98 @@ const Carousel = new ContentType({
 List bindings append dynamic items to manually stored items instead of replacing
 the list. If the same stable item id appears in both sources, the dynamically
 resolved item wins and the duplicate manual copy is skipped.
+
+A list inside a nested module can also use a compatible relation or blocks array
+from the current document. The manager exposes these sources as
+`Current document · <field>`, infers the content type of each array item, and
+lets each item be mapped with the same field mapping UI used for collections.
+These bindings store a `currentDocument` source alongside the inferred item
+content type:
+
+```ts
+const headerBindings = {
+  lists: {
+    categories: {
+      contentType: LinkItem.name,
+      source: {
+        kind: "currentDocument",
+        contentType: Project.name,
+        path: "categories",
+        itemName: "Category",
+      },
+      itemName: "Category",
+      map: {
+        title: { contentType: LinkItem.name, path: "title" },
+        href: { contentType: LinkItem.name, path: "href" },
+      },
+    },
+  },
+};
+```
+
+List query conditions can compare a source field with a value from the current
+document. The manager exposes this as `Current document`; programmatic bindings
+use `{ $current: "path.to.field" }`. For example, a category can query only the
+projects whose related category has the same slug:
+
+```ts
+query: {
+  filter: {
+    "category.slug": { $current: "slug" },
+  },
+  options: { limit: 10 },
+}
+```
+
+Current-document paths are checked against the content type's dynamic field
+rules before the query runs. `_id` is also available for relation queries.
+
+A list mapping can also collect an array through a reverse relation without
+persisting that relation on the source document. For example, a category gallery
+can create one item per `Category` and collect the images of its related
+`Project` documents:
+
+```ts
+const Category = new ContentType({
+  name: "Category",
+  dynamicDataSource: true,
+  fields: {
+    title: Fields.string().required(),
+  },
+});
+
+const Project = new ContentType({
+  name: "Project",
+  dynamicDataSource: true,
+  fields: {
+    category: Fields.relation(Category, "existing").required(),
+    images: Fields.file().type("Image").multiple().required(),
+  },
+});
+
+const galleryBindings = {
+  lists: {
+    items: {
+      contentType: Category.name,
+      itemName: "CategoriesGalleryItem",
+      map: {
+        title: { contentType: Category.name, path: "title" },
+        images: {
+          kind: "relatedCollection",
+          contentType: Project.name,
+          relation: "category",
+          path: "images",
+          limit: 10,
+        },
+      },
+    },
+  },
+};
+```
+
+The related collection query matches `Project.category._id` against the current
+category, preserves project and image order, and flattens the selected array by
+one level. Its numeric limit applies to related projects and is capped at 100.
 
 Schema and validation methods:
 
@@ -338,6 +521,11 @@ In environments other than `test`, the connection creates indexes defined by `cr
 `api/operations` defines typed contracts and handlers for endpoints:
 
 - Manager: CRUD, auth, MFA, media, literals, settings.
+- Manager comments and mentions: `manager.comments.list`,
+  `manager.comments.create`, `manager.comments.toggleReaction`,
+  `manager.comments.markRead`, `manager.comments.unreadCount`,
+  `manager.users.mentions`,
+  `manager.notifications.list`, and `manager.notifications.markRead`.
 - Web: page resolution.
 
 Main helpers:

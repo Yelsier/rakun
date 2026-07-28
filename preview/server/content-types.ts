@@ -47,6 +47,7 @@ export const PageSection = new ContentType({
 
 export const Page = new ContentType({
   name: "Page",
+  permissions: "Page",
   fields: {
     title: Fields.string().translatable().required(),
     slug: Fields.string().type("Slug").required().translatable(),

@@ -1,3 +1,5 @@
+import Script from "next/script";
+
 import {
   rakunPreviewInspectorMessageType,
   rakunPreviewModuleSelectMessageType,
@@ -308,8 +310,8 @@ export const RakunPreviewBridge = ({
 `;
 
   return (
-    <script
-      suppressHydrationWarning
+    <Script
+      id="rakun-preview-bridge"
       dangerouslySetInnerHTML={{ __html: script }}
     />
   );

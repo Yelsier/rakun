@@ -17,3 +17,4 @@ export * from "./app/runtime-auth";
 export * from "./state/session";
 export * from "./client/trpc";
 export * from "./link";
+export * from './plugins'

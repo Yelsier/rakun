@@ -22,7 +22,7 @@ bun run dev
 
 Open:
 
-- `http://localhost:3000/en` for seeded home page
+- `http://localhost:3000` for seeded home page
 - `http://localhost:3000/backend` for manager
 
 Default seeded login:
@@ -30,6 +30,17 @@ Default seeded login:
 ```text
 admin@rakun.local / admin1234
 ```
+
+## Plugin code editor
+
+This preview registers `@rakun-kit/plugin-code-editor` in the manager client
+boundary at
+`app/backend/[[...slug]]/preview-manager.tsx`.
+
+Open the seeded `Lexical Code Blocks` article in the manager to edit its
+RichText code block, switch the syntax language, save it, and reopen it. This
+preview limits the selector to Plain Text, JSON, JavaScript, TypeScript, HTML,
+and CSS.
 
 ## Seed
 
@@ -39,22 +50,47 @@ The API route seeds preview data on first request when `SEED_PREVIEW` is not
 - `Language`
 - preview admin role and user
 - `Header` and `Footer` layout modules
-- home, about, and contact `Page` records
+- `en`, `es`, and `es-MX` locales, with `es-MX` falling back to `es`
+- home, about, and contact `Page` records with seeded locale variants
 - inline `HelloWorld` modules in the seeded page `_iterator`
 - a `FeatureCarousel` module that demonstrates dynamic data bindings from
   `Project`
+- a `CategoriesGallery` module that maps `Category` records and queries each
+  category's related `Project.images`
+- local SVG `Media` records used by the related project galleries
+- an `ImagePlayground` record with 18 selected images (three distinct media
+  records for each of the six SVGs) for testing compact previews and
+  dialog-based reordering
 - populated `Fields.link()` examples in header and footer modules
 - `Author` and `Article`
-- route settings and route maps for `/en/`, `/es/`, `/en/about/`, `/es/sobre/`,
-  `/en/contact/`, and `/es/contacto/`
+- `RouteLocaleVariant` assignments and route maps for `/`, `/es/`,
+  `/es-MX/`, `/about/`, `/es/sobre/`, `/es-MX/sobre-mexico/`,
+  `/contact/`, `/es/contacto/`, and `/es-MX/contacto/`
 
 The seed is idempotent and also repairs the seeded home `_iterator` so
-`HelloWorld` stays present after local database reuse.
+`HelloWorld`, `FeatureCarousel`, and `CategoriesGallery` stay present after
+local database reuse.
 
 The seeded `FeatureCarousel` is a reusable layout module. Its title can be bound
 to a selected `Project`, and its item list can be populated from filtered
 `Project` records. The manager stores those bindings in `_bindings`; manually
 added carousel items are kept and merged with the dynamic list output.
+
+The seeded `CategoriesGallery` demonstrates a reverse relation without storing
+`Category.projects`. Its outer list comes from `Category`; the `images` mapping
+queries projects whose `category._id` matches the current category and flattens
+each project's `images` array:
+
+```ts
+images: {
+  kind: "relatedCollection",
+  contentType: Project.name,
+  relation: "category",
+  path: "images",
+  limit: 10,
+  sort: { title: "asc" },
+}
+```
 
 ## Custom API Operation
 

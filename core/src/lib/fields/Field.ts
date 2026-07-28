@@ -275,6 +275,8 @@ export type FieldStateOf<F> =
 export type FieldMetaBase = {
   type: FieldType;
   ui: FieldUIType;
+  editor?: string;
+  [key: string]: unknown;
 };
 
 export type AnyFieldLike = FieldLike<
@@ -327,6 +329,8 @@ export type EncodedField = {
   config: {
     ui: FieldUIType;
     type: FieldType;
+    editor?: string;
+    [key: string]: unknown;
   };
   description?: string;
   isRequired: boolean;
@@ -434,6 +438,45 @@ export function createField<
         params.state,
       ) as z.ZodType<FieldOutput<OutputValue, State>>,
   };
+}
+
+export function createPluginField<
+  InputValue,
+  DbValue,
+  OutputValue,
+  Meta extends FieldMetaBase & { editor: string },
+>(params: {
+  meta: Meta;
+  schemas: {
+    input: () => z.ZodType<InputValue>;
+    db: () => z.ZodType<DbValue>;
+    output: () => z.ZodType<OutputValue>;
+  };
+}): FieldWithModifiers<
+  FieldLike<InputValue, DbValue, OutputValue, Meta, DefaultFieldState>
+> {
+  const makeField = <State extends FieldState>(
+    state: State,
+  ): FieldWithModifiers<
+    FieldLike<InputValue, DbValue, OutputValue, Meta, State>
+  > => {
+    const field = createField({
+      meta: params.meta,
+      state,
+      schemas: params.schemas,
+    });
+
+    return withFieldModifiers({
+      field,
+      rebuild: <NextState extends FieldState>(nextState: NextState) =>
+        makeField(nextState) as WithFieldState<
+          FieldLike<InputValue, DbValue, OutputValue, Meta, State>,
+          NextState
+        >,
+    });
+  };
+
+  return makeField(defaultFieldState);
 }
 
 export function sameSchemas<Value>(schema: () => z.ZodType<Value>) {

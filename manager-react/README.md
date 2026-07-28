@@ -89,6 +89,95 @@ Import the package stylesheet once:
 import "@rakun-kit/manager-react/styles.css";
 ```
 
+## Manager Plugins
+
+Manager plugins run inside the normal providers and can add dashboard routes,
+sidebar items, and custom field editors:
+
+```tsx
+import {
+  defineRakunManagerPlugin,
+  ManagerBrowserApp,
+} from '@rakun-kit/manager-react'
+
+const analyticsManagerPlugin = defineRakunManagerPlugin({
+  id: '@acme/rakun-analytics',
+  routes: [{
+    id: 'dashboard',
+    path: '/analytics',
+    component: AnalyticsScreen,
+    permissions: ['plugin.analytics.view'],
+  }],
+  sidebar: [{
+    id: 'analytics',
+    title: 'Analytics',
+    routeId: 'dashboard',
+    position: 'primary',
+    group: 'Plugins',
+  }],
+  fieldEditors: {
+    '@acme/rakun-analytics.query': QueryEditor,
+  },
+})
+
+<ManagerBrowserApp plugins={[analyticsManagerPlugin]} {...props} />
+```
+
+Use `ManagerFieldEditorProps`, `ManagerFieldEditorRef`, and
+`useManagerFieldValue` from `@rakun-kit/manager-react/plugins` when implementing
+field editors. Next.js applications should import plugin objects inside a
+`'use client'` wrapper around `RakunManagerClientPage`; `RakunManagerPage` accepts
+that wrapper through `managerComponent`.
+
+### Extending the RichText editor
+
+Manager plugins can register Lexical nodes and React plugins for every
+`RichText` field, including fields rendered inside relations, blocks, and
+modules:
+
+```tsx
+'use client'
+
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
+import {
+  defineRakunManagerPlugin,
+  type ManagerRichTextPluginProps,
+} from '@rakun-kit/manager-react/plugins'
+import { MentionNode } from './MentionNode'
+
+const MentionsPlugin = ({ id }: ManagerRichTextPluginProps) => {
+  const [editor] = useLexicalComposerContext()
+
+  // Register commands and listeners on `editor` here.
+  return null
+}
+
+export const mentionsManagerPlugin = defineRakunManagerPlugin({
+  id: '@acme/rakun-mentions',
+  richText: {
+    nodes: [MentionNode],
+    plugins: [
+      {
+        id: '@acme/rakun-mentions.plugin',
+        component: MentionsPlugin,
+        placement: 'editor',
+      },
+    ],
+  },
+})
+```
+
+Lexical plugin components receive `ManagerRichTextPluginProps` (the field id,
+configuration, current content type, and related field metadata) and render
+inside `LexicalComposer`, so they can use the normal Lexical React hooks.
+Supported placements are `toolbar`, `block-format`, `editor` (the default),
+`actions-start`, and `actions-end`. `block-format` components render inside the
+manager's block selector and can use `ManagerRichTextBlockFormatItem` from
+`@rakun-kit/manager-react/rich-text`. Contributions keep declaration order
+unless an explicit `order` is provided. Node types and plugin ids must be unique;
+conflicts report both plugin owners. Node replacements use Lexical's standard
+`LexicalNodeReplacement` configuration.
+
 ## Exports
 
 - `@rakun-kit/manager-react`: manager app, providers, clients, navigation, router, layout, media, and state helpers.

@@ -7,6 +7,7 @@ export const ManagerUser = new ContentType({
   name: "ManagerUser",
   permissions: "ManagerUser",
   fields: {
+    name: Fields.string(),
     user: Fields.string().required(),
     email: Fields.string().type("Email").required(),
     password: Fields.string().type("Password").required().managerOnly(),

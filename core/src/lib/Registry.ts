@@ -59,6 +59,7 @@ export const encodeContentTypeForManager = <T extends ContentType>(ct: T) => {
     dynamicData: ct.dynamicData,
     dynamicDataSource: ct.dynamicDataSource,
     hasIterator: ct.hasIterator,
+    linkedIterator: ct.linkedIterator,
     hasSeo: ct.hasSeo,
     routes,
     isInternal: ct.isInternal,

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title description">
+  <title id="title">Borealis forms</title>
+  <desc id="description">Geometric green forms on a dark background.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#071b1b"/>
+      <stop offset="1" stop-color="#163f3a"/>
+    </linearGradient>
+    <linearGradient id="ribbon" x1="0" y1="1" x2="1" y2="0">
+      <stop stop-color="#20d49a"/>
+      <stop offset="1" stop-color="#c9ff72"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#background)"/>
+  <circle cx="260" cy="210" r="118" fill="#d9ffb0"/>
+  <path d="M50 710 410 270l260 280 200-340 280 500Z" fill="url(#ribbon)" opacity=".9"/>
+  <path d="M80 790 430 420l230 220 220-300 260 450Z" fill="#0b2726" opacity=".72"/>
+</svg>

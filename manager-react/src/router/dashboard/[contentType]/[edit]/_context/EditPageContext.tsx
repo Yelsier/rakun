@@ -6,8 +6,16 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from 'react'
+import type { LocaleVariantListOutput, LanguageSchema } from '@rakun-kit/core/client'
+import type {
+  LinkedIteratorAction,
+  LinkedIteratorControl,
+  LinkedIteratorStateOutput,
+} from '@rakun-kit/core/client'
+import { ITERATOR_FIELD_NAME } from '@rakun-kit/core/client'
 
 import { useContentDocumentActions } from '../_hooks/useContentDocumentActions'
 import {
@@ -32,6 +40,8 @@ import { useEditErrorStore } from '@/hooks/app-store'
 import { useOptionalManagerNavigation } from '@/state/navigation'
 import { useLanguage } from '@/state/language'
 import { useSession } from '@/state/session'
+import { useManagerQuery } from '@/client/react'
+import { deepEqual } from '@/helpers/deepEqual'
 
 const getDefaultVisibility = (defaultData?: Record<string, FieldValue>) =>
   ((defaultData as { _visibility?: DocumentVisibility } | undefined)?._visibility ??
@@ -66,7 +76,25 @@ const highlightManagerPreviewTarget = (selectors: string[]) => {
 
     if (!target) return
 
-    target.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    const scrollArea = document.querySelector<HTMLElement>(
+      '[data-rakun-manager-edit-scroll-area]',
+    )
+    const viewport = scrollArea?.querySelector<HTMLElement>(
+      '[data-slot="scroll-area-viewport"]',
+    )
+
+    if (viewport?.contains(target)) {
+      const viewportRect = viewport.getBoundingClientRect()
+      const targetRect = target.getBoundingClientRect()
+      const top =
+        viewport.scrollTop +
+        targetRect.top -
+        viewportRect.top -
+        (viewport.clientHeight - targetRect.height) / 2
+
+      viewport.scrollTo({ top, behavior: 'smooth' })
+    }
+
     target.classList.remove(managerPreviewSelectedClassName)
     void target.offsetWidth
     target.classList.add(managerPreviewSelectedClassName)
@@ -109,6 +137,7 @@ type EditPageContextValue = {
   handleTabChange: (value: string) => void
   handleVisibilityChange: (visibility: EditableDocumentVisibility) => void
   hasVersioning: boolean
+  hasLocaleVariants: boolean
   hasVisibility: boolean
   isTrashed: boolean
   languageCode: string
@@ -118,6 +147,7 @@ type EditPageContextValue = {
   openPermanentDeleteDialog: () => void
   permanentDeleteOpen: boolean
   previewState: ReturnType<typeof useContentPreview>
+  localeVariantRoute?: ContentTypeRouteMeta
   routeLayout: ReturnType<typeof useRouteLayoutData>
   sections: ReturnType<typeof useContentTypeSections>
   setMoveToTrashOpen: (open: boolean) => void
@@ -127,9 +157,59 @@ type EditPageContextValue = {
   translation: ReturnType<typeof useTranslationDialogState>
   translationEnabled: boolean
   moveToTrashOpen: boolean
+  linkedIterator: {
+    enabled: boolean
+    state?: LinkedIteratorStateOutput
+    mode: 'linked' | 'unlinked'
+    setMode: (mode: 'linked' | 'unlinked') => void
+    adoptShared: () => void
+  }
 }
 
 const EditPageContext = createContext<EditPageContextValue | null>(null)
+
+const getLanguageFallbackChain = (
+  language: LanguageSchema,
+  languageList: LanguageSchema[],
+) => {
+  const result: LanguageSchema[] = []
+  const seen = new Set<string>()
+  let current: LanguageSchema | undefined = language
+
+  while (current && !seen.has(current._id)) {
+    result.push(current)
+    seen.add(current._id)
+    current = languageList.find((item) => item._id === current?.parent?._id)
+  }
+
+  const defaultLanguage = languageList.find((item) => item.default)
+  if (defaultLanguage && !seen.has(defaultLanguage._id)) {
+    result.push(defaultLanguage)
+  }
+
+  return result
+}
+
+const resolveLocaleVariantDocumentId = ({
+  data,
+  language,
+  languageList,
+}: {
+  data?: LocaleVariantListOutput
+  language: LanguageSchema
+  languageList: LanguageSchema[]
+}) => {
+  if (!data) return undefined
+
+  for (const fallbackLanguage of getLanguageFallbackChain(language, languageList)) {
+    const assignment = data.assignments.find(
+      (item) => item.language._id === fallbackLanguage._id,
+    )
+    if (assignment) return assignment.documentId
+  }
+
+  return data.primaryDocumentId
+}
 
 export const EditPageProvider = ({
   children,
@@ -143,7 +223,28 @@ export const EditPageProvider = ({
   const navigation = useOptionalManagerNavigation()
   const editErrors = useEditErrorStore((state) => state.errors)
   const sections = useContentTypeSections(contentType)
+  const localeVariantRoute = (
+    (contentType as typeof contentType & { routes?: ContentTypeRouteMeta[] }).routes ?? []
+  ).find((route) => route.hasPage)
   const contentTypeId = (defaultData as { _id?: string } | undefined)?._id
+  const linkedIteratorQuery = useManagerQuery({
+    name: 'manager.linkedIterator.get',
+    input: {
+      contentType: contentType.name,
+      ...(contentTypeId ? { documentId: contentTypeId } : {}),
+    },
+    enabled: Boolean(contentType.linkedIterator),
+  })
+  const linkedIteratorState = linkedIteratorQuery.data as LinkedIteratorStateOutput | undefined
+  const [linkedIteratorMode, setLinkedIteratorMode] = useState<'linked' | 'unlinked'>('linked')
+  const effectiveDefaultData = useMemo(() => {
+    if (defaultData) return defaultData
+    if (!linkedIteratorState?.iterator) return defaultData
+
+    return {
+      [ITERATOR_FIELD_NAME]: linkedIteratorState.iterator,
+    } as Record<string, FieldValue>
+  }, [defaultData, linkedIteratorState?.iterator])
   const hasVisibility = Boolean(contentType.documentVisibility)
   const canReadVersions = hasPermissions(['content.ContentVersion.readAny'])
   const canRestoreVersions = hasPermissions(['content.ContentVersion.updateAny'])
@@ -165,7 +266,7 @@ export const EditPageProvider = ({
   const [moveToTrashOpen, setMoveToTrashOpen] = useState(false)
   const [permanentDeleteOpen, setPermanentDeleteOpen] = useState(false)
   const form = useEditFormController({
-    defaultData,
+    defaultData: effectiveDefaultData,
     hasVisibility,
     setSaveErrorVisible: setShowSaveErrorTooltip,
     visibility,
@@ -182,6 +283,37 @@ export const EditPageProvider = ({
     onAfterRestore,
     readFormData: form.readFormData,
     replaceDraft: form.replaceDraft,
+    getLinkedIteratorControl: (
+      data: Record<string, unknown>,
+      requestedAction?: LinkedIteratorAction,
+    ): LinkedIteratorControl | undefined => {
+      if (!contentType.linkedIterator || !linkedIteratorState?.enabled) return undefined
+
+      const iteratorChanged = !deepEqual(
+        data[ITERATOR_FIELD_NAME],
+        linkedIteratorState.iterator,
+      )
+      const action =
+        linkedIteratorMode === 'linked'
+          ? requestedAction ??
+            (linkedIteratorState.configured &&
+            iteratorChanged &&
+            linkedIteratorState.canUpdateShared
+              ? 'update'
+              : undefined)
+          : undefined
+
+      return {
+        mode: linkedIteratorMode,
+        ...(action ? { action } : {}),
+        ...(linkedIteratorState.revision !== undefined
+          ? { revision: linkedIteratorState.revision }
+          : {}),
+      }
+    },
+    onLinkedIteratorSaved: async () => {
+      await linkedIteratorQuery.refetch()
+    },
     setVisibility,
     visibilityBeforeTrash,
   })
@@ -189,14 +321,36 @@ export const EditPageProvider = ({
     contentTypeName: contentType.name,
     contentTypeId,
   })
+  const localeVariantsQuery = useManagerQuery({
+    name: 'manager.localeVariants.list',
+    input:
+      contentTypeId && localeVariantRoute
+        ? {
+            contentType: contentType.name,
+            documentId: contentTypeId,
+            routeKey: localeVariantRoute.key,
+          }
+        : ({
+            contentType: contentType.name,
+            documentId: '',
+          } as never),
+    enabled: Boolean(contentTypeId && localeVariantRoute && !isTrashed),
+  })
   const translation = useTranslationDialogState({
     currentLanguageCode: language.code,
     languageList,
   })
-  const previewRoute = (
-    (contentType as typeof contentType & { routes?: ContentTypeRouteMeta[] }).routes ?? []
-  ).find((route) => route.hasPage)
+  const previewRoute = localeVariantRoute
   const canPreview = Boolean(preview && previewRoute && !isTrashed)
+  const targetLocaleVariantDocumentId = useMemo(
+    () =>
+      resolveLocaleVariantDocumentId({
+        data: localeVariantsQuery.data as LocaleVariantListOutput | undefined,
+        language,
+        languageList,
+      }),
+    [language, languageList, localeVariantsQuery.data],
+  )
   const handlePreviewModuleSelect = useCallback(
     (message: PreviewModuleSelectMessage) => {
       if (message.entryType === 'content') {
@@ -255,10 +409,27 @@ export const EditPageProvider = ({
   }, [defaultData])
 
   useEffect(() => {
+    if (linkedIteratorState?.mode) {
+      setLinkedIteratorMode(linkedIteratorState.mode)
+    }
+  }, [linkedIteratorState?.mode])
+
+  useEffect(() => {
     if (editErrors.length === 0) {
       setShowSaveErrorTooltip(false)
     }
   }, [editErrors.length])
+
+  useEffect(() => {
+    if (!targetLocaleVariantDocumentId || !contentTypeId) return
+    if (targetLocaleVariantDocumentId === contentTypeId) return
+
+    navigation?.replace?.({
+      name: 'content.edit',
+      contentType: contentType.name,
+      id: targetLocaleVariantDocumentId,
+    })
+  }, [contentType.name, contentTypeId, navigation, targetLocaleVariantDocumentId])
 
   const handleTabChange = (value: string) => {
     form.saveState()
@@ -267,6 +438,16 @@ export const EditPageProvider = ({
 
   const handleVisibilityChange = (nextVisibility: EditableDocumentVisibility) => {
     setVisibility(nextVisibility)
+  }
+
+  const adoptSharedIterator = () => {
+    if (!linkedIteratorState?.iterator) return
+
+    form.replaceDraft({
+      ...(form.draft.current ?? {}),
+      [ITERATOR_FIELD_NAME]: linkedIteratorState.iterator as FieldValue,
+    })
+    setLinkedIteratorMode('linked')
   }
 
   return (
@@ -284,16 +465,25 @@ export const EditPageProvider = ({
         handleTabChange,
         handleVisibilityChange,
         hasVersioning,
+        hasLocaleVariants: Boolean(contentTypeId && localeVariantRoute && !isTrashed),
         hasVisibility,
         isTrashed,
         languageCode: language.code,
         languageList,
+        linkedIterator: {
+          enabled: Boolean(contentType.linkedIterator),
+          state: linkedIteratorState,
+          mode: linkedIteratorMode,
+          setMode: setLinkedIteratorMode,
+          adoptShared: adoptSharedIterator,
+        },
         moveToTrashOpen,
         onAfterRestore,
         openMoveToTrashDialog: () => setMoveToTrashOpen(true),
         openPermanentDeleteDialog: () => setPermanentDeleteOpen(true),
         permanentDeleteOpen,
         previewState,
+        localeVariantRoute,
         routeLayout,
         sections,
         setMoveToTrashOpen,

@@ -235,6 +235,7 @@ export const managerRouteDefinitions = [
         contentType={route.contentType}
         fields={contentType?.listFields ?? []}
         documentVisibility={contentType?.documentVisibility}
+        hasPageRoutes={contentType?.routes?.some((item) => item.hasPage)}
       />
     ),
   }),

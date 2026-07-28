@@ -9,6 +9,8 @@ import { requireContentType } from "../../utils/requireContentType";
 import { syncConfiguredRoutes } from "../../utils/routes/syncConfiguredRoutes";
 import { sanitizeManagerOutput } from "../../utils/sanitizeManagerOutput";
 import { resolveMediaRecordUrls } from "./media/resolveMediaRecordUrls";
+import { applyEffectiveIterator } from "../../utils/linkedIterator";
+import { forbidLinkedIteratorTemplateAccess } from "./linkedIterator";
 
 export const getHandler = async ({
   input,
@@ -20,6 +22,7 @@ export const getHandler = async ({
   const db = await getMongoService();
   const { contentType: contentTypeName, id } = input;
   const contentType = requireContentType(contentTypeName);
+  forbidLinkedIteratorTemplateAccess(contentType);
 
   await checkOwnership({
     ctx,
@@ -41,7 +44,10 @@ export const getHandler = async ({
         contentType,
       );
     }
-    return sanitizeManagerOutput(item, contentType);
+    return sanitizeManagerOutput(
+      await applyEffectiveIterator({ db, contentType, document: item }),
+      contentType,
+    );
   } catch (_) {
     throwAppError("NOT_FOUND", {
       resource: contentTypeName,

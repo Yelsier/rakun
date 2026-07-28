@@ -1,8 +1,9 @@
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 import type { ManagerClient } from "@rakun-kit/manager-react/client/request";
 import type { ManagerPreviewConfig } from "@rakun-kit/manager-react";
 
 import { RakunManagerClientPage } from "./manager-client";
+import type { RakunManagerClientPageProps } from './manager-client'
 
 export type { RakunManagerClientPageProps } from "./manager-client";
 export { RakunManagerClientPage } from "./manager-client";
@@ -30,6 +31,7 @@ export type RakunManagerPageOptions = {
   loadingFallback?: ReactNode;
   unauthenticatedFallback?: ReactNode;
   preview?: ManagerPreviewConfig;
+  managerComponent?: ComponentType<RakunManagerClientPageProps>;
 };
 
 const defaultParamKey = "slug";
@@ -85,6 +87,7 @@ export async function RakunManagerPage({
   loadingFallback,
   unauthenticatedFallback,
   preview,
+  managerComponent: ManagerComponent = RakunManagerClientPage,
 }: RakunManagerPageComponentProps) {
   const [resolvedParams, resolvedSearchParams] = await Promise.all([
     params,
@@ -105,7 +108,7 @@ export async function RakunManagerPage({
     : undefined;
 
   return (
-    <RakunManagerClientPage
+    <ManagerComponent
       apiBaseUrl={apiBaseUrl}
       managerClient={managerClient}
       basePath={basePath}

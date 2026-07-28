@@ -1,0 +1,45 @@
+{
+  "name": "@rakun-kit/plugin-code-editor",
+  "version": "1.0.0",
+  "description": "Lexical code block extension for Rakun RichText fields.",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && bun run build:esm && bun run build:cjs",
+    "build:esm": "tsc -b --force tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
+    "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../scripts/fix-dist-imports.mjs dist/cjs && node ../scripts/write-cjs-package-json.mjs dist/cjs"
+  },
+  "exports": {
+    "./manager": {
+      "types": "./dist/esm/manager.d.ts",
+      "import": "./dist/esm/manager.js",
+      "require": "./dist/cjs/manager.js",
+      "default": "./dist/esm/manager.js"
+    }
+  },
+  "dependencies": {
+    "prismjs": "^1.30.0"
+  },
+  "peerDependencies": {
+    "@lexical/code": "^0.34.0",
+    "@lexical/react": "^0.34.0",
+    "@lexical/selection": "^0.34.0",
+    "@rakun-kit/manager-react": ">=1.4.0",
+    "lexical": "^0.34.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@lexical/code": "^0.34.0",
+    "@lexical/react": "^0.34.0",
+    "@lexical/selection": "^0.34.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "lexical": "^0.34.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}

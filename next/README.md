@@ -142,6 +142,23 @@ export default function Hero({ title }: { title: string }) {
 }
 ```
 
+Web plugin registries can be converted into the loader expected by the Next
+renderer:
+
+```tsx
+import {
+  createRakunPageModuleLoader,
+  RakunPageRenderer,
+} from '@rakun-kit/next/web'
+
+const loadModule = createRakunPageModuleLoader({
+  plugins: [marketingWebPlugin],
+  fallback: (name) => import(`@/modules/${name}`),
+})
+
+return <RakunPageRenderer page={page} loadModule={loadModule} />
+```
+
 `getRakunPage` forwards request headers by default, including cookies, so
 redirects, preview state, locale, and auth-aware logic can use request context.
 It defaults to `cache: "no-store"`. Pass `fetchOptions` for ISR/cache control:
@@ -260,6 +277,23 @@ Options:
 - `basePath`: manager mount path. Defaults to `/backend`.
 - `paramKey`: route param key used to read path segments. Defaults to `slug`.
 - `loadingFallback`, `unauthenticatedFallback`: optional React fallbacks.
+- `managerComponent`: client component used to mount the manager. Use it to bind
+  manager plugin objects without sending them across the server/client boundary.
+
+```tsx
+// app/backend/[[...slug]]/project-manager.tsx
+'use client'
+
+import { RakunManagerClientPage } from '@rakun-kit/next/manager'
+import { codeEditorManagerPlugin } from '@rakun-kit/plugin-code-editor/manager'
+
+export const ProjectManager = (props: React.ComponentProps<typeof RakunManagerClientPage>) => (
+  <RakunManagerClientPage {...props} plugins={[codeEditorManagerPlugin]} />
+)
+
+// page.tsx
+<RakunManagerPage {...props} managerComponent={ProjectManager} />
+```
 
 ## Local Media
 

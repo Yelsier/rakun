@@ -1,7 +1,15 @@
 'use client'
 
 import type { MaybeTranslatableValue } from '@rakun-kit/core/client'
-import { Clock3, Star, StarOff, UserRound } from 'lucide-react'
+import {
+  Bell,
+  BellRing,
+  Clock3,
+  MessageCircle,
+  Star,
+  StarOff,
+  UserRound,
+} from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -21,6 +29,15 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from '@/components/ui/drawer'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { formatDate } from '@/helpers/formatDate'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
@@ -28,6 +45,11 @@ import { ManagerLink } from '@/link'
 import { useLanguage } from '@/state/language'
 
 type FavoriteItem = ManagerOperationOutput<'manager.favorites.list'>['favorites'][number]
+type NotificationItem =
+  ManagerOperationOutput<'manager.notifications.list'>['notifications'][number]
+
+const HOME_NOTIFICATION_LIMIT = 5
+const NOTIFICATION_HISTORY_LIMIT = 50
 
 const fallbackTitle = (favorite: FavoriteItem) =>
   `${favorite.contentType} ${favorite.documentId.slice(-6)}`
@@ -131,6 +153,142 @@ const FavoritesSkeleton = () => (
   </div>
 )
 
+const fallbackNotificationTitle = (notification: NotificationItem) =>
+  `${notification.contentType} ${notification.documentId.slice(-6)}`
+
+const getNotificationTitle = (
+  notification: NotificationItem,
+  getTranslation: <T>(object: MaybeTranslatableValue<T>) => T,
+) => {
+  if (typeof notification.title === 'string' && notification.title.trim()) {
+    return notification.title
+  }
+
+  if (notification.title !== undefined && notification.title !== null) {
+    const translated = getTranslation(
+      notification.title as MaybeTranslatableValue<string>,
+    )
+
+    if (typeof translated === 'string' && translated.trim()) {
+      return translated
+    }
+  }
+
+  return fallbackNotificationTitle(notification)
+}
+
+const NotificationCard = ({
+  notification,
+  title,
+}: {
+  notification: NotificationItem
+  title: string
+}) => {
+  const NotificationIcon = notification.read ? MessageCircle : BellRing
+  const author = notification.author.name?.trim() || notification.author.user
+
+  return (
+    <Card
+      className={
+        notification.read
+          ? 'relative gap-3 rounded-md py-4 shadow-xs transition-colors hover:bg-accent/40'
+          : 'relative gap-3 rounded-md border-primary/40 bg-primary/5 py-4 shadow-xs transition-colors hover:bg-primary/10'
+      }
+    >
+      <ManagerLink
+        href={`/${notification.contentType}/${notification.documentId}?comments=open`}
+        className='absolute inset-0 z-0 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring'
+      >
+        <span className='sr-only'>Open notification for {title}</span>
+      </ManagerLink>
+      <CardHeader className='pointer-events-none relative z-10 gap-2 px-4'>
+        <div className='flex min-w-0 items-start gap-3'>
+          <NotificationIcon
+            className={
+              notification.read
+                ? 'mt-0.5 size-4 shrink-0 text-muted-foreground'
+                : 'mt-0.5 size-4 shrink-0 text-primary'
+            }
+          />
+          <div className='min-w-0'>
+            <CardTitle className='truncate text-sm leading-5'>{title}</CardTitle>
+            <Badge variant='outline' className='mt-2 max-w-full truncate'>
+              {notification.contentType}
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className='pointer-events-none relative z-10 grid gap-2 px-4 text-xs text-muted-foreground'>
+        <p className='line-clamp-2 text-sm text-foreground'>{notification.text}</p>
+        <div className='flex min-w-0 items-center gap-2'>
+          <UserRound className='size-3.5 shrink-0' />
+          <span className='truncate'>Mentioned by {author}</span>
+        </div>
+        <div className='flex min-w-0 items-center gap-2'>
+          <Clock3 className='size-3.5 shrink-0' />
+          <span className='truncate'>
+            {notification.createdAt ? formatDate(notification.createdAt) : 'Unknown date'}
+          </span>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+const NotificationHistoryDrawer = ({
+  getTranslation,
+}: {
+  getTranslation: <T>(object: MaybeTranslatableValue<T>) => T
+}) => {
+  const [open, setOpen] = useState(false)
+  const notificationsQuery = useManagerQuery({
+    name: 'manager.notifications.list',
+    input: {
+      limit: NOTIFICATION_HISTORY_LIMIT,
+    },
+    enabled: open,
+  })
+  const notifications = notificationsQuery.data?.notifications ?? []
+
+  return (
+    <Drawer direction='right' open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
+        <Button className='ml-auto' variant='ghost' size='sm'>
+          View all
+        </Button>
+      </DrawerTrigger>
+      <DrawerContent className='h-full w-[min(92vw,520px)] sm:max-w-[520px]'>
+        <DrawerHeader className='shrink-0 border-b'>
+          <DrawerTitle>Notifications</DrawerTitle>
+          <DrawerDescription>
+            Latest {NOTIFICATION_HISTORY_LIMIT} notifications, including those already
+            viewed.
+          </DrawerDescription>
+        </DrawerHeader>
+        <ScrollArea className='min-h-0 flex-1'>
+          <div className='grid gap-3 p-4'>
+            {notificationsQuery.isLoading ? (
+              <FavoritesSkeleton />
+            ) : notifications.length > 0 ? (
+              notifications.map((notification) => (
+                <NotificationCard
+                  key={notification._id}
+                  notification={notification}
+                  title={getNotificationTitle(notification, getTranslation)}
+                />
+              ))
+            ) : (
+              <div className='rounded-md border border-dashed p-4 text-sm text-muted-foreground'>
+                No notifications yet
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </DrawerContent>
+    </Drawer>
+  )
+}
+
 export const ManagerDashboardHomeScreen = () => {
   const { getTranslation } = useLanguage()
   const queryClient = useQueryClient()
@@ -139,8 +297,18 @@ export const ManagerDashboardHomeScreen = () => {
     name: 'manager.favorites.list',
     input: undefined,
   })
+  const notificationsQuery = useManagerQuery({
+    name: 'manager.notifications.list',
+    input: {
+      unreadOnly: true,
+      limit: HOME_NOTIFICATION_LIMIT,
+    },
+    refetchInterval: 15000,
+  })
   const toggleFavoriteMutation = useManagerMutation('manager.favorites.toggle')
   const favorites = data?.favorites ?? []
+  const notifications = notificationsQuery.data?.notifications ?? []
+  const totalUnread = notificationsQuery.data?.totalUnread ?? 0
   const removeFavorite = async (favorite: FavoriteItem) => {
     setRemovingFavoriteId(`${favorite.contentType}:${favorite.documentId}`)
 
@@ -160,11 +328,10 @@ export const ManagerDashboardHomeScreen = () => {
       setRemovingFavoriteId(null)
     }
   }
-
   return (
-    <div className='container mx-auto grid gap-6 px-4 py-10 lg:grid-cols-[22rem_minmax(0,1fr)]'>
+    <div className='container mx-auto grid gap-6 px-4 py-10 lg:grid-cols-2'>
       <section className='min-w-0 space-y-4'>
-        <div className='flex items-center gap-2 border-b pb-3'>
+        <div className='flex h-11 items-center gap-2 border-b'>
           <Star className='size-4 fill-amber-400 text-amber-500' />
           <h1 className='text-sm font-semibold uppercase text-muted-foreground'>
             Favorites
@@ -192,7 +359,37 @@ export const ManagerDashboardHomeScreen = () => {
           </div>
         )}
       </section>
-      <div className='min-h-[28rem] rounded-md border border-dashed bg-muted/20' />
+      <section className='min-w-0 space-y-4'>
+        <div className='flex h-11 items-center gap-2 border-b'>
+          <Bell className='size-4 text-primary' />
+          <h1 className='text-sm font-semibold uppercase text-muted-foreground'>
+            Notifications
+          </h1>
+          {totalUnread ? (
+            <Badge variant='destructive'>
+              {totalUnread}
+            </Badge>
+          ) : null}
+          <NotificationHistoryDrawer getTranslation={getTranslation} />
+        </div>
+        {notificationsQuery.isLoading ? (
+          <FavoritesSkeleton />
+        ) : notifications.length > 0 ? (
+          <div className='grid gap-3'>
+            {notifications.map((notification) => (
+              <NotificationCard
+                key={notification._id}
+                notification={notification}
+                title={getNotificationTitle(notification, getTranslation)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className='rounded-md border border-dashed p-4 text-sm text-muted-foreground'>
+            No unread notifications
+          </div>
+        )}
+      </section>
     </div>
   )
 }

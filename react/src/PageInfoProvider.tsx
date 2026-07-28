@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+import { PageInfoClientProvider } from './PageInfoClientProvider'
 import { getCurrentPageInfo, setCurrentPageInfo } from './pageInfoStore'
 
 const pageInfoScriptEscapes: Record<string, string> = {
@@ -32,7 +33,9 @@ export function PageInfoProvider(props: {
           __html: serializedValue,
         }}
       />
-      {children}
+      <PageInfoClientProvider value={value}>
+        {children}
+      </PageInfoClientProvider>
     </>
   )
 }

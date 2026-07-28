@@ -47,6 +47,7 @@ export type EditPageTab =
   | 'content'
   | 'info'
   | 'seo'
+  | 'locale-variants'
   | 'versions'
   | `layout:${string}`
 

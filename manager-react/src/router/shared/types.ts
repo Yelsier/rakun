@@ -2,6 +2,7 @@ import type { EncodedContentType } from "@rakun-kit/core/client";
 import type { ReactNode } from "react";
 
 import type { ManagerLayoutRendererProps } from "../../layouts";
+import type { RakunManagerPluginDefinition } from '../../plugins'
 
 export type ManagerResolvedRoute =
   | { kind: "login" }
@@ -26,11 +27,17 @@ export type ManagerResolvedRoute =
   | { kind: "content-list"; contentType: string }
   | { kind: "content-create"; contentType: string }
   | { kind: "content-edit"; contentType: string; id: string }
+  | {
+      kind: 'plugin'
+      pluginId: string
+      routeId: string
+      params: Record<string, string>
+    }
   | { kind: "unknown"; pathname: string };
 
 export type ManagerResolvedRouteKind = Exclude<
   ManagerResolvedRoute["kind"],
-  "unknown"
+  "unknown" | 'plugin'
 >;
 
 export type ManagerSearchParams =
@@ -50,6 +57,8 @@ export type ManagerRouteRendererProps = {
   pathname?: string;
   basePath?: string;
   preview?: ManagerPreviewConfig;
+  plugins?: readonly RakunManagerPluginDefinition[];
+  searchParams?: ManagerSearchParams;
   renderLogin?: () => ReactNode;
   renderMfa?: (
     route: Extract<ManagerResolvedRoute, { kind: "mfa" }>,
@@ -77,7 +86,7 @@ export type ManagerRouteRendererProps = {
 
 export type ManagerAppOverrides = Omit<
   ManagerRouteRendererProps,
-  "route" | "pathname" | "contentTypes" | "preview"
+  "route" | "pathname" | "contentTypes" | "preview" | 'plugins'
 >;
 
 export type ManagerAppProps = Omit<ManagerRouteRendererProps, "route"> & {

@@ -63,6 +63,33 @@ export function Page({ modules }) {
 }
 ```
 
+Web plugins package module registries that the application explicitly merges:
+
+```tsx
+import {
+  defineRakunWebPlugin,
+  mergeRakunModuleRegistries,
+  PageLayoutRenderer,
+} from '@rakun-kit/react'
+
+const marketingWebPlugin = defineRakunWebPlugin({
+  id: '@acme/rakun-marketing',
+  modules: {
+    CampaignHero: () => import('./CampaignHero'),
+  },
+})
+
+const registry = mergeRakunModuleRegistries({
+  modules: appModules,
+  plugins: [marketingWebPlugin],
+})
+
+<PageLayoutRenderer page={page} registry={registry} />
+```
+
+Duplicate plugin ids or module names fail immediately. Next.js users can pass
+the same web facets to `createRakunPageModuleLoader` from `@rakun-kit/next/web`.
+
 This is intentionally a function instead of a path string: Next needs to see the
 dynamic import from inside the application bundle.
 
