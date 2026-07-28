@@ -19,7 +19,7 @@ import { useManagerPlugins, type ManagerFieldEditorProps } from '@/plugins'
 const editorStyle = cva('bg-background overflow-hidden rounded-lg border shadow', {
   variants: {
     open: {
-      true: 'w-full', // 'max-w-[calc(100vw-6.5em)] md:max-w-[calc(100vw-23em)]',
+      true: 'w-full',
       false: 'md:max-w-[calc(100vw-6.5em)]',
     },
   },
