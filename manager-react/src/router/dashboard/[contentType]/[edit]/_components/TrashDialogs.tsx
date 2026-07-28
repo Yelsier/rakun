@@ -15,6 +15,7 @@ import {
 export const TrashDialogs = () => {
   const {
     documentActions,
+    hasLocaleVariants,
     moveToTrashOpen,
     permanentDeleteOpen,
     setMoveToTrashOpen,
@@ -28,16 +29,17 @@ export const TrashDialogs = () => {
           <DialogHeader>
             <DialogTitle>Move item to trash</DialogTitle>
             <DialogDescription>
-              This item will be hidden from lists and public routes. You can restore it from the
-              trash.
+              {hasLocaleVariants
+                ? 'This moves the primary page and every variant in this group to trash. The whole page group will be hidden from lists and public routes, and can be restored together from trash.'
+                : 'This item will be hidden from lists and public routes. You can restore it from the trash.'}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant='outline' onClick={() => setMoveToTrashOpen(false)}>
+            <Button variant="outline" onClick={() => setMoveToTrashOpen(false)}>
               Cancel
             </Button>
             <Button
-              variant='destructive'
+              variant="destructive"
               loading={documentActions.pending.trash}
               onClick={() => void documentActions.handleMoveToTrash()}
             >
@@ -55,11 +57,11 @@ export const TrashDialogs = () => {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant='outline' onClick={() => setPermanentDeleteOpen(false)}>
+            <Button variant="outline" onClick={() => setPermanentDeleteOpen(false)}>
               Cancel
             </Button>
             <Button
-              variant='destructive'
+              variant="destructive"
               loading={documentActions.pending.delete}
               onClick={() => void documentActions.handlePermanentDelete()}
             >

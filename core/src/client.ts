@@ -106,6 +106,10 @@ export type {
   LocaleVariantDocument,
   LocaleVariantListInput,
   LocaleVariantListOutput,
+  LocaleVariantMutationOutput,
+  LocaleVariantRestoreInput,
+  LocaleVariantSetPrimaryInput,
+  LocaleVariantTrashInput,
   LocaleVariantUnassignInput,
 } from "./schemas/manager/localeVariants";
 export type {

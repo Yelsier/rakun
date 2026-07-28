@@ -171,6 +171,21 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/localeVariants/unassign",
   },
+  "manager.localeVariants.setPrimary": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/localeVariants/setPrimary",
+  },
+  "manager.localeVariants.trash": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/localeVariants/trash",
+  },
+  "manager.localeVariants.restore": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/localeVariants/restore",
+  },
   "manager.users.mentions": {
     kind: "query",
     method: "get",

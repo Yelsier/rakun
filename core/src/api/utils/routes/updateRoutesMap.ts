@@ -128,9 +128,11 @@ export const regenerateAllRoutesMap = async (): Promise<void> => {
 export async function updateSingleRouteMap({
   contentType,
   contentTypeId,
+  previousGroupIds = [],
 }: {
   contentType: string;
   contentTypeId: string;
+  previousGroupIds?: readonly string[];
 }): Promise<void> {
   Logger.addTrace("routes.updateSingle: start", {
     contentType,
@@ -174,6 +176,7 @@ export async function updateSingleRouteMap({
   const groupIds = Array.from(
     new Set([
       getLocaleVariantGroupId(item),
+      ...previousGroupIds,
       ...initialPrevRoutesMap
         .map((routeMap) => routeMap.variantGroupId)
         .filter((value): value is string => typeof value === "string"),

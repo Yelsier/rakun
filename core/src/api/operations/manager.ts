@@ -25,6 +25,9 @@ import {
   assignLocaleVariantHandler,
   createLocaleVariantHandler,
   listLocaleVariantsHandler,
+  restoreLocaleVariantHandler,
+  setPrimaryLocaleVariantHandler,
+  trashLocaleVariantHandler,
   unassignLocaleVariantHandler,
 } from "../routes/manager/localeVariants";
 import {
@@ -197,6 +200,15 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.localeVariants.unassign": {
       resolve: unassignLocaleVariantHandler,
+    },
+    "manager.localeVariants.setPrimary": {
+      resolve: setPrimaryLocaleVariantHandler,
+    },
+    "manager.localeVariants.trash": {
+      resolve: trashLocaleVariantHandler,
+    },
+    "manager.localeVariants.restore": {
+      resolve: restoreLocaleVariantHandler,
     },
     "manager.users.mentions": {
       resolve: listMentionUsersHandler,
