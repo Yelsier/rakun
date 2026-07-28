@@ -211,25 +211,20 @@ export default function MediaLibrary({
     <MediaLibraryProvider value={mediaLibraryContext}>
       <div
         className={cn(
-          'relative grid h-[calc(100vh-6rem)] min-h-0 grid-cols-1 overflow-hidden rounded-xl border md:grid-cols-[320px_1fr]',
-          isModal ? 'h-[calc(100vh-14.2rem)]' : '',
+          'relative grid h-full min-h-0 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-xl border lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]',
           className
         )}
       >
         <FoldersTree isModal={isModal} />
 
-        <div
-          className={cn(
-            'h-[calc(100vh-6rem)] min-w-0 overflow-hidden p-4',
-            isModal ? 'h-[calc(100vh-14rem)]' : ''
-          )}
-        >
-          <p className="mb-4 text-muted-foreground text-sm">
+        <div className="flex min-h-0 min-w-0 flex-col overflow-hidden p-4">
+          <p className="mb-4 shrink-0 text-muted-foreground text-sm">
             Current folder:{' '}
             <span className="font-medium text-foreground">{currentFolder?.path || '/'}</span>
           </p>
-
-          <Previews />
+          <div className="min-h-0 flex-1">
+            <Previews />
+          </div>
         </div>
       </div>
     </MediaLibraryProvider>

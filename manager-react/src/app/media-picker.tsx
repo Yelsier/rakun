@@ -25,24 +25,26 @@ function DefaultManagerMediaPicker({
 }: ManagerMediaPickerRenderArgs) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
-      <DialogContent className="max-h-[95vh] w-screen max-w-[95vw]! overflow-hidden p-4">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[95svh] w-screen max-w-[95vw]! flex-col gap-4 overflow-hidden p-4">
+        <DialogHeader className="shrink-0">
           <DialogTitle>Media library</DialogTitle>
           <DialogDescription>Select existing media or upload new files.</DialogDescription>
         </DialogHeader>
 
-        <MediaLibrary
-          selectable
-          isModal
-          multipleSelect={isMultipleSelection}
-          selectedMediaIds={selectedMediaIds}
-          forcedMediaTypeFilter={forcedMediaTypeFilter}
-          optimizeOptions={forcedOptimizeOptions}
-          onSelect={select}
-        />
+        <div className="min-h-0 flex-1">
+          <MediaLibrary
+            selectable
+            isModal
+            multipleSelect={isMultipleSelection}
+            selectedMediaIds={selectedMediaIds}
+            forcedMediaTypeFilter={forcedMediaTypeFilter}
+            optimizeOptions={forcedOptimizeOptions}
+            onSelect={select}
+          />
+        </div>
 
         {isMultipleSelection ? (
-          <DialogFooter>
+          <DialogFooter className="shrink-0">
             <Button type="button" variant="outline" onClick={close}>
               Cancel
             </Button>

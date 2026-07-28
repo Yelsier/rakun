@@ -104,16 +104,15 @@ export function LanguageProvider({
   );
 
   useEffect(() => {
-    store.setState({
-      refetch: () => {
-        void client
-          .request("manager.languages" as never, undefined as never)
-          .then((nextLanguages) => {
-            store.getState().setLanguageList(nextLanguages as LanguageSchema[]);
-          });
-      },
-    });
-  }, [client, store]);
+    // Patch in place — do not store.setState, or every useLanguage() subscriber re-renders.
+    store.getState().refetch = () => {
+      void client
+        .request('manager.languages' as never, undefined as never)
+        .then((nextLanguages) => {
+          store.getState().setLanguageList(nextLanguages as LanguageSchema[])
+        })
+    }
+  }, [client, store])
 
   useEffect(() => {
     try {

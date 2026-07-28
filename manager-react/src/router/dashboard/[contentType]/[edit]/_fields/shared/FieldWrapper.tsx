@@ -1,7 +1,8 @@
-import React, { useEffect, useImperativeHandle } from 'react'
+import React, { useEffect, useImperativeHandle, useRef } from 'react'
 
 import type { FieldRef } from '../../ContentTypeEdit'
-import { useConditionFieldState } from './condition-state'
+import { deepEqual } from '@/helpers/deepEqual'
+import { useConditionFieldDispatch } from './condition-state'
 
 interface FieldWrapperProps {
   id: string
@@ -20,7 +21,9 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({
   children,
   ref,
 }) => {
-  const conditionFieldState = useConditionFieldState()
+  const conditionFieldDispatch = useConditionFieldDispatch()
+  const lastNotifiedStateRef = useRef<unknown>(undefined)
+  const hasNotifiedRef = useRef(false)
 
   useImperativeHandle(
     ref,
@@ -31,7 +34,21 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({
   )
 
   useEffect(() => {
-    conditionFieldState?.onFieldStateChange(id, getState())
+    hasNotifiedRef.current = false
+    lastNotifiedStateRef.current = undefined
+  }, [id])
+
+  useEffect(() => {
+    if (!conditionFieldDispatch) return
+
+    const nextState = getState()
+    if (hasNotifiedRef.current && deepEqual(lastNotifiedStateRef.current, nextState)) {
+      return
+    }
+
+    hasNotifiedRef.current = true
+    lastNotifiedStateRef.current = nextState
+    conditionFieldDispatch.onFieldStateChange(id, nextState)
   })
 
   const error = errors.find((e) => e.id === id)?.error

@@ -2,3 +2,4 @@ node_modules/
 dist/
 .codex
 tsconfig.build.tsbuildinfo
+.DS_Store

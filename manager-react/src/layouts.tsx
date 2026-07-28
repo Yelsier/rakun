@@ -63,10 +63,13 @@ export const ManagerDashboardLayout = ({
   headerStart,
   headerEnd,
 }: ManagerDashboardLayoutProps) => {
-  const hasInternalPageScroll = route?.kind === 'content-create' || route?.kind === 'content-edit'
+  const hasInternalPageScroll =
+    route?.kind === 'content-create' ||
+    route?.kind === 'content-edit' ||
+    route?.kind === 'media-library'
 
   return (
-    <SidebarProvider className="h-svh min-h-0 overflow-hidden">
+    <SidebarProvider className="fixed inset-0 min-h-0 overflow-hidden">
       <ManagerHelpProvider route={route ?? { kind: 'unknown', pathname: pathname ?? '/' }}>
         {sidebar ?? (
           <AppSidebar
@@ -79,7 +82,7 @@ export const ManagerDashboardLayout = ({
         <SidebarInset className="min-h-0 overflow-hidden p-4 pt-0">
           <SidebarHeader
             className="flex h-16 shrink-0 flex-row items-center justify-between gap-2"
-            data-tour="manager-header"
+            data-slot="manager-header"
           >
             <div className="flex items-center gap-2">
               <SidebarTrigger className="-ml-1" />
@@ -99,11 +102,11 @@ export const ManagerDashboardLayout = ({
           </SidebarHeader>
 
           {hasInternalPageScroll ? (
-            <div className="min-h-0 flex-1 overflow-hidden" data-tour="manager-page">
+            <div className="min-h-0 flex-1 overflow-hidden" data-slot="manager-page">
               {children}
             </div>
           ) : (
-            <ScrollArea className="min-h-0 flex-1" data-tour="manager-page">
+            <ScrollArea className="min-h-0 flex-1" data-slot="manager-page">
               {children}
             </ScrollArea>
           )}

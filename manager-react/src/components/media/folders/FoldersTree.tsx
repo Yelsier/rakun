@@ -1,7 +1,7 @@
 'use client'
 
 import { ChevronRight, Folder, FolderOpen } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 
 import { Collapsible, CollapsibleContent } from '../../ui/collapsible'
 import {
@@ -25,6 +25,8 @@ type FolderNode = {
   description?: string
   children: FolderNode[]
 }
+
+const FOLDER_SEARCH_DEBOUNCE_MS = 200
 
 const buildFolderTree = (
   items: {
@@ -71,6 +73,31 @@ const folderHasMatch = (node: FolderNode, search: string): boolean => {
   return node.children.some((child) => folderHasMatch(child, search))
 }
 
+const FolderSearchInput = memo(function FolderSearchInput({
+  onSearchChange,
+}: {
+  onSearchChange: (value: string) => void
+}) {
+  const [value, setValue] = useState('')
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      onSearchChange(value)
+    }, FOLDER_SEARCH_DEBOUNCE_MS)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [onSearchChange, value])
+
+  return (
+    <SearchInput
+      value={value}
+      onChange={(event) => setValue(event.target.value)}
+      className="mb-3"
+      placeholder="Search folders..."
+    />
+  )
+})
+
 export default function FoldersTree({ isModal = false }: { isModal?: boolean }) {
   const {
     folders,
@@ -82,8 +109,8 @@ export default function FoldersTree({ isModal = false }: { isModal?: boolean }) 
   } = useMediaLibrary()
 
   const folderTree = useMemo(() => buildFolderTree(folders ?? []), [folders])
-  const [search, setSearch] = useState('')
-  const searchTerm = search.trim().toLowerCase()
+  const [searchTerm, setSearchTerm] = useState('')
+  const normalizedSearch = searchTerm.trim().toLowerCase()
 
   const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(() => new Set())
 
@@ -110,17 +137,19 @@ export default function FoldersTree({ isModal = false }: { isModal?: boolean }) 
 
   const renderFolders = (nodes: FolderNode[], depth = 0): React.ReactNode =>
     nodes.map((node) => {
-      if (!folderHasMatch(node, searchTerm)) return null
+      if (!folderHasMatch(node, normalizedSearch)) return null
       const hasChildren = node.children.length > 0
       const isOpen =
-        searchTerm.length > 0 || expandedFolderIds.has(node._id) || currentFolderId === node._id
+        normalizedSearch.length > 0 ||
+        expandedFolderIds.has(node._id) ||
+        currentFolderId === node._id
 
       return (
         <ContextMenu key={node._id}>
           <ContextMenuTrigger asChild>
             <Collapsible open={isOpen} className="mt-2 block">
               <div
-                style={{ marginLeft: depth * 12 }}
+                style={depth > 0 ? { marginInlineStart: `${depth * 0.75}rem` } : undefined}
                 role="button"
                 tabIndex={0}
                 className={`flex items-center gap-2 rounded px-3 py-1.5 text-left font-medium text-sm transition-colors ${
@@ -184,16 +213,13 @@ export default function FoldersTree({ isModal = false }: { isModal?: boolean }) 
   return (
     <div
       className={cn(
-        'relative min-h-80 overflow-y-auto overflow-x-hidden border-r border-b p-4 lg:h-[calc(100vh-6rem)] lg:border-b-0',
-        isModal ? 'h-[calc(100vh-14rem)]' : ''
+        'relative min-h-0 min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain border-b border-r p-4 max-lg:max-h-[40svh] lg:h-full lg:min-w-56 lg:border-b-0',
+        isModal && 'max-lg:max-h-[30svh]'
       )}
     >
-      <SearchInput
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        className="sticky top-0 z-10 mb-3 h-9"
-        placeholder="Search folders..."
-      />
+      <div className="sticky top-0 z-10 -mx-1 mb-3 bg-background px-1 pb-1">
+        <FolderSearchInput onSearchChange={setSearchTerm} />
+      </div>
 
       <button
         type="button"
