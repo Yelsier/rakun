@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { startTransition, useCallback, useState } from 'react'
 import { useManagerClient } from '@/client/react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -180,10 +180,16 @@ export default function MediaLibrary({
     }
   }
 
+  const setCurrentFolderIdTransition = useCallback((folderId: string | null) => {
+    startTransition(() => {
+      setCurrentFolderId(folderId)
+    })
+  }, [])
+
   const mediaLibraryContext = {
     currentFolderId,
     currentFolderPath: currentFolder?.path || '/',
-    setCurrentFolderId,
+    setCurrentFolderId: setCurrentFolderIdTransition,
     folders,
     isLoadingFolders,
     refetchFoldersTree: refetchFolders,

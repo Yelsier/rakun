@@ -1,8 +1,8 @@
 'use client'
 
 import { Folder, FolderPlus, Upload, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { startTransition, useCallback, useEffect, useMemo, useState } from 'react'
+import { keepPreviousData, useQueryClient } from '@tanstack/react-query'
 import {
   createManagerQueryKey,
   useManagerClient,
@@ -156,18 +156,21 @@ export default function Previews() {
     },
   }
 
-  const { data, isLoading, refetch } = useManagerQuery({
+  const { data, isPending, refetch, isPlaceholderData } = useManagerQuery({
     name: 'manager.list',
     input: mediaListInput,
+    placeholderData: keepPreviousData,
   })
 
   const {
     data: childFolders,
-    isLoading: isLoadingChildFolders,
+    isPending: isPendingChildFolders,
     refetch: refetchChildFolders,
+    isPlaceholderData: isPlaceholderChildFolders,
   } = useManagerQuery({
     name: 'manager.media.listFolders',
     input: currentFolderId ? { parentId: currentFolderId } : {},
+    placeholderData: keepPreviousData,
   })
 
   const deleteMutation = useManagerMutation('manager.delete')
@@ -176,6 +179,8 @@ export default function Previews() {
 
   const media = ((data as { items?: MediaRecord[] } | undefined)?.items ?? []) as MediaRecord[]
   const childFoldersData = childFolders as { items: FolderItem[] } | undefined
+  const showMediaSkeleton = isPending && !isPlaceholderData
+  const showChildFoldersSkeleton = isPendingChildFolders && !isPlaceholderChildFolders
   const canBulkSelect = !selectable
   const bulkSelectedIdsList = useMemo(() => Array.from(bulkSelectedIds), [bulkSelectedIds])
   const bulkSelectedCount = bulkSelectedIdsList.length
@@ -677,15 +682,30 @@ export default function Previews() {
         ? PreviewsGridSmallView
         : PreviewsGridLargeView
 
+  const handleMediaTypeFilterChange = useCallback(
+    (value: 'all' | 'image' | 'video' | 'document') => {
+      startTransition(() => {
+        setMediaTypeFilter(value)
+      })
+    },
+    []
+  )
+
+  const handleViewModeChange = useCallback((value: ViewMode) => {
+    startTransition(() => {
+      setViewMode(value)
+    })
+  }, [])
+
   const mediaPreviewContextValue = useMemo(
     () => ({
       mediaCount: media.length,
       isUploading,
       mediaTypeFilter: effectiveMediaTypeFilter,
       isMediaTypeFilterLocked,
-      setMediaTypeFilter,
+      setMediaTypeFilter: handleMediaTypeFilterChange,
       viewMode,
-      setViewMode,
+      setViewMode: handleViewModeChange,
       isSelected: (id: string) => bulkSelectedIds.has(id) || (selectedMediaIds?.has(id) ?? false),
       selectionMode,
       bulkSelectedIds,
@@ -710,7 +730,9 @@ export default function Previews() {
       isUploading,
       effectiveMediaTypeFilter,
       isMediaTypeFilterLocked,
+      handleMediaTypeFilterChange,
       viewMode,
+      handleViewModeChange,
       selectionMode,
       bulkSelectedIds,
       bulkSelectedCount,
@@ -749,7 +771,7 @@ export default function Previews() {
             <FolderPlus className="size-4" />
             <span className="truncate">Create folder</span>
           </Button>
-          {isLoadingChildFolders
+          {showChildFoldersSkeleton
             ? Array.from({ length: 4 }).map((_, index) => (
                 <div
                   key={`child-folder-skeleton-${index}`}
@@ -826,15 +848,15 @@ export default function Previews() {
                 </div>
               </div>
 
-              {isLoading ? <PreviewsViewLoader viewMode={viewMode} /> : null}
+              {showMediaSkeleton ? <PreviewsViewLoader viewMode={viewMode} /> : null}
 
-              {!isLoading && media.length === 0 ? (
+              {!showMediaSkeleton && media.length === 0 ? (
                 <Card className="w-full p-8 text-center text-muted-foreground text-sm">
                   No files in this folder yet.
                 </Card>
               ) : null}
 
-              {!isLoading && media.length > 0 ? <ViewComponent media={media} /> : null}
+              {!showMediaSkeleton && media.length > 0 ? <ViewComponent media={media} /> : null}
               <PreviewsSelectionToolbar />
             </div>
           </FileUploadDropzone>
