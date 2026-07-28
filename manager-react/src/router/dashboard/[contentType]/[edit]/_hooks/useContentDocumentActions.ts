@@ -180,6 +180,7 @@ export const useContentDocumentActions = ({
   const currentVersion = contentVersionsQuery.data?.documents.find(
     (document) => document.documentId === contentTypeId,
   )
+  const persistedVisibility = currentVersion?.visibility ?? defaultData?._visibility
   const hasPublishedSibling = Boolean(
     contentVersionsQuery.data?.documents.some(
       (document) =>
@@ -190,7 +191,7 @@ export const useContentDocumentActions = ({
   const canPublishApprovedDraft = Boolean(
     routeableVersionRoute &&
       contentVersionsQuery.data &&
-      defaultData?._visibility === 'draft' &&
+      persistedVisibility === 'draft' &&
       currentVersion?.visibility === 'draft' &&
       reviewStateQuery.data?.review?.status === 'approved' &&
       !hasPublishedSibling,
@@ -299,6 +300,7 @@ export const useContentDocumentActions = ({
         invalidateContentListQueries(),
         invalidateVersions(),
         contentVersionsQuery.refetch(),
+        onAfterRestore?.(),
       ])
       await refreshReviewState()
       toast.success(`Published in ${languageCode}`)
@@ -369,7 +371,7 @@ export const useContentDocumentActions = ({
     if (!contentTypeId) return
 
     if (
-      defaultData?._visibility === 'draft' &&
+      persistedVisibility === 'draft' &&
       data._visibility === 'published' &&
       reviewStateQuery.data?.policy &&
       reviewStateQuery.data.review?.status === 'approved'
@@ -391,7 +393,7 @@ export const useContentDocumentActions = ({
     }
 
     if (
-      defaultData?._visibility === 'published' &&
+      persistedVisibility === 'published' &&
       routeableVersionRoute &&
       reviewStateQuery.data?.actorRequiresReview
     ) {
