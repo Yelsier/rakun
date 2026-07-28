@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { RowSelectionState } from '@tanstack/react-table'
 import { Archive, Languages, Plus, RotateCcw, Trash } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { LOCALE_VARIANT_ROLE_FIELD, type Permission } from '@rakun-kit/core/client'
 import { toast } from 'sonner'
 
@@ -41,10 +41,103 @@ import { useSession } from '@/state/session'
 import { useManagerMutation } from '@/client/react'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 
+const SEARCH_DEBOUNCE_MS = 300
+
 const getContentRowId = (row: object, index: number) => {
   const id = (row as { _id?: unknown })._id
   return typeof id === 'string' ? id : String(index)
 }
+
+const ContentListSearch = memo(function ContentListSearch({
+  resetKey,
+  onDebouncedChange,
+  className,
+}: {
+  resetKey: string
+  onDebouncedChange: (value: string) => void
+  className?: string
+}) {
+  const [value, setValue] = useState('')
+
+  useEffect(() => {
+    setValue('')
+  }, [resetKey])
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      onDebouncedChange(value)
+    }, SEARCH_DEBOUNCE_MS)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [onDebouncedChange, value])
+
+  return (
+    <SearchInput
+      value={value}
+      onChange={(event) => setValue(event.target.value)}
+      placeholder="Search..."
+      className={className}
+    />
+  )
+})
+
+const ContentListToolbar = memo(function ContentListToolbar({
+  isTrash,
+  onTrashChange,
+  showSearch,
+  contentType,
+  canCreate,
+  onDebouncedSearch,
+}: {
+  isTrash: boolean
+  onTrashChange: (value: string) => void
+  showSearch: boolean
+  contentType: string
+  canCreate: boolean
+  onDebouncedSearch: (value: string) => void
+}) {
+  return (
+    <Tabs value={isTrash ? 'trash' : 'active'} onValueChange={onTrashChange} className="w-full">
+      <div className="grid gap-3 border-b pb-3 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
+        <div className="flex items-center gap-3">
+          <TabsList variant="line">
+            <TabsTrigger value="active">
+              <Archive />
+              Active
+            </TabsTrigger>
+            <TabsTrigger value="trash">
+              <Trash />
+              Trash
+            </TabsTrigger>
+          </TabsList>
+        </div>
+        <div className="flex min-w-0 flex-col gap-3 min-[420px]:flex-row min-[420px]:items-center md:contents">
+          {showSearch ? (
+            <ContentListSearch
+              resetKey={contentType}
+              onDebouncedChange={onDebouncedSearch}
+              className="min-w-0 flex-1 md:max-w-md md:justify-self-end lg:w-md"
+            />
+          ) : (
+            <div className="hidden min-w-0 flex-1 md:block" />
+          )}
+          {canCreate ? (
+            <ManagerLink
+              href={`/${contentType}/create`}
+              data-tour="content-list-create"
+              className="shrink-0 self-stretch min-[420px]:self-auto md:justify-self-end"
+            >
+              <Button className="w-full min-[420px]:w-auto">
+                <Plus />
+                Create
+              </Button>
+            </ManagerLink>
+          ) : null}
+        </div>
+      </div>
+    </Tabs>
+  )
+})
 
 const ContentListTableSkeleton = ({
   fieldsCount,
@@ -93,7 +186,6 @@ const ListContents: React.FC<{
 }> = ({ contentType, fields, documentVisibility, hasPageRoutes }) => {
   const [page, setPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
-  const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [isTrash, setIsTrash] = useState(false)
   const [deleteItem, setDeleteItem] = useState<{ _id: string } | null>(null)
@@ -185,31 +277,31 @@ const ListContents: React.FC<{
   )
 
   useEffect(() => {
-    setRowSelection({})
+    setRowSelection((previous) => (Object.keys(previous).length === 0 ? previous : {}))
   }, [contentType, isTrash, debouncedSearch])
 
   useEffect(() => {
-    setSearch('')
-    setDebouncedSearch('')
+    setDebouncedSearch((previous) => (previous === '' ? previous : ''))
   }, [contentType])
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      setDebouncedSearch(search)
-    }, 300)
-
-    return () => window.clearTimeout(timeoutId)
-  }, [search])
-
-  useEffect(() => {
-    setPage(1)
+    setPage((previous) => (previous === 1 ? previous : 1))
   }, [contentType, isTrash, debouncedSearch])
 
   useEffect(() => {
     if (!enableSelection) {
-      setRowSelection({})
+      setRowSelection((previous) => (Object.keys(previous).length === 0 ? previous : {}))
     }
   }, [enableSelection])
+
+  const handleDebouncedSearch = useCallback((value: string) => {
+    setDebouncedSearch((previous) => (previous === value ? previous : value))
+  }, [])
+
+  const handleTrashChange = useCallback((value: string) => {
+    setIsTrash(value === 'trash')
+    setPage(1)
+  }, [])
 
   const restore = async () => {
     if (!restoreItem) return
@@ -356,51 +448,14 @@ const ListContents: React.FC<{
 
   return (
     <div className="container mx-auto flex flex-col gap-6 px-4 py-10">
-      <Tabs
-        value={isTrash ? 'trash' : 'active'}
-        onValueChange={(value) => {
-          setIsTrash(value === 'trash')
-          setPage(1)
-        }}
-        className="w-full"
-      >
-        <div className="grid gap-3 border-b pb-3 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
-          <div className="flex items-center gap-3">
-            <TabsList variant="line">
-              <TabsTrigger value="active">
-                <Archive />
-                Active
-              </TabsTrigger>
-              <TabsTrigger value="trash">
-                <Trash />
-                Trash
-              </TabsTrigger>
-            </TabsList>
-          </div>
-          {searchableFields.length > 0 ? (
-            <SearchInput
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search..."
-              className="lg:w-md md:max-w-md md:justify-self-end"
-            />
-          ) : (
-            <div className="hidden md:block" />
-          )}
-          {canCreate && (
-            <ManagerLink
-              href={`/${contentType}/create`}
-              data-tour="content-list-create"
-              className="justify-self-end"
-            >
-              <Button>
-                <Plus />
-                Create
-              </Button>
-            </ManagerLink>
-          )}
-        </div>
-      </Tabs>
+      <ContentListToolbar
+        isTrash={isTrash}
+        onTrashChange={handleTrashChange}
+        showSearch={searchableFields.length > 0}
+        contentType={contentType}
+        canCreate={canCreate}
+        onDebouncedSearch={handleDebouncedSearch}
+      />
       <DeleteCT
         refetch={refetch}
         setDeleteItem={setDeleteItem}

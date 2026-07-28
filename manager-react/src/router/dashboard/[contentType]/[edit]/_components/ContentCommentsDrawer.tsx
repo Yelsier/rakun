@@ -1,7 +1,7 @@
 'use client'
 
 import { EmojiPicker } from '@ferrucc-io/emoji-picker'
-import { BellRing, MessageCircle, Plus, Send } from 'lucide-react'
+import { BellRing, MessageCircle, Plus, Send, XIcon } from 'lucide-react'
 import {
   Fragment,
   type Ref,
@@ -36,6 +36,7 @@ import {
 import { Button } from '@/components/ui/button'
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerDescription,
   DrawerFooter,
@@ -953,10 +954,26 @@ export const ContentCommentsDrawer = ({
           </TooltipContent>
         </Tooltip>
       ) : null}
-      <DrawerContent className="w-[min(92vw,520px)] sm:max-w-[520px]">
-        <DrawerHeader className="border-b">
-          <DrawerTitle>Comments</DrawerTitle>
-          <DrawerDescription>{drawerDescription}</DrawerDescription>
+      <DrawerContent className="h-full data-[vaul-drawer-direction=right]:w-full data-[vaul-drawer-direction=right]:max-w-none md:data-[vaul-drawer-direction=right]:w-[min(92vw,520px)] md:data-[vaul-drawer-direction=right]:max-w-[520px]">
+        <DrawerHeader className="shrink-0 border-b text-start">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <DrawerTitle>Comments</DrawerTitle>
+              <DrawerDescription>{drawerDescription}</DrawerDescription>
+            </div>
+            <DrawerClose asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="shrink-0"
+                aria-label="Close comments"
+              >
+                <XIcon className="size-4" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </DrawerClose>
+          </div>
         </DrawerHeader>
         <ScrollArea className="min-h-0 flex-1">
           <div className="flex min-h-[320px] flex-col gap-4 p-4">

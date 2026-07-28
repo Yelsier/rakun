@@ -172,8 +172,8 @@ export const EditToolbar = () => {
   }
 
   return (
-    <div className="flex gap-2 justify-between items-center sticky top-0 bg-background z-50 pb-3 mb-3 border-b">
-      <div className="flex">
+    <div className="sticky top-0 z-50 mb-3 flex flex-col gap-2 border-b bg-background pb-3 md:flex-row md:items-center md:justify-between md:gap-2">
+      <div className="min-w-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <TabsList variant="line" data-tour="content-edit-tabs">
           {sections.hasNonIterables ? (
             <TabsTrigger value="info" className={cn(tabErrors.info && tabErrorClassName)}>
@@ -216,14 +216,19 @@ export const EditToolbar = () => {
           ) : null}
         </TabsList>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
         {hasVisibility && !isTrashed ? (
-          <div data-tour="content-edit-visibility">
+          <div data-tour="content-edit-visibility" className="min-w-0">
             <Select
               value={editableVisibility}
               onValueChange={(value) => handleVisibilityChange(value as EditableDocumentVisibility)}
             >
-              <SelectTrigger className={cn('w-36', visibilitySelectStyles[editableVisibility])}>
+              <SelectTrigger
+                className={cn(
+                  'w-[min(100%,9rem)] md:w-36',
+                  visibilitySelectStyles[editableVisibility]
+                )}
+              >
                 <VisibilityIcon className="text-current" />
                 <SelectValue />
               </SelectTrigger>
@@ -237,7 +242,7 @@ export const EditToolbar = () => {
         ) : null}
         {canSaveAsDraft ? (
           <div
-            className="ml-auto inline-flex overflow-hidden rounded-md shadow-xs focus-within:ring-[3px] focus-within:ring-ring/50"
+            className="inline-flex overflow-hidden rounded-md shadow-xs focus-within:ring-[3px] focus-within:ring-ring/50"
             data-tour="content-edit-save"
           >
             <Tooltip open={showSaveErrorTooltip}>
@@ -277,7 +282,7 @@ export const EditToolbar = () => {
             <TooltipTrigger asChild>
               <Button
                 loading={savePending}
-                className="cursor-pointer ml-auto"
+                className="cursor-pointer"
                 onClick={() => void documentActions.handleSave()}
                 data-tour="content-edit-save"
               >

@@ -21,15 +21,15 @@ export const SearchInput = ({
 }: SearchInputProps) => (
   <div
     className={cn(
-      'flex h-10 w-full min-w-0 items-center gap-2 rounded-md border bg-card pl-2.5 pr-1 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
+      'flex h-9 w-full min-w-0 items-stretch gap-2 overflow-hidden rounded-md border bg-card pl-2.5 pr-1 text-sm shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
       className
     )}
   >
-    <Search className={cn('size-4 shrink-0 text-muted-foreground', iconClassName)} />
+    <Search className={cn('size-4 shrink-0 self-center text-muted-foreground', iconClassName)} />
     <Input
       type="text"
       className={cn(
-        'h-8 min-w-0 flex-1 border-0 bg-transparent px-3 shadow-none focus-visible:ring-0',
+        'h-auto min-h-0 min-w-0 flex-1 rounded-none border-0 bg-transparent px-3 py-0 shadow-none dark:bg-transparent focus-visible:border-0 focus-visible:ring-0',
         inputClassName
       )}
       {...props}

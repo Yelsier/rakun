@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronsUpDown, Languages, Shield } from 'lucide-react'
+import { ChevronsUpDown, Languages } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
@@ -28,6 +28,7 @@ import { errorStyle } from './edit.styles'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { decodeCamelCase } from '@/helpers/decodeCamelCase'
+import { cn } from '@/lib/utils'
 import { useEditErrorStore } from '@/hooks/app-store'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Button } from '@/components/ui/button'
@@ -81,6 +82,46 @@ const FieldMetaIcon = ({ label, children }: { label: string; children: ReactNode
   </Tooltip>
 )
 
+const FieldLabel = ({
+  fieldName,
+  isRequired,
+  className,
+}: {
+  fieldName: string
+  isRequired?: boolean
+  className?: string
+}) => (
+  <span className={cn('flex min-w-0 items-center gap-1', className)}>
+    <span className="truncate">{decodeCamelCase(fieldName)}</span>
+    {isRequired ? (
+      <span
+        aria-label="Required field"
+        className="shrink-0 text-2xl font-bold leading-none text-destructive"
+        title="Required field"
+      >
+        *
+      </span>
+    ) : null}
+  </span>
+)
+
+const FieldTags = ({
+  isTranslatable,
+  children,
+}: {
+  isTranslatable?: boolean
+  children?: ReactNode
+}) => (
+  <div className="flex min-w-0 shrink-0 items-center gap-2">
+    {children}
+    {isTranslatable ? (
+      <FieldMetaIcon label="Translatable field">
+        <Languages aria-hidden="true" size={16} />
+      </FieldMetaIcon>
+    ) : null}
+  </div>
+)
+
 export const fieldsMap = {
   String: StringField,
   Relation: RelationField,
@@ -98,9 +139,19 @@ export const fieldsMap = {
 
 export function useArrayRefs<T>() {
   const refs = useRef<Array<T | null>>([])
-  const setRef = (index: number) => (el: T | null) => {
-    refs.current[index] = el
+  const setters = useRef<Array<((el: T | null) => void) | undefined>>([])
+
+  const setRef = (index: number) => {
+    const cached = setters.current[index]
+    if (cached) return cached
+
+    const setter = (el: T | null) => {
+      refs.current[index] = el
+    }
+    setters.current[index] = setter
+    return setter
   }
+
   return { refs, setRef }
 }
 
@@ -276,10 +327,8 @@ const ContentTypeEdit = forwardRef<
 
   return (
     <ConditionFieldStateProvider
-      value={{
-        fieldState: conditionFieldState,
-        onFieldStateChange: handleFieldStateChange,
-      }}
+      fieldState={conditionFieldState}
+      onFieldStateChange={handleFieldStateChange}
     >
       <div className="flex flex-1 flex-col gap-8 mx-auto w-full h-full">
         {allItems.map(([fieldName, fieldValue], i) => {
@@ -352,22 +401,6 @@ const ContentTypeEdit = forwardRef<
             />
           ) : null
 
-          const Tags = ({ children }: { children?: ReactNode }) => (
-            <div className="flex min-w-0 shrink-0 items-center gap-2">
-              {children}
-              {fieldValue.isTranslatable ? (
-                <FieldMetaIcon label="Translatable field">
-                  <Languages aria-hidden="true" size={16} />
-                </FieldMetaIcon>
-              ) : null}
-              {fieldValue.isRequired ? (
-                <FieldMetaIcon label="Required field">
-                  <Shield aria-hidden="true" size={16} />
-                </FieldMetaIcon>
-              ) : null}
-            </div>
-          )
-
           const canCollapse =
             fieldValue.config.ui === 'ContentType' &&
             (fieldValue as EncodedRelationField).only === 'new' &&
@@ -388,11 +421,16 @@ const ContentTypeEdit = forwardRef<
                                 <span className="sr-only">Toggle</span>
                               </span>
                             </Button>
-                            <span className="truncate">{decodeCamelCase(fieldName)}</span>
+                            <FieldLabel
+                              fieldName={fieldName}
+                              isRequired={fieldValue.isRequired}
+                            />
                           </CardTitle>
                         </button>
                       </CollapsibleTrigger>
-                      <Tags>{dynamicTrigger}</Tags>
+                      <FieldTags isTranslatable={fieldValue.isTranslatable}>
+                        {dynamicTrigger}
+                      </FieldTags>
                     </div>
                     {dynamicDialog}
                   </CardHeader>
@@ -409,8 +447,10 @@ const ContentTypeEdit = forwardRef<
               {hideTitle ? null : (
                 <div className="mb-4 space-y-1">
                   <CardTitle className="flex items-center justify-between gap-3">
-                    <span className="min-w-0 truncate">{decodeCamelCase(fieldName)}</span>
-                    <Tags>{dynamicTrigger}</Tags>
+                    <FieldLabel fieldName={fieldName} isRequired={fieldValue.isRequired} />
+                    <FieldTags isTranslatable={fieldValue.isTranslatable}>
+                      {dynamicTrigger}
+                    </FieldTags>
                   </CardTitle>
                   {description ? (
                     <p className="text-sm text-muted-foreground">{description}</p>

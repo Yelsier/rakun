@@ -16,17 +16,14 @@ import { useSidebar } from '@/components/ui/sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useManagerPlugins, type ManagerFieldEditorProps } from '@/plugins'
 
-const editorStyle = cva(
-  'bg-background overflow-hidden rounded-lg border shadow',
-  {
-    variants: {
-      open: {
-        true: 'max-w-[calc(100vw-6.5em)] md:max-w-[calc(100vw-23em)]',
-        false: 'md:max-w-[calc(100vw-6.5em)]',
-      },
+const editorStyle = cva('bg-background overflow-hidden rounded-lg border shadow', {
+  variants: {
+    open: {
+      true: 'w-full', // 'max-w-[calc(100vw-6.5em)] md:max-w-[calc(100vw-23em)]',
+      false: 'md:max-w-[calc(100vw-6.5em)]',
     },
   },
-)
+})
 
 export function Editor({
   editorState,
@@ -56,7 +53,7 @@ export function Editor({
         console.error(error)
       },
     }),
-    [richTextNodes],
+    [richTextNodes]
   )
 
   return (

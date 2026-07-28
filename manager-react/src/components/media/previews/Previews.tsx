@@ -32,7 +32,6 @@ import {
   FileUploadItemProgress,
   FileUploadList,
 } from '../../ui/file-upload'
-import { ScrollArea } from '../../ui/scroll-area'
 import { Skeleton } from '../../ui/skeleton'
 import { useMediaLibrary } from '../contexts/MediaLibraryContext'
 import MediaContextMenuContent from './MediaContextMenuContent'
@@ -732,10 +731,10 @@ export default function Previews() {
   )
 
   return (
-    <ScrollArea className="h-[calc(100%-2.5rem)] w-full">
+    <div className="h-full min-h-0 w-full overflow-x-hidden overflow-y-auto">
       <MediaPreviewProvider value={mediaPreviewContextValue}>
         <div
-          className="mb-2 grid w-full grid-cols-2 gap-2 p-1 lg:grid-cols-6 md:sticky md:top-0 "
+          className="mb-2 flex w-full flex-wrap gap-2 p-1 lg:sticky lg:top-0 lg:z-10 lg:bg-background"
           data-tour="media-folders"
         >
           <Button
@@ -926,6 +925,6 @@ export default function Previews() {
           onSaveDetails={handleSavePreviewDetails}
         />
       </MediaPreviewProvider>
-    </ScrollArea>
+    </div>
   )
 }

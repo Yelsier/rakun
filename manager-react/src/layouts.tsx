@@ -63,10 +63,13 @@ export const ManagerDashboardLayout = ({
   headerStart,
   headerEnd,
 }: ManagerDashboardLayoutProps) => {
-  const hasInternalPageScroll = route?.kind === 'content-create' || route?.kind === 'content-edit'
+  const hasInternalPageScroll =
+    route?.kind === 'content-create' ||
+    route?.kind === 'content-edit' ||
+    route?.kind === 'media-library'
 
   return (
-    <SidebarProvider className="h-svh min-h-0 overflow-hidden">
+    <SidebarProvider className="fixed inset-0 min-h-0 overflow-hidden">
       <ManagerHelpProvider route={route ?? { kind: 'unknown', pathname: pathname ?? '/' }}>
         {sidebar ?? (
           <AppSidebar
