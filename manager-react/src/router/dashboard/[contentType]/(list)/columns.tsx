@@ -1,12 +1,8 @@
 'use client'
 
 import type { ColumnDef } from '@tanstack/react-table'
-import { Copy, Edit, MoreHorizontal, RotateCcw, Trash } from 'lucide-react'
-import type {
-  MaybeTranslatableValue,
-  MentionUser,
-  Permission,
-} from '@rakun-kit/core/client'
+import { Check, Copy, Edit, ListFilter, MoreHorizontal, RotateCcw, Trash, X } from 'lucide-react'
+import type { MaybeTranslatableValue, MentionUser, Permission } from '@rakun-kit/core/client'
 
 import IDColumn from '../../../../components/IDColumnt'
 
@@ -17,11 +13,20 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { decodeCamelCase } from '@/helpers/decode-camel-case'
 
 export const columns = ({
@@ -36,7 +41,10 @@ export const columns = ({
   enableSelection,
   showVisibility,
   showVariantCount,
+  creators,
   creatorsById,
+  creatorFilterIds,
+  onCreatorFilterChange,
   currentUserId,
   isTrash,
   hasPermissions,
@@ -52,7 +60,10 @@ export const columns = ({
   enableSelection: boolean
   showVisibility: boolean
   showVariantCount: boolean
+  creators: MentionUser[]
   creatorsById: ReadonlyMap<string, MentionUser>
+  creatorFilterIds: string[]
+  onCreatorFilterChange: (creatorIds: string[]) => void
   currentUserId: string
   isTrash: boolean
   hasPermissions: (permissions: Permission[]) => boolean
@@ -178,7 +189,80 @@ export const columns = ({
     ),
     {
       accessorKey: 'createdBy',
-      header: () => <span className="ml-2">Created by</span>,
+      header: () => (
+        <HoverCard openDelay={150} closeDelay={300}>
+          <HoverCardTrigger asChild>
+            <button
+              type="button"
+              className="ml-2 inline-flex items-center gap-1.5 rounded-sm outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Filter by creator"
+            >
+              <span>Created by</span>
+              {creatorFilterIds.length ? (
+                <Badge variant="secondary" className="h-5 min-w-5 px-1.5 text-[10px]">
+                  {creatorFilterIds.length}
+                </Badge>
+              ) : (
+                <ListFilter className="size-3.5 text-muted-foreground" />
+              )}
+            </button>
+          </HoverCardTrigger>
+          <HoverCardContent align="start" className="w-72 p-0">
+            <Command>
+              <CommandInput placeholder="Search people..." />
+              <CommandList>
+                <CommandEmpty>No people found.</CommandEmpty>
+                <CommandGroup heading="Created by">
+                  {creators.map((creator) => {
+                    const creatorName = creator.name?.trim() || creator.user || 'Unknown user'
+                    const selected = creatorFilterIds.includes(creator._id)
+
+                    return (
+                      <CommandItem
+                        key={creator._id}
+                        value={`${creatorName} ${creator.user} ${creator._id}`}
+                        onSelect={() =>
+                          onCreatorFilterChange(
+                            selected
+                              ? creatorFilterIds.filter((creatorId) => creatorId !== creator._id)
+                              : [...creatorFilterIds, creator._id]
+                          )
+                        }
+                        className="cursor-pointer gap-2"
+                      >
+                        <span className="grid size-4 place-items-center">
+                          {selected ? <Check className="size-4" /> : null}
+                        </span>
+                        <UserAvatar
+                          name={creatorName}
+                          avatar={creator.avatar}
+                          className="size-7"
+                          fallbackClassName="text-xs"
+                        />
+                        <span className="min-w-0 flex-1 truncate">{creatorName}</span>
+                      </CommandItem>
+                    )
+                  })}
+                </CommandGroup>
+              </CommandList>
+              {creatorFilterIds.length ? (
+                <div className="border-t p-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => onCreatorFilterChange([])}
+                  >
+                    <X />
+                    Clear filter
+                  </Button>
+                </div>
+              ) : null}
+            </Command>
+          </HoverCardContent>
+        </HoverCard>
+      ),
       cell: ({ row }) => {
         const creatorId = row.getValue('createdBy')
         if (typeof creatorId !== 'string') {
@@ -207,9 +291,7 @@ export const columns = ({
             accessorKey: '_variantCount',
             header: () => <span className="ml-2">Variants</span>,
             cell: ({ row }) => (
-              <span className="ml-2">
-                {Number(row.getValue('_variantCount') ?? 0)}
-              </span>
+              <span className="ml-2">{Number(row.getValue('_variantCount') ?? 0)}</span>
             ),
           } satisfies ColumnDef<object>,
         ]
@@ -230,27 +312,16 @@ export const columns = ({
               ? (createdBy as { _id: string })._id
               : null
         const ownsItem = creatorId === currentUserId
-        const hasOwnPermission = hasPermissions([
-          `content.${contentType}.own` as Permission,
-        ])
-        const canReadAny = hasPermissions([
-          `content.${contentType}.readAny` as Permission,
-        ])
+        const hasOwnPermission = hasPermissions([`content.${contentType}.own` as Permission])
+        const canReadAny = hasPermissions([`content.${contentType}.readAny` as Permission])
         const canUpdate =
-          hasPermissions([
-            `content.${contentType}.updateAny` as Permission,
-          ]) ||
+          hasPermissions([`content.${contentType}.updateAny` as Permission]) ||
           (ownsItem && hasOwnPermission)
         const canDelete =
-          hasPermissions([
-            `content.${contentType}.deleteAny` as Permission,
-          ]) ||
+          hasPermissions([`content.${contentType}.deleteAny` as Permission]) ||
           (ownsItem && hasOwnPermission)
-        const canDuplicate =
-          hasOwnPermission && (ownsItem || canReadAny)
-        const hasActions = isTrash
-          ? canUpdate || canDelete
-          : canUpdate || canDelete || canDuplicate
+        const canDuplicate = hasOwnPermission && (ownsItem || canReadAny)
+        const hasActions = isTrash ? canUpdate || canDelete : canUpdate || canDelete || canDuplicate
 
         return (
           <>
@@ -265,9 +336,7 @@ export const columns = ({
               )}
               <DropdownMenuContent align="end">
                 {isTrash && canUpdate && (
-                  <DropdownMenuItem
-                    onClick={() => setRestoreItem(item)}
-                  >
+                  <DropdownMenuItem onClick={() => setRestoreItem(item)}>
                     <RotateCcw />
                     Restore
                   </DropdownMenuItem>
@@ -291,10 +360,7 @@ export const columns = ({
                   </DropdownMenuItem>
                 )}
                 {!isTrash && canDuplicate && (
-                  <DropdownMenuItem
-                    disabled={isDuplicating}
-                    onClick={() => onDuplicateItem(item)}
-                  >
+                  <DropdownMenuItem disabled={isDuplicating} onClick={() => onDuplicateItem(item)}>
                     <Copy />
                     {isDuplicating ? 'Duplicating...' : 'Duplicate'}
                   </DropdownMenuItem>
