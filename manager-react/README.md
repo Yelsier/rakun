@@ -113,6 +113,31 @@ rakunBootstrap({
 Each language has an independent subpath, so application bundlers only include
 the locales explicitly imported by the host.
 
+Content-type titles and categories can use project-defined message keys without
+adding them to the built-in `ManagerMessageKey` union. Add an English partial
+pack and extend installed locales through `managerLanguages`:
+
+```ts
+import { extendManagerLanguagePack } from '@rakun-kit/core/contracts'
+import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'
+
+const managerLanguages = [
+  {
+    code: 'en',
+    name: 'English',
+    messages: {
+      'project.contentTypes.article.menu': 'Articles',
+    },
+  },
+  extendManagerLanguagePack(esManagerLocalePack, {
+    'project.contentTypes.article.menu': 'Artículos',
+  }),
+]
+```
+
+Then set `menu.title` or `menu.category` to that arbitrary key. Project keys are
+resolved at runtime but remain outside the static manager catalog.
+
 ## Manager Plugins
 
 Manager plugins run inside the normal providers and can add dashboard routes,

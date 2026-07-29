@@ -21,6 +21,33 @@ rakunBootstrap({
 })
 ```
 
+Projects can extend a complete locale with their own content-type labels without
+adding those keys to `ManagerMessageKey`:
+
+```ts
+import { extendManagerLanguagePack } from '@rakun-kit/core/contracts'
+import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'
+
+const managerLanguages = [
+  {
+    code: 'en',
+    name: 'English',
+    messages: {
+      'project.contentTypes.article.menu': 'Articles',
+      'project.contentTypes.category.editorial': 'Editorial',
+    },
+  },
+  extendManagerLanguagePack(esManagerLocalePack, {
+    'project.contentTypes.article.menu': 'Artículos',
+    'project.contentTypes.category.editorial': 'Editorial',
+  }),
+]
+```
+
+Use those arbitrary keys as the content type's `menu.title` and
+`menu.category`. English project messages are merged with the manager's built-in
+English catalog; other partial project packs retain English fallbacks.
+
 Every language has an independent package export. Consumers therefore bundle
 only imported locales:
 

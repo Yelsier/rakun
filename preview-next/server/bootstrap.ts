@@ -1,7 +1,4 @@
 import { createLocalMediaServiceConfig, type RakunBootstrapOptions } from '@rakun-kit/next'
-// This data-only subpath does not pull React into the API-route bootstrap.
-import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'
-
 import {
   Category,
   Footer,
@@ -10,6 +7,7 @@ import {
   Project,
   previewContentTypes,
 } from './content-types'
+import { previewManagerLanguages } from './manager-locales'
 import { apiOperations } from './api-operations'
 import { createOpenAITranslationServiceConfig } from '@rakun-kit/openai'
 
@@ -43,7 +41,7 @@ export const createPreviewBootstrap = () =>
       },
     },
     contentTypes: previewContentTypes,
-    managerLanguages: [esManagerLocalePack],
+    managerLanguages: previewManagerLanguages,
     internalContentTypes: {
       Page: PreviewPage,
     },

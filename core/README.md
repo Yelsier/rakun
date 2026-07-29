@@ -149,6 +149,31 @@ rakunBootstrap({
 })
 ```
 
+`managerLanguages` may also extend locales with arbitrary project keys. This is
+useful for translatable content-type titles and categories without adding host
+keys to the manager's static `ManagerMessageKey` union:
+
+```ts
+import { extendManagerLanguagePack } from '@rakun-kit/core/contracts'
+import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'
+
+rakunBootstrap({
+  // ...
+  managerLanguages: [
+    {
+      code: 'en',
+      name: 'English',
+      messages: {
+        'project.contentTypes.article.menu': 'Articles',
+      },
+    },
+    extendManagerLanguagePack(esManagerLocalePack, {
+      'project.contentTypes.article.menu': 'Artículos',
+    }),
+  ],
+})
+```
+
 ## Plugins
 
 Trusted server plugins contribute to the same bootstrap registry without coupling

@@ -8,6 +8,17 @@ export const ManagerLanguagePackSchema = z.object({
 
 export type ManagerLanguagePack = z.infer<typeof ManagerLanguagePackSchema>
 
+export const extendManagerLanguagePack = (
+  languagePack: ManagerLanguagePack,
+  extraMessages: Readonly<Record<string, string>>,
+): ManagerLanguagePack => ({
+  ...languagePack,
+  messages: {
+    ...languagePack.messages,
+    ...extraMessages,
+  },
+})
+
 export const ManagerUiLocalesOutputSchema = z.object({
   locales: z.array(ManagerLanguagePackSchema),
 })

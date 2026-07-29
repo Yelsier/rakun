@@ -7,8 +7,8 @@ import { z } from "zod";
 
 import { Footer, Header, Page, previewContentTypes } from "./content-types";
 import { env } from "./env";
+import { previewManagerLanguages } from "./manager-locales";
 import { seedPreviewData } from "./seed";
-import { esManagerLocalePack } from "@rakun-kit/manager-locales/es";
 
 rakunBootstrap({
   literals: {},
@@ -16,7 +16,7 @@ rakunBootstrap({
     Page,
   },
   contentTypes: previewContentTypes,
-  managerLanguages: [esManagerLocalePack],
+  managerLanguages: previewManagerLanguages,
   routes: [
     {
       key: "pages",

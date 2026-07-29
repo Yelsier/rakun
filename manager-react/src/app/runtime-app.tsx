@@ -41,7 +41,7 @@ import type { RakunManagerPluginDefinition } from '../plugins'
 import {
   ManagerI18nProvider,
   useTranslations,
-  type ManagerLocalePack,
+  type ManagerLocaleInputPack,
 } from '@/i18n'
 
 
@@ -113,7 +113,7 @@ export const ManagerRuntimeApp = ({
   plugins,
 }: ManagerRuntimeAppProps) => {
   const queryClient = useMemo(() => createManagerQueryClient(), []);
-  const [localePacks, setLocalePacks] = useState<ManagerLocalePack[]>([]);
+  const [localePacks, setLocalePacks] = useState<ManagerLocaleInputPack[]>([]);
   const scopedNavigation = useMemo<ManagerNavigation>(
     () => ({
       ...navigation,
@@ -144,7 +144,7 @@ export const ManagerRuntimeApp = ({
       .request('manager.uiLocales')
       .then((result) => {
         if (cancelled) return
-        const locales = (result as { locales?: ManagerLocalePack[] }).locales
+        const locales = (result as { locales?: ManagerLocaleInputPack[] }).locales
         setLocalePacks(Array.isArray(locales) ? locales : [])
       })
       .catch(() => {

@@ -5,6 +5,8 @@ export {
 } from './catalog'
 export type {
   ManagerLocaleOption,
+  ManagerLocaleInputPack,
+  ManagerLocaleMessages,
   ManagerLocalePack,
   ManagerMessageValuesByKey,
   TranslationValues,

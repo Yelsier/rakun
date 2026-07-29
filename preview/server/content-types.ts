@@ -3,9 +3,9 @@ import { ContentType, Fields } from "@rakun-kit/core";
 export const Header = new ContentType({
   name: "Header",
   menu: {
-    title: "Headers",
+    title: "preview.contentTypes.header.menu",
     icon: "PanelTop",
-    category: "Layout",
+    category: "preview.contentTypes.category.layout",
   },
   fields: {
     brand: Fields.string().required(),
@@ -18,9 +18,9 @@ export const Header = new ContentType({
 export const Footer = new ContentType({
   name: "Footer",
   menu: {
-    title: "Footers",
+    title: "preview.contentTypes.footer.menu",
     icon: "panel-bottom",
-    category: "Layout",
+    category: "preview.contentTypes.category.layout",
   },
   fields: {
     brand: Fields.string().required(),
@@ -34,9 +34,9 @@ export const Footer = new ContentType({
 export const PageSection = new ContentType({
   name: "PageSection",
   menu: {
-    title: "Page sections",
+    title: "preview.contentTypes.pageSection.menu",
     icon: "LayoutTemplate",
-    category: "Blocks",
+    category: "preview.contentTypes.category.blocks",
   },
   fields: {
     title: Fields.string().required().translatable(),
@@ -54,9 +54,9 @@ export const Page = new ContentType({
   },
   iterator: [{ contentType: PageSection, type: "existing" }],
   menu: {
-    title: "Pages",
+    title: "preview.contentTypes.page.menu",
     icon: "FileText",
-    category: "Content",
+    category: "preview.contentTypes.category.content",
   },
   listFields: ["title", "slug"],
   uniques: [["slug"]],
@@ -65,9 +65,9 @@ export const Page = new ContentType({
 export const Author = new ContentType({
   name: "Author",
   menu: {
-    title: "Authors",
+    title: "preview.contentTypes.author.menu",
     icon: "user-round",
-    category: "Editorial",
+    category: "preview.contentTypes.category.editorial",
   },
   fields: {
     name: Fields.string().required(),
@@ -80,9 +80,9 @@ export const Author = new ContentType({
 export const Article = new ContentType({
   name: "Article",
   menu: {
-    title: "Articles",
+    title: "preview.contentTypes.article.menu",
     icon: "newspaper",
-    category: "Editorial",
+    category: "preview.contentTypes.category.editorial",
   },
   fields: {
     title: Fields.string().required(),
@@ -100,9 +100,9 @@ export const Article = new ContentType({
 export const ConditionalDemo = new ContentType({
   name: "ConditionalDemo",
   menu: {
-    title: "Conditional demos",
+    title: "preview.contentTypes.conditionalDemo.menu",
     icon: "ListChecks",
-    category: "Development",
+    category: "preview.contentTypes.category.development",
   },
   fields: {
     title: Fields.string().required(),

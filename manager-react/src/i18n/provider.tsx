@@ -11,13 +11,13 @@ import {
 import type { ManagerMessageKey } from './catalog'
 import { formatIcuLike } from './format'
 import {
-  createEnglishLocalePack,
+  createManagerLocaleMap,
   ENGLISH_LOCALE_CODE,
   resolveManagerMessage,
 } from './resolve'
 import type {
+  ManagerLocaleInputPack,
   ManagerLocaleOption,
-  ManagerLocalePack,
   ManagerMessageValuesByKey,
   TranslationValues,
 } from './types'
@@ -45,7 +45,7 @@ type ManagerI18nContextValue = {
 const ManagerI18nContext = createContext<ManagerI18nContextValue | null>(null)
 
 export type ManagerI18nProviderProps = {
-  localePacks?: readonly ManagerLocalePack[]
+  localePacks?: readonly ManagerLocaleInputPack[]
   children: ReactNode
 }
 
@@ -65,22 +65,7 @@ export const ManagerI18nProvider = ({
   children,
 }: ManagerI18nProviderProps) => {
   const packsByCode = useMemo(() => {
-    const map = new Map<string, ManagerLocalePack>()
-    map.set(ENGLISH_LOCALE_CODE, createEnglishLocalePack())
-
-    for (const pack of localePacks) {
-      if (pack.code === ENGLISH_LOCALE_CODE) continue
-      map.set(pack.code, {
-        code: pack.code,
-        name: pack.name,
-        messages: {
-          ...createEnglishLocalePack().messages,
-          ...pack.messages,
-        },
-      })
-    }
-
-    return map
+    return createManagerLocaleMap(localePacks)
   }, [localePacks])
 
   const locales = useMemo<ManagerLocaleOption[]>(

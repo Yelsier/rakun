@@ -1,5 +1,5 @@
 import { managerMessages, type ManagerMessageKey } from './catalog'
-import type { ManagerLocalePack } from './types'
+import type { ManagerLocaleInputPack, ManagerLocalePack } from './types'
 
 export const ENGLISH_LOCALE_CODE = 'en'
 
@@ -13,6 +13,30 @@ export const createEnglishLocalePack = (): ManagerLocalePack => ({
     ]),
   ) as Record<ManagerMessageKey, string>,
 })
+
+export const createManagerLocaleMap = (
+  localePacks: readonly ManagerLocaleInputPack[],
+): Map<string, ManagerLocalePack> => {
+  const english = createEnglishLocalePack()
+  const map = new Map<string, ManagerLocalePack>([
+    [ENGLISH_LOCALE_CODE, english],
+  ])
+
+  for (const pack of localePacks) {
+    const current = map.get(pack.code)
+    map.set(pack.code, {
+      code: pack.code,
+      name: pack.name,
+      messages: {
+        ...english.messages,
+        ...current?.messages,
+        ...pack.messages,
+      } as ManagerLocalePack['messages'],
+    })
+  }
+
+  return map
+}
 
 const localeCandidates = (locale: string): string[] => {
   const normalized = locale.toLowerCase()
@@ -31,7 +55,7 @@ export const resolveManagerMessage = ({
 }): string => {
   for (const candidate of localeCandidates(locale)) {
     const pack = packsByCode.get(candidate)
-    const message = pack?.messages[key as ManagerMessageKey]
+    const message = pack?.messages[key]
     if (typeof message === 'string' && message.length > 0) {
       return message
     }

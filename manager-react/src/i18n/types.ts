@@ -21,11 +21,21 @@ export type ManagerMessageValuesByKey = {
     : undefined
 }
 
+export type ManagerLocaleMessages = Record<ManagerMessageKey, string> &
+  Record<string, string>
+
 export type ManagerLocalePack = {
   code: string
   name: string
-  /** ICU messages. Built-in keys should be present; extra host keys are allowed. */
-  messages: Record<ManagerMessageKey, string>
+  /** Complete built-in ICU messages plus optional project-defined keys. */
+  messages: ManagerLocaleMessages
+}
+
+export type ManagerLocaleInputPack = {
+  code: string
+  name: string
+  /** Partial built-in messages and project-defined keys merged at runtime. */
+  messages: Record<string, string>
 }
 
 export type ManagerLocaleOption = {
