@@ -14,6 +14,7 @@ const rakunServerPackages = [
   '@rakun-kit/s3',
   '@rakun-kit/trpc',
   '@rakun-kit/openai',
+  '@rakun-kit/resend',
 ] as const
 
 const isRakunServerPackage = (request: string) =>

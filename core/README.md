@@ -21,6 +21,7 @@ The main entrypoint exports:
 - Context: `createRequestContext`, `getSessionCookie`, `setSessionCookie`.
 - Operations: manager/web contracts and definitions.
 - Media: `createMediaService`, `getMediaService`, adapters, and types.
+- Mail: `createMailService`, `sendMail`, typed template registries, adapters, and types.
 - Permissions, translations, errors, contracts, and public types.
 - Basic internal content types: `Language`, `ManagerUser`, `Seo`.
 
@@ -65,6 +66,7 @@ Options:
 - `apiOperations`: custom API operations added to the Rakun operation registry.
 - `mongo`: MongoDB connection. Required before serving Rakun requests.
 - `media`: media adapter/configuration. Optional.
+- `mail`: outbound mail adapter and default sender configuration. Optional.
 - `logger`: logger configuration. If omitted, an `info` logger with `prettify` is created.
 - `syncRoutes`: syncs configured routes during initialization. Enabled by default.
 
@@ -747,6 +749,73 @@ APIs:
 - `handleMediaBinaryUpload`: processes manager binary uploads.
 
 The service supports prepare/finalize upload, URL generation, folders, and image optimization depending on adapter/configuration.
+
+## Mail
+
+Mail providers receive normalized, already-rendered messages through
+`MailAdapter`, so neither `core` nor an adapter depends on React or a template
+engine:
+
+```ts
+import type { MailAdapter } from '@rakun-kit/core'
+
+const adapter: MailAdapter = {
+  async send(message) {
+    const result = await provider.send(message)
+    return { id: result.id }
+  },
+}
+
+rakunBootstrap({
+  // ...
+  mail: {
+    adapter,
+    defaultFrom: 'hello@example.com',
+    defaultReplyTo: 'support@example.com',
+  },
+})
+```
+
+Send rendered content directly:
+
+```ts
+import { sendMail } from '@rakun-kit/core'
+
+await sendMail({
+  to: 'ada@example.com',
+  subject: 'Welcome',
+  html: '<p>Hello Ada</p>',
+  text: 'Hello Ada',
+})
+```
+
+Or create a typed application template registry:
+
+```ts
+import { createMailSender, defineMailTemplate } from '@rakun-kit/core'
+
+const mail = createMailSender({
+  templates: {
+    welcome: defineMailTemplate<{ name: string }>({
+      subject: ({ name }) => `Welcome, ${name}`,
+      render: ({ name }) => ({
+        html: `<p>Hello ${name}</p>`,
+        text: `Hello ${name}`,
+      }),
+    }),
+  },
+})
+
+await mail.send({
+  template: 'welcome',
+  props: { name: 'Ada' },
+  to: 'ada@example.com',
+})
+```
+
+The common contract supports To/CC/BCC/Reply-To, custom headers and in-memory
+`Uint8Array` attachments. Sending is immediate; queues, retries and delivery
+events belong to application infrastructure.
 
 ## Literals and Translation
 

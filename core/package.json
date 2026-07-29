@@ -1,7 +1,7 @@
 {
   "name": "@rakun-kit/core",
   "version": "1.4.11",
-  "description": "Core Rakun content, routing, media, auth, and manager APIs.",
+  "description": "Core Rakun content, routing, media, mail, auth, and manager APIs.",
   "license": "MIT",
   "author": {
     "name": "Yago Claros",
@@ -24,7 +24,8 @@
     "build": "rm -rf dist && bun run build:esm && bun run build:cjs",
     "build:esm": "tsc -b --force tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
     "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../scripts/write-cjs-package-json.mjs dist/cjs",
-    "test": "bun test --max-concurrency=1 --timeout=30000"
+    "test": "bun test --max-concurrency=1 --timeout=30000",
+    "test:types": "tsc -p tsconfig.type-tests.json"
   },
   "files": [
     "dist"

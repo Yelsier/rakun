@@ -13,6 +13,10 @@ import { createMongoConnection, getMongoService } from "./orm";
 import { runMigrations } from "./orm/migrations";
 import { createMediaService, getMediaService } from "./media";
 import {
+  createMailService,
+  getMailService,
+} from "./mail";
+import {
   createTranslationService,
   getTranslationService,
   hasTranslationService,
@@ -71,6 +75,15 @@ const ensureMedia = (): void => {
   createMediaService(media);
 };
 
+const ensureMail = (): void => {
+  const bootstrapOptions = getRakunBootstrapOptions();
+  const mail = bootstrapOptions?.mail;
+
+  if (!mail) return;
+
+  createMailService(mail);
+};
+
 const ensureTranslation = (): void => {
   const bootstrapOptions = getRakunBootstrapOptions();
   const translation = bootstrapOptions?.translation;
@@ -92,6 +105,7 @@ export const ensureRakunInitialized = async () => {
     ensureLogger();
     ensureMongo();
     ensureMedia();
+    ensureMail();
     ensureTranslation();
 
     const db = await getMongoService();
@@ -113,6 +127,7 @@ export const ensureRakunInitialized = async () => {
         db,
         logger: Logger!,
         media: bootstrapOptions.media ? getMediaService() : undefined,
+        mail: bootstrapOptions.mail ? getMailService() : undefined,
         translation: hasTranslationService()
           ? getTranslationService()
           : undefined,
@@ -398,5 +413,6 @@ export type {
   PrepareUploadOutput,
 } from "./schemas/manager/media/prepareUpload";
 export * from "./media";
+export * from "./mail";
 export * from "./contracts";
 export * from "./web";

@@ -2,6 +2,7 @@ import type ContentType from "./lib/ContentType";
 import type { createLogger } from "./lib/Logger";
 import type { LiteralCatalogInput } from "./literals/definitions";
 import type { MediaServiceConfig } from "./media";
+import type { MailServiceConfig } from "./mail";
 import type { TranslationServiceConfig } from "./translation";
 import type { MongoConfig } from "./orm/database";
 import type { RouteDefinition } from "./api/utils/routes/routeDefinitions";
@@ -30,6 +31,7 @@ export interface RakunBootstrapOptions {
   managerLanguages?: readonly ManagerLanguagePack[];
   mongo?: MongoConfig;
   media?: MediaServiceConfig;
+  mail?: MailServiceConfig;
   translation?: TranslationServiceConfig;
   logger?: Parameters<typeof createLogger>[0];
   revalidate?:

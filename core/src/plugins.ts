@@ -2,6 +2,7 @@ import type ContentType from './lib/ContentType'
 import type { createLogger } from './lib/Logger'
 import type { LiteralCatalogInput } from './literals/definitions'
 import type { MediaService } from './media'
+import type { MailService } from './mail'
 import type { DBService } from './orm/dbService'
 import type { TranslationService } from './translation'
 import type { RouteDefinition } from './api/utils/routes/routeDefinitions'
@@ -16,6 +17,7 @@ export type RakunPluginInitContext = {
   db: DBService
   logger: ReturnType<typeof createLogger>
   media?: MediaService
+  mail?: MailService
   translation?: TranslationService
   options: ResolvedRakunBootstrapOptions
 }

@@ -19,9 +19,11 @@
         "../core/src/internal-content-types/*.ts"
       ],
       "@rakun-kit/core/types": ["../core/src/lib/types/index.ts"],
+      "@rakun-kit/jsx-email": ["../jsx-email/src/index.ts"],
       "@rakun-kit/manager-react": ["../manager-react/src/index.ts"],
       "@rakun-kit/manager-locales/es": ["../manager-locales/src/es.ts"],
-      "@rakun-kit/manager-react/*": ["../manager-react/src/*"]
+      "@rakun-kit/manager-react/*": ["../manager-react/src/*"],
+      "@rakun-kit/resend": ["../resend/src/index.ts"]
     },
     "jsx": "react-jsx",
     "strict": true,
@@ -31,5 +33,5 @@
     "noEmit": true,
     "types": ["vite/client", "node"]
   },
-  "include": ["src", "server", "vite.config.ts"]
+  "include": ["src", "server", "emails", "scripts", "vite.config.ts"]
 }

@@ -12,6 +12,8 @@ SEED_PREVIEW=true
 PREVIEW_ADMIN_EMAIL=admin@rakun.local
 PREVIEW_ADMIN_NAME=Preview Admin
 PREVIEW_ADMIN_PASSWORD=admin1234
+RESEND_API_KEY=
+RAKUN_MAIL_FROM=
 ```
 
 Run the app:
@@ -101,19 +103,38 @@ The seeded `HelloWorld` module is a client component with a button that calls
 the public `demo.helloWorld` operation through the typed client:
 
 ```tsx
-import {
-  createRakunApiClient,
-  type GetClient,
-} from "@rakun-kit/next/web/client";
-import type { apiOperations } from "../server/api-operations";
+import { createRakunApiClient, type GetClient } from '@rakun-kit/next/web/client'
+import type { apiOperations } from '../server/api-operations'
 
-type PreviewApiClient = GetClient<typeof apiOperations>;
+type PreviewApiClient = GetClient<typeof apiOperations>
 
 const apiClient: PreviewApiClient = createRakunApiClient<typeof apiOperations>({
-  baseUrl: "/api",
-});
+  baseUrl: '/api',
+})
 
-const result = await apiClient.query("demo.helloWorld", { text });
+const result = await apiClient.query('demo.helloWorld', { text })
+```
+
+The same registry exposes `demo.sendTestMail` as a public mutation. It renders
+`emails/TestEmail.tsx` with typed props and sends it through the configured
+Resend adapter:
+
+```ts
+const result = await apiClient.mutation('demo.sendTestMail', {
+  to: 'you@example.com',
+  name: 'Ada',
+  activationUrl: 'https://example.com/activate',
+})
+
+console.log(result.id)
+```
+
+Set `RESEND_API_KEY` and `RAKUN_MAIL_FROM` in `.env.local` before calling the
+operation. Preview and compatibility-check the same template with:
+
+```bash
+bun run mail:preview
+bun run mail:check
 ```
 
 ## Rendering
@@ -121,10 +142,7 @@ const result = await apiClient.query("demo.helloWorld", { text });
 The page route uses `RakunPageRenderer` from `@rakun-kit/next/web`:
 
 ```tsx
-<RakunPageRenderer
-  page={page}
-  loadModule={(name) => import(`../../modules/${name}`)}
-/>
+<RakunPageRenderer page={page} loadModule={(name) => import(`../../modules/${name}`)} />
 ```
 
 Modules in `preview-next/modules` are server modules by default. Add
