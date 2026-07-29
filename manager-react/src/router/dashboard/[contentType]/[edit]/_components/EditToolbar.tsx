@@ -46,7 +46,7 @@ import { TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { createManagerQueryKey, useManagerMutation, useManagerQuery } from '@/client/react'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
-import { useTranslations } from '@/i18n'
+import { translateLayoutModuleLabel, useTranslations } from '@/i18n'
 import { cn } from '@/lib/utils'
 
 const visibilitySelectStyles: Record<EditableDocumentVisibility, string> = {
@@ -222,7 +222,11 @@ export const EditToolbar = () => {
           {routeLayout.routeLayoutModules.map((layoutModule) => (
             <TabsTrigger key={layoutModule._id} value={`layout:${layoutModule._id}`}>
               <LayoutPanelTop />
-              {layoutModule.contentType}
+              {translateLayoutModuleLabel(
+                t,
+                layoutModule.key,
+                layoutModule.contentType,
+              )}
             </TabsTrigger>
           ))}
           {hasLocaleVariants ? (

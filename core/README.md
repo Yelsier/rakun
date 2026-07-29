@@ -165,11 +165,13 @@ rakunBootstrap({
       name: 'English',
       messages: {
         'field.title': 'Title',
+        'layoutModule.header': 'Header',
         'project.contentTypes.article.menu': 'Articles',
       },
     },
     extendManagerLanguagePack(esManagerLocalePack, {
       'field.title': 'Título',
+      'layoutModule.header': 'Cabecera',
       'project.contentTypes.article.menu': 'Artículos',
     }),
   ],
@@ -179,6 +181,9 @@ rakunBootstrap({
 Content-type field labels automatically use `field.<fieldName>` from these
 project messages. Missing translations fall back to a built-in manager label
 when available and otherwise to the humanized field name.
+
+Route layout module labels use `layoutModule.<layoutKey>`, so a slot configured
+with `key: 'header'` resolves `layoutModule.header`.
 
 ## Plugins
 

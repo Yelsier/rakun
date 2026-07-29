@@ -6,6 +6,8 @@ import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'
 
 const englishPreviewMessages = {
   'field.title': 'Title',
+  'layoutModule.header': 'Header',
+  'layoutModule.footer': 'Footer',
   'preview.contentTypes.category.layout': 'Layout',
   'preview.contentTypes.category.blocks': 'Blocks',
   'preview.contentTypes.category.editorial': 'Editorial',
@@ -22,6 +24,8 @@ const englishPreviewMessages = {
 
 const spanishPreviewMessages = {
   'field.title': 'Título',
+  'layoutModule.header': 'Cabecera',
+  'layoutModule.footer': 'Pie de página',
   'preview.contentTypes.category.layout': 'Layout',
   'preview.contentTypes.category.blocks': 'Bloques',
   'preview.contentTypes.category.editorial': 'Editorial',

@@ -127,11 +127,13 @@ const managerLanguages = [
     name: 'English',
     messages: {
       'field.title': 'Title',
+      'layoutModule.header': 'Header',
       'project.contentTypes.article.menu': 'Articles',
     },
   },
   extendManagerLanguagePack(esManagerLocalePack, {
     'field.title': 'Título',
+    'layoutModule.header': 'Cabecera',
     'project.contentTypes.article.menu': 'Artículos',
   }),
 ]
@@ -143,6 +145,10 @@ resolved at runtime but remain outside the static manager catalog.
 Field labels use the dynamic `field.<fieldName>` namespace. A content-type field
 named `title`, for example, automatically resolves `field.title` in edit forms
 and list columns without adding it to `ManagerMessageKey`.
+
+Layout module labels follow `layoutModule.<layoutKey>`. For example, the
+`header` slot automatically resolves `layoutModule.header` in its tab and
+configuration panel.
 
 ## Manager Plugins
 

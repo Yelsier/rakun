@@ -42,7 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLanguage } from "@/state/language";
-import { useTranslations } from '@/i18n'
+import { translateLayoutModuleLabel, useTranslations } from '@/i18n'
 import { useSession } from "@/state/session";
 
 type PageOption = {
@@ -358,7 +358,11 @@ export const ManagerSettingsRoutesScreen = () => {
                     {layoutModule.routeKey} / {layoutModule.key}
                   </div>
                   <div className="text-muted-foreground text-sm">
-                    {layoutModule.contentType}
+                    {translateLayoutModuleLabel(
+                      t,
+                      layoutModule.key,
+                      layoutModule.contentType,
+                    )}
                   </div>
                 </div>
                 <Select

@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { TabsContent } from '@/components/ui/tabs'
-import { useTranslations } from '@/i18n'
+import { translateLayoutModuleLabel, useTranslations } from '@/i18n'
 
 const getLayoutOverrideValue = (override?: RouteLayoutModuleOverrideRecord) => {
   if (!override) return '__default__'
@@ -76,6 +76,11 @@ export const RouteLayoutModuleTabContent = ({
     ? (options.find((option) => option.value === layoutModule.moduleId)?.label ??
       layoutModule.moduleId)
     : t('contentEdit.noModule')
+  const layoutModuleLabel = translateLayoutModuleLabel(
+    t,
+    layoutModule.key,
+    layoutModule.contentType,
+  )
 
   return (
     <TabsContent
@@ -88,7 +93,7 @@ export const RouteLayoutModuleTabContent = ({
     >
       <div className='mx-auto flex w-full flex-col gap-4'>
         <div>
-          <h2 className='text-lg font-semibold'>{layoutModule.contentType}</h2>
+          <h2 className='text-lg font-semibold'>{layoutModuleLabel}</h2>
           <p className='text-muted-foreground text-sm'>
             {t('contentEdit.defaultFromRoute')} {defaultOption}
             {t('contentEdit.overrideOnlyForEntry')}

@@ -34,12 +34,14 @@ const managerLanguages = [
     name: 'English',
     messages: {
       'field.title': 'Title',
+      'layoutModule.header': 'Header',
       'project.contentTypes.article.menu': 'Articles',
       'project.contentTypes.category.editorial': 'Editorial',
     },
   },
   extendManagerLanguagePack(esManagerLocalePack, {
     'field.title': 'Título',
+    'layoutModule.header': 'Cabecera',
     'project.contentTypes.article.menu': 'Artículos',
     'project.contentTypes.category.editorial': 'Editorial',
   }),
@@ -54,6 +56,10 @@ Content-type field labels follow the `field.<fieldName>` convention. For
 example, a field named `title` automatically resolves `field.title` in edit
 forms and list columns. Missing keys fall back to existing manager labels and
 then to a humanized field name.
+
+Route layout slots use `layoutModule.<layoutKey>`. A layout entry with
+`key: 'header'` therefore resolves `layoutModule.header` in edit tabs, panels,
+and route settings.
 
 Every language has an independent package export. Consumers therefore bundle
 only imported locales:

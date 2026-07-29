@@ -24,3 +24,4 @@ export {
 } from './provider'
 export { useTranslations } from './useTranslations'
 export { translateFieldLabel } from './fieldLabel'
+export { translateLayoutModuleLabel } from './layoutModuleLabel'
