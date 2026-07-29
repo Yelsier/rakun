@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, writeFile, copyFile } from 'node:fs/promises'
+import { cp, mkdir, readFile, writeFile, copyFile, watch } from 'node:fs/promises'
 import path from 'node:path'
 import postcss from 'postcss'
 import tailwindcss from '@tailwindcss/postcss'
@@ -18,30 +18,83 @@ const editorThemeCssOutputs = [
   path.join(packageRoot, 'dist/cjs/components/editor/themes/editor-theme.css'),
 ]
 
-const input = await readFile(inputPath, 'utf8')
-const result = await postcss([tailwindcss()]).process(input, {
-  from: inputPath,
-  to: outputPath,
-})
+let buildInFlight = false
+let pendingBuild = false
+let buildTimer
 
-await mkdir(path.dirname(outputPath), { recursive: true })
-await writeFile(outputPath, result.css)
-await copyFile(sourceTypesPath, outputTypesPath)
-await mkdir(fontOutputDir, { recursive: true })
-await cp(
-  path.join(packageRoot, 'src/styles/Inter/Inter-VariableFont_opsz,wght.ttf'),
-  path.join(fontOutputDir, 'Inter-VariableFont_opsz,wght.ttf'),
-)
-await cp(
-  path.join(packageRoot, 'src/styles/Inter/Inter-Italic-VariableFont_opsz,wght.ttf'),
-  path.join(fontOutputDir, 'Inter-Italic-VariableFont_opsz,wght.ttf'),
-)
-await cp(
-  path.join(packageRoot, 'src/styles/Space_Grotesk/SpaceGrotesk-VariableFont_wght.ttf'),
-  path.join(fontOutputDir, 'SpaceGrotesk-VariableFont_wght.ttf'),
-)
+const buildCss = async () => {
+  const input = await readFile(inputPath, 'utf8')
+  const result = await postcss([tailwindcss()]).process(input, {
+    from: inputPath,
+    to: outputPath,
+  })
 
-for (const editorThemeCssOutput of editorThemeCssOutputs) {
-  await mkdir(path.dirname(editorThemeCssOutput), { recursive: true })
-  await copyFile(editorThemeCssSourcePath, editorThemeCssOutput)
+  await mkdir(path.dirname(outputPath), { recursive: true })
+  await writeFile(outputPath, result.css)
+  await copyFile(sourceTypesPath, outputTypesPath)
+  await mkdir(fontOutputDir, { recursive: true })
+  await cp(
+    path.join(packageRoot, 'src/styles/Inter/Inter-VariableFont_opsz,wght.ttf'),
+    path.join(fontOutputDir, 'Inter-VariableFont_opsz,wght.ttf'),
+  )
+  await cp(
+    path.join(packageRoot, 'src/styles/Inter/Inter-Italic-VariableFont_opsz,wght.ttf'),
+    path.join(fontOutputDir, 'Inter-Italic-VariableFont_opsz,wght.ttf'),
+  )
+  await cp(
+    path.join(packageRoot, 'src/styles/Space_Grotesk/SpaceGrotesk-VariableFont_wght.ttf'),
+    path.join(fontOutputDir, 'SpaceGrotesk-VariableFont_wght.ttf'),
+  )
+
+  for (const editorThemeCssOutput of editorThemeCssOutputs) {
+    await mkdir(path.dirname(editorThemeCssOutput), { recursive: true })
+    await copyFile(editorThemeCssSourcePath, editorThemeCssOutput)
+  }
+}
+
+const runBuild = async () => {
+  if (buildInFlight) {
+    pendingBuild = true
+    return
+  }
+
+  buildInFlight = true
+
+  try {
+    await buildCss()
+    console.log('[manager-react] CSS rebuilt')
+  } catch (error) {
+    console.error('[manager-react] CSS build failed')
+    console.error(error)
+  } finally {
+    buildInFlight = false
+    if (pendingBuild) {
+      pendingBuild = false
+      await runBuild()
+    }
+  }
+}
+
+const watchCss = async () => {
+  await runBuild()
+  console.log('[manager-react] Watching src for CSS rebuilds...')
+
+  const watcher = watch(path.join(packageRoot, 'src'), { recursive: true })
+
+  for await (const event of watcher) {
+    if (!event.filename) {
+      continue
+    }
+
+    clearTimeout(buildTimer)
+    buildTimer = setTimeout(() => {
+      runBuild()
+    }, 120)
+  }
+}
+
+if (process.argv.includes('--watch')) {
+  await watchCss()
+} else {
+  await buildCss()
 }
