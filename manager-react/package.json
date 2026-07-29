@@ -23,6 +23,7 @@
   "scripts": {
     "build": "rm -rf dist && bun run build:esm && bun run build:cjs && bun run build:css",
     "build:css": "node ./scripts/build-css.mjs",
+    "build:css:watch": "node ./scripts/build-css.mjs --watch",
     "build:esm": "tsc -b --force tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
     "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../scripts/fix-dist-imports.mjs dist/cjs && node ../scripts/write-cjs-package-json.mjs dist/cjs"
   },
