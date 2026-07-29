@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../../ui/dialog'
+import { useTranslations } from '@/i18n'
 
 type DeleteTarget = {
   contentType: 'Media' | 'MediaFolder'
@@ -33,6 +34,7 @@ export default function MediaDeleteDialog({
   onClose,
   onConfirm,
 }: MediaDeleteDialogProps) {
+  const t = useTranslations()
   const [isFolderDeleteConfirmed, setIsFolderDeleteConfirmed] = useState(false)
   const isFolder = target?.contentType === 'MediaFolder'
 
@@ -45,13 +47,13 @@ export default function MediaDeleteDialog({
       <DialogContent aria-describedby='Delete media item'>
         <DialogHeader>
           <DialogTitle>
-            Delete {isFolder ? 'folder' : 'file'}
+            {isFolder ? t('media.deleteFolderTitle') : t('media.deleteFileTitle')}
           </DialogTitle>
         </DialogHeader>
         <DialogDescription>
           {isFolder
-            ? `This will delete "${target?.name}" and everything inside it.`
-            : `Are you sure you want to delete "${target?.name}"?`}
+            ? t('media.deleteFolderDescription', { name: target?.name ?? '' })
+            : t('media.deleteFileDescription', { name: target?.name ?? '' })}
         </DialogDescription>
         {isFolder ? (
           <label className='flex items-start gap-3 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm'>
@@ -63,15 +65,15 @@ export default function MediaDeleteDialog({
               className='mt-0.5'
             />
             <span className='leading-5'>
-              I understand this will permanently delete the folder
-              {target?.path ? ` "${target.path}"` : ` "${target?.name}"`} and
-              all of its files and subfolders.
+              {t('media.deleteFolderConfirm', {
+                path: target?.path || target?.name || '',
+              })}
             </span>
           </label>
         ) : null}
         <DialogFooter>
           <Button variant='ghost' onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             variant='destructive'
@@ -79,7 +81,7 @@ export default function MediaDeleteDialog({
             loading={isLoading}
             onClick={onConfirm}
           >
-            Delete
+            {t('common.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

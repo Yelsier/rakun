@@ -1,9 +1,13 @@
+'use client'
+
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useTranslations } from '@/i18n'
 
 const IDColumn: React.FC<{ _id: string }> = ({ _id }) => {
+  const t = useTranslations()
   const [copiedID, setCopiedID] = useState(false)
   const [open, setOpen] = useState(false)
 
@@ -23,11 +27,15 @@ const IDColumn: React.FC<{ _id: string }> = ({ _id }) => {
             setTimeout(() => setCopiedID(false), 500)
           }}
         >
-          #{_id.slice(0, 6)}...
+          {t('idColumn.truncated', { id: _id.slice(0, 6) })}
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        <p>{copiedID ? 'Copied!' : `Copy to clipboard #${_id}`}</p>
+        <p>
+          {copiedID
+            ? t('idColumn.copied')
+            : t('idColumn.copyToClipboard', { id: _id })}
+        </p>
       </TooltipContent>
     </Tooltip>
   )

@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
+import { useTranslations } from '@/i18n'
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -40,6 +41,7 @@ export const EditRole = ({
 }: {
   defaultValues?: ManagerRoleRecord
 }) => {
+  const t = useTranslations()
   const permissionsQuery = useManagerQuery({
     name: 'manager.permissions',
     input: undefined,
@@ -88,7 +90,7 @@ export const EditRole = ({
           id: defaultValues._id,
           data: values,
         })
-        toast.success('Role updated successfully!')
+        toast.success(t('settings.roles.updated'))
       } else {
         const result = await createMutation.mutateAsync({
           contentType: 'ManagerRole',
@@ -98,13 +100,13 @@ export const EditRole = ({
           typeof result === 'object' && result && '_id' in result
             ? String(result._id)
             : undefined
-        toast.success('Role created successfully!')
+        toast.success(t('settings.roles.created'))
         if (id) {
           navigation.pushPath?.(`/settings/user-roles/${id}`)
         }
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error saving role')
+      toast.error(error instanceof Error ? error.message : t('settings.roles.saveError'))
     }
   }
 
@@ -120,7 +122,7 @@ export const EditRole = ({
             loading={createMutation.isPending || updateMutation.isPending}
             className='self-end'
           >
-            Save
+            {t('common.save')}
           </Button>
           <div className='space-y-8'>
             <FormField
@@ -128,9 +130,9 @@ export const EditRole = ({
               name='name'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>{t('fields.name')}</FormLabel>
                   <FormControl>
-                    <Input autoComplete='off' placeholder='Admin' {...field} />
+                    <Input autoComplete='off' placeholder={t('settings.roles.namePlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -148,7 +150,7 @@ export const EditRole = ({
                 }}
               />
               <Label htmlFor='toggle-all' className='text-lg font-bold'>
-                Toggle all
+                {t('settings.roles.toggleAll')}
               </Label>
             </div>
             <Separator className='my-8' />

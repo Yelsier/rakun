@@ -7,17 +7,19 @@ import { columns } from './columns'
 import DeleteSession from './delete'
 
 import { DataTable } from '@/components/ui/data-table'
+import { useTranslations } from '@/i18n'
 
 export default function Sessions(props: {
   sessions: AccountInfoOutput['sessions']
   current: string
 }) {
+  const t = useTranslations()
   const [sessions, setSessions] = useState(props.sessions)
   const [deleteSession, setDeleteSession] = useState<string | null>(null)
 
   return (
     <div className='w-full' data-tour='account-sessions'>
-      <h2 className='mb-4 text-xl font-bold'>Active Sessions</h2>
+      <h2 className='mb-4 text-xl font-bold'>{t('account.sessions.title')}</h2>
       <DeleteSession
         session={deleteSession}
         setDeleteSession={setDeleteSession}
@@ -27,6 +29,7 @@ export default function Sessions(props: {
         columns={columns({
           current: props.current,
           setDeleteSession,
+          t,
         })}
         data={sessions}
       />

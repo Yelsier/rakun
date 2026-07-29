@@ -15,6 +15,7 @@
   "dependencies": {
     "@rakun-kit/core": "^1.2.1",
     "@rakun-kit/express": "^1.0.0",
+    "@rakun-kit/manager-locales": "^1.0.0",
     "@rakun-kit/manager-react": "^1.0.0",
     "bcrypt": "^6.0.0",
     "express": "^5.2.1",

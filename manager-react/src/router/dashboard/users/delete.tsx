@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useTranslations } from '@/i18n'
 
 export default function DeleteUser({
   refetch,
@@ -25,6 +26,7 @@ export default function DeleteUser({
   user: ManagerUserRecord | null
   setDeleteUser: (user: null) => void
 }) {
+  const t = useTranslations()
   const [open, setOpen] = useState(false)
   const mutation = useManagerMutation('manager.delete')
 
@@ -49,9 +51,9 @@ export default function DeleteUser({
       refetch()
       setOpen(false)
       setDeleteUser(null)
-      toast.success('User deleted successfully!')
+      toast.success(t('users.deleted'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error deleting user')
+      toast.error(error instanceof Error ? error.message : t('users.deleteError'))
     }
   }
 
@@ -59,21 +61,21 @@ export default function DeleteUser({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent aria-describedby='Delete a user'>
         <DialogHeader>
-          <DialogTitle>Delete user</DialogTitle>
+          <DialogTitle>{t('users.deleteTitle')}</DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          Are you sure you want to delete this user?
+          {t('users.deleteConfirm')}
         </DialogDescription>
         <DialogFooter>
           <Button onClick={() => setOpen(false)} variant='ghost'>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             loading={mutation.isPending}
             onClick={() => void handleDelete()}
             variant='destructive'
           >
-            Delete
+            {t('common.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

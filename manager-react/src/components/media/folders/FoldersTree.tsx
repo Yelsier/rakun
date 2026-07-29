@@ -14,6 +14,7 @@ import { Skeleton } from '../../ui/skeleton'
 import { useMediaLibrary } from '../contexts/MediaLibraryContext'
 
 import { SearchInput } from '@/components/search-input'
+import { useTranslations } from '@/i18n'
 import { cn } from '@/lib/utils'
 
 type FolderNode = {
@@ -78,6 +79,7 @@ const FolderSearchInput = memo(function FolderSearchInput({
 }: {
   onSearchChange: (value: string) => void
 }) {
+  const t = useTranslations()
   const [value, setValue] = useState('')
 
   useEffect(() => {
@@ -95,12 +97,13 @@ const FolderSearchInput = memo(function FolderSearchInput({
       value={value}
       onChange={(event) => setValue(event.target.value)}
       className="mb-3"
-      placeholder="Search folders..."
+      placeholder={t('media.searchFolders')}
     />
   )
 })
 
 export default function FoldersTree({ isModal = false }: { isModal?: boolean }) {
+  const t = useTranslations()
   const {
     folders,
     isLoadingFolders,
@@ -208,9 +211,11 @@ export default function FoldersTree({ isModal = false }: { isModal?: boolean }) 
             </Collapsible>
           </ContextMenuTrigger>
           <ContextMenuContent>
-            <ContextMenuItem onSelect={() => requestEditFolder(node)}>Edit</ContextMenuItem>
+            <ContextMenuItem onSelect={() => requestEditFolder(node)}>
+              {t('common.edit')}
+            </ContextMenuItem>
             <ContextMenuItem variant="destructive" onSelect={() => requestDeleteFolder(node)}>
-              Delete
+              {t('common.delete')}
             </ContextMenuItem>
           </ContextMenuContent>
         </ContextMenu>
@@ -238,7 +243,7 @@ export default function FoldersTree({ isModal = false }: { isModal?: boolean }) 
         }`}
       >
         <Folder className="size-4" />
-        Base folder
+        {t('media.baseFolder')}
       </button>
 
       {isLoadingFolders ? (

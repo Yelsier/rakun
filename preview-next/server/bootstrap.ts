@@ -1,5 +1,4 @@
 import { createLocalMediaServiceConfig, type RakunBootstrapOptions } from '@rakun-kit/next'
-
 import {
   Category,
   Footer,
@@ -8,6 +7,7 @@ import {
   Project,
   previewContentTypes,
 } from './content-types'
+import { previewManagerLanguages } from './manager-locales'
 import { apiOperations } from './api-operations'
 import { createOpenAITranslationServiceConfig } from '@rakun-kit/openai'
 
@@ -33,14 +33,15 @@ export const createPreviewBootstrap = () =>
           name: 'string',
         },
       },
-      "demo.welcome": {
-        defaultMessage: "Welcome to the demo!",
-        description: "A welcome message for the demo",
-        usedBy: ["Page"],
+      'demo.welcome': {
+        defaultMessage: 'Welcome to the demo!',
+        description: 'A welcome message for the demo',
+        usedBy: ['Page'],
         params: {},
       },
     },
     contentTypes: previewContentTypes,
+    managerLanguages: previewManagerLanguages,
     internalContentTypes: {
       Page: PreviewPage,
     },

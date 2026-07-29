@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useTranslations } from '@/i18n'
 
 export default function DeleteSession({
   setSessions,
@@ -24,6 +25,7 @@ export default function DeleteSession({
   session: string | null
   setDeleteSession: (session: null) => void
 }) {
+  const t = useTranslations()
   const [open, setOpen] = useState(false)
   const mutation = useManagerMutation('manager.auth.deleteSession')
 
@@ -54,10 +56,10 @@ export default function DeleteSession({
           )
           setOpen(false)
           setDeleteSession(null)
-          toast.success('Session deleted successfully!')
+          toast.success(t('account.sessions.deleted'))
         },
         onError: (error) => {
-          toast.error(`Error: ${error.message}`)
+          toast.error(t('account.sessions.deleteError', { reason: error.message }))
         },
       },
     )
@@ -67,21 +69,21 @@ export default function DeleteSession({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent aria-describedby='Delete session'>
         <DialogHeader>
-          <DialogTitle>Delete session</DialogTitle>
+          <DialogTitle>{t('account.sessions.delete')}</DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          Are you sure you want to delete this session?
+          {t('account.sessions.deleteConfirm')}
         </DialogDescription>
         <DialogFooter>
           <Button onClick={() => setOpen(false)} variant='ghost'>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             loading={mutation.isPending}
             onClick={handleDelete}
             variant='destructive'
           >
-            Delete
+            {t('common.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -14,6 +14,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import type { useTranslations } from '@/i18n'
+
+type Translate = ReturnType<typeof useTranslations>
 
 export type ManagerLanguageRecord = {
   _id: string
@@ -30,6 +33,7 @@ export const columns = ({
   languages,
   hasPermissions,
   hasAnyPermission,
+  t,
 }: {
   setEdit: (language: ManagerLanguageRecord) => void
   setDeleteLanguage: (language: ManagerLanguageRecord | null) => void
@@ -37,32 +41,33 @@ export const columns = ({
   languages: ManagerLanguageRecord[]
   hasPermissions: (permissions: Permission[]) => boolean
   hasAnyPermission: (permissions: Permission[]) => boolean
+  t: Translate
 }): ColumnDef<ManagerLanguageRecord>[] => [
   {
     accessorKey: '_id',
-    header: () => <span className="ml-2">ID</span>,
+    header: () => <span className="ml-2">{t('contentList.id')}</span>,
     cell: ({ row }) => <IDColumn _id={row.getValue('_id') as string} />,
   },
   {
     accessorKey: 'default',
-    header: () => <span className="ml-2">Default</span>,
+    header: () => <span className="ml-2">{t('common.default')}</span>,
     cell: ({ row }) => (
       <BooleanIndicator value={Boolean(row.getValue('default'))} />
     ),
   },
   {
     accessorKey: 'code',
-    header: () => <span className="ml-2">Code</span>,
+    header: () => <span className="ml-2">{t('common.code')}</span>,
     cell: ({ row }) => <span className="ml-2">{row.getValue('code')}</span>,
   },
   {
     accessorKey: 'name',
-    header: () => <span className="ml-2">Name</span>,
+    header: () => <span className="ml-2">{t('fields.name')}</span>,
     cell: ({ row }) => <span className="ml-2">{row.getValue('name')}</span>,
   },
   {
     accessorKey: 'parent',
-    header: () => <span className="ml-2">Parent</span>,
+    header: () => <span className="ml-2">{t('common.parent')}</span>,
     cell: ({ row }) => (
       <span className="ml-2">
         {languages.find((lang) => lang._id === row.original.parent?._id)?.code ?? ''}
@@ -82,7 +87,7 @@ export const columns = ({
                 variant="ghost"
                 className="m-auto flex h-8 w-8 items-center justify-center p-0!"
               >
-                <span className="sr-only">Open menu</span>
+                <span className="sr-only">{t('common.openMenu')}</span>
                 <MoreHorizontal />
               </Button>
             </DropdownMenuTrigger>
@@ -91,7 +96,7 @@ export const columns = ({
             {hasPermissions(['content.Language.updateAny']) && (
               <DropdownMenuItem onClick={() => handleSetDefault(language.code)}>
                 <Star />
-                Set as default
+                {t('settings.languages.setAsDefault')}
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
@@ -101,13 +106,19 @@ export const columns = ({
                 onClick={() => setDeleteLanguage(language)}
               >
                 <Trash className="text-destructive" />
-                Delete {language.name} ({language.code})
+                {t('settings.languages.deleteNamed', {
+                  name: language.name,
+                  code: language.code,
+                })}
               </DropdownMenuItem>
             )}
             {hasPermissions(['content.Language.updateAny']) && (
               <DropdownMenuItem onClick={() => setEdit(language)}>
                 <Edit />
-                Edit {language.name} ({language.code})
+                {t('settings.languages.editNamed', {
+                  name: language.name,
+                  code: language.code,
+                })}
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>

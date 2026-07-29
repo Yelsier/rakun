@@ -2,6 +2,7 @@
 
 import { CodeBlock } from "./CodeBlock";
 
+import { useTranslations } from '@/i18n'
 import { Badge } from "@/components/ui/badge";
 
 type JsonSchema = Record<string, unknown>;
@@ -55,17 +56,21 @@ const SchemaBadges = ({
 }: {
   schema: JsonSchema;
   required?: boolean;
-}) => (
+}) => {
+  const t = useTranslations()
+  return (
   <div className="flex shrink-0 flex-wrap items-center gap-1.5">
     <Badge variant="secondary">{getSchemaType(schema)}</Badge>
-    {required ? <Badge variant="outline">required</Badge> : null}
+    {required ? <Badge variant="outline">{t('common.required')}</Badge> : null}
     {typeof schema.format === "string" ? (
       <Badge variant="outline">{schema.format}</Badge>
     ) : null}
   </div>
-);
+  )
+};
 
 const SchemaMeta = ({ schema }: { schema: JsonSchema }) => {
+  const t = useTranslations()
   const enumValues = Array.isArray(schema.enum) ? schema.enum : [];
 
   return (
@@ -74,22 +79,34 @@ const SchemaMeta = ({ schema }: { schema: JsonSchema }) => {
         <span>{schema.description}</span>
       ) : null}
       {"default" in schema ? (
-        <span>default: {formatValue(schema.default)}</span>
+        <span>
+          {t('apiRoutes.schemaDefault')} {formatValue(schema.default)}
+        </span>
       ) : null}
       {enumValues.length > 0 ? (
-        <span>values: {enumValues.map(formatValue).join(", ")}</span>
+        <span>
+          {t('apiRoutes.schemaValues')} {enumValues.map(formatValue).join(", ")}
+        </span>
       ) : null}
       {typeof schema.minimum === "number" ? (
-        <span>min: {schema.minimum}</span>
+        <span>
+          {t('apiRoutes.schemaMin')} {schema.minimum}
+        </span>
       ) : null}
       {typeof schema.maximum === "number" ? (
-        <span>max: {schema.maximum}</span>
+        <span>
+          {t('apiRoutes.schemaMax')} {schema.maximum}
+        </span>
       ) : null}
       {typeof schema.minLength === "number" ? (
-        <span>min length: {schema.minLength}</span>
+        <span>
+          {t('apiRoutes.schemaMinLength')} {schema.minLength}
+        </span>
       ) : null}
       {typeof schema.maxLength === "number" ? (
-        <span>max length: {schema.maxLength}</span>
+        <span>
+          {t('apiRoutes.schemaMaxLength')} {schema.maxLength}
+        </span>
       ) : null}
     </div>
   );
@@ -190,13 +207,18 @@ const RootSchemaNode = ({ schema }: { schema: JsonSchema }) => (
   </div>
 );
 
-export function SchemaViewer({ schema }: { schema?: unknown }) {
+export function SchemaViewer({
+  schema,
+}: {
+  schema?: unknown
+}) {
+  const t = useTranslations()
   const schemaRecord = asRecord(schema);
 
   if (!schemaRecord) {
     return (
       <div className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
-        No schema
+        {t('apiRoutes.noSchema')}
       </div>
     );
   }
@@ -206,7 +228,7 @@ export function SchemaViewer({ schema }: { schema?: unknown }) {
       <RootSchemaNode schema={schemaRecord} />
       <details className="mt-2 rounded-md border bg-muted/20 px-3 py-2">
         <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
-          Raw JSON Schema
+          {t('apiRoutes.rawJsonSchema')}
         </summary>
         <CodeBlock className="mt-3 min-h-0">
           {JSON.stringify(schemaRecord, null, 2)}

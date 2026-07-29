@@ -1,8 +1,10 @@
 import { Command } from 'lucide-react'
 
 import { Skeleton } from '@/components/ui/skeleton'
+import { useTranslations } from '@/i18n'
 
 export const ManagerLoadingFallback = () => {
+  const t = useTranslations()
   const sidebarItems = Array.from({ length: 7 }, (_, index) => index)
   const cards = Array.from({ length: 3 }, (_, index) => index)
   const rows = Array.from({ length: 8 }, (_, index) => index)
@@ -14,7 +16,7 @@ export const ManagerLoadingFallback = () => {
       className="bg-sidebar flex min-h-svh w-full overflow-hidden"
       role="status"
     >
-      <span className="sr-only">Loading manager</span>
+      <span className="sr-only">{t('common.loadingManager')}</span>
 
       <aside className="hidden w-64 shrink-0 flex-col border-r bg-sidebar p-2 text-sidebar-foreground md:flex">
         <div className="flex h-14 items-center gap-2 px-2">

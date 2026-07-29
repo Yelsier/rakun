@@ -54,6 +54,7 @@ import PreviewsViewLoader from './views/PreviewsViewLoader'
 
 import type { MediaRecord } from '@/lib/media'
 import type { FolderItem } from '@/components/media/contexts/MediaLibraryContext'
+import { useTranslations } from '@/i18n'
 import { useMedia } from '@/media'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 
@@ -79,6 +80,7 @@ const isMediaRecord = (item: MediaRecord | FolderItem): item is MediaRecord =>
   '_type' in item && item._type === 'Media'
 
 export default function Previews() {
+  const t = useTranslations()
   const managerClient = useManagerClient()
   const queryClient = useQueryClient()
   const { uploadMedia } = useMedia()
@@ -344,7 +346,7 @@ export default function Previews() {
             }
 
             setDeleteTarget(null)
-            toast.success('Folder deleted successfully')
+            toast.success(t('media.folderDeleted'))
           },
         }
       )
@@ -361,7 +363,9 @@ export default function Previews() {
           await Promise.all([refetch(), refetchChildFolders(), refetchFoldersTree()])
           setDeleteTarget(null)
           toast.success(
-            `${deleteTarget.contentType === 'MediaFolder' ? 'Folder' : 'File'} deleted successfully`
+            deleteTarget.contentType === 'MediaFolder'
+              ? t('media.folderDeleted')
+              : t('media.fileDeleted'),
           )
         },
       }
@@ -407,7 +411,9 @@ export default function Previews() {
           await Promise.all([refetch(), refetchChildFolders(), refetchFoldersTree()])
           setEditTarget(null)
           toast.success(
-            `${editTarget.contentType === 'MediaFolder' ? 'Folder' : 'File'} updated successfully`
+            editTarget.contentType === 'MediaFolder'
+              ? t('media.folderUpdated')
+              : t('media.fileUpdated'),
           )
         },
       }
@@ -486,14 +492,15 @@ export default function Previews() {
       setMoveTarget(null)
       setDestinationFolderId('')
       clearBulkSelection()
-      toast.success(`${successCount} file${successCount === 1 ? '' : 's'} moved successfully`)
+      toast.success(t('media.filesMoved', { count: successCount }))
     }
 
     if (failedCount > 0) {
       toast.error(
-        `${failedCount} file${failedCount === 1 ? '' : 's'} failed. ${getActionErrorMessage(
-          lastError
-        )}`
+        t('media.filesFailed', {
+          count: failedCount,
+          reason: getActionErrorMessage(lastError),
+        }),
       )
     }
 
@@ -547,7 +554,9 @@ export default function Previews() {
       setImageEditTarget(item)
       setImageEditUrl(url)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not open image editor')
+      toast.error(
+        error instanceof Error ? error.message : t('media.openImageEditorError'),
+      )
     }
   }
 
@@ -566,9 +575,11 @@ export default function Previews() {
       await refetch()
       setImageEditTarget(null)
       setImageEditUrl('')
-      toast.success('Edited image saved')
+      toast.success(t('media.editedImageSaved'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not save edited image')
+      toast.error(
+        error instanceof Error ? error.message : t('media.saveEditedImageError'),
+      )
     } finally {
       setIsSavingImageEdit(false)
     }
@@ -603,9 +614,13 @@ export default function Previews() {
         alt: alt || undefined,
       })
       await refetch()
-      toast.success('Image details saved')
+      toast.success(t('media.imageDetailsSaved'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not save image details')
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t('media.saveImageDetailsError'),
+      )
     }
   }
 
@@ -661,14 +676,15 @@ export default function Previews() {
       await Promise.all([refetch(), refetchChildFolders(), refetchFoldersTree()])
       setBulkDeleteOpen(false)
       clearBulkSelection()
-      toast.success(`${successCount} file${successCount === 1 ? '' : 's'} deleted successfully`)
+      toast.success(t('media.filesDeletedCount', { count: successCount }))
     }
 
     if (failedCount > 0) {
       toast.error(
-        `${failedCount} file${failedCount === 1 ? '' : 's'} failed. ${getActionErrorMessage(
-          lastError
-        )}`
+        t('media.filesFailed', {
+          count: failedCount,
+          reason: getActionErrorMessage(lastError),
+        }),
       )
     }
 
@@ -769,7 +785,7 @@ export default function Previews() {
             }}
           >
             <FolderPlus className="size-4" />
-            <span className="truncate">Create folder</span>
+            <span className="truncate">{t('media.createFolder')}</span>
           </Button>
           {showChildFoldersSkeleton
             ? Array.from({ length: 4 }).map((_, index) => (
@@ -841,9 +857,9 @@ export default function Previews() {
                   <div className="flex items-center justify-center rounded-full border p-2.5">
                     <Upload className="size-6 text-muted-foreground" />
                   </div>
-                  <p className="font-medium text-sm">Drag & drop files here</p>
+                  <p className="font-medium text-sm">{t('media.dragDropFiles')}</p>
                   <p className="text-muted-foreground text-xs">
-                    Upload max 20 files each up to 5MB
+                    {t('media.uploadLimits')}
                   </p>
                 </div>
               </div>
@@ -852,7 +868,7 @@ export default function Previews() {
 
               {!showMediaSkeleton && media.length === 0 ? (
                 <Card className="w-full p-8 text-center text-muted-foreground text-sm">
-                  No files in this folder yet.
+                  {t('media.emptyFolder')}
                 </Card>
               ) : null}
 
@@ -905,15 +921,14 @@ export default function Previews() {
         <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Delete selected files</DialogTitle>
+              <DialogTitle>{t('media.bulkDeleteTitle')}</DialogTitle>
               <DialogDescription>
-                This will delete {bulkSelectedCount} selected file
-                {bulkSelectedCount === 1 ? '' : 's'}.
+                {t('media.bulkDeleteDescription', { count: bulkSelectedCount })}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="ghost" onClick={() => setBulkDeleteOpen(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 variant="destructive"
@@ -921,7 +936,7 @@ export default function Previews() {
                 disabled={bulkSelectedCount === 0}
                 onClick={() => void handleConfirmBulkDelete()}
               >
-                Delete
+                {t('common.delete')}
               </Button>
             </DialogFooter>
           </DialogContent>

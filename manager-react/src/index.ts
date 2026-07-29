@@ -19,3 +19,4 @@ export * from "./state/session";
 export * from "./client/trpc";
 export * from "./link";
 export * from './plugins'
+export * from './i18n'

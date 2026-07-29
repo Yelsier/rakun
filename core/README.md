@@ -128,6 +128,63 @@ placeholder so module cards keep a consistent height.
 
 `ensureRakunBootstrap(options)` only calls `rakunBootstrap` if the runtime has not been bootstrapped yet.
 
+English is built into `@rakun-kit/manager-react`. Install only the extra
+manager UI locales an application needs:
+
+```sh
+bun add @rakun-kit/manager-locales
+# or: npm install @rakun-kit/manager-locales
+```
+
+Import the required language subpath and register it with `managerLanguages`;
+the public `manager.uiLocales` operation returns configured packs to the
+manager client:
+
+```ts
+import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'
+
+rakunBootstrap({
+  // ...
+  managerLanguages: [esManagerLocalePack],
+})
+```
+
+`managerLanguages` may also extend locales with arbitrary project keys. This is
+useful for translatable content-type titles and categories without adding host
+keys to the manager's static `ManagerMessageKey` union:
+
+```ts
+import { extendManagerLanguagePack } from '@rakun-kit/core/contracts'
+import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'
+
+rakunBootstrap({
+  // ...
+  managerLanguages: [
+    {
+      code: 'en',
+      name: 'English',
+      messages: {
+        'field.title': 'Title',
+        'layoutModule.header': 'Header',
+        'project.contentTypes.article.menu': 'Articles',
+      },
+    },
+    extendManagerLanguagePack(esManagerLocalePack, {
+      'field.title': 'Título',
+      'layoutModule.header': 'Cabecera',
+      'project.contentTypes.article.menu': 'Artículos',
+    }),
+  ],
+})
+```
+
+Content-type field labels automatically use `field.<fieldName>` from these
+project messages. Missing translations fall back to a built-in manager label
+when available and otherwise to the humanized field name.
+
+Route layout module labels use `layoutModule.<layoutKey>`, so a slot configured
+with `key: 'header'` resolves `layoutModule.header`.
+
 ## Plugins
 
 Trusted server plugins contribute to the same bootstrap registry without coupling
@@ -697,8 +754,8 @@ Bootstrap receives `literals`. Related utilities:
 
 - `getTranslation`: resolves translatable values.
 - `translateObject`: translates objects with translatable fields.
-- `managerLiterals`: base manager texts.
-- Manager schemas for listing/upserting literals.
+- Manager schemas for listing/upserting website literals (not manager UI chrome).
+
 
 Translatable values use this shape:
 

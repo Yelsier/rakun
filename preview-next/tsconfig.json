@@ -28,6 +28,7 @@
       "@rakun-kit/core/internal-content-types/*": ["../core/src/internal-content-types/*.ts"],
       "@rakun-kit/core/types": ["../core/src/lib/types/index.ts"],
       "@rakun-kit/manager-react": ["../manager-react/src/index.ts"],
+      "@rakun-kit/manager-react/locales": ["../manager-react/src/locales.ts"],
       "@rakun-kit/manager-react/*": ["../manager-react/src/*"],
       "@rakun-kit/next": ["../next/src/index.ts"],
       "@rakun-kit/next/*": ["../next/src/*"],

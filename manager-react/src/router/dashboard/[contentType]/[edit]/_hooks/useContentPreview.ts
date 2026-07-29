@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { useTranslations } from '@/i18n'
+
 import type { ContentTypeRouteMeta } from '../edit.types'
 
 import { useManagerMutation } from '@/client/react'
@@ -110,6 +112,7 @@ export const useContentPreview = ({
   previewRoute,
   readFormData,
 }: UseContentPreviewParams) => {
+  const t = useTranslations()
   const { mutateAsync: createPreview, isPending: isPreviewPending } = useManagerMutation(
     'manager.preview.create',
   )
@@ -306,7 +309,7 @@ export const useContentPreview = ({
       if (requestId !== previewRequestId.current) return
 
       setPreviewError('Preview could not be loaded')
-      toast.error('Preview could not be loaded')
+      toast.error(t('contentEdit.previewCouldNotLoad'))
     }
   }, [
     contentTypeId,

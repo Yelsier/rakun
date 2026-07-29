@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useTranslations } from '@/i18n'
 
 export const EditLanguage = ({
   refetch,
@@ -22,6 +23,7 @@ export const EditLanguage = ({
   defaultValues: ManagerLanguageRecord | null
   setEdit: (language: null) => void
 }) => {
+  const t = useTranslations()
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -39,10 +41,10 @@ export const EditLanguage = ({
     <Dialog open={open} onOpenChange={handleDialogChange}>
       <DialogContent aria-describedby='Edit language'>
         <DialogHeader>
-          <DialogTitle>Edit language</DialogTitle>
+          <DialogTitle>{t('settings.languages.editTitle')}</DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          Edit the language by filling out the form.
+          {t('settings.languages.editDescription')}
         </DialogDescription>
         <EditLanguageForm
           defaultValues={defaultValues ?? undefined}

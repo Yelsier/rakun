@@ -13,10 +13,12 @@ import Loading from '@/components/loading'
 import { PaginationController } from '@/components/PaginationController'
 import { DataTable } from '@/components/ui/data-table'
 import UnauthorizedMessage from '@/components/unauthorized'
+import { useTranslations } from '@/i18n'
 import { useSession } from '@/state/session'
 import { useManagerUsers } from '@/state/users'
 
 export function ManagerUsersScreen() {
+  const t = useTranslations()
   const [page, setPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [edit, setEdit] = useState<ManagerUserRecord | null>(null)
@@ -83,6 +85,7 @@ export function ManagerUsersScreen() {
             setDeleteUser,
             hasPermissions,
             hasAnyPermission,
+            t,
           })}
           data={listQuery.data.items as ManagerUserRecord[]}
         />

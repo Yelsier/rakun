@@ -22,9 +22,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useTranslations } from '@/i18n'
 import { useSession } from '@/state/session'
 
 export const ManagerSettingsRoutePathsScreen = () => {
+  const t = useTranslations()
   const { hasPermissions } = useSession()
   const [page, setPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
@@ -82,14 +84,14 @@ export const ManagerSettingsRoutePathsScreen = () => {
     try {
       const result = await regenerateMutation.mutateAsync(undefined)
       if (!result.ok) {
-        toast.error('Error regenerating routes')
+        toast.error(t('settings.routes.regenerateError'))
       } else {
-        toast.success('Routes regenerated successfully')
+        toast.success(t('settings.routes.regenerated'))
       }
       await listQuery.refetch()
       setConfirmOpen(false)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error regenerating routes')
+      toast.error(error instanceof Error ? error.message : t('settings.routes.regenerateError'))
     }
   }
 
@@ -99,12 +101,12 @@ export const ManagerSettingsRoutePathsScreen = () => {
         <SearchInput
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search path..."
+          placeholder={t('settings.routes.searchPath')}
           className="max-w-md"
         />
         {canUpdateRoutes ? (
           <div data-tour="route-paths-regenerate">
-            <Button onClick={() => setConfirmOpen(true)}>Regenerar rutas</Button>
+            <Button onClick={() => setConfirmOpen(true)}>{t('settings.routes.regenerate')}</Button>
           </div>
         ) : null}
       </div>
@@ -112,7 +114,7 @@ export const ManagerSettingsRoutePathsScreen = () => {
         <DataTable
           sorting={sorting}
           setSorting={setSorting}
-          columns={columns()}
+          columns={columns({ t })}
           data={listQuery.data.items as RouteMapRecord[]}
         />
       </div>
@@ -126,22 +128,21 @@ export const ManagerSettingsRoutePathsScreen = () => {
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent aria-describedby="Confirm action">
           <DialogHeader>
-            <DialogTitle>Regenerate all routes</DialogTitle>
+            <DialogTitle>{t('settings.routes.regenerateTitle')}</DialogTitle>
           </DialogHeader>
           <DialogDescription>
-            Are you sure you want to regenerate all routes? This process can be time-consuming if
-            the number of routes is large.
+{t('settings.routes.regenerateDescription')}
           </DialogDescription>
           <DialogFooter className="flex w-full justify-between gap-2">
             <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               loading={regenerateMutation.isPending}
               variant="destructive"
               onClick={() => void handleRegenerate()}
             >
-              Yes, regenerate
+              {t('settings.routes.regenerateConfirm')}
             </Button>
           </DialogFooter>
         </DialogContent>

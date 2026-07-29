@@ -24,6 +24,7 @@ export * from "./schemas/manager/preview";
 export * from "./schemas/manager/updatePassword";
 export * from "./schemas/manager/literals/list";
 export * from "./schemas/manager/literals/upsert";
+export * from "./schemas/manager/uiLocales";
 export * from "./schemas/manager/auth/accountInfo";
 export * from "./schemas/manager/auth/tutorials";
 export * from "./schemas/manager/auth/login";

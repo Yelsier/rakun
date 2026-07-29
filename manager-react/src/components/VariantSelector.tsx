@@ -13,6 +13,7 @@ import {
 } from './ui/select'
 
 import { useManagerQuery } from '@/client/react'
+import { useTranslations } from '@/i18n'
 import { useManagerNavigation } from '@/state/navigation'
 
 export const VariantSelector = ({
@@ -24,6 +25,7 @@ export const VariantSelector = ({
   documentId: string
   routeKey?: string
 }) => {
+  const t = useTranslations()
   const navigation = useManagerNavigation()
   const input = routeKey
     ? {
@@ -61,15 +63,15 @@ export const VariantSelector = ({
     >
       <SelectTrigger className="w-48 border-0 shadow-none">
         <GitBranch />
-        <SelectValue placeholder="Select variant" />
+        <SelectValue placeholder={t('variantSelector.placeholder')} />
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
-          <SelectLabel>Variants</SelectLabel>
+          <SelectLabel>{t('contentList.variants')}</SelectLabel>
           {variants.map((variant) => (
             <SelectItem key={variant.documentId} value={variant.documentId}>
               {variant.role === 'primary'
-                ? `Default · ${variant.label}`
+                ? t('variantSelector.defaultLabel', { label: variant.label })
                 : variant.label}
             </SelectItem>
           ))}

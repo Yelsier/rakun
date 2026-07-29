@@ -16,9 +16,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UpdatePassword } from '@/components/update-password'
 import { uploadMediaFile, type MediaRecord } from '@/media'
+import { useTranslations } from '@/i18n'
 import { useSession } from '@/state/session'
 
 export function ManagerAccountScreen() {
+  const t = useTranslations()
   const managerClient = useManagerClient()
   const { user, setUser } = useSession()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -55,7 +57,7 @@ export function ManagerAccountScreen() {
     if (!file) return
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Profile image must be an image file')
+      toast.error(t('account.profileImageMustBeImage'))
       return
     }
 
@@ -104,9 +106,9 @@ export function ManagerAccountScreen() {
         URL.revokeObjectURL(avatarPreview)
         setAvatarPreview(null)
       }
-      toast.success('Account updated')
+      toast.success(t('account.updated'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not update account')
+      toast.error(error instanceof Error ? error.message : t('account.updateError'))
     }
   }
 
@@ -118,7 +120,7 @@ export function ManagerAccountScreen() {
     <div className="container mx-auto flex flex-col items-start gap-6 px-4 py-10">
       <Card className="w-full rounded-lg" data-tour="account-profile">
         <CardHeader className="flex-row items-center justify-between gap-4">
-          <CardTitle>Profile</CardTitle>
+          <CardTitle>{t('account.profile')}</CardTitle>
           <UpdatePassword />
         </CardHeader>
         <CardContent className="flex flex-col gap-5 md:flex-row">
@@ -138,16 +140,16 @@ export function ManagerAccountScreen() {
                 className="hidden"
                 onChange={(event) => handleAvatarFile(event.target.files?.[0])}
               />
-              <Label htmlFor="account-avatar">Avatar</Label>
+              <Label htmlFor="account-avatar">{t('account.avatar')}</Label>
               <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
                 <Upload />
-                Upload image
+                {t('account.uploadImage')}
               </Button>
             </div>
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="account-name">Name</Label>
+            <Label htmlFor="account-name">{t('fields.name')}</Label>
             <Input
               id="account-name"
               value={name}
@@ -156,7 +158,7 @@ export function ManagerAccountScreen() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="account-username">Username</Label>
+            <Label htmlFor="account-username">{t('common.username')}</Label>
             <Input
               id="account-username"
               value={username}
@@ -170,7 +172,7 @@ export function ManagerAccountScreen() {
             onClick={() => void saveProfile()}
           >
             <Save />
-            Save
+            {t('common.save')}
           </Button>
         </CardContent>
       </Card>

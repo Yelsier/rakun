@@ -11,6 +11,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import type { useTranslations } from '@/i18n'
+
+type Translate = ReturnType<typeof useTranslations>
 
 export type RobotsRuleManager = {
   _id: string
@@ -30,40 +33,42 @@ export const columns = ({
   onDelete,
   canEditItem,
   canDeleteItem,
+  t,
 }: {
   onEdit: (item: RobotsRuleManager) => void
   onDelete: (item: RobotsRuleManager) => void
   canEditItem: (item: RobotsRuleManager) => boolean
   canDeleteItem: (item: RobotsRuleManager) => boolean
+  t: Translate
 }): ColumnDef<RobotsRuleManager>[] => [
   {
     accessorKey: 'enabled',
-    header: () => <span className='ml-2'>Enabled</span>,
+    header: () => <span className='ml-2'>{t('common.enabled')}</span>,
     cell: ({ row }) => <BooleanIndicator value={row.original.enabled} />,
   },
   {
     accessorKey: 'order',
-    header: () => <span className='ml-2'>Order</span>,
+    header: () => <span className='ml-2'>{t('common.order')}</span>,
     cell: ({ row }) => <span className='ml-2'>{row.original.order}</span>,
   },
   {
     accessorKey: 'name',
-    header: () => <span className='ml-2'>Name</span>,
+    header: () => <span className='ml-2'>{t('fields.name')}</span>,
     cell: ({ row }) => <span className='ml-2'>{row.original.name}</span>,
   },
   {
     accessorKey: 'directive',
-    header: () => <span className='ml-2'>Directive</span>,
+    header: () => <span className='ml-2'>{t('settings.robots.directive')}</span>,
     cell: ({ row }) => <span className='ml-2'>{row.original.directive}</span>,
   },
   {
     accessorKey: 'userAgent',
-    header: () => <span className='ml-2'>User-agent</span>,
+    header: () => <span className='ml-2'>{t('settings.robots.userAgent')}</span>,
     cell: ({ row }) => <span className='ml-2 font-mono text-xs'>{row.original.userAgent}</span>,
   },
   {
     id: 'target',
-    header: () => <span className='ml-2'>Target</span>,
+    header: () => <span className='ml-2'>{t('settings.robots.target')}</span>,
     cell: ({ row }) => (
       <span className='ml-2 font-mono text-xs'>
         {row.original.directive === 'crawlDelay'
@@ -85,7 +90,7 @@ export const columns = ({
               variant='ghost'
               className='m-auto flex h-8 w-8 items-center justify-center p-0!'
             >
-              <span className='sr-only'>Open menu</span>
+              <span className='sr-only'>{t('common.openMenu')}</span>
               <MoreHorizontal />
             </Button>
           </DropdownMenuTrigger>
@@ -93,7 +98,7 @@ export const columns = ({
             {canEditItem(item) ? (
               <DropdownMenuItem onClick={() => onEdit(item)}>
                 <Edit />
-                Edit
+                {t('common.edit')}
               </DropdownMenuItem>
             ) : null}
             {canDeleteItem(item) ? (
@@ -102,7 +107,7 @@ export const columns = ({
                 className='text-destructive'
               >
                 <Trash className='text-destructive' />
-                Delete
+                {t('common.delete')}
               </DropdownMenuItem>
             ) : null}
           </DropdownMenuContent>

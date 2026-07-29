@@ -5,9 +5,9 @@ import { HelloWorld } from '@rakun-kit/next/internal-content-types'
 export const Header = new ContentType({
   name: 'Header',
   menu: {
-    title: 'Headers',
+    title: 'preview.contentTypes.header.menu',
     icon: 'PanelTop',
-    category: 'Layout',
+    category: 'preview.contentTypes.category.layout',
   },
   fields: {
     brand: Fields.string().required(),
@@ -22,9 +22,9 @@ export const Header = new ContentType({
 export const Footer = new ContentType({
   name: 'Footer',
   menu: {
-    title: 'Footers',
+    title: 'preview.contentTypes.footer.menu',
     icon: 'panel-bottom',
-    category: 'Layout',
+    category: 'preview.contentTypes.category.layout',
   },
   fields: {
     brand: Fields.string().required(),
@@ -40,9 +40,9 @@ export const Footer = new ContentType({
 export const PageSection = new ContentType({
   name: 'PageSection',
   menu: {
-    title: 'Page sections',
+    title: 'preview.contentTypes.pageSection.menu',
     icon: 'LayoutTemplate',
-    category: 'Blocks',
+    category: 'preview.contentTypes.category.blocks',
   },
   fields: {
     title: Fields.string().required().translatable(),
@@ -55,9 +55,9 @@ export const Category = new ContentType({
   name: 'Category',
   dynamicDataSource: true,
   menu: {
-    title: 'Categories',
+    title: 'preview.contentTypes.category.menu',
     icon: 'Tags',
-    category: 'Dynamic data',
+    category: 'preview.contentTypes.category.dynamicData',
   },
   iterator: [
     {
@@ -101,9 +101,9 @@ export const Project = new ContentType({
   name: 'Project',
   dynamicDataSource: true,
   menu: {
-    title: 'Projects',
+    title: 'preview.contentTypes.project.menu',
     icon: 'FolderKanban',
-    category: 'Dynamic data',
+    category: 'preview.contentTypes.category.dynamicData',
   },
   fields: {
     title: Fields.string().required(),
@@ -136,9 +136,9 @@ export const FeatureCarouselItem = new ContentType({
 export const FeatureCarousel = new ContentType({
   name: 'FeatureCarousel',
   menu: {
-    title: 'Feature carousels',
+    title: 'preview.contentTypes.featureCarousel.menu',
     icon: 'GalleryHorizontalEnd',
-    category: 'Dynamic data',
+    category: 'preview.contentTypes.category.dynamicData',
   },
   modulePicker: {
     preview: '/dynamic-data/aurora.svg',
@@ -168,9 +168,9 @@ export const CategoriesGalleryItem = new ContentType({
 export const CategoriesGallery = new ContentType({
   name: 'CategoriesGallery',
   menu: {
-    title: 'Category galleries',
+    title: 'preview.contentTypes.categoriesGallery.menu',
     icon: 'Images',
-    category: 'Dynamic data',
+    category: 'preview.contentTypes.category.dynamicData',
   },
   fields: {
     eyebrow: Fields.string(),
@@ -207,7 +207,7 @@ export const PreviewPage = new ContentType({
     },
   ],
   menu: {
-    title: 'Pages',
+    title: 'preview.contentTypes.page.menu',
   },
   listFields: ['title', 'slug'],
   uniques: [['slug']],
@@ -219,9 +219,9 @@ export const PreviewPage = new ContentType({
 export const Author = new ContentType({
   name: 'Author',
   menu: {
-    title: 'Authors',
+    title: 'preview.contentTypes.author.menu',
     icon: 'user-round',
-    category: 'Editorial',
+    category: 'preview.contentTypes.category.editorial',
   },
   fields: {
     name: Fields.string().required(),
@@ -234,9 +234,9 @@ export const Author = new ContentType({
 export const Article = new ContentType({
   name: 'Article',
   menu: {
-    title: 'Articles',
+    title: 'preview.contentTypes.article.menu',
     icon: 'newspaper',
-    category: 'Editorial',
+    category: 'preview.contentTypes.category.editorial',
   },
   fields: {
     title: Fields.string().required(),
@@ -265,9 +265,9 @@ export const RelationLevel3 = new ContentType({
 export const RelationLevel2 = new ContentType({
   name: 'RelationLevel2',
   menu: {
-    title: 'Relations level 2',
+    title: 'preview.contentTypes.relationLevel2.menu',
     icon: 'PanelsTopLeft',
-    category: 'Development',
+    category: 'preview.contentTypes.category.development',
   },
   fields: {
     title: Fields.string().required(),
@@ -283,9 +283,9 @@ export const RelationLevel2 = new ContentType({
 export const RelationPlayground = new ContentType({
   name: 'RelationPlayground',
   menu: {
-    title: 'Relations playground',
+    title: 'preview.contentTypes.relationPlayground.menu',
     icon: 'Network',
-    category: 'Development',
+    category: 'preview.contentTypes.category.development',
   },
   fields: {
     title: Fields.string().required(),
@@ -317,9 +317,9 @@ export const RelationPlayground = new ContentType({
 export const ImagePlayground = new ContentType({
   name: 'ImagePlayground',
   menu: {
-    title: 'Images playground',
+    title: 'preview.contentTypes.imagePlayground.menu',
     icon: 'Images',
-    category: 'Development',
+    category: 'preview.contentTypes.category.development',
   },
   fields: {
     title: Fields.string().required(),
@@ -332,9 +332,9 @@ export const ImagePlayground = new ContentType({
 export const ConditionalDemo = new ContentType({
   name: 'ConditionalDemo',
   menu: {
-    title: 'Conditional demos',
+    title: 'preview.contentTypes.conditionalDemo.menu',
     icon: 'ListChecks',
-    category: 'Development',
+    category: 'preview.contentTypes.category.development',
   },
   fields: {
     title: Fields.string().required(),
@@ -366,9 +366,9 @@ export const ConditionalDemo = new ContentType({
 export const TranslationPlayground = new ContentType({
   name: 'TranslationPlayground',
   menu: {
-    title: 'Translation playground',
+    title: 'preview.contentTypes.translationPlayground.menu',
     icon: 'Languages',
-    category: 'Development',
+    category: 'preview.contentTypes.category.development',
   },
   fields: {
     title: Fields.string().required().translatable(),

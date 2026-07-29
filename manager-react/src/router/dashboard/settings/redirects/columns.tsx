@@ -11,6 +11,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import type { useTranslations } from '@/i18n'
+
+type Translate = ReturnType<typeof useTranslations>
 
 export type RedirectManager = {
   _id: string
@@ -40,33 +43,35 @@ export const columns = ({
   onDelete,
   canEditItem,
   canDeleteItem,
+  t,
 }: {
   onEdit: (item: RedirectManager) => void
   onDelete: (item: RedirectManager) => void
   canEditItem: (item: RedirectManager) => boolean
   canDeleteItem: (item: RedirectManager) => boolean
+  t: Translate
 }): ColumnDef<RedirectManager>[] => {
   return [
     {
       accessorKey: 'enabled',
-      header: () => <span className='ml-2'>Enabled</span>,
+      header: () => <span className='ml-2'>{t('common.enabled')}</span>,
       cell: ({ row }) => <BooleanIndicator value={row.original.enabled} />,
     },
     {
       accessorKey: 'name',
-      header: () => <span className='ml-2'>Name</span>,
+      header: () => <span className='ml-2'>{t('fields.name')}</span>,
       cell: ({ row }) => <span className='ml-2'>{row.original.name}</span>,
     },
     {
       accessorKey: 'sourcePath',
-      header: () => <span className='ml-2'>From</span>,
+      header: () => <span className='ml-2'>{t('common.from')}</span>,
       cell: ({ row }) => (
         <span className='ml-2 font-mono text-xs'>{row.original.sourcePath}</span>
       ),
     },
     {
       accessorKey: 'destinationPath',
-      header: () => <span className='ml-2'>To</span>,
+      header: () => <span className='ml-2'>{t('common.to')}</span>,
       cell: ({ row }) => (
         <span className='ml-2 font-mono text-xs'>
           {row.original.destinationPath}
@@ -75,7 +80,7 @@ export const columns = ({
     },
     {
       accessorKey: 'statusMode',
-      header: () => <span className='ml-2'>Status</span>,
+      header: () => <span className='ml-2'>{t('fields.status')}</span>,
       cell: ({ row }) => (
         <span className='ml-2'>
           {row.original.statusMode === 'custom'
@@ -86,7 +91,7 @@ export const columns = ({
     },
     {
       accessorKey: 'functionName',
-      header: () => <span className='ml-2'>Function</span>,
+      header: () => <span className='ml-2'>{t('common.function')}</span>,
       cell: ({ row }) => (
         <span className='ml-2'>{row.original.functionName}</span>
       ),
@@ -104,7 +109,7 @@ export const columns = ({
                 variant='ghost'
                 className='m-auto flex h-8 w-8 items-center justify-center p-0!'
               >
-                <span className='sr-only'>Open menu</span>
+                <span className='sr-only'>{t('common.openMenu')}</span>
                 <MoreHorizontal />
               </Button>
             </DropdownMenuTrigger>
@@ -112,7 +117,7 @@ export const columns = ({
               {canEditItem(item) && (
                 <DropdownMenuItem onClick={() => onEdit(item)}>
                   <Edit />
-                  Edit
+                  {t('common.edit')}
                 </DropdownMenuItem>
               )}
               {canDeleteItem(item) && (
@@ -121,7 +126,7 @@ export const columns = ({
                   className='text-destructive'
                 >
                   <Trash className='text-destructive' />
-                  Delete
+                  {t('common.delete')}
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>

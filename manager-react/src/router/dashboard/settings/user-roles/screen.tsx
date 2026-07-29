@@ -12,9 +12,11 @@ import Loading from '@/components/loading'
 import { PaginationController } from '@/components/PaginationController'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
+import { useTranslations } from '@/i18n'
 import { useSession } from '@/state/session'
 
 export const ManagerSettingsUserRolesScreen = () => {
+  const t = useTranslations()
   const [page, setPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [deleteRole, setDeleteRole] = useState<ManagerRoleRecord | null>(null)
@@ -52,7 +54,7 @@ export const ManagerSettingsUserRolesScreen = () => {
     <div className="container mx-auto flex flex-col items-start gap-6 py-10">
       {hasPermissions(['content.ManagerRole.updateAny']) && (
         <Button asChild className="self-end">
-          <ManagerLink href="/settings/user-roles/create">Add Role</ManagerLink>
+          <ManagerLink href="/settings/user-roles/create">{t('settings.roles.add')}</ManagerLink>
         </Button>
       )}
       <DeleteRole
@@ -65,6 +67,7 @@ export const ManagerSettingsUserRolesScreen = () => {
           setDelete: setDeleteRole,
           hasPermissions,
           hasAnyPermission,
+          t,
         })}
         data={listQuery.data.items as ManagerRoleRecord[]}
       />

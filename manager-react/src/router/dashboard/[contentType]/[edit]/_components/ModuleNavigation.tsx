@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { useTranslations } from '@/i18n'
 import { cn } from '@/lib/utils'
 
 type ModuleNavigationItem = {
@@ -174,6 +175,7 @@ const NavigationItems = ({
 )
 
 export const ModuleNavigation = () => {
+  const t = useTranslations()
   const [activeId, setActiveId] = useState<string>()
   const [items, setItems] = useState<ModuleNavigationItem[]>([])
 
@@ -227,8 +229,10 @@ export const ModuleNavigation = () => {
             <ListTree className="size-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold leading-none">Modules</p>
-            <p className="mt-1 text-xs text-muted-foreground">{items.length} top level</p>
+            <p className="text-sm font-semibold leading-none">{t('modules.title')}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t('modules.topLevelCount', { count: items.length })}
+            </p>
           </div>
         </div>
         <ScrollArea className="min-h-0 flex-1">
@@ -236,14 +240,14 @@ export const ModuleNavigation = () => {
             {items.length > 0 ? (
               <NavigationItems activeId={activeId} items={items} onSelect={selectItem} />
             ) : (
-              <p className="px-2 text-xs text-muted-foreground">No modules yet.</p>
+              <p className="px-2 text-xs text-muted-foreground">{t('modules.empty')}</p>
             )}
           </div>
         </ScrollArea>
         <div className="shrink-0 border-t p-3">
           <Button variant="outline" className="w-full justify-start" onClick={openModulePicker}>
             <Plus />
-            Add module
+            {t('modules.addModule')}
           </Button>
         </div>
       </div>

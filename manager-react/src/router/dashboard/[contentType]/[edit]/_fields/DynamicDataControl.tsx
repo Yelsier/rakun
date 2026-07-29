@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslations } from '@/i18n'
+
 import type {
   DynamicBindingSource,
   DynamicDocumentBindings,
@@ -778,6 +780,7 @@ const FieldBindingEditor = ({
   binding: FieldBinding
   onChange: (binding: FieldBinding) => void
 }) => {
+  const t = useTranslations()
   const { language } = useLanguage()
   const [sourceType, setSourceType] = useState(binding?.contentType || '')
   const [sourceId, setSourceId] = useState(
@@ -835,7 +838,7 @@ const FieldBindingEditor = ({
     <PanelSection title='Source value'>
       <div className='grid gap-3 md:grid-cols-[1fr_1.4fr_1fr]'>
         <Label className='grid gap-1.5'>
-          Source
+          {t('dynamicData.source')}
           <Select
             disabled={contentTypes.length === 0}
             value={sourceType}
@@ -874,7 +877,7 @@ const FieldBindingEditor = ({
           </Select>
         </Label>
         <Label className='grid gap-1.5'>
-          Item
+          {t('dynamicData.item')}
           <Select
             disabled={!sourceType || !hasItemOptions}
             value={sourceId}
@@ -892,7 +895,7 @@ const FieldBindingEditor = ({
               <SelectGroup>
                 {hasCurrentDocumentItem ? (
                   <SelectItem value={CURRENT_DOCUMENT_ID}>
-                    Current document
+                    {t('dynamicData.currentDocument')}
                   </SelectItem>
                 ) : null}
                 {items.map((item) => {
@@ -913,7 +916,7 @@ const FieldBindingEditor = ({
           </Select>
         </Label>
         <Label className='grid gap-1.5'>
-          Field
+          {t('dynamicData.field')}
           <Select
             disabled={!sourceType || !sourceId || fieldOptions.length === 0}
             value={fieldPath}
@@ -1114,6 +1117,7 @@ const MappingSourceEditor = ({
   source: ListMapSource
   onChange: (source: ListMapSource) => void
 }) => {
+  const t = useTranslations()
   const relatedSource = isRelatedCollectionSource(source) ? source : undefined
   const directSource =
     source && !isRelatedCollectionSource(source) ? source : undefined
@@ -1146,7 +1150,7 @@ const MappingSourceEditor = ({
       <div className='grid gap-3 md:grid-cols-[0.7fr_1.3fr]'>
         <div className='grid content-start gap-1.5'>
           <ControlLabel help='Choose a direct field or query a related collection.'>
-            Mapping mode
+            {t('dynamicData.mappingMode')}
           </ControlLabel>
           <Select
             value='field'
@@ -1169,16 +1173,16 @@ const MappingSourceEditor = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='field'>Direct field</SelectItem>
+              <SelectItem value='field'>{t('dynamicData.directField')}</SelectItem>
               {relatedContentTypes.length > 0 ? (
-                <SelectItem value='relatedCollection'>Related collection</SelectItem>
+                <SelectItem value='relatedCollection'>{t('dynamicData.relatedCollection')}</SelectItem>
               ) : null}
             </SelectContent>
           </Select>
         </div>
         <div className='grid content-start gap-1.5'>
           <ControlLabel help='Its value will be assigned to this mapped property.'>
-            Field on {currentSource.name}
+            {t('dynamicData.fieldOn')} {currentSource.name}
           </ControlLabel>
           <Select
             disabled={directFieldOptions.length === 0}
@@ -1216,7 +1220,7 @@ const MappingSourceEditor = ({
       <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
         <div className='grid content-start gap-1.5'>
           <ControlLabel help='Query records related to the current source item.'>
-            Mapping mode
+            {t('dynamicData.mappingMode')}
           </ControlLabel>
           <Select
             value='relatedCollection'
@@ -1226,14 +1230,14 @@ const MappingSourceEditor = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='field'>Direct field</SelectItem>
-              <SelectItem value='relatedCollection'>Related collection</SelectItem>
+              <SelectItem value='field'>{t('dynamicData.directField')}</SelectItem>
+              <SelectItem value='relatedCollection'>{t('dynamicData.relatedCollection')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className='grid content-start gap-1.5'>
           <ControlLabel help='Content type whose records will be searched.'>
-            Collection to query
+            {t('dynamicData.collectionToQuery')}
           </ControlLabel>
           <Select
             disabled={relatedContentTypes.length === 0}
@@ -1275,7 +1279,7 @@ const MappingSourceEditor = ({
           <ControlLabel
             help={`Field on ${relatedSource.contentType} that points to ${currentSource.name}.`}
           >
-            Relation to {currentSource.name}
+            {t('dynamicData.relationTo')} {currentSource.name}
           </ControlLabel>
           <Select
             disabled={relationOptions.length === 0}
@@ -1302,7 +1306,7 @@ const MappingSourceEditor = ({
         </div>
         <div className='grid content-start gap-1.5'>
           <ControlLabel help='Arrays from matching records are flattened into one result.'>
-            Array field to collect
+            {t('dynamicData.arrayFieldToCollect')}
           </ControlLabel>
           <Select
             disabled={pathOptions.length === 0}
@@ -1333,7 +1337,7 @@ const MappingSourceEditor = ({
           <ControlLabel
             help={`Number of ${relatedSource.contentType} records queried per ${currentSource.name}. Minimum 1, maximum 100.`}
           >
-            Maximum related records
+            {t('dynamicData.maximumRelatedRecords')}
           </ControlLabel>
           <Input
             type='number'
@@ -1353,7 +1357,7 @@ const MappingSourceEditor = ({
         </div>
         <div className='grid content-start gap-1.5'>
           <ControlLabel help='Optional. Only direct scalar fields can be used.'>
-            Sort related records by
+            {t('dynamicData.sortRelatedRecordsBy')}
           </ControlLabel>
           <Select
             value={sortField || '__none__'}
@@ -1368,10 +1372,10 @@ const MappingSourceEditor = ({
             }
           >
             <SelectTrigger className='w-full'>
-              <SelectValue placeholder='No sort' />
+              <SelectValue placeholder={t('dynamicData.noSort')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='__none__'>No sort</SelectItem>
+              <SelectItem value='__none__'>{t('dynamicData.noSort')}</SelectItem>
               {sortOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
@@ -1382,7 +1386,7 @@ const MappingSourceEditor = ({
         </div>
         <div className='grid content-start gap-1.5'>
           <ControlLabel help='Applied before collecting and flattening the arrays.'>
-            Sort direction
+            {t('dynamicData.sortDirection')}
           </ControlLabel>
           <Select
             disabled={!sortField}
@@ -1400,8 +1404,8 @@ const MappingSourceEditor = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='asc'>Ascending</SelectItem>
-              <SelectItem value='desc'>Descending</SelectItem>
+              <SelectItem value='asc'>{t('dynamicData.ascending')}</SelectItem>
+              <SelectItem value='desc'>{t('dynamicData.descending')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -1425,6 +1429,7 @@ const ListBindingEditor = ({
   binding: DynamicListBinding | undefined
   onChange: (binding: DynamicListBinding | undefined) => void
 }) => {
+  const t = useTranslations()
   const itemOptions = field.fields.filter(
     (item) => item.name !== ITERATOR_FIELD_NAME,
   )
@@ -1536,7 +1541,7 @@ const ListBindingEditor = ({
       <PanelSection title='Collection'>
         <div className='grid gap-3 md:grid-cols-2'>
           <Label className='grid gap-1.5'>
-            Source
+            {t('dynamicData.source')}
             <Select
               disabled={
                 contentTypes.length === 0 && documentSourceOptions.length === 0
@@ -1600,7 +1605,7 @@ const ListBindingEditor = ({
             </Select>
           </Label>
           <Label className='grid gap-1.5'>
-            Item
+            {t('dynamicData.item')}
             <Select
               disabled={!sourceType || itemOptions.length === 0}
               value={itemName}
@@ -1634,7 +1639,7 @@ const ListBindingEditor = ({
         <PanelSection title='Query'>
           <div className='grid grid-cols-[minmax(5rem,0.4fr)_minmax(0,1.2fr)_minmax(8rem,0.6fr)] items-end gap-3'>
           <Label className='grid gap-1.5'>
-            Limit
+            {t('dynamicData.limit')}
             <Input
               type='number'
               min={1}
@@ -1657,7 +1662,7 @@ const ListBindingEditor = ({
             />
           </Label>
           <Label className='grid min-w-0 gap-1.5'>
-            Sort by
+            {t('dynamicData.sortBy')}
             <Select
               disabled={sortFieldOptions.length === 0}
               value={sortField || '__none__'}
@@ -1687,7 +1692,7 @@ const ListBindingEditor = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value='__none__'>No sort</SelectItem>
+                  <SelectItem value='__none__'>{t('dynamicData.noSort')}</SelectItem>
                   {sortFieldOptions.map((item) => (
                     <SelectItem key={item.value} value={item.value}>
                       {item.label}
@@ -1698,7 +1703,7 @@ const ListBindingEditor = ({
             </Select>
           </Label>
           <Label className='grid gap-1.5'>
-            Direction
+            {t('dynamicData.direction')}
             <Select
               disabled={!sortField}
               value={sortDirection}
@@ -1722,8 +1727,8 @@ const ListBindingEditor = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='asc'>Ascending</SelectItem>
-                <SelectItem value='desc'>Descending</SelectItem>
+                <SelectItem value='asc'>{t('dynamicData.ascending')}</SelectItem>
+                <SelectItem value='desc'>{t('dynamicData.descending')}</SelectItem>
               </SelectContent>
             </Select>
           </Label>
@@ -1732,9 +1737,9 @@ const ListBindingEditor = ({
         <div className='grid gap-3 rounded-md border border-border bg-background/60 p-3'>
           <div className='flex flex-wrap items-center justify-between gap-2'>
             <div>
-              <div className='text-sm font-medium'>Conditions</div>
+              <div className='text-sm font-medium'>{t('dynamicData.conditions')}</div>
               <div className='text-xs text-muted-foreground'>
-                Filter the records used to build this list.
+                {t('dynamicData.conditionsDescription')}
               </div>
             </div>
             <div className='flex items-center gap-2'>
@@ -1752,8 +1757,8 @@ const ListBindingEditor = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value='and'>Match all</SelectItem>
-                    <SelectItem value='or'>Match any</SelectItem>
+                    <SelectItem value='and'>{t('dynamicData.matchAll')}</SelectItem>
+                    <SelectItem value='or'>{t('dynamicData.matchAny')}</SelectItem>
                   </SelectContent>
                 </Select>
               ) : null}
@@ -1776,14 +1781,14 @@ const ListBindingEditor = ({
                 }
               >
                 <Plus className='h-4 w-4' />
-                Add condition
+                {t('dynamicData.addCondition')}
               </Button>
             </div>
           </div>
 
           {filterState.conditions.length === 0 ? (
             <div className='rounded-md border border-dashed border-border px-3 py-5 text-center text-sm text-muted-foreground'>
-              No conditions. All records from this collection will match.
+              {t('dynamicData.noConditions')}
             </div>
           ) : (
             <div className='grid gap-2'>
@@ -1824,7 +1829,7 @@ const ListBindingEditor = ({
                       }}
                     >
                       <SelectTrigger className='w-full'>
-                        <SelectValue placeholder='Field' />
+                        <SelectValue placeholder={t('dynamicData.field')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
@@ -1859,7 +1864,7 @@ const ListBindingEditor = ({
                       }
                     >
                       <SelectTrigger className='w-full'>
-                        <SelectValue placeholder='Operator' />
+                        <SelectValue placeholder={t('dynamicData.operator')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
@@ -1893,10 +1898,10 @@ const ListBindingEditor = ({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value='literal'>Fixed value</SelectItem>
+                            <SelectItem value='literal'>{t('dynamicData.fixedValue')}</SelectItem>
                             {allowsCurrentValue ? (
                               <SelectItem value='current'>
-                                Current document
+                                {t('dynamicData.currentDocument')}
                               </SelectItem>
                             ) : null}
                           </SelectContent>
@@ -1913,7 +1918,7 @@ const ListBindingEditor = ({
                             }
                           >
                             <SelectTrigger className='w-full'>
-                              <SelectValue placeholder='Current field' />
+                              <SelectValue placeholder={t('dynamicData.currentField')} />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectGroup>
@@ -1973,7 +1978,7 @@ const ListBindingEditor = ({
                       }
                     >
                       <Trash2 className='h-4 w-4' />
-                      <span className='sr-only'>Remove condition</span>
+                      <span className='sr-only'>{t('dynamicData.removeCondition')}</span>
                     </Button>
                   </div>
                 )
@@ -2024,7 +2029,7 @@ const ListBindingEditor = ({
                           : 'Select a source collection first'}
                       </span>
                       <ChevronRight className='h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-90' />
-                      <span className='sr-only'>Configure {targetField} mapping</span>
+                      <span className='sr-only'>{t('dynamicData.configureMapping', { name: targetField })}</span>
                     </button>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
@@ -2078,6 +2083,7 @@ export const DynamicDataControl = ({
   onOpenChange?: (open: boolean) => void
   mode?: 'full' | 'trigger' | 'panel' | 'dialog'
 }) => {
+  const t = useTranslations()
   const [internalOpen, setInternalOpen] = useState(false)
   const [draftBindings, setDraftBindings] = useState<
     DynamicDocumentBindings | undefined
@@ -2202,7 +2208,7 @@ export const DynamicDataControl = ({
                 className='gap-1.5 rounded-md px-2 py-1 text-muted-foreground'
               >
                 <Cable className='h-3.5 w-3.5' />
-                Not linked
+                {t('dynamicData.notLinked')}
               </Badge>
             )}
           </button>
@@ -2222,11 +2228,11 @@ export const DynamicDataControl = ({
               onClick={clearBinding}
             >
               <X className='h-4 w-4' />
-              <span className='sr-only'>Clear dynamic data</span>
+              <span className='sr-only'>{t('dynamicData.clear')}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent side='top' sideOffset={6}>
-            Clear dynamic data link
+            {t('dynamicData.clearLink')}
           </TooltipContent>
         </Tooltip>
       ) : null}
@@ -2274,7 +2280,7 @@ export const DynamicDataControl = ({
       <DialogContent className='max-h-[85vh] w-screen max-w-5xl! overflow-y-auto'>
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
-            Dynamic data
+            {t('dynamicData.title')}
             <HelpCircle className='h-4 w-4 text-muted-foreground' />
           </DialogTitle>
           <DialogDescription className='max-w-2xl leading-relaxed'>
@@ -2284,10 +2290,10 @@ export const DynamicDataControl = ({
         {editor}
         <DialogFooter>
           <Button type='button' variant='outline' onClick={cancelDialogChanges}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type='button' onClick={saveDialogChanges}>
-            Save
+            {t('common.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

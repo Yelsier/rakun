@@ -8,19 +8,21 @@ import { WebauthnProcess } from './WebauthnProcess'
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useTranslations } from '@/i18n'
 import { useSession } from '@/state/session'
 
 export const MfaEnroller = ({ children }: { children: ReactNode }) => {
+  const t = useTranslations()
   const { user } = useSession()
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
     if (!user.twoFactorEnabled) {
       toast.warning(
-        'You have not set up 2FA yet. Please set it up to secure your account.',
+        t('account.mfa.setupWarning'),
         {
           action: {
-            label: 'Set up 2FA',
+            label: t('account.mfa.setupAction'),
             onClick: () => {
               setOpen(true)
             },
@@ -31,7 +33,7 @@ export const MfaEnroller = ({ children }: { children: ReactNode }) => {
         },
       )
     }
-  }, [user.twoFactorEnabled])
+  }, [t, user.twoFactorEnabled])
 
   return (
     <>
@@ -44,13 +46,13 @@ export const MfaEnroller = ({ children }: { children: ReactNode }) => {
           }}
         >
           <DialogHeader>
-            <DialogTitle>Two-Factor Authentication</DialogTitle>
+            <DialogTitle>{t('account.mfa.twoFactor')}</DialogTitle>
           </DialogHeader>
 
           <Tabs defaultValue='totp' className='gap-4'>
             <TabsList>
-              <TabsTrigger value='totp'>TOTP</TabsTrigger>
-              <TabsTrigger value='webauthn'>WebAuthn</TabsTrigger>
+              <TabsTrigger value='totp'>{t('account.mfa.totp')}</TabsTrigger>
+              <TabsTrigger value='webauthn'>{t('account.mfa.webauthn')}</TabsTrigger>
             </TabsList>
             <TabsContent value='totp'>
               <TotpProcess closeDialog={() => setOpen(false)} />

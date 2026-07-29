@@ -9,6 +9,7 @@ import {
 } from '../../ui/context-menu'
 import { useMediaPreview } from './context/MediaPreviewContext'
 
+import { useTranslations } from '@/i18n'
 import type { MediaRecord } from '@/lib/media'
 import type { FolderItem } from '@/components/media/contexts/MediaLibraryContext'
 
@@ -19,6 +20,7 @@ type MediaContextMenuContentProps = {
 export default function MediaContextMenuContent({
   item,
 }: MediaContextMenuContentProps) {
+  const t = useTranslations()
   const {
     canBulkSelect,
     bulkSelectedIds,
@@ -37,26 +39,28 @@ export default function MediaContextMenuContent({
         <>
           <ContextMenuItem onSelect={() => onRequestSelect(item)}>
             <Check className='size-4' />
-            {bulkSelectedIds.has(item._id) ? 'Deselect' : 'Select'}
+            {bulkSelectedIds.has(item._id)
+              ? t('common.deselect')
+              : t('common.select')}
           </ContextMenuItem>
           <ContextMenuSeparator />
         </>
       ) : null}
       <ContextMenuItem onSelect={() => onRequestEdit?.(item)}>
         <Pencil className='size-4' />
-        Edit
+        {t('common.edit')}
       </ContextMenuItem>
       {isImageItem ? (
         <ContextMenuItem onSelect={() => onRequestImageEdit(item)}>
           <Crop className='size-4' />
-          Crop and rotate
+          {t('media.cropAndRotate')}
         </ContextMenuItem>
       ) : null}
       {isMediaItem ? (
         <>
           <ContextMenuItem onSelect={() => onRequestMove(item)}>
             <FolderInput className='size-4' />
-            Move to folder
+            {t('media.moveToFolder')}
           </ContextMenuItem>
           <ContextMenuSeparator />
         </>
@@ -66,7 +70,7 @@ export default function MediaContextMenuContent({
         onSelect={() => onRequestDelete?.(item)}
       >
         <Trash2 className='size-4' />
-        Delete
+        {t('common.delete')}
       </ContextMenuItem>
     </ContextMenuContent>
   )

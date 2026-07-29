@@ -7,6 +7,7 @@ import { loadEnv } from "vite";
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(rootDir, "..");
 const managerSrc = path.resolve(repoRoot, "manager-react/src");
+const managerLocalesSrc = path.resolve(repoRoot, "manager-locales/src");
 const coreSrc = path.resolve(repoRoot, "core/src");
 
 export default ({ mode }: { mode: string }) => {
@@ -42,6 +43,10 @@ export default ({ mode }: { mode: string }) => {
       alias: [
         { find: "@", replacement: managerSrc },
         { find: /^@rakun\/manager-react\/(.+)$/, replacement: `${managerSrc}/$1` },
+        {
+          find: "@rakun-kit/manager-locales/es",
+          replacement: path.resolve(managerLocalesSrc, "es.ts"),
+        },
         { find: "@rakun-kit/manager-react", replacement: path.resolve(managerSrc, "index.ts") },
         { find: "@rakun-kit/core/client", replacement: path.resolve(coreSrc, "client.ts") },
         { find: "@rakun-kit/core/contracts", replacement: path.resolve(coreSrc, "contracts.ts") },
@@ -62,7 +67,11 @@ export default ({ mode }: { mode: string }) => {
       ],
     },
     optimizeDeps: {
-      exclude: ["@rakun-kit/manager-react", "@rakun-kit/core"],
+      exclude: [
+        "@rakun-kit/manager-locales",
+        "@rakun-kit/manager-react",
+        "@rakun-kit/core",
+      ],
     },
   };
 };

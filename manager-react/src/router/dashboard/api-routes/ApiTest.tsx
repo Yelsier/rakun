@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { SearchInput } from '@/components/search-input'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { useTranslations } from '@/i18n'
 import { useManagerQuery } from '@/client/react'
 
 type OperationDoc = ApiOperationsOutput[number] & {
@@ -158,6 +159,7 @@ const renderTree = ({
   })
 
 export default function ApiTest() {
+  const t = useTranslations()
   const operationsQuery = useManagerQuery({
     name: 'manager.apiOperations',
     input: undefined,
@@ -181,7 +183,7 @@ export default function ApiTest() {
   if (operationsQuery.isLoading) {
     return (
       <div className="rounded-xl border p-6 text-sm text-muted-foreground">
-        Loading API operations...
+        {t('apiRoutes.loading')}
       </div>
     )
   }
@@ -189,7 +191,7 @@ export default function ApiTest() {
   if (operationsQuery.isError) {
     return (
       <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-sm text-destructive">
-        Failed to load API operations.
+        {t('apiRoutes.loadFailed')}
       </div>
     )
   }
@@ -197,7 +199,7 @@ export default function ApiTest() {
   if (!selectedDoc) {
     return (
       <div className="rounded-xl border p-6 text-sm text-muted-foreground">
-        No API operations found.
+        {t('apiRoutes.empty')}
       </div>
     )
   }
@@ -212,7 +214,7 @@ export default function ApiTest() {
           <SearchInput
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search..."
+            placeholder={t('contentList.search')}
           />
         </div>
         {Object.entries(tree).map(([key, value]) => {
@@ -260,7 +262,7 @@ export default function ApiTest() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Route</CardTitle>
+              <CardTitle>{t('apiRoutes.route')}</CardTitle>
               <CardDescription>{selectedDoc.name}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -271,8 +273,8 @@ export default function ApiTest() {
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Input Schema</CardTitle>
-                <CardDescription>JSON Schema generated from the contract input.</CardDescription>
+                <CardTitle>{t('apiRoutes.inputSchema')}</CardTitle>
+                <CardDescription>{t('apiRoutes.inputSchemaDescription')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <SchemaViewer schema={selectedDoc.input} />
@@ -281,8 +283,8 @@ export default function ApiTest() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Output Schema</CardTitle>
-                <CardDescription>JSON Schema generated from the contract output.</CardDescription>
+                <CardTitle>{t('apiRoutes.outputSchema')}</CardTitle>
+                <CardDescription>{t('apiRoutes.outputSchemaDescription')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <SchemaViewer schema={selectedDoc.output} />
@@ -292,9 +294,9 @@ export default function ApiTest() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Playground</CardTitle>
+              <CardTitle>{t('apiRoutes.playground')}</CardTitle>
               <CardDescription>
-                Execute the operation with the current manager client.
+                {t('apiRoutes.playgroundDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>

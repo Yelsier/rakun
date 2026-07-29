@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useTranslations } from '@/i18n'
 import { useLanguage } from '@/state/language'
 
 export const EditRoute = ({
@@ -32,6 +33,7 @@ export const EditRoute = ({
   defaultValues: ManagerRouteRecord | null
   setEdit: (route: null) => void
 }) => {
+  const t = useTranslations()
   const [open, setOpen] = useState(false)
   const { language, setLanguage, languageList } = useLanguage()
 
@@ -50,11 +52,11 @@ export const EditRoute = ({
     <Dialog open={open} onOpenChange={handleDialogChange}>
       <DialogContent aria-describedby='Edit route'>
         <DialogHeader>
-          <DialogTitle>Edit route</DialogTitle>
+          <DialogTitle>{t('settings.routes.editTitle')}</DialogTitle>
         </DialogHeader>
         <div className='flex justify-between gap-4'>
           <DialogDescription>
-            Edit the route by filling out the form.
+            {t('settings.routes.editDescription')}
           </DialogDescription>
           <Select
             value={language.code}
@@ -66,11 +68,11 @@ export const EditRoute = ({
             }}
           >
             <SelectTrigger className='w-45'>
-              <SelectValue placeholder='Select language' />
+              <SelectValue placeholder={t('settings.routes.selectLanguage')} />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectLabel>Languages</SelectLabel>
+                <SelectLabel>{t('settings.languages')}</SelectLabel>
                 {languageList.map((item) => (
                   <SelectItem key={item.code} value={item.code}>
                     {item.name}

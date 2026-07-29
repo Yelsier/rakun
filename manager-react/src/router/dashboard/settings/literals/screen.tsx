@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import UnauthorizedMessage from "@/components/unauthorized";
+import { useTranslations } from '@/i18n'
 import { useSession } from "@/state/session";
 
 const placeholderHint = (name: string, kind: string) => {
@@ -95,6 +96,7 @@ const renderIcuPreview = ({
 };
 
 export const ManagerSettingsLiteralsScreen = () => {
+  const t = useTranslations()
   const [locale, setLocale] = useState("");
   const [selectedNamespace, setSelectedNamespace] = useState("");
   const [search, setSearch] = useState("");
@@ -230,11 +232,11 @@ export const ManagerSettingsLiteralsScreen = () => {
         locale,
         message: messageDraft,
       });
-      toast.success("Literal translation saved");
+      toast.success(t('settings.literals.translationSaved'));
       await listQuery.refetch();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Error saving literal",
+        error instanceof Error ? error.message : t('settings.literals.saveError'),
       );
     }
   };
@@ -243,25 +245,28 @@ export const ManagerSettingsLiteralsScreen = () => {
     <div className="container mx-auto flex flex-col gap-4 px-4 py-10">
       <Card data-tour="literals-toolbar">
         <CardHeader>
-          <CardTitle>Literals</CardTitle>
+          <CardTitle>{t('settings.literals')}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center gap-3">
-          <label className="text-sm font-medium">Locale</label>
+          <label className="text-sm font-medium">{t('common.locale')}</label>
           <Select value={locale} onValueChange={setLocale}>
             <SelectTrigger className="w-60">
-              <SelectValue placeholder="Select locale" />
+              <SelectValue placeholder={t('settings.literals.selectLocale')} />
             </SelectTrigger>
             <SelectContent>
               {data.locales.map((language) => (
                 <SelectItem key={language.code} value={language.code}>
-                  {language.name} ({language.code})
+                  {t('settings.literals.localeWithCode', {
+                    name: language.name,
+                    code: language.code,
+                  })}
                   {language.default ? " • default" : ""}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <SearchInput
-            placeholder="Search by key, description or module"
+            placeholder={t('settings.literals.search')}
             value={search}
             onChange={(event) => {
               const nextValue = event.target.value
@@ -271,14 +276,14 @@ export const ManagerSettingsLiteralsScreen = () => {
             }}
             className="max-w-sm"
           />
-          <Badge variant="outline">Default locale: {data.defaultLocale}</Badge>
+          <Badge variant="outline">{t('settings.literals.defaultLocale')} {data.defaultLocale}</Badge>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
             <CardTitle className="text-base">
-              Namespaces
+              {t('settings.literals.namespaces')}
             </CardTitle>
           </CardHeader>
         <CardContent>
@@ -305,7 +310,7 @@ export const ManagerSettingsLiteralsScreen = () => {
         <Card className="max-h-[70vh] overflow-auto">
           <CardHeader>
             <CardTitle className="text-base">
-              Keys ({filteredItems.length})
+              {t('settings.literals.keysCount', { count: filteredItems.length })}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -330,12 +335,12 @@ export const ManagerSettingsLiteralsScreen = () => {
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1">
                     {item.hasTranslation ? (
-                      <Badge variant="secondary">Translated</Badge>
+                      <Badge variant="secondary">{t('settings.literals.translated')}</Badge>
                     ) : (
-                      <Badge variant="outline">Fallback</Badge>
+                      <Badge variant="outline">{t('settings.literals.fallback')}</Badge>
                     )}
                     {!item.validation.isValid ? (
-                      <Badge variant="destructive">Invalid ICU</Badge>
+                      <Badge variant="destructive">{t('settings.literals.invalidIcu')}</Badge>
                     ) : null}
                   </div>
                 </button>
@@ -353,12 +358,12 @@ export const ManagerSettingsLiteralsScreen = () => {
           <CardContent className="space-y-4">
             {!selectedLiteral ? (
               <p className="text-muted-foreground text-sm">
-                Select a literal key.
+                {t('settings.literals.selectKey')}
               </p>
             ) : (
               <>
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">Description</p>
+                  <p className="text-sm font-medium">{t('fields.description')}</p>
                   <p className="text-muted-foreground text-sm">
                     {selectedLiteral.description}
                   </p>
@@ -366,7 +371,7 @@ export const ManagerSettingsLiteralsScreen = () => {
 
                 <div className="space-y-1">
                   <p className="flex items-center gap-2 text-sm font-medium">
-                    Used by
+                    {t('settings.literals.usedBy')}
                     <Info className="size-4 text-muted-foreground" />
                   </p>
                   <div className="flex flex-wrap gap-1">
@@ -378,14 +383,14 @@ export const ManagerSettingsLiteralsScreen = () => {
                       ))
                     ) : (
                       <span className="text-muted-foreground text-sm">
-                        No usage metadata
+                        {t('settings.literals.noUsage')}
                       </span>
                     )}
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">Available ICU variables</p>
+                  <p className="text-sm font-medium">{t('settings.literals.availableVars')}</p>
                   {selectedLiteral.variables.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {selectedLiteral.variables.map((variable) => (
@@ -408,13 +413,16 @@ export const ManagerSettingsLiteralsScreen = () => {
                             );
                           }}
                         >
-                          {variable.name} ({variable.kind})
+                          {t('settings.literals.varWithKind', {
+                            name: variable.name,
+                            kind: variable.kind,
+                          })}
                         </Button>
                       ))}
                     </div>
                   ) : (
                     <p className="text-muted-foreground text-sm">
-                      No variables
+                      {t('settings.literals.noVariables')}
                     </p>
                   )}
                 </div>
@@ -423,17 +431,17 @@ export const ManagerSettingsLiteralsScreen = () => {
                   <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
                     <p className="flex items-center gap-2 font-medium">
                       <AlertTriangle className="size-4" />
-                      Stored translation has ICU validation issues
+                      {t('settings.literals.icuIssues')}
                     </p>
                     {selectedLiteral.validation.missing.length > 0 ? (
                       <p className="mt-1">
-                        Missing:{" "}
+                        {t('settings.literals.missing')}{" "}
                         {formatList(selectedLiteral.validation.missing, locale)}
                       </p>
                     ) : null}
                     {selectedLiteral.validation.kindMismatch.length > 0 ? (
                       <p className="mt-1">
-                        Kind mismatch:{" "}
+                        {t('settings.literals.kindMismatch')}{" "}
                         {formatList(
                           selectedLiteral.validation.kindMismatch,
                           locale,
@@ -444,7 +452,7 @@ export const ManagerSettingsLiteralsScreen = () => {
                 ) : null}
 
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">Default message (base)</p>
+                  <p className="text-sm font-medium">{t('settings.literals.defaultMessage')}</p>
                   <Textarea
                     value={selectedLiteral.defaultMessage}
                     readOnly
@@ -453,7 +461,7 @@ export const ManagerSettingsLiteralsScreen = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">Translation</p>
+                  <p className="text-sm font-medium">{t('settings.literals.translation')}</p>
                   <Textarea
                     disabled={!hasPermissions(["content.LiteralTranslation.updateAny"])}
                     value={messageDraft}
@@ -463,14 +471,14 @@ export const ManagerSettingsLiteralsScreen = () => {
                   {!hasPermissions(["content.LiteralTranslation.updateAny"]) ? (
                     <p className="flex items-center gap-2 text-muted-foreground text-sm">
                       <Info className="size-4" />
-                      You don't have permissions to edit literals
+                      {t('settings.literals.noPermission')}
                     </p>
                   ) : null}
                 </div>
 
                 {selectedLiteral.variables.length > 0 ? (
                   <div className="space-y-3 rounded-md border p-3">
-                    <p className="text-sm font-medium">Preview</p>
+                    <p className="text-sm font-medium">{t('common.preview')}</p>
                     <div className="grid gap-2 md:grid-cols-2">
                       {selectedLiteral.variables.map((variable) => (
                         <div
@@ -478,7 +486,10 @@ export const ManagerSettingsLiteralsScreen = () => {
                           className="space-y-1"
                         >
                           <p className="font-mono text-xs">
-                            {variable.name} ({variable.kind})
+                            {t('settings.literals.varWithKind', {
+                              name: variable.name,
+                              kind: variable.kind,
+                            })}
                           </p>
                           <Input
                             value={previewValues[variable.name] ?? ""}
@@ -514,7 +525,7 @@ export const ManagerSettingsLiteralsScreen = () => {
                       }
                       disabled={!hasDraftChanges}
                     >
-                      Reset
+                      {t('common.reset')}
                     </Button>
                     <Button
                       onClick={() => void onSave()}
@@ -522,7 +533,7 @@ export const ManagerSettingsLiteralsScreen = () => {
                       disabled={!hasDraftChanges || upsertMutation.isPending}
                     >
                       <Save className="size-4" />
-                      Save translation
+                      {t('settings.literals.saveTranslation')}
                     </Button>
                   </div>
                 ) : null}

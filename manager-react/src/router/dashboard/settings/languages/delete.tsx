@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useTranslations } from '@/i18n'
 
 export const DeleteLanguage = ({
   refetch,
@@ -26,6 +27,7 @@ export const DeleteLanguage = ({
   language: ManagerLanguageRecord | null
   setDeleteLanguage: (language: null) => void
 }) => {
+  const t = useTranslations()
   const [open, setOpen] = useState(false)
   const deleteMutation = useManagerMutation('manager.delete')
   const { refetch: refetchLanguages } = useLanguage()
@@ -52,9 +54,9 @@ export const DeleteLanguage = ({
       refetchLanguages()
       setOpen(false)
       setDeleteLanguage(null)
-      toast.success('Language deleted successfully!')
+      toast.success(t('settings.languages.deleted'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error deleting language')
+      toast.error(error instanceof Error ? error.message : t('settings.languages.deleteError'))
     }
   }
 
@@ -62,25 +64,24 @@ export const DeleteLanguage = ({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent aria-describedby='Delete a language'>
         <DialogHeader>
-          <DialogTitle>Delete language</DialogTitle>
+          <DialogTitle>{t('settings.languages.deleteTitle')}</DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          Are you sure you want to delete this language?
+          {t('settings.languages.deleteConfirm')}
         </DialogDescription>
         <DialogFooter>
           <Button onClick={() => setOpen(false)} variant='ghost'>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             loading={deleteMutation.isPending}
             onClick={handleDelete}
             variant='destructive'
           >
-            Delete
+            {t('common.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
-

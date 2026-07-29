@@ -7,6 +7,7 @@ import { ContextMenu, ContextMenuTrigger } from '../../../ui/context-menu'
 import MediaContextMenuContent from '../MediaContextMenuContent'
 import { useMediaPreview } from '../context/MediaPreviewContext'
 
+import { useTranslations } from '@/i18n'
 import { cn } from '@/lib/utils'
 import type { MediaRecord } from '@/lib/media'
 
@@ -15,6 +16,7 @@ type PreviewsListViewProps = {
 }
 
 export default function PreviewsListView({ media }: PreviewsListViewProps) {
+  const t = useTranslations()
   const {
     onMediaClick,
     renderPreview,
@@ -59,10 +61,10 @@ export default function PreviewsListView({ media }: PreviewsListViewProps) {
             />
           </div>
         ) : null}
-        <span>Preview</span>
-        <span>Name</span>
-        <span className='hidden md:block'>Type / Size</span>
-        <span className='hidden xl:block'>Date</span>
+        <span>{t('media.preview')}</span>
+        <span>{t('fields.name')}</span>
+        <span className='hidden md:block'>{t('media.typeSize')}</span>
+        <span className='hidden xl:block'>{t('media.date')}</span>
       </div>
       {media.map((item) => (
         <ContextMenu key={item._id}>
@@ -110,7 +112,7 @@ export default function PreviewsListView({ media }: PreviewsListViewProps) {
                 </p>
               </div>
               <p className='hidden truncate text-muted-foreground text-xs md:block'>
-                {item.mime} • {formatFileSize(item.size)}
+                {[item.mime, formatFileSize(item.size)].join(' · ')}
               </p>
               <p className='hidden text-muted-foreground text-xs tabular-nums xl:block'>
                 {new Date(item.uploadedAt).toLocaleDateString()}

@@ -12,9 +12,11 @@ import { useManagerMutation, useManagerQuery } from '@/client/react'
 import Loading from '@/components/loading'
 import { PaginationController } from '@/components/PaginationController'
 import { DataTable } from '@/components/ui/data-table'
+import { useTranslations } from '@/i18n'
 import { useSession } from '@/state/session'
 
 export const ManagerSettingsLanguagesScreen = () => {
+  const t = useTranslations()
   const [page, setPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [edit, setEdit] = useState<ManagerLanguageRecord | null>(null)
@@ -40,10 +42,10 @@ export const ManagerSettingsLanguagesScreen = () => {
   const handleSetDefault = async (languageCode: string) => {
     try {
       await setDefaultLanguage.mutateAsync({ language: languageCode })
-      toast.success('Default language updated')
+      toast.success(t('settings.languages.defaultUpdated'))
       await listQuery.refetch()
     } catch {
-      toast.error('Error updating default language')
+      toast.error(t('settings.languages.defaultUpdateError'))
     }
   }
 
@@ -72,6 +74,7 @@ export const ManagerSettingsLanguagesScreen = () => {
           setDeleteLanguage,
           hasPermissions,
           hasAnyPermission,
+          t,
         })}
         data={languages}
       />

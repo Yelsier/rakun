@@ -10,6 +10,7 @@ import {
 import type { EncodedContentType, Permission } from '@rakun-kit/core/client'
 import * as React from 'react'
 
+import { useTranslations, type ManagerMessageKey } from '@/i18n'
 import { ManagerLink } from '@/link'
 import {
   getManagerPathHref,
@@ -68,28 +69,31 @@ const isActiveHref = (
   return currentPath === itemPath || currentPath.startsWith(`${itemPath}/`)
 }
 
-const getDefaultSecondaryNavItems = (basePath: string): ManagerSidebarItem[] => [
+const getDefaultSecondaryNavItems = (
+  basePath: string,
+  t: (key: ManagerMessageKey) => string,
+): ManagerSidebarItem[] => [
   {
-    title: 'Media Library',
+    title: t('sidebar.mediaLibrary'),
     url: getManagerPathHref('/media', { basePath }),
     icon: Images,
     permissions: ['content.Media.readAny', 'content.Media.own'],
     permissionMode: 'any',
   },
   {
-    title: 'Users',
+    title: t('sidebar.users'),
     url: getManagerPathHref('/users', { basePath }),
     icon: User,
     permissions: ['content.ManagerUser.readAny'],
   },
   {
-    title: 'API Routes',
+    title: t('sidebar.apiRoutes'),
     url: getManagerPathHref('/api-routes', { basePath }),
     icon: Network,
     permissions: ['content.ApiOperation.readAny'],
   },
   {
-    title: 'Settings',
+    title: t('sidebar.settings'),
     url: getManagerPathHref('/settings', { basePath }),
     icon: Settings,
     permissions: [
@@ -115,6 +119,7 @@ const getContentTypeNavItems = (
   contentTypes: EncodedContentType[],
   basePath: string,
   hasAnyPermission: (permissions: Permission[]) => boolean,
+  t: (key: string) => string,
   pathname?: string,
 ): ManagerSidebarItem[] => {
   const items: ManagerSidebarItem[] = []
@@ -132,7 +137,7 @@ const getContentTypeNavItems = (
     }
 
     const item = {
-      title: type.menu.title,
+      title: t(type.menu.title),
       url: getManagerRouteHref(
         {
           name: 'content.list',
@@ -151,15 +156,16 @@ const getContentTypeNavItems = (
       continue
     }
 
-    let category = categories.get(type.menu.category)
+    const categoryTitle = t(type.menu.category)
+    let category = categories.get(categoryTitle)
 
     if (!category) {
       category = {
-        title: type.menu.category,
+        title: categoryTitle,
         url: '',
         items: [],
       }
-      categories.set(type.menu.category, category)
+      categories.set(categoryTitle, category)
       items.push(category)
     }
 
@@ -202,7 +208,7 @@ export function AppSidebar({
   contentTypes,
   pathname,
   basePath = '',
-  secondaryItems = getDefaultSecondaryNavItems(basePath),
+  secondaryItems,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   contentTypes: EncodedContentType[]
@@ -210,17 +216,21 @@ export function AppSidebar({
   basePath?: string
   secondaryItems?: ManagerSidebarItem[]
 }) {
+  const t = useTranslations()
   const { hasCurrentTour, startCurrentTour } = useManagerHelp()
   const pluginRegistry = useManagerPlugins()
   const { hasPermissions, hasAnyPermission } = useSession()
+  const resolvedSecondaryItems =
+    secondaryItems ?? getDefaultSecondaryNavItems(basePath, t)
   const contentTypeItems = getContentTypeNavItems(
     contentTypes,
     basePath,
     hasAnyPermission,
+    t,
     pathname,
   )
   const helpItem: ManagerSidebarItem = {
-    title: 'Help',
+    title: t('sidebar.help'),
     url: '#',
     icon: HelpCircle,
     disabled: !hasCurrentTour,
@@ -270,10 +280,11 @@ export function AppSidebar({
       ]
     })
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+  const pluginsGroupLabel = t('sidebar.plugins')
   const primaryPluginGroups = pluginItems
     .filter((item) => (item.position ?? 'secondary') === 'primary')
     .reduce((groups, item) => {
-      const group = item.group ?? 'Plugins'
+      const group = item.group ?? pluginsGroupLabel
       const items = groups.get(group) ?? []
       items.push(item)
       groups.set(group, items)
@@ -294,8 +305,8 @@ export function AppSidebar({
                   <Command className='size-4' />
                 </div>
                 <div className='grid flex-1 text-left text-sm leading-tight'>
-                  <span className='truncate font-medium'>CMS</span>
-                  <span className='truncate text-xs'>Enterprise</span>
+                  <span className='truncate font-medium'>{t('brand.name')}</span>
+                  <span className='truncate text-xs'>{t('brand.tagline')}</span>
                 </div>
               </ManagerLink>
             </SidebarMenuButton>
@@ -312,7 +323,7 @@ export function AppSidebar({
         ))}
         <NavSecondary
           items={filterSidebarItems(
-            [...secondaryItems, ...secondaryPluginItems, helpItem],
+            [...resolvedSecondaryItems, ...secondaryPluginItems, helpItem],
             hasPermissions,
             hasAnyPermission,
           ).map((item) => ({

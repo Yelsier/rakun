@@ -1,9 +1,10 @@
 'use client'
 
-import type { MaybeTranslatableValue } from '@rakun-kit/core/client'
+import type { EncodedContentType, MaybeTranslatableValue } from '@rakun-kit/core/client'
 import { Fragment, useMemo } from 'react'
 
 import { useManagerQuery } from '@/client/react'
+import { useTranslations } from '@/i18n'
 import { ManagerLink } from '@/link'
 import type { ManagerResolvedRoute } from '@/router/shared/types'
 import { useLanguage } from '@/state/language'
@@ -27,6 +28,18 @@ export default function BreadcrumbComponent({
   route?: ManagerResolvedRoute
 }) {
   const { getTranslation } = useLanguage()
+  const t = useTranslations()
+  const contentTypesQuery = useManagerQuery({
+    name: 'manager.contentTypes',
+    input: undefined,
+  })
+  const contentTypesByName = useMemo(() => {
+    const map = new Map<string, EncodedContentType>()
+    for (const type of (contentTypesQuery.data as EncodedContentType[] | undefined) ?? []) {
+      map.set(type.name, type)
+    }
+    return map
+  }, [contentTypesQuery.data])
   const editRoute = route?.kind === 'content-edit' ? route : undefined
   const documentQuery = useManagerQuery({
     name: 'manager.get',
@@ -61,18 +74,22 @@ export default function BreadcrumbComponent({
       <BreadcrumbList>
         <BreadcrumbItem className='hidden md:block'>
           <BreadcrumbLink asChild>
-            <ManagerLink href={basePath}>Dashboard</ManagerLink>
+            <ManagerLink href={basePath}>{t('nav.dashboard')}</ManagerLink>
           </BreadcrumbLink>
         </BreadcrumbItem>
         {paths.map((part, index) => {
           const href = '/' + paths.slice(0, index + 1).join('/')
+          const contentType = contentTypesByName.get(part)
+          const menuTitle = contentType?.menu?.title
           const label =
             editRoute &&
             index === paths.length - 1 &&
             part === editRoute.id &&
             editLabel
               ? editLabel
-              : decodeCamelCase(part)
+              : menuTitle
+                ? t(menuTitle)
+                : decodeCamelCase(part)
 
           return (
             <Fragment key={index}>

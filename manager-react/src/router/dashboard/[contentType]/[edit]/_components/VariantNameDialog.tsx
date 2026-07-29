@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useTranslations } from '@/i18n'
 
 export const VariantNameDialog = ({
   open,
@@ -25,6 +26,7 @@ export const VariantNameDialog = ({
   onOpenChange: (open: boolean) => void
   onConfirm: (name: string) => Promise<void> | void
 }) => {
+  const t = useTranslations()
   const [name, setName] = useState('')
 
   useEffect(() => {
@@ -48,19 +50,18 @@ export const VariantNameDialog = ({
       <DialogContent>
         <form onSubmit={submit} className="grid gap-5">
           <DialogHeader>
-            <DialogTitle>Name this variant</DialogTitle>
+            <DialogTitle>{t('variants.nameThisVariant')}</DialogTitle>
             <DialogDescription>
-              Give it a short identifying name. This is separate from the
-              content title and will be used in the variants list.
+              {t('variants.nameDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
-            <Label htmlFor="locale-variant-name">Variant name</Label>
+            <Label htmlFor="locale-variant-name">{t('variants.variantName')}</Label>
             <Input
               id="locale-variant-name"
               value={name}
               maxLength={120}
-              placeholder="For example, Homepage redesign"
+              placeholder={t('variants.namePlaceholder')}
               autoFocus
               onChange={(event) => setName(event.target.value)}
             />
@@ -72,10 +73,10 @@ export const VariantNameDialog = ({
               disabled={loading}
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" loading={loading} disabled={!trimmedName}>
-              Create variant
+              {t('variants.createVariant')}
             </Button>
           </DialogFooter>
         </form>

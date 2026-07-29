@@ -10,42 +10,57 @@ import {
   Select,
 } from './ui/select'
 
+import { useManagerI18n, useTranslations } from '@/i18n'
 import { useLanguage } from '@/state/language'
 
-const LanguageSelector: React.FC<{ manager?: boolean; className?: string }> = (
-  props,
-) => {
-  const {
-    language,
-    languageList,
-    setLanguage,
-    managerLanguage,
-    setManagerLanguage,
-  } = useLanguage()
+const ManagerLanguageSelector: React.FC<{ className?: string }> = (props) => {
+  const { locale, locales, setLocale } = useManagerI18n()
+  const t = useTranslations()
+
+  if (locales.length <= 1) return null
+
+  return (
+    <Select value={locale} onValueChange={setLocale}>
+      <SelectTrigger className={cx('w-45', props.className)}>
+        <SelectValue
+          placeholder={
+            locales.find((item) => item.code === locale)?.name ?? locale
+          }
+        />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          <SelectLabel>{t('navUser.language')}</SelectLabel>
+          {locales.map((lang) => (
+            <SelectItem key={lang.code} value={lang.code}>
+              {lang.name}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  )
+}
+
+const ContentLanguageSelector: React.FC<{ className?: string }> = (props) => {
+  const { language, languageList, setLanguage } = useLanguage()
+  const t = useTranslations()
 
   if (languageList.length <= 1) return null
 
   return (
     <Select
-      value={props.manager ? managerLanguage.code : language.code}
+      value={language.code}
       onValueChange={(value) => {
-        if (props.manager) {
-          setManagerLanguage(
-            languageList.find((lang) => lang.code === value)!,
-          )
-        } else {
-          setLanguage(languageList.find((lang) => lang.code === value)!)
-        }
+        setLanguage(languageList.find((lang) => lang.code === value)!)
       }}
     >
       <SelectTrigger className={cx('w-45', props.className)}>
-        <SelectValue
-          placeholder={props.manager ? managerLanguage.name : language.name}
-        />
+        <SelectValue placeholder={language.name} />
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
-          <SelectLabel>Languages</SelectLabel>
+          <SelectLabel>{t('navUser.language')}</SelectLabel>
           {languageList.map((lang) => (
             <SelectItem key={lang.code} value={lang.code}>
               {lang.name}
@@ -55,6 +70,16 @@ const LanguageSelector: React.FC<{ manager?: boolean; className?: string }> = (
       </SelectContent>
     </Select>
   )
+}
+
+const LanguageSelector: React.FC<{ manager?: boolean; className?: string }> = (
+  props,
+) => {
+  if (props.manager) {
+    return <ManagerLanguageSelector className={props.className} />
+  }
+
+  return <ContentLanguageSelector className={props.className} />
 }
 
 export default LanguageSelector

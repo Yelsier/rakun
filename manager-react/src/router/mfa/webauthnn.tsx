@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useManagerClient } from "@/client/react";
+import { useTranslations } from "@/i18n";
 
 type WebauthnFormProps = {
   challenge: string;
@@ -21,6 +22,7 @@ export default function WebauthnForm({
   challenge,
   onSuccess,
 }: WebauthnFormProps) {
+  const t = useTranslations();
   const client = useManagerClient();
   const startedForChallengeRef = useRef<string | null>(null);
   const unmountedRef = useRef(false);
@@ -31,7 +33,7 @@ export default function WebauthnForm({
     });
 
     if (!result.options) {
-      toast.error("Failed to get authentication options. Please try again.");
+      toast.error(t('mfa.webauthnOptionsError'));
       return;
     }
 
@@ -51,7 +53,7 @@ export default function WebauthnForm({
       if (verifyResult.token) {
         await onSuccess();
       } else {
-        toast.error("Authentication failed. Please try again.");
+        toast.error(t('mfa.authenticationFailed'));
       }
     } catch (error) {
       const isAbortError =
@@ -62,7 +64,7 @@ export default function WebauthnForm({
 
       if (isAbortError || unmountedRef.current) return;
 
-      toast.error("Authentication failed. Please try again.");
+      toast.error(t('mfa.authenticationFailed'));
       console.log(error);
     }
   };
@@ -83,11 +85,9 @@ export default function WebauthnForm({
   return (
     <Card className="mx-auto w-92">
       <CardHeader>
-        <CardTitle>Complete WebAuthn Authentication</CardTitle>
+        <CardTitle>{t("mfa.webauthnTitle")}</CardTitle>
         <CardDescription>
-          Please complete the WebAuthn authentication process using your
-          registered device. Follow the prompts on your device to authenticate
-          and access your account securely.
+          {t("mfa.webauthnDescription")}
         </CardDescription>
       </CardHeader>
     </Card>

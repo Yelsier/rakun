@@ -11,6 +11,7 @@ import type {
   RakunPluginFieldDefinition,
   RakunResolvedPluginContributions,
 } from './plugins'
+import type { ManagerLanguagePack } from './schemas/manager/uiLocales'
 
 export interface RakunBootstrapOptions {
   literals: LiteralCatalogInput;
@@ -22,6 +23,11 @@ export interface RakunBootstrapOptions {
   apiOperations?: RakunOperationMap;
   plugins?: readonly RakunPluginDefinition[];
   permissions?: readonly string[];
+  /**
+   * Installable manager UI locale packs (ICU key/value messages).
+   * English is always built into the manager client; list extra locales here.
+   */
+  managerLanguages?: readonly ManagerLanguagePack[];
   mongo?: MongoConfig;
   media?: MediaServiceConfig;
   translation?: TranslationServiceConfig;

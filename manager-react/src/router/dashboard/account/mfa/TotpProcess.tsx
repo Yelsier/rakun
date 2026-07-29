@@ -17,8 +17,10 @@ import {
   InputOTPSeparator,
   InputOTPSlot,
 } from '@/components/ui/input-otp'
+import { useTranslations } from '@/i18n'
 
 export const TotpProcess = ({ closeDialog }: { closeDialog: () => void }) => {
+  const t = useTranslations()
   const enrollQuery = useManagerQuery({
     name: 'manager.auth.totp.enroll',
     input: undefined,
@@ -39,15 +41,15 @@ export const TotpProcess = ({ closeDialog }: { closeDialog: () => void }) => {
     mutation.mutate(data, {
       onSuccess: (result) => {
         if (result.ok) {
-          toast.success('2FA setup complete! Your account is now more secure.')
+          toast.success(t('account.mfa.totpSetupComplete'))
           closeDialog()
         } else {
-          toast.error('Failed to verify the code. Please try again.')
+          toast.error(t('account.mfa.verifyCodeFailed'))
           form.reset()
         }
       },
       onError: (error) => {
-        toast.error('Failed to verify the code. Please try again.')
+        toast.error(t('account.mfa.verifyCodeFailed'))
         form.reset()
         console.log(error)
       },
@@ -60,12 +62,11 @@ export const TotpProcess = ({ closeDialog }: { closeDialog: () => void }) => {
       onSubmit={form.handleSubmit(handleSubmit)}
     >
       <DialogDescription>
-        Scan the QR code below with your authenticator app, or{' '}
+        {t('account.mfa.scanBefore')}{' '}
         <a href={enrollQuery.data?.otpauthURL} className='font-bold underline'>
-          click the link
+          {t('account.mfa.clickLink')}
         </a>{' '}
-        to set it up manually. Then, enter the 6-digit code from your app to
-        verify and complete the setup.
+        {t('account.mfa.scanAfter')}
       </DialogDescription>
       {enrollQuery.data?.qrDataURL ? (
         <img src={enrollQuery.data.qrDataURL} alt='QR Code' />
@@ -82,7 +83,7 @@ export const TotpProcess = ({ closeDialog }: { closeDialog: () => void }) => {
             className='flex flex-col items-center gap-4'
             data-invalid={fieldState.invalid}
           >
-            <FieldLabel htmlFor='code'>Verification code</FieldLabel>
+            <FieldLabel htmlFor='code'>{t('account.mfa.verificationCode')}</FieldLabel>
             <InputOTP
               maxLength={6}
               id='code'
@@ -104,7 +105,7 @@ export const TotpProcess = ({ closeDialog }: { closeDialog: () => void }) => {
               </InputOTPGroup>
             </InputOTP>
             <Button loading={mutation.isPending} type='submit'>
-              Verify
+              {t('common.verify')}
             </Button>
           </Field>
         )}

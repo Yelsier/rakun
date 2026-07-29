@@ -37,6 +37,7 @@ import { IteratorVisibilityDialog } from './IteratorVisibilityDialog'
 import { useSession } from '@/state/session'
 import { getEncodedContentPermissions } from '@/state/permissions'
 import { cn } from '@/lib/utils'
+import { useTranslations } from '@/i18n'
 
 type ListFieldValues = (ListFieldValueItem<FieldValue> & { uid: string })[]
 
@@ -182,6 +183,7 @@ const AddListButtons = React.memo(
 AddListButtons.displayName = 'AddListButtons'
 
 const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
+  const t = useTranslations()
   const refs = useRef<Record<string, FieldRef | null>>({})
   const valueRef = useRef<ListFieldValues>([])
   const [addedModuleUid, setAddedModuleUid] = useState<string | null>(null)
@@ -400,19 +402,19 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
       const relationField = fieldConfig ? getRelationField(fieldConfig.field) : undefined
 
       if (!relationField) {
-        toast.error('Only relation modules can be saved')
+        toast.error(t('modules.onlyRelationCanSave'))
         return
       }
 
       if (!canSaveAsGlobalModule(relationField.contentType)) {
-        toast.error('This module cannot be saved globally')
+        toast.error(t('modules.cannotSaveGlobally'))
         return
       }
 
       const createPermissions = getCreatePermissions(relationField.contentType)
 
       if (!canUsePermissions(createPermissions, hasAnyPermission)) {
-        toast.error('You do not have permission to save this module globally')
+        toast.error(t('modules.noPermissionSaveGlobally'))
         return
       }
 
@@ -420,17 +422,17 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
         (refs.current[item.uid]?.getValue() as FieldValue | undefined) ?? getItemFallbackValue(item)
 
       if (hasNestedError(currentValue)) {
-        toast.error('Please fix this module before saving it')
+        toast.error(t('modules.fixBeforeSaving'))
         return
       }
 
       if (isRelationExistingValue(currentValue)) {
-        toast.info('This module is already saved')
+        toast.info(t('modules.alreadySaved'))
         return
       }
 
       if (!isRelationNewValue(currentValue) || !isRecord(currentValue.data)) {
-        toast.error('This module cannot be saved yet')
+        toast.error(t('modules.cannotSaveYet'))
         return
       }
 
@@ -444,7 +446,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
         const createdId = getCreatedId(created)
 
         if (!createdId) {
-          toast.error('The module was created but no id was returned')
+          toast.error(t('modules.createdNoId'))
           return
         }
 
@@ -483,9 +485,9 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
             isManagerListQueryForContentType(query.queryKey, relationField.contentType.name),
         })
 
-        toast.success(`${title} saved`)
+        toast.success(t('modules.saved', { title }))
       } catch (error) {
-        toast.error(getActionErrorMessage(error, 'Could not save module'))
+        toast.error(getActionErrorMessage(error, t('modules.couldNotSave')))
       } finally {
         setSavingUid(null)
       }
@@ -507,7 +509,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
       const relationField = fieldConfig ? getRelationField(fieldConfig.field) : undefined
 
       if (!relationField) {
-        toast.error('Only relation modules can be unlinked')
+        toast.error(t('modules.onlyRelationCanUnlink'))
         return
       }
 
@@ -515,7 +517,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
         (refs.current[item.uid]?.getValue() as FieldValue | undefined) ?? getItemFallbackValue(item)
 
       if (!isRelationExistingValue(currentValue)) {
-        toast.info('This module is already local')
+        toast.info(t('modules.alreadyLocal'))
         return
       }
 
@@ -549,9 +551,9 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
           )
         )
 
-        toast.success(`${title} unlinked`)
+        toast.success(t('modules.unlinked', { title }))
       } catch (error) {
-        toast.error(getActionErrorMessage(error, 'Could not unlink module'))
+        toast.error(getActionErrorMessage(error, t('modules.couldNotUnlink')))
       } finally {
         setUnlinkingUid(null)
       }
@@ -686,7 +688,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                       >
                                         <div>
                                           <ChevronsUpDown />
-                                          <span className="sr-only">Toggle</span>
+                                          <span className="sr-only">{t('common.toggle')}</span>
                                         </div>
                                       </Button>
                                     ) : null}
@@ -697,7 +699,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                       <span className="truncate">{moduleTitle}</span>
                                       {isSavedModule ? (
                                         <Badge variant="secondary" className="shrink-0">
-                                          Global
+                                          {t('common.global')}
                                         </Badge>
                                       ) : null}
                                       {item.visibleWhen ? (
@@ -730,7 +732,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                           <Eye />
                                         </Button>
                                       </TooltipTrigger>
-                                      <TooltipContent side="top">Module visibility</TooltipContent>
+                                      <TooltipContent side="top">{t('modules.moduleVisibility')}</TooltipContent>
                                     </Tooltip>
                                   ) : null}
                                   {props.config.ui === 'Iterator' &&
@@ -766,7 +768,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                         </Button>
                                       </TooltipTrigger>
                                       <TooltipContent side="top">
-                                        Unlink global module
+                                        {t('modules.unlinkGlobalModule')}
                                       </TooltipContent>
                                     </Tooltip>
                                   ) : null}

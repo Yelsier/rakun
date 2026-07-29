@@ -1,6 +1,9 @@
+'use client'
+
 import type { Dispatch, SetStateAction } from 'react'
 import { startTransition } from 'react'
 
+import { useTranslations } from '@/i18n'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
@@ -31,6 +34,7 @@ export const PaginationController: React.FC<{
   itemsPerPage: number
   setItemsPerPage?: Dispatch<SetStateAction<number>>
 }> = ({ page, setPage, totalItems, itemsPerPage, setItemsPerPage }) => {
+  const t = useTranslations()
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage))
   const firstItem = totalItems === 0 ? 0 : (page - 1) * itemsPerPage + 1
   const lastItem = Math.min(page * itemsPerPage, totalItems)
@@ -53,7 +57,7 @@ export const PaginationController: React.FC<{
           <PopoverContent className="w-fit">
             <div>
               <Label>
-                <span className="whitespace-nowrap">Go to page:</span>{' '}
+                <span className="whitespace-nowrap">{t('pagination.goToPage')}</span>{' '}
                 <Input
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -119,8 +123,10 @@ export const PaginationController: React.FC<{
       </Pagination>
       <div className="flex w-full flex-wrap items-center justify-center gap-3 text-muted-foreground text-sm sm:w-auto sm:justify-end sm:self-auto">
         <div className="flex items-center gap-2">
-          <span className="whitespace-nowrap sm:hidden">Rows</span>
-          <span className="hidden whitespace-nowrap sm:inline">Items per page</span>
+          <span className="whitespace-nowrap sm:hidden">{t('pagination.rows')}</span>
+          <span className="hidden whitespace-nowrap sm:inline">
+            {t('pagination.itemsPerPage')}
+          </span>
           <Select
             value={String(itemsPerPage)}
             disabled={!setItemsPerPage}
@@ -144,7 +150,11 @@ export const PaginationController: React.FC<{
           </Select>
         </div>
         <span className="whitespace-nowrap tabular-nums">
-          {firstItem}-{lastItem} of {totalItems}
+          {t('pagination.range', {
+            first: firstItem,
+            last: lastItem,
+            total: totalItems,
+          })}
         </span>
       </div>
     </div>

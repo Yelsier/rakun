@@ -16,6 +16,7 @@ import { Input } from '../../../ui/input'
 import { Label } from '../../../ui/label'
 
 import type { MediaRecord } from '@/lib/media'
+import { useTranslations } from '@/i18n'
 import { cn } from '@/lib/utils'
 
 type CropArea = {
@@ -296,6 +297,7 @@ export default function MediaImageEditorDialog({
   onClose,
   onSave,
 }: MediaImageEditorDialogProps) {
+  const t = useTranslations()
   const layerRef = useRef<HTMLDivElement | null>(null)
   const dragRef = useRef<DragState | null>(null)
   const shapeRef = useRef<CropShape>('rectangle')
@@ -539,16 +541,16 @@ export default function MediaImageEditorDialog({
     <Dialog open={!!target} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90vh] w-screen max-w-5xl! overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Crop and rotate image</DialogTitle>
+          <DialogTitle>{t('media.cropTitle')}</DialogTitle>
           <DialogDescription>
-            Drag the crop area, resize from any edge, then save a copy.
+            {t('media.cropDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <div className="flex min-h-88 items-center justify-center overflow-hidden rounded-lg border bg-neutral-950 p-3">
             {isLoadingImage ? (
-              <div className="text-sm text-muted-foreground">Loading image...</div>
+              <div className="text-sm text-muted-foreground">{t('media.loadingImage')}</div>
             ) : objectUrl ? (
               <div className="relative inline-block max-h-[55vh] max-w-full select-none touch-none">
                 <img
@@ -595,13 +597,13 @@ export default function MediaImageEditorDialog({
                 </div>
               </div>
             ) : (
-              <div className="text-sm text-muted-foreground">Image could not be loaded.</div>
+              <div className="text-sm text-muted-foreground">{t('media.imageLoadError')}</div>
             )}
           </div>
 
           <div className="space-y-4">
             <div className="grid gap-2">
-              <Label>Shape</Label>
+              <Label>{t('media.shape')}</Label>
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
@@ -609,7 +611,7 @@ export default function MediaImageEditorDialog({
                   onClick={() => setCropShape('rectangle')}
                 >
                   <Square className="size-4" />
-                  Rectangle
+                  {t('media.rectangle')}
                 </Button>
                 <Button
                   type="button"
@@ -617,33 +619,33 @@ export default function MediaImageEditorDialog({
                   onClick={() => setCropShape('circle')}
                 >
                   <Circle className="size-4" />
-                  Circle
+                  {t('media.circle')}
                 </Button>
               </div>
             </div>
 
             <div className="grid gap-2">
-              <Label>Rotation</Label>
+              <Label>{t('media.rotation')}</Label>
               <div className="grid grid-cols-2 gap-2">
                 <Button type="button" variant="outline" onClick={() => setRotation((v) => v - 90)}>
                   <RotateCcw className="size-4" />
-                  Left
+                  {t('media.left')}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setRotation((v) => v + 90)}>
                   <RotateCw className="size-4" />
-                  Right
+                  {t('media.right')}
                 </Button>
               </div>
             </div>
 
             <div className="rounded-md border p-3">
-              <Label>Crop area</Label>
+              <Label>{t('media.cropArea')}</Label>
               <p className="mt-1 text-xs text-muted-foreground">{cropLabel}</p>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {(shape === 'circle' ? circleCropInputs : cropInputs).map((input) => (
                   <div key={input.key} className="grid gap-1">
                     <Label htmlFor={`crop-${input.key}`} className="text-xs text-muted-foreground">
-                      {input.label} %
+                      {t('media.cropInputPercent', { label: input.label })}
                     </Label>
                     <Input
                       id={`crop-${input.key}`}
@@ -665,14 +667,14 @@ export default function MediaImageEditorDialog({
 
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             loading={isSaving}
             disabled={!image || isLoadingImage}
             onClick={() => void handleSave()}
           >
-            Save copy
+            {t('media.saveCopy')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 
 import type { FileUploadProps } from '../../../ui/file-upload'
+import { useTranslations } from '@/i18n'
 
 type UseMediaUploadInput = {
   onUpload: NonNullable<FileUploadProps['onUpload']>
@@ -11,6 +12,7 @@ type UseMediaUploadInput = {
 }
 
 export function useMediaUpload({ onUpload, refetchMedia }: UseMediaUploadInput) {
+  const t = useTranslations()
   const [files, setFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
 
@@ -25,11 +27,11 @@ export function useMediaUpload({ onUpload, refetchMedia }: UseMediaUploadInput) 
       setFiles([])
     } catch (error) {
       await refetchMedia().catch(() => undefined)
-      toast.error('Upload failed', {
+      toast.error(t('media.uploadFailed'), {
         description:
           error instanceof Error
             ? error.message
-            : 'An unexpected error occurred during upload. Please try again.',
+            : t('media.uploadUnexpectedError'),
         duration: 10000,
       })
       console.error('Unexpected error during upload:', error)
@@ -39,8 +41,10 @@ export function useMediaUpload({ onUpload, refetchMedia }: UseMediaUploadInput) 
   }
 
   const onFileReject = (file: File, message: string) => {
+    const truncatedName =
+      file.name.length > 20 ? `${file.name.slice(0, 20)}...` : file.name
     toast(message, {
-      description: `"${file.name.length > 20 ? `${file.name.slice(0, 20)}...` : file.name}" has been rejected`,
+      description: t('media.fileRejected', { name: truncatedName }),
     })
   }
 

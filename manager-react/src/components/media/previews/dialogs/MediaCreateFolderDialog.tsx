@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../../ui/dialog'
+import { useTranslations } from '@/i18n'
 
 type MediaCreateFolderDialogProps = {
   open: boolean
@@ -28,18 +29,20 @@ export default function MediaCreateFolderDialog({
   onClose,
   onConfirm,
 }: MediaCreateFolderDialogProps) {
+  const t = useTranslations()
+
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <DialogContent aria-describedby='Create folder'>
         <DialogHeader>
-          <DialogTitle>Create folder</DialogTitle>
+          <DialogTitle>{t('media.createFolder')}</DialogTitle>
         </DialogHeader>
-        <DialogDescription>Enter a name for the new folder.</DialogDescription>
+        <DialogDescription>{t('media.createFolderDescription')}</DialogDescription>
         <div className='py-2'>
           <Input
             value={value}
             onChange={(event) => onValueChange(event.target.value)}
-            placeholder='Folder name'
+            placeholder={t('media.folderNamePlaceholder')}
             onKeyDown={(event) => {
               if (event.key === 'Enter') onConfirm()
             }}
@@ -47,10 +50,10 @@ export default function MediaCreateFolderDialog({
         </div>
         <DialogFooter>
           <Button variant='ghost' onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button loading={isLoading} onClick={onConfirm}>
-            Create
+            {t('contentList.create')}
           </Button>
         </DialogFooter>
       </DialogContent>

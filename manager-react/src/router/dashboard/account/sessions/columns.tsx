@@ -13,17 +13,22 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { formatDate } from '@/helpers/formatDate'
+import type { useTranslations } from '@/i18n'
+
+type Translate = ReturnType<typeof useTranslations>
 
 export const columns = ({
   current,
   setDeleteSession,
+  t,
 }: {
   current: string
   setDeleteSession: (session: string | null) => void
+  t: Translate
 }): ColumnDef<AccountInfoOutput['sessions'][number]>[] => [
   {
     id: 'current',
-    header: () => <span className='ml-2'>Current session</span>,
+    header: () => <span className='ml-2'>{t('account.sessions.current')}</span>,
     cell: ({ row }) => {
       const token = row.getValue('token') as string
       return <BooleanIndicator value={token === current} />
@@ -31,17 +36,19 @@ export const columns = ({
   },
   {
     accessorKey: 'createdAt',
-    header: () => <span className='ml-2'>Created At</span>,
+    header: () => <span className='ml-2'>{t('account.sessions.createdAt')}</span>,
     cell: ({ row }) => {
       const createdAt = row.getValue('createdAt') as Date | undefined
       return (
-        <span className='ml-2'>{createdAt ? formatDate(createdAt) : 'Unknown'}</span>
+        <span className='ml-2'>
+          {createdAt ? formatDate(createdAt) : t('common.unknown')}
+        </span>
       )
     },
   },
   {
     accessorKey: 'expiresAt',
-    header: () => <span className='ml-2'>Expires At</span>,
+    header: () => <span className='ml-2'>{t('account.sessions.expiresAt')}</span>,
     cell: ({ row }) => (
       <span className='ml-2'>
         {formatDate(row.getValue('expiresAt') as Date)}
@@ -50,7 +57,7 @@ export const columns = ({
   },
   {
     accessorKey: 'token',
-    header: () => <span className='ml-2'>Token</span>,
+    header: () => <span className='ml-2'>{t('account.sessions.token')}</span>,
     cell: ({ row }) => <span className='ml-2'>{row.getValue('token')}</span>,
   },
   {
@@ -67,7 +74,7 @@ export const columns = ({
               variant='ghost'
               className='m-auto flex h-8 w-8 items-center justify-center p-0!'
             >
-              <span className='sr-only'>Open menu</span>
+              <span className='sr-only'>{t('common.openMenu')}</span>
               <MoreHorizontal />
             </Button>
           </DropdownMenuTrigger>
@@ -77,7 +84,7 @@ export const columns = ({
               onClick={() => setDeleteSession(token)}
             >
               <Trash className='text-destructive' />
-              Delete session
+              {t('account.sessions.delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

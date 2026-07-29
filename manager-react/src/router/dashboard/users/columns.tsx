@@ -13,6 +13,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import type { useTranslations } from '@/i18n'
+
+type Translate = ReturnType<typeof useTranslations>
 
 export type ManagerUserRecord = {
   _id: string
@@ -28,42 +31,44 @@ export const columns = ({
   setDeleteUser,
   hasPermissions,
   hasAnyPermission,
+  t,
 }: {
   setEdit: (user: ManagerUserRecord) => void
   setDeleteUser: (user: ManagerUserRecord | null) => void
   hasPermissions: (permissions: Permission[]) => boolean
   hasAnyPermission: (permissions: Permission[]) => boolean
+  t: Translate
 }): ColumnDef<ManagerUserRecord>[] => [
   {
     accessorKey: '_id',
-    header: () => <span className='ml-2'>ID</span>,
+    header: () => <span className='ml-2'>{t('contentList.id')}</span>,
     cell: ({ row }) => <IDColumn _id={row.getValue('_id') as string} />,
   },
   {
     accessorKey: 'name',
-    header: () => <span className='ml-2'>Name</span>,
+    header: () => <span className='ml-2'>{t('fields.name')}</span>,
     cell: ({ row }) => <span className='ml-2'>{row.getValue('name') || '-'}</span>,
   },
   {
     accessorKey: 'user',
-    header: () => <span className='ml-2'>Username</span>,
+    header: () => <span className='ml-2'>{t('common.username')}</span>,
     cell: ({ row }) => <span className='ml-2'>{row.getValue('user')}</span>,
   },
   {
     accessorKey: 'email',
-    header: () => <span className='ml-2'>Email</span>,
+    header: () => <span className='ml-2'>{t('common.email')}</span>,
     cell: ({ row }) => <span className='ml-2'>{row.getValue('email')}</span>,
   },
   {
     accessorKey: 'role',
-    header: () => <span className='ml-2'>Role</span>,
+    header: () => <span className='ml-2'>{t('common.role')}</span>,
     cell: ({ row }) => (
       <span className='ml-2'>{row.original.role?.name ?? '-'}</span>
     ),
   },
   {
     accessorKey: 'twoFactorEnabled',
-    header: () => <span className='ml-2'>Two Factor Enabled</span>,
+    header: () => <span className='ml-2'>{t('users.twoFactorEnabled')}</span>,
     cell: ({ row }) => (
       <BooleanIndicator value={Boolean(row.getValue('twoFactorEnabled'))} />
     ),
@@ -84,7 +89,7 @@ export const columns = ({
                 variant='ghost'
                 className='m-auto flex h-8 w-8 items-center justify-center p-0!'
               >
-                <span className='sr-only'>Open menu</span>
+                <span className='sr-only'>{t('common.openMenu')}</span>
                 <MoreHorizontal />
               </Button>
             </DropdownMenuTrigger>
@@ -96,13 +101,13 @@ export const columns = ({
                 onClick={() => setDeleteUser(user)}
               >
                 <Trash className='text-destructive' />
-                Delete {user.user}
+                {t('common.delete')} {user.user}
               </DropdownMenuItem>
             )}
             {hasPermissions(['content.ManagerUser.updateAny']) && (
               <DropdownMenuItem onClick={() => setEdit(user)}>
                 <Edit />
-                Edit {user.user}
+                {t('common.edit')} {user.user}
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>

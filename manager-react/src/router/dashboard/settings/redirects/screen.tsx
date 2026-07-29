@@ -46,6 +46,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import UnauthorizedMessage from '@/components/unauthorized'
+import { useTranslations } from '@/i18n'
 import { useSession } from '@/state/session'
 
 const pathTokenRegex = /\{([a-zA-Z0-9_]+)\}/g
@@ -110,7 +111,9 @@ const formSchema = z
 
 type RedirectFormValues = z.infer<typeof formSchema>
 
-const HelpTooltip = ({ children }: { children: ReactNode }) => (
+const HelpTooltip = ({ children }: { children: ReactNode }) => {
+  const t = useTranslations()
+  return (
   <Tooltip>
     <TooltipTrigger asChild>
       <button
@@ -118,14 +121,15 @@ const HelpTooltip = ({ children }: { children: ReactNode }) => (
         className="text-muted-foreground hover:text-foreground inline-flex h-4 w-4 items-center justify-center rounded-full"
       >
         <HelpCircle className="h-3.5 w-3.5" />
-        <span className="sr-only">Show help</span>
+        <span className="sr-only">{t('settings.redirects.showHelp')}</span>
       </button>
     </TooltipTrigger>
     <TooltipContent className="max-w-xs leading-relaxed" sideOffset={6}>
       {children}
     </TooltipContent>
   </Tooltip>
-)
+  )
+}
 
 const LabelWithHelp = ({ children, help }: { children: ReactNode; help: ReactNode }) => (
   <div className="flex items-center gap-1.5">
@@ -179,6 +183,7 @@ const defaultValues: RedirectFormValues = {
 }
 
 export const ManagerSettingsRedirectsScreen = () => {
+  const t = useTranslations()
   const { user, hasPermissions } = useSession()
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(1)
@@ -273,19 +278,19 @@ export const ManagerSettingsRedirectsScreen = () => {
           id: editing._id,
           data: trimmedValues,
         })
-        toast.success('Redirect updated')
+        toast.success(t('settings.redirects.updated'))
       } else {
         await createMutation.mutateAsync({
           contentType: 'Redirect',
           data: trimmedValues,
         })
-        toast.success('Redirect created')
+        toast.success(t('settings.redirects.created'))
       }
 
       await listQuery.refetch()
       setOpen(false)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error saving redirect')
+      toast.error(error instanceof Error ? error.message : t('settings.redirects.saveError'))
     }
   }
 
@@ -297,11 +302,11 @@ export const ManagerSettingsRedirectsScreen = () => {
         contentType: 'Redirect',
         id: deleting._id,
       })
-      toast.success('Redirect deleted')
+      toast.success(t('settings.redirects.deleted'))
       await listQuery.refetch()
       setDeleting(null)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error deleting redirect')
+      toast.error(error instanceof Error ? error.message : t('settings.redirects.deleteError'))
     }
   }
 
@@ -319,12 +324,10 @@ export const ManagerSettingsRedirectsScreen = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Waypoints className="h-5 w-5" />
-            Redirect Rules
+            {t('settings.redirects.title')}
           </CardTitle>
           <CardDescription>
-            Define source path patterns and destination templates. You can reuse dynamic params like{' '}
-            {'`{slug}`'}, choose HTTP status codes, add header-based conditions, and run small
-            helper functions.
+            {t('settings.redirects.description')}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -332,7 +335,7 @@ export const ManagerSettingsRedirectsScreen = () => {
       <div className="flex justify-end">
         {canCreate ? (
           <Button data-tour="redirects-create" onClick={openForCreate}>
-            <Plus className="mr-1 h-4 w-4" /> New redirect
+            <Plus className="mr-1 h-4 w-4" /> {t('settings.redirects.new')}
           </Button>
         ) : null}
       </div>
@@ -344,6 +347,7 @@ export const ManagerSettingsRedirectsScreen = () => {
             onDelete: setDeleting,
             canEditItem,
             canDeleteItem,
+            t,
           })}
           data={items}
         />
@@ -361,7 +365,7 @@ export const ManagerSettingsRedirectsScreen = () => {
           <DialogHeader>
             <DialogTitle>{editing ? 'Edit redirect' : 'Create redirect'}</DialogTitle>
             <DialogDescription>
-              Configure rule matching, destination behavior and optional conditional logic.
+              {t('settings.redirects.formDescription')}
             </DialogDescription>
           </DialogHeader>
 
@@ -373,12 +377,12 @@ export const ManagerSettingsRedirectsScreen = () => {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name</FormLabel>
+                      <FormLabel>{t('fields.name')}</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Blog migration rule" />
+                        <Input {...field} placeholder={t('settings.redirects.namePlaceholder')} />
                       </FormControl>
                       <FormDescription>
-                        Internal label to identify this redirect in manager.
+                        {t('settings.redirects.nameHelp')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -389,7 +393,7 @@ export const ManagerSettingsRedirectsScreen = () => {
                   name="enabled"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Enabled</FormLabel>
+                      <FormLabel>{t('common.enabled')}</FormLabel>
                       <FormControl>
                         <div className="flex items-center gap-2">
                           <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -397,7 +401,7 @@ export const ManagerSettingsRedirectsScreen = () => {
                         </div>
                       </FormControl>
                       <FormDescription>
-                        Turn the rule on or off without deleting it.
+                        {t('settings.redirects.enabledHelp')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -412,13 +416,13 @@ export const ManagerSettingsRedirectsScreen = () => {
                   render={({ field }) => (
                     <FormItem>
                       <LabelWithHelp help="Incoming path to match. Tokens in braces capture one URL segment, for example /blog/{slug} matches /blog/hello and stores slug=hello.">
-                        Source path
+                        {t('settings.redirects.sourcePath')}
                       </LabelWithHelp>
                       <FormControl>
                         <Input {...field} placeholder="/blog/{slug}" />
                       </FormControl>
                       <FormDescription>
-                        Incoming path pattern. Use placeholders like {'`{slug}`'}.
+                        {t('settings.redirects.sourcePathHelp')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -430,13 +434,13 @@ export const ManagerSettingsRedirectsScreen = () => {
                   render={({ field }) => (
                     <FormItem>
                       <LabelWithHelp help="Where the redirect sends users. Reuse source tokens like {slug}, or tokens added by mini functions like {locale}.">
-                        Destination path
+                        {t('settings.redirects.destinationPath')}
                       </LabelWithHelp>
                       <FormControl>
                         <Input {...field} placeholder="/newblog/{slug}" />
                       </FormControl>
                       <FormDescription>
-                        Output path template. Reuse params from source placeholders.
+                        {t('settings.redirects.destinationPathHelp')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -449,10 +453,9 @@ export const ManagerSettingsRedirectsScreen = () => {
                   <div className="grid items-end gap-3 md:grid-cols-[1fr_2fr]">
                     <div className="grid gap-2">
                       <div className="flex items-center gap-1.5">
-                        <Label>Preview with sample path</Label>
+                        <Label>{t('settings.redirects.previewSample')}</Label>
                         <HelpTooltip>
-                          Tests only path token matching. Header conditions and mini functions are
-                          not simulated here.
+                          {t('settings.redirects.previewHelp')}
                         </HelpTooltip>
                       </div>
                       <Input
@@ -462,7 +465,7 @@ export const ManagerSettingsRedirectsScreen = () => {
                       />
                     </div>
                     <div className="text-sm">
-                      <span className="font-medium">Result: </span>
+                      <span className="font-medium">{t('settings.redirects.result')} </span>
                       <span className="text-muted-foreground">
                         {preview || 'Sample path does not match source pattern.'}
                       </span>
@@ -478,24 +481,24 @@ export const ManagerSettingsRedirectsScreen = () => {
                   render={({ field }) => (
                     <FormItem>
                       <LabelWithHelp help="301/308 are permanent. 302/307 are temporary. 307/308 preserve the HTTP method, useful for non-GET requests.">
-                        Status code
+                        {t('settings.redirects.statusCode')}
                       </LabelWithHelp>
                       <FormControl>
                         <Select value={field.value} onValueChange={field.onChange}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
+                            <SelectValue placeholder={t('settings.redirects.selectStatus')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="301">301 - Permanent</SelectItem>
-                            <SelectItem value="302">302 - Temporary</SelectItem>
-                            <SelectItem value="307">307 - Temporary (method preserved)</SelectItem>
-                            <SelectItem value="308">308 - Permanent (method preserved)</SelectItem>
-                            <SelectItem value="custom">Custom</SelectItem>
+                            <SelectItem value="301">{t('settings.redirects.status301')}</SelectItem>
+                            <SelectItem value="302">{t('settings.redirects.status302')}</SelectItem>
+                            <SelectItem value="307">{t('settings.redirects.status307')}</SelectItem>
+                            <SelectItem value="308">{t('settings.redirects.status308')}</SelectItem>
+                            <SelectItem value="custom">{t('common.custom')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </FormControl>
                       <FormDescription>
-                        Pick a common redirect status or define a custom one.
+                        {t('settings.redirects.statusHelp')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -507,7 +510,7 @@ export const ManagerSettingsRedirectsScreen = () => {
                     name="customStatus"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Custom status</FormLabel>
+                        <FormLabel>{t('settings.redirects.customStatus')}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -523,7 +526,7 @@ export const ManagerSettingsRedirectsScreen = () => {
                           />
                         </FormControl>
                         <FormDescription>
-                          Must be a valid 3xx HTTP status (300-399).
+                          {t('settings.redirects.customStatusHelp')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -537,7 +540,7 @@ export const ManagerSettingsRedirectsScreen = () => {
                 name="preserveQuery"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preserve query string</FormLabel>
+                    <FormLabel>{t('settings.redirects.preserveQuery')}</FormLabel>
                     <FormControl>
                       <div className="flex items-center gap-2">
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -547,8 +550,7 @@ export const ManagerSettingsRedirectsScreen = () => {
                       </div>
                     </FormControl>
                     <FormDescription>
-                      Example: if input is {'`/old?a=1`'}, destination becomes {'`/new?a=1`'} when
-                      enabled.
+                      {t('settings.redirects.preserveQueryHelp')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -558,14 +560,13 @@ export const ManagerSettingsRedirectsScreen = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-1.5 text-base">
-                    Header conditions
+                    {t('settings.redirects.headerConditions')}
                     <HelpTooltip>
-                      Use this when the same path should redirect only for certain requests, for
-                      example a language, country, device, or custom proxy header.
+                      {t('settings.redirects.headerConditionsTooltip')}
                     </HelpTooltip>
                   </CardTitle>
                   <CardDescription>
-                    Optional filter: apply this redirect only when request headers match.
+                    {t('settings.redirects.headerConditionsHelp')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -574,8 +575,8 @@ export const ManagerSettingsRedirectsScreen = () => {
                     name="headerMatchMode"
                     render={({ field }) => (
                       <FormItem>
-                        <LabelWithHelp help="No condition always matches. Exists only checks presence. Equals, contains, starts with, and regex compare the selected header value.">
-                          Match mode
+                        <LabelWithHelp help="{t('settings.redirects.noCondition')} always matches. Exists only checks presence. Equals, contains, starts with, and regex compare the selected header value.">
+                          {t('settings.redirects.matchMode')}
                         </LabelWithHelp>
                         <FormControl>
                           <Select value={field.value} onValueChange={field.onChange}>
@@ -583,12 +584,12 @@ export const ManagerSettingsRedirectsScreen = () => {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="none">No condition</SelectItem>
-                              <SelectItem value="exists">Header exists</SelectItem>
-                              <SelectItem value="equals">Equals</SelectItem>
-                              <SelectItem value="contains">Contains</SelectItem>
-                              <SelectItem value="startsWith">Starts with</SelectItem>
-                              <SelectItem value="regex">Regex</SelectItem>
+                              <SelectItem value="none">{t('settings.redirects.noCondition')}</SelectItem>
+                              <SelectItem value="exists">{t('settings.redirects.headerExists')}</SelectItem>
+                              <SelectItem value="equals">{t('settings.redirects.equals')}</SelectItem>
+                              <SelectItem value="contains">{t('settings.redirects.contains')}</SelectItem>
+                              <SelectItem value="startsWith">{t('settings.redirects.startsWith')}</SelectItem>
+                              <SelectItem value="regex">{t('settings.redirects.regex')}</SelectItem>
                             </SelectContent>
                           </Select>
                         </FormControl>
@@ -603,7 +604,7 @@ export const ManagerSettingsRedirectsScreen = () => {
                       name="headerName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Header name</FormLabel>
+                          <FormLabel>{t('settings.redirects.headerName')}</FormLabel>
                           <FormControl>
                             <Input
                               {...field}
@@ -612,7 +613,7 @@ export const ManagerSettingsRedirectsScreen = () => {
                             />
                           </FormControl>
                           <FormDescription>
-                            Use lowercase names like {'`accept-language`'}.
+                            {t('settings.redirects.headerNameHelp')}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -627,13 +628,13 @@ export const ManagerSettingsRedirectsScreen = () => {
                       render={({ field }) => (
                         <FormItem>
                           <LabelWithHelp help="Expected value for the selected match mode. Regex mode allows simple safe patterns; grouping and alternation are rejected.">
-                            Header value
+                            {t('settings.redirects.headerValue')}
                           </LabelWithHelp>
                           <FormControl>
                             <Input {...field} value={field.value ?? ''} placeholder="es" />
                           </FormControl>
                           <FormDescription>
-                            For regex mode, this field is treated as a regex pattern.
+                            {t('settings.redirects.headerValueHelp')}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -646,14 +647,13 @@ export const ManagerSettingsRedirectsScreen = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-1.5 text-base">
-                    Mini function
+                    {t('settings.redirects.miniFunction')}
                     <HelpTooltip>
-                      Mini functions run after path and header matching. They can add template
-                      params, then destination path is rendered.
+                      {t('settings.redirects.miniFunctionTooltip')}
                     </HelpTooltip>
                   </CardTitle>
                   <CardDescription>
-                    Optional custom helper to compute extra params from request headers.
+                    {t('settings.redirects.miniFunctionHelp')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 gap-4">
@@ -662,24 +662,25 @@ export const ManagerSettingsRedirectsScreen = () => {
                     name="functionName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Function</FormLabel>
+                        <FormLabel>{t('common.function')}</FormLabel>
                         <FormControl>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="none">None</SelectItem>
+                              <SelectItem value="none">{t('common.none')}</SelectItem>
                               <SelectItem value="acceptLanguageToParam">
-                                acceptLanguageToParam
+                                {t('settings.redirects.acceptLanguageToParam')}
                               </SelectItem>
-                              <SelectItem value="headerValueToParam">headerValueToParam</SelectItem>
+                              <SelectItem value="headerValueToParam">
+                                {t('settings.redirects.headerValueToParam')}
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </FormControl>
                         <FormDescription>
-                          {'`acceptLanguageToParam`'} maps Accept-Language to a template param.{' '}
-                          {'`headerValueToParam`'} maps any header value.
+                          {t('settings.redirects.functionHints')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -693,7 +694,7 @@ export const ManagerSettingsRedirectsScreen = () => {
                       render={({ field }) => (
                         <FormItem>
                           <LabelWithHelp help="Valid JSON only. acceptLanguageToParam supports param, supported, fallback. headerValueToParam supports header, param, map, fallback, lowercase.">
-                            Function config (JSON)
+                            {t('settings.redirects.functionConfig')}
                           </LabelWithHelp>
                           <FormControl>
                             <Textarea
@@ -708,7 +709,7 @@ export const ManagerSettingsRedirectsScreen = () => {
                             />
                           </FormControl>
                           <FormDescription>
-                            JSON config consumed by the selected mini function.
+                            {t('settings.redirects.functionConfigHelp')}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -720,7 +721,7 @@ export const ManagerSettingsRedirectsScreen = () => {
 
               <DialogFooter>
                 <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   type="submit"
@@ -737,21 +738,21 @@ export const ManagerSettingsRedirectsScreen = () => {
       <Dialog open={!!deleting} onOpenChange={(value) => !value && setDeleting(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete redirect</DialogTitle>
+            <DialogTitle>{t('settings.redirects.deleteTitle')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete <span className="font-medium">{deleting?.name}</span>?
+              {t('common.deleteNamedConfirm', { name: deleting?.name ?? '' })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setDeleting(null)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               loading={deleteMutation.isPending}
               onClick={() => void handleDelete()}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

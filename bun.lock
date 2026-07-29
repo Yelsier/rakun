@@ -54,6 +54,16 @@
         "@trpc/server",
       ],
     },
+    "manager-locales": {
+      "name": "@rakun-kit/manager-locales",
+      "version": "1.0.0",
+      "devDependencies": {
+        "typescript": "^6.0.2",
+      },
+      "peerDependencies": {
+        "@rakun-kit/manager-react": "^1.4.11",
+      },
+    },
     "manager-react": {
       "name": "@rakun-kit/manager-react",
       "version": "1.4.11",
@@ -122,8 +132,11 @@
         "@tanstack/react-query": "^5.90.5",
         "@types/react": "^19.2.2",
         "@types/react-dom": "^19.2.2",
+        "@typescript-eslint/parser": "^8.46.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
+        "eslint": "^9",
+        "eslint-plugin-react": "^7.37.5",
         "jiti": "^2.4.2",
         "lucide-react": "^0.564.0",
         "next-themes": "^0.4.6",
@@ -135,6 +148,7 @@
         "tailwind-merge": "^3.3.1",
         "tailwindcss": "^4.1.12",
         "tw-animate-css": "^1.3.7",
+        "typescript-eslint": "^8.46.0",
         "use-sync-external-store": "^1.5.0",
         "zod": "^4.3.6",
         "zustand": "^5.0.8",
@@ -214,6 +228,7 @@
       "dependencies": {
         "@rakun-kit/core": "^1.2.1",
         "@rakun-kit/express": "^1.0.0",
+        "@rakun-kit/manager-locales": "^1.0.0",
         "@rakun-kit/manager-react": "^1.0.0",
         "bcrypt": "^6.0.0",
         "express": "^5.2.1",
@@ -240,6 +255,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@rakun-kit/core": "^1.2.1",
+        "@rakun-kit/manager-locales": "^1.0.0",
         "@rakun-kit/manager-react": "^1.2.0",
         "@rakun-kit/next": "^1.2.0",
         "@rakun-kit/openai": "^1.0.0",
@@ -851,6 +867,8 @@
     "@rakun-kit/core": ["@rakun-kit/core@workspace:core"],
 
     "@rakun-kit/express": ["@rakun-kit/express@workspace:express"],
+
+    "@rakun-kit/manager-locales": ["@rakun-kit/manager-locales@workspace:manager-locales"],
 
     "@rakun-kit/manager-react": ["@rakun-kit/manager-react@workspace:manager-react"],
 

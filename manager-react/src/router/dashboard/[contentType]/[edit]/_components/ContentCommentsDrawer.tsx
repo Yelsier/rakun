@@ -1,5 +1,9 @@
 'use client'
 
+import { useTranslations } from '@/i18n'
+
+const AT = '@'
+
 import { EmojiPicker } from '@ferrucc-io/emoji-picker'
 import { BellRing, MessageCircle, Plus, Send, XIcon } from 'lucide-react'
 import {
@@ -232,15 +236,18 @@ const DaySeparator = ({ date }: { date?: Date | string | null }) => (
   </div>
 )
 
-const UnreadSeparator = ({ separatorRef }: { separatorRef: Ref<HTMLDivElement> }) => (
-  <div ref={separatorRef} className="flex items-center gap-3 py-2" role="separator">
-    <div className="h-px flex-1 bg-primary" />
-    <span className="rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-primary-foreground shadow-sm">
-      Unread
-    </span>
-    <div className="h-px flex-1 bg-primary" />
-  </div>
-)
+const UnreadSeparator = ({ separatorRef }: { separatorRef: Ref<HTMLDivElement> }) => {
+  const t = useTranslations()
+  return (
+    <div ref={separatorRef} className="flex items-center gap-3 py-2" role="separator">
+      <div className="h-px flex-1 bg-primary" />
+      <span className="rounded-full bg-primary px-3 py-1 text-[11px] font-semibold text-primary-foreground shadow-sm">
+        {t('comments.unread')}
+      </span>
+      <div className="h-px flex-1 bg-primary" />
+    </div>
+  )
+}
 
 const UserHoverCard = ({ children, user }: { children: ReactNode; user: MentionUser }) => (
   <HoverCard openDelay={150}>
@@ -250,7 +257,7 @@ const UserHoverCard = ({ children, user }: { children: ReactNode; user: MentionU
         <UserAvatar name={displayUserName(user)} avatar={user.avatar} className="size-10" />
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{displayUserName(user)}</p>
-          <p className="truncate text-xs text-muted-foreground">@{user.user}</p>
+          <p className="truncate text-xs text-muted-foreground">{AT}{user.user}</p>
         </div>
       </div>
     </HoverCardContent>
@@ -305,7 +312,7 @@ const CommentText = ({
               'bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/30 hover:bg-amber-500/20 dark:text-amber-300'
           )}
         >
-          @{mentionUser.user}
+          {AT}{mentionUser.user}
         </span>
       </UserHoverCard>
     )
@@ -334,6 +341,7 @@ const CommentReactionPicker = ({
   ownComment: boolean
   reactions: CommentReactionRecord[]
 }) => {
+  const t = useTranslations()
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false)
 
   const handlePickerEmojiSelect = (emoji: string) => {
@@ -391,7 +399,7 @@ const CommentReactionPicker = ({
             <PopoverTrigger asChild>
               <button
                 type="button"
-                aria-label="More reactions"
+                aria-label={t('comments.moreReactions')}
                 disabled={disabled}
                 className="grid size-7 place-items-center rounded-full transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
               >
@@ -399,7 +407,7 @@ const CommentReactionPicker = ({
               </button>
             </PopoverTrigger>
           </TooltipTrigger>
-          <TooltipContent>More reactions</TooltipContent>
+          <TooltipContent>{t('comments.moreReactions')}</TooltipContent>
         </Tooltip>
         <PopoverContent
           align={ownComment ? 'start' : 'end'}
@@ -419,7 +427,7 @@ const CommentReactionPicker = ({
             <EmojiPicker.Header className="border-b p-2">
               <EmojiPicker.Input
                 autoFocus
-                placeholder="Search emoji"
+                placeholder={t('comments.searchEmoji')}
                 className="h-9 w-full rounded-md border bg-background pl-9 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </EmojiPicker.Header>
@@ -542,6 +550,7 @@ export const ContentCommentsDrawer = ({
   onOpenChange?: (open: boolean) => void
   trigger?: boolean
 } = {}) => {
+  const t = useTranslations()
   const { contentType, contentTypeId, contentTypeName, form, languageCode } = useEditPageContext()
   const { user } = useSession()
   const queryClient = useQueryClient()
@@ -691,7 +700,7 @@ export const ContentCommentsDrawer = ({
         setUnreadSessionReady(true)
       } catch (error) {
         if (unreadSessionIdRef.current === sessionId) {
-          toast.error(getActionErrorMessage(error, 'Could not load comment read state'))
+          toast.error(getActionErrorMessage(error, t('comments.couldNotLoadReadState')))
         }
       }
     })()
@@ -729,7 +738,7 @@ export const ContentCommentsDrawer = ({
         return result
       })
       .catch((error) => {
-        toast.error(getActionErrorMessage(error, 'Could not save comment read state'))
+        toast.error(getActionErrorMessage(error, t('comments.couldNotSaveReadState')))
       })
       .finally(() => {
         if (markReadPromiseRef.current === markReadPromise) {
@@ -784,7 +793,7 @@ export const ContentCommentsDrawer = ({
         })
       )
       .catch((error) => {
-        toast.error(getActionErrorMessage(error, 'Could not mark notifications as read'))
+        toast.error(getActionErrorMessage(error, t('comments.couldNotMarkNotifications')))
       })
   }, [commentsInput, markNotificationsReadMutation, open, queryClient, unreadNotifications])
 
@@ -814,7 +823,7 @@ export const ContentCommentsDrawer = ({
       await invalidateComments()
       scrollMessagesToEnd()
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not add comment'))
+      toast.error(getActionErrorMessage(error, t('comments.couldNotAdd')))
     }
   }
 
@@ -833,7 +842,7 @@ export const ContentCommentsDrawer = ({
       })
       await invalidateComments()
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not update reaction'))
+      toast.error(getActionErrorMessage(error, t('comments.couldNotUpdateReaction')))
     }
   }
 
@@ -902,7 +911,7 @@ export const ContentCommentsDrawer = ({
         <DrawerHeader className="shrink-0 border-b text-start">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
-              <DrawerTitle>Comments</DrawerTitle>
+              <DrawerTitle>{t('comments.title')}</DrawerTitle>
               <DrawerDescription>{drawerDescription}</DrawerDescription>
             </div>
             <DrawerClose asChild>
@@ -914,7 +923,7 @@ export const ContentCommentsDrawer = ({
                 aria-label="Close comments"
               >
                 <XIcon className="size-4" />
-                <span className="sr-only">Close</span>
+                <span className="sr-only">{t('common.close')}</span>
               </Button>
             </DrawerClose>
           </div>
@@ -927,14 +936,14 @@ export const ContentCommentsDrawer = ({
           <div className="border-b px-4">
             <TabsList variant="line" className="w-full">
               <TabsTrigger value="messages">
-                Messages
+                {t('comments.messages')}
                 {unreadCommentsCount ? (
                   <Badge variant="secondary">
                     {unreadCommentsCount > 99 ? '99+' : unreadCommentsCount}
                   </Badge>
                 ) : null}
               </TabsTrigger>
-              <TabsTrigger value="review">Review</TabsTrigger>
+              <TabsTrigger value="review">{t('review.title')}</TabsTrigger>
             </TabsList>
           </div>
           <TabsContent value="review" className="min-h-0">
@@ -949,17 +958,17 @@ export const ContentCommentsDrawer = ({
             <ScrollArea className="min-h-0 flex-1">
               <div className="flex min-h-[320px] flex-col gap-4 p-4">
                 {commentsQuery.isLoading ? (
-                  <p className="text-sm text-muted-foreground">Loading comments...</p>
+                  <p className="text-sm text-muted-foreground">{t('comments.loading')}</p>
                 ) : commentsQuery.isError ? (
                   <div className="flex flex-col items-start gap-3">
-                    <p className="text-sm text-destructive">Could not load comments.</p>
+                    <p className="text-sm text-destructive">{t('comments.loadError')}</p>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => void commentsQuery.refetch()}
                     >
-                      Retry
+                      {t('common.retry')}
                     </Button>
                   </div>
                 ) : comments.length ? (
@@ -1062,7 +1071,7 @@ export const ContentCommentsDrawer = ({
                     })}
                   </BubbleGroup>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No comments yet.</p>
+                  <p className="text-sm text-muted-foreground">{t('comments.empty')}</p>
                 )}
                 <div ref={messagesEndRef} aria-hidden="true" />
               </div>
@@ -1080,7 +1089,7 @@ export const ContentCommentsDrawer = ({
                 <MentionInput asChild>
                   <Textarea
                     ref={textareaRef}
-                    placeholder="Write a comment..."
+                    placeholder={t('comments.writePlaceholder')}
                     className="max-h-40 min-h-24 resize-none"
                     onKeyDown={(event) => {
                       if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
@@ -1093,7 +1102,7 @@ export const ContentCommentsDrawer = ({
                 <MentionContent className="max-h-64 min-w-64 overflow-y-auto">
                   {usersLoading ? (
                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                      Loading users...
+                      {t('comments.loadingUsers')}
                     </div>
                   ) : mentionUsers.length ? (
                     mentionUsers.map((mentionUser) => (
@@ -1110,13 +1119,13 @@ export const ContentCommentsDrawer = ({
                         <span className="min-w-0">
                           <span className="block truncate">{displayUserName(mentionUser)}</span>
                           <span className="block truncate text-xs text-muted-foreground">
-                            @{mentionUser.user}
+                            {AT}{mentionUser.user}
                           </span>
                         </span>
                       </MentionItem>
                     ))
                   ) : (
-                    <div className="px-2 py-1.5 text-sm text-muted-foreground">No users found</div>
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">{t('comments.noUsersFound')}</div>
                   )}
                 </MentionContent>
               </Mention>
@@ -1127,7 +1136,7 @@ export const ContentCommentsDrawer = ({
                 onClick={() => void handleSubmit()}
               >
                 <Send />
-                Send
+                {t('common.send')}
               </Button>
             </DrawerFooter>
           </TabsContent>

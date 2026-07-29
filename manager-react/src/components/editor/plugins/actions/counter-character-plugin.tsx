@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import { $rootTextContent } from '@lexical/text'
 
+import { useTranslations } from '@/i18n'
+
 let textEncoderInstance: null | TextEncoder = null
 
 function textEncoder(): null | TextEncoder {
@@ -47,6 +49,7 @@ const countWords = (text: string) => {
 }
 
 export function CounterCharacterPlugin({ charset = 'UTF-16' }: CounterCharacterPluginProps) {
+  const t = useTranslations()
   const [editor] = useLexicalComposerContext()
   const [stats, setStats] = useState(() => {
     const initialText = editor.getEditorState().read($rootTextContent)
@@ -67,7 +70,12 @@ export function CounterCharacterPlugin({ charset = 'UTF-16' }: CounterCharacterP
 
   return (
     <div className="flex gap-2 text-xs whitespace-nowrap text-gray-500">
-      <p>{stats.characters} characters</p>|<p>{stats.words} words</p>
+      <p>
+        {t('editor.counter', {
+          characters: stats.characters,
+          words: stats.words,
+        })}
+      </p>
     </div>
   )
 }

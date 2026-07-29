@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { TabsContent } from '@/components/ui/tabs'
+import { translateLayoutModuleLabel, useTranslations } from '@/i18n'
 
 const getLayoutOverrideValue = (override?: RouteLayoutModuleOverrideRecord) => {
   if (!override) return '__default__'
@@ -30,6 +31,7 @@ export const RouteLayoutModuleTabContent = ({
 }: {
   layoutModule: RouteLayoutModuleRecord
 }) => {
+  const t = useTranslations()
   const { activeTab, contentTypeId, contentTypeName, routeLayout } =
     useEditPageContext()
   const override = routeLayout.overridesByKey.get(`${layoutModule.routeId}:${layoutModule.key}`)
@@ -64,7 +66,7 @@ export const RouteLayoutModuleTabContent = ({
       })
 
       await routeLayout.routeLayoutOverridesQuery.refetch()
-      toast.success('Layout override updated successfully')
+      toast.success(t('contentEdit.layoutOverrideUpdated'))
     } finally {
       setIsSaving(false)
     }
@@ -73,7 +75,12 @@ export const RouteLayoutModuleTabContent = ({
   const defaultOption = layoutModule.moduleId
     ? (options.find((option) => option.value === layoutModule.moduleId)?.label ??
       layoutModule.moduleId)
-    : 'No module'
+    : t('contentEdit.noModule')
+  const layoutModuleLabel = translateLayoutModuleLabel(
+    t,
+    layoutModule.key,
+    layoutModule.contentType,
+  )
 
   return (
     <TabsContent
@@ -86,18 +93,19 @@ export const RouteLayoutModuleTabContent = ({
     >
       <div className='mx-auto flex w-full flex-col gap-4'>
         <div>
-          <h2 className='text-lg font-semibold'>{layoutModule.contentType}</h2>
+          <h2 className='text-lg font-semibold'>{layoutModuleLabel}</h2>
           <p className='text-muted-foreground text-sm'>
-            Default from route: {defaultOption}. Override only for this entry.
+            {t('contentEdit.defaultFromRoute')} {defaultOption}
+            {t('contentEdit.overrideOnlyForEntry')}
           </p>
         </div>
         <Select value={selected} onValueChange={setSelected}>
           <SelectTrigger>
-            <SelectValue placeholder='Select module' />
+            <SelectValue placeholder={t('contentEdit.selectModule')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value='__default__'>Use route default</SelectItem>
-            <SelectItem value='__none__'>No module</SelectItem>
+            <SelectItem value='__default__'>{t('contentEdit.useRouteDefault')}</SelectItem>
+            <SelectItem value='__none__'>{t('contentEdit.noModule')}</SelectItem>
             {options.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
@@ -110,7 +118,7 @@ export const RouteLayoutModuleTabContent = ({
           loading={isSaving}
           onClick={() => saveLayoutOverride(layoutModule, selected)}
         >
-          Save override
+          {t('contentEdit.saveOverride')}
         </Button>
       </div>
     </TabsContent>
