@@ -3,9 +3,9 @@ import { ContentType, Fields } from "@rakun-kit/core";
 export const Header = new ContentType({
   name: "Header",
   menu: {
-    title: "contentTypes.header.menu",
+    title: "Headers",
     icon: "PanelTop",
-    category: "contentTypes.category.layout",
+    category: "Layout",
   },
   fields: {
     brand: Fields.string().required(),
@@ -18,9 +18,9 @@ export const Header = new ContentType({
 export const Footer = new ContentType({
   name: "Footer",
   menu: {
-    title: "contentTypes.footer.menu",
+    title: "Footers",
     icon: "panel-bottom",
-    category: "contentTypes.category.layout",
+    category: "Layout",
   },
   fields: {
     brand: Fields.string().required(),
@@ -34,9 +34,9 @@ export const Footer = new ContentType({
 export const PageSection = new ContentType({
   name: "PageSection",
   menu: {
-    title: "contentTypes.pageSection.menu",
+    title: "Page sections",
     icon: "LayoutTemplate",
-    category: "contentTypes.category.blocks",
+    category: "Blocks",
   },
   fields: {
     title: Fields.string().required().translatable(),
@@ -54,9 +54,9 @@ export const Page = new ContentType({
   },
   iterator: [{ contentType: PageSection, type: "existing" }],
   menu: {
-    title: "contentTypes.page.menu",
+    title: "Pages",
     icon: "FileText",
-    category: "contentTypes.category.content",
+    category: "Content",
   },
   listFields: ["title", "slug"],
   uniques: [["slug"]],
@@ -65,9 +65,9 @@ export const Page = new ContentType({
 export const Author = new ContentType({
   name: "Author",
   menu: {
-    title: "contentTypes.author.menu",
+    title: "Authors",
     icon: "user-round",
-    category: "contentTypes.category.editorial",
+    category: "Editorial",
   },
   fields: {
     name: Fields.string().required(),
@@ -80,9 +80,9 @@ export const Author = new ContentType({
 export const Article = new ContentType({
   name: "Article",
   menu: {
-    title: "contentTypes.article.menu",
+    title: "Articles",
     icon: "newspaper",
-    category: "contentTypes.category.editorial",
+    category: "Editorial",
   },
   fields: {
     title: Fields.string().required(),
@@ -100,9 +100,9 @@ export const Article = new ContentType({
 export const ConditionalDemo = new ContentType({
   name: "ConditionalDemo",
   menu: {
-    title: "contentTypes.conditionalDemo.menu",
+    title: "Conditional demos",
     icon: "ListChecks",
-    category: "contentTypes.category.development",
+    category: "Development",
   },
   fields: {
     title: Fields.string().required(),

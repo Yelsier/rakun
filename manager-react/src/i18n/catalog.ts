@@ -1,8 +1,4 @@
-export type ManagerMessageParamSpec =
-  | 'string'
-  | 'number'
-  | 'boolean'
-  | readonly string[]
+export type ManagerMessageParamSpec = 'string' | 'number' | 'boolean' | readonly string[]
 
 export type ManagerMessageDefinition = {
   defaultMessage: string
@@ -50,8 +46,7 @@ export const managerMessages = {
   },
   'dashboard.noNotifications': { defaultMessage: 'No notifications yet' },
   'dashboard.notificationsDescription': {
-    defaultMessage:
-      'Latest {count} notifications, including those already viewed.',
+    defaultMessage: 'Latest {count} notifications, including those already viewed.',
     params: { count: 'number' },
   },
   'dashboard.removedFavorite': { defaultMessage: 'Removed from favorites' },
@@ -68,35 +63,6 @@ export const managerMessages = {
   'settings.redirects': { defaultMessage: 'Redirects' },
   'settings.robots': { defaultMessage: 'Robots' },
   'settings.seo': { defaultMessage: 'SEO' },
-
-  'contentTypes.category.layout': { defaultMessage: 'Layout' },
-  'contentTypes.category.blocks': { defaultMessage: 'Blocks' },
-  'contentTypes.category.dynamicData': { defaultMessage: 'Dynamic data' },
-  'contentTypes.category.editorial': { defaultMessage: 'Editorial' },
-  'contentTypes.category.development': { defaultMessage: 'Development' },
-  'contentTypes.category.content': { defaultMessage: 'Content' },
-
-  'contentTypes.header.menu': { defaultMessage: 'Headers' },
-  'contentTypes.footer.menu': { defaultMessage: 'Footers' },
-  'contentTypes.pageSection.menu': { defaultMessage: 'Page sections' },
-  'contentTypes.category.menu': { defaultMessage: 'Categories' },
-  'contentTypes.project.menu': { defaultMessage: 'Projects' },
-  'contentTypes.featureCarousel.menu': { defaultMessage: 'Feature carousels' },
-  'contentTypes.categoriesGallery.menu': {
-    defaultMessage: 'Category galleries',
-  },
-  'contentTypes.page.menu': { defaultMessage: 'Pages' },
-  'contentTypes.author.menu': { defaultMessage: 'Authors' },
-  'contentTypes.article.menu': { defaultMessage: 'Articles' },
-  'contentTypes.relationLevel2.menu': { defaultMessage: 'Relations level 2' },
-  'contentTypes.relationPlayground.menu': {
-    defaultMessage: 'Relations playground',
-  },
-  'contentTypes.imagePlayground.menu': { defaultMessage: 'Images playground' },
-  'contentTypes.conditionalDemo.menu': { defaultMessage: 'Conditional demos' },
-  'contentTypes.translationPlayground.menu': {
-    defaultMessage: 'Translation playground',
-  },
 
   'common.cancel': { defaultMessage: 'Cancel' },
   'common.edit': { defaultMessage: 'Edit' },
@@ -136,8 +102,7 @@ export const managerMessages = {
   'media.emptyFolder': { defaultMessage: 'No files in this folder yet.' },
   'media.bulkDeleteTitle': { defaultMessage: 'Delete selected files' },
   'media.bulkDeleteDescription': {
-    defaultMessage:
-      'This will delete {count} selected {count, plural, one {file} other {files}}.',
+    defaultMessage: 'This will delete {count} selected {count, plural, one {file} other {files}}.',
     params: { count: 'number' },
   },
   'media.noInlinePreview': {
@@ -184,8 +149,7 @@ export const managerMessages = {
   'media.editDescription': { defaultMessage: 'Update the name.' },
   'media.cropTitle': { defaultMessage: 'Crop and rotate image' },
   'media.cropDescription': {
-    defaultMessage:
-      'Drag the crop area, resize from any edge, then save a copy.',
+    defaultMessage: 'Drag the crop area, resize from any edge, then save a copy.',
   },
   'media.loadingImage': { defaultMessage: 'Loading image...' },
   'media.imageLoadError': { defaultMessage: 'Image could not be loaded.' },
@@ -239,18 +203,15 @@ export const managerMessages = {
   'media.folderUpdated': { defaultMessage: 'Folder updated successfully' },
   'media.fileUpdated': { defaultMessage: 'File updated successfully' },
   'media.filesMoved': {
-    defaultMessage:
-      '{count} {count, plural, one {file} other {files}} moved successfully',
+    defaultMessage: '{count} {count, plural, one {file} other {files}} moved successfully',
     params: { count: 'number' },
   },
   'media.filesDeletedCount': {
-    defaultMessage:
-      '{count} {count, plural, one {file} other {files}} deleted successfully',
+    defaultMessage: '{count} {count, plural, one {file} other {files}} deleted successfully',
     params: { count: 'number' },
   },
   'media.filesFailed': {
-    defaultMessage:
-      '{count} {count, plural, one {file} other {files}} failed. {reason}',
+    defaultMessage: '{count} {count, plural, one {file} other {files}} failed. {reason}',
     params: { count: 'number', reason: 'string' },
   },
   'media.openImageEditorError': {
@@ -268,8 +229,7 @@ export const managerMessages = {
   'media.createFolderError': { defaultMessage: 'Could not create folder' },
   'media.uploadFailed': { defaultMessage: 'Upload failed' },
   'media.uploadUnexpectedError': {
-    defaultMessage:
-      'An unexpected error occurred during upload. Please try again.',
+    defaultMessage: 'An unexpected error occurred during upload. Please try again.',
   },
   'media.fileRejected': {
     defaultMessage: '"{name}" has been rejected',
@@ -388,13 +348,11 @@ export const managerMessages = {
     defaultMessage: 'Restore selected item?',
   },
   'contentList.bulkMoved': {
-    defaultMessage:
-      '{count} {count, plural, one {item} other {items}} moved to trash',
+    defaultMessage: '{count} {count, plural, one {item} other {items}} moved to trash',
     params: { count: 'number' },
   },
   'contentList.bulkDeleted': {
-    defaultMessage:
-      '{count} {count, plural, one {item} other {items}} deleted permanently',
+    defaultMessage: '{count} {count, plural, one {item} other {items}} deleted permanently',
     params: { count: 'number' },
   },
   'contentList.bulkTranslated': {
@@ -403,8 +361,7 @@ export const managerMessages = {
     params: { count: 'number', segments: 'number' },
   },
   'contentList.bulkFailed': {
-    defaultMessage:
-      '{count} {count, plural, one {item} other {items}} failed. {reason}',
+    defaultMessage: '{count} {count, plural, one {item} other {items}} failed. {reason}',
     params: { count: 'number', reason: 'string' },
   },
   'contentList.selectTargetLanguage': {
@@ -450,12 +407,10 @@ export const managerMessages = {
       'This moves the primary page and every variant in this group to trash. The whole page group will be hidden from lists and public routes, and can be restored together from trash.',
   },
   'contentEdit.deletePermanentlyDescription': {
-    defaultMessage:
-      'This item will be permanently deleted. This cannot be undone.',
+    defaultMessage: 'This item will be permanently deleted. This cannot be undone.',
   },
   'contentEdit.deleteConfirmDescription': {
-    defaultMessage:
-      'Are you sure you want to permanently delete this item? This cannot be undone.',
+    defaultMessage: 'Are you sure you want to permanently delete this item? This cannot be undone.',
   },
   'contentEdit.trashConfirmDescription': {
     defaultMessage:
@@ -559,8 +514,7 @@ export const managerMessages = {
       'Changes only affect this entry. The shared structure has not been configured yet.',
   },
   'contentEdit.chooseSharedStructureDescription': {
-    defaultMessage:
-      'Choose this iterator as the initial structure for every linked entry.',
+    defaultMessage: 'Choose this iterator as the initial structure for every linked entry.',
   },
   'contentEdit.useThisAsSharedTitle': {
     defaultMessage: 'Use this as the shared structure?',
@@ -580,16 +534,14 @@ export const managerMessages = {
     defaultMessage: 'The update-any permission is required to initialize it.',
   },
   'contentEdit.firstEntryInitializes': {
-    defaultMessage:
-      'Saving initializes it automatically only when this is the first entry.',
+    defaultMessage: 'Saving initializes it automatically only when this is the first entry.',
   },
   'contentEdit.iteratorChangesApply': {
     defaultMessage: 'Iterator changes apply to every linked {contentType}.',
     params: { contentType: 'string' },
   },
   'contentEdit.sharedIteratorReadOnly': {
-    defaultMessage:
-      'This shared iterator is read-only with your current permissions.',
+    defaultMessage: 'This shared iterator is read-only with your current permissions.',
   },
   'contentEdit.stopSelectingModules': {
     defaultMessage: 'Stop selecting modules',
@@ -617,8 +569,7 @@ export const managerMessages = {
   'contentEdit.manageAndReorder': { defaultMessage: 'Manage & reorder' },
   'contentEdit.manageSelectedMedia': { defaultMessage: 'Manage selected media' },
   'contentEdit.manageSelectedMediaDescription': {
-    defaultMessage:
-      'Drag the files to reorder them or remove files from the selection.',
+    defaultMessage: 'Drag the files to reorder them or remove files from the selection.',
   },
   'contentEdit.invalidMediaFiles': {
     defaultMessage: 'Selected files are not valid {mediaType} media',
@@ -655,8 +606,7 @@ export const managerMessages = {
     defaultMessage: 'Delete variant permanently?',
   },
   'variants.deletePermanentlyConfirm': {
-    defaultMessage:
-      '“{label}” will be permanently deleted. This action cannot be undone.',
+    defaultMessage: '“{label}” will be permanently deleted. This action cannot be undone.',
     params: { label: 'string' },
   },
   'variants.createDraftVariant': { defaultMessage: 'Create draft variant' },
@@ -756,8 +706,7 @@ export const managerMessages = {
     defaultMessage: 'Save a new revision before requesting review again.',
   },
   'review.documentChanged': {
-    defaultMessage:
-      'The document changed; request review again for the current revision.',
+    defaultMessage: 'The document changed; request review again for the current revision.',
   },
   'review.readyToPublish': { defaultMessage: 'Ready to publish' },
   'review.newPagePublishDescription': {
@@ -783,8 +732,7 @@ export const managerMessages = {
   'review.notRequested': { defaultMessage: 'not requested' },
   'review.selectReviewers': { defaultMessage: 'Select reviewers' },
   'review.reviewersSelected': {
-    defaultMessage:
-      '{count} {count, plural, one {reviewer} other {reviewers}} selected',
+    defaultMessage: '{count} {count, plural, one {reviewer} other {reviewers}} selected',
     params: { count: 'number' },
   },
   'review.searchPeople': { defaultMessage: 'Search people…' },
@@ -793,8 +741,7 @@ export const managerMessages = {
   'review.feedback': { defaultMessage: 'Feedback' },
   'review.feedbackOnly': { defaultMessage: 'Feedback only' },
   'review.feedbackPlaceholder': {
-    defaultMessage:
-      'Optional feedback for approval; required when requesting changes',
+    defaultMessage: 'Optional feedback for approval; required when requesting changes',
   },
   'review.requestedToast': { defaultMessage: 'Review requested' },
   'review.approvedToast': { defaultMessage: 'Review approved' },
@@ -838,8 +785,7 @@ export const managerMessages = {
   'dynamicData.matchAny': { defaultMessage: 'Match any' },
   'dynamicData.addCondition': { defaultMessage: 'Add condition' },
   'dynamicData.noConditions': {
-    defaultMessage:
-      'No conditions. All records from this collection will match.',
+    defaultMessage: 'No conditions. All records from this collection will match.',
   },
   'dynamicData.fixedValue': { defaultMessage: 'Fixed value' },
   'dynamicData.removeCondition': { defaultMessage: 'Remove condition' },
@@ -872,13 +818,11 @@ export const managerMessages = {
   'modules.noModulesFound': { defaultMessage: 'No modules found.' },
   'modules.deleteSavedModule': { defaultMessage: 'Delete saved module' },
   'modules.deleteSavedConfirm': {
-    defaultMessage:
-      'Permanently delete “{title}”? This cannot be undone.',
+    defaultMessage: 'Permanently delete “{title}”? This cannot be undone.',
     params: { title: 'string' },
   },
   'modules.deleteSavedConfirmGeneric': {
-    defaultMessage:
-      'Permanently delete this saved module? This cannot be undone.',
+    defaultMessage: 'Permanently delete this saved module? This cannot be undone.',
   },
   'modules.searchModules': { defaultMessage: 'Search modules' },
   'modules.moduleVisibility': { defaultMessage: 'Module visibility' },
@@ -903,8 +847,7 @@ export const managerMessages = {
   'modules.documentField': { defaultMessage: 'Document field' },
   'modules.selectField': { defaultMessage: 'Select a field' },
   'modules.noVisibilityFields': {
-    defaultMessage:
-      'This content type has no fields available for visibility conditions.',
+    defaultMessage: 'This content type has no fields available for visibility conditions.',
   },
   'modules.saveVisibility': { defaultMessage: 'Save visibility' },
   'modules.deleted': {
@@ -1007,8 +950,7 @@ export const managerMessages = {
   'account.mfa.totp': { defaultMessage: 'TOTP' },
   'account.mfa.webauthn': { defaultMessage: 'WebAuthn' },
   'account.mfa.scanBefore': {
-    defaultMessage:
-      'Scan the QR code below with your authenticator app, or',
+    defaultMessage: 'Scan the QR code below with your authenticator app, or',
   },
   'account.mfa.clickLink': { defaultMessage: 'click the link' },
   'account.mfa.scanAfter': {
@@ -1022,22 +964,19 @@ export const managerMessages = {
     defaultMessage: 'Enter your device name',
   },
   'account.mfa.deviceRegistered': {
-    defaultMessage:
-      'Device registered successfully! Your account is now more secure.',
+    defaultMessage: 'Device registered successfully! Your account is now more secure.',
   },
   'account.mfa.registerDeviceFailed': {
     defaultMessage: 'Failed to register the device. Please try again.',
   },
   'account.mfa.totpSetupComplete': {
-    defaultMessage:
-      '2FA setup complete! Your account is now more secure.',
+    defaultMessage: '2FA setup complete! Your account is now more secure.',
   },
   'account.mfa.verifyCodeFailed': {
     defaultMessage: 'Failed to verify the code. Please try again.',
   },
   'account.mfa.setupWarning': {
-    defaultMessage:
-      'You have not set up 2FA yet. Please set it up to secure your account.',
+    defaultMessage: 'You have not set up 2FA yet. Please set it up to secure your account.',
   },
   'account.mfa.setupAction': { defaultMessage: 'Set up 2FA' },
   'account.profileImageMustBeImage': {
@@ -1068,8 +1007,7 @@ export const managerMessages = {
       'Your 2FA challenge has expired. Please login again to receive a new challenge.',
   },
   'mfa.unsupportedMethod': {
-    defaultMessage:
-      'Unsupported 2FA method. Please try logging in again.',
+    defaultMessage: 'Unsupported 2FA method. Please try logging in again.',
   },
   'mfa.verifyLogin': { defaultMessage: 'Verify your login' },
   'mfa.verifyLoginDescription': {
@@ -1084,15 +1022,13 @@ export const managerMessages = {
       'Please complete the WebAuthn authentication process using your registered device. Follow the prompts on your device to authenticate and access your account securely.',
   },
   'mfa.webauthnOptionsError': {
-    defaultMessage:
-      'Failed to get authentication options. Please try again.',
+    defaultMessage: 'Failed to get authentication options. Please try again.',
   },
   'mfa.authenticationFailed': {
     defaultMessage: 'Authentication failed. Please try again.',
   },
   'mfa.verifyCodeError': {
-    defaultMessage:
-      'An error occurred while verifying the code. Please try again.',
+    defaultMessage: 'An error occurred while verifying the code. Please try again.',
   },
 
   'users.twoFactorEnabled': { defaultMessage: 'Two Factor Enabled' },
@@ -1133,8 +1069,7 @@ export const managerMessages = {
   },
   'apiRoutes.playground': { defaultMessage: 'Playground' },
   'apiRoutes.playgroundDescription': {
-    defaultMessage:
-      'Execute the operation with the current manager client.',
+    defaultMessage: 'Execute the operation with the current manager client.',
   },
   'apiRoutes.schemaDefault': { defaultMessage: 'default:' },
   'apiRoutes.schemaValues': { defaultMessage: 'values:' },
@@ -1283,8 +1218,7 @@ export const managerMessages = {
   'settings.routes.searchPath': { defaultMessage: 'Search path...' },
 
   'settings.seo.description': {
-    defaultMessage:
-      'Configure default metadata, social previews and title templates.',
+    defaultMessage: 'Configure default metadata, social previews and title templates.',
   },
   'settings.seo.save': { defaultMessage: 'Save SEO settings' },
   'settings.seo.fixErrors': {
@@ -1302,8 +1236,7 @@ export const managerMessages = {
   },
   'settings.system.schemaState': { defaultMessage: 'Schema State' },
   'settings.system.pendingMigrations': {
-    defaultMessage:
-      '{count, plural, one {# pending migration} other {# pending migrations}}',
+    defaultMessage: '{count, plural, one {# pending migration} other {# pending migrations}}',
     params: { count: 'number' },
   },
   'settings.system.noSchemaState': {
@@ -1361,8 +1294,7 @@ export const managerMessages = {
   },
   'settings.reviewPolicies.for': { defaultMessage: 'for' },
   'settings.reviewPolicies.approvalsFrom': {
-    defaultMessage:
-      '{count, plural, one {# approval} other {# approvals}} from',
+    defaultMessage: '{count, plural, one {# approval} other {# approvals}} from',
     params: { count: 'number' },
   },
   'settings.reviewPolicies.empty': {
@@ -1388,13 +1320,11 @@ export const managerMessages = {
 
   'settings.robots.title': { defaultMessage: 'Robots.txt' },
   'settings.robots.description': {
-    defaultMessage:
-      'Configure crawler rules, crawl delays, sitemap hints and host directives.',
+    defaultMessage: 'Configure crawler rules, crawl delays, sitemap hints and host directives.',
   },
   'settings.robots.newRule': { defaultMessage: 'New rule' },
   'settings.robots.formDescription': {
-    defaultMessage:
-      'Rules are rendered by order and grouped by user-agent.',
+    defaultMessage: 'Rules are rendered by order and grouped by user-agent.',
   },
   'settings.robots.directive': { defaultMessage: 'Directive' },
   'settings.robots.allow': { defaultMessage: 'Allow' },
@@ -1426,12 +1356,10 @@ export const managerMessages = {
   },
   'settings.redirects.new': { defaultMessage: 'New redirect' },
   'settings.redirects.formDescription': {
-    defaultMessage:
-      'Configure rule matching, destination behavior and optional conditional logic.',
+    defaultMessage: 'Configure rule matching, destination behavior and optional conditional logic.',
   },
   'settings.redirects.nameHelp': {
-    defaultMessage:
-      'Internal label to identify this redirect in manager.',
+    defaultMessage: 'Internal label to identify this redirect in manager.',
   },
   'settings.redirects.enabledHelp': {
     defaultMessage: 'Turn the rule on or off without deleting it.',
@@ -1444,8 +1372,7 @@ export const managerMessages = {
     defaultMessage: 'Destination path',
   },
   'settings.redirects.destinationPathHelp': {
-    defaultMessage:
-      'Output path template. Reuse params from source placeholders.',
+    defaultMessage: 'Output path template. Reuse params from source placeholders.',
   },
   'settings.redirects.previewSample': {
     defaultMessage: 'Preview with sample path',
@@ -1465,8 +1392,7 @@ export const managerMessages = {
     defaultMessage: '308 - Permanent (method preserved)',
   },
   'settings.redirects.statusHelp': {
-    defaultMessage:
-      'Pick a common redirect status or define a custom one.',
+    defaultMessage: 'Pick a common redirect status or define a custom one.',
   },
   'settings.redirects.customStatus': { defaultMessage: 'Custom status' },
   'settings.redirects.customStatusHelp': {
@@ -1476,8 +1402,7 @@ export const managerMessages = {
     defaultMessage: 'Preserve query string',
   },
   'settings.redirects.preserveQueryHelp': {
-    defaultMessage:
-      'Example: if input is `/old?a=1`, destination becomes `/new?a=1` when enabled.',
+    defaultMessage: 'Example: if input is `/old?a=1`, destination becomes `/new?a=1` when enabled.',
   },
   'settings.redirects.headerConditions': {
     defaultMessage: 'Header conditions',
@@ -1487,8 +1412,7 @@ export const managerMessages = {
       'Use this when the same path should redirect only for certain requests, for example a language, country, device, or custom proxy header.',
   },
   'settings.redirects.headerConditionsHelp': {
-    defaultMessage:
-      'Optional filter: apply this redirect only when request headers match.',
+    defaultMessage: 'Optional filter: apply this redirect only when request headers match.',
   },
   'settings.redirects.matchMode': { defaultMessage: 'Match mode' },
   'settings.redirects.noCondition': { defaultMessage: 'No condition' },
@@ -1503,8 +1427,7 @@ export const managerMessages = {
   },
   'settings.redirects.headerValue': { defaultMessage: 'Header value' },
   'settings.redirects.headerValueHelp': {
-    defaultMessage:
-      'For regex mode, this field is treated as a regex pattern.',
+    defaultMessage: 'For regex mode, this field is treated as a regex pattern.',
   },
   'settings.redirects.miniFunction': { defaultMessage: 'Mini function' },
   'settings.redirects.miniFunctionTooltip': {
@@ -1512,8 +1435,7 @@ export const managerMessages = {
       'Mini functions run after path and header matching. They can add template params, then destination path is rendered.',
   },
   'settings.redirects.miniFunctionHelp': {
-    defaultMessage:
-      'Optional custom helper to compute extra params from request headers.',
+    defaultMessage: 'Optional custom helper to compute extra params from request headers.',
   },
   'settings.redirects.acceptLanguageToParam': {
     defaultMessage: 'acceptLanguageToParam',
@@ -1673,7 +1595,6 @@ export const managerMessages = {
     defaultMessage: '{label} ({count})',
     params: { label: 'string', count: 'number' },
   },
-
 } as const satisfies Record<string, ManagerMessageDefinition>
 
 export type ManagerMessageKey = keyof typeof managerMessages
