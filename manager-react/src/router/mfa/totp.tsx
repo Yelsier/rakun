@@ -20,6 +20,7 @@ import {
   InputOTPSeparator,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { useTranslations } from "@/i18n";
 
 type TotpFormProps = {
   challenge: string;
@@ -37,6 +38,7 @@ export default function TotpForm({
   onSuccess,
   onExpired,
 }: TotpFormProps) {
+  const t = useTranslations();
   const form = useForm<VerifyTotpInput>({
     defaultValues: {
       code: "",
@@ -73,7 +75,7 @@ export default function TotpForm({
 
         console.error(error);
         toast.error(
-          "An error occurred while verifying the code. Please try again.",
+          t('mfa.verifyCodeError'),
         );
       },
     });
@@ -82,10 +84,9 @@ export default function TotpForm({
   return (
     <Card className="mx-auto w-92">
       <CardHeader>
-        <CardTitle>Verify your login</CardTitle>
+        <CardTitle>{t("mfa.verifyLogin")}</CardTitle>
         <CardDescription>
-          Enter the verification code from your authenticator app to complete
-          the login process.
+          {t("mfa.verifyLoginDescription")}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -101,7 +102,7 @@ export default function TotpForm({
                 className="flex flex-col items-center gap-4"
                 data-invalid={fieldState.invalid}
               >
-                <FieldLabel htmlFor="code">Verification code</FieldLabel>
+                <FieldLabel htmlFor="code">{t("account.mfa.verificationCode")}</FieldLabel>
                 <InputOTP
                   maxLength={6}
                   id="code"
@@ -124,7 +125,7 @@ export default function TotpForm({
                 </InputOTP>
                 <FieldError errors={[fieldState.error]} />
                 <Button loading={isPending} type="submit">
-                  Verify
+                  {t("common.verify")}
                 </Button>
               </Field>
             )}

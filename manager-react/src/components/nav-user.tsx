@@ -6,11 +6,11 @@ import { Label } from "./ui/label";
 import { Switch } from "./ui/switch";
 import LanguageSelector from "./LanguageSelector";
 import { useManagerMutation } from "@/client/react";
+import { useTranslations } from "@/i18n";
 import { ManagerLink } from "@/link";
 import { useManagerNavigation } from "@/state/navigation";
 import { useSession } from "@/state/session";
 import { useManagerTheme } from "@/state/theme";
-import { decodeCamelCase } from "../helpers/decode-camel-case";
 
 import { UserAvatar } from "./user-avatar";
 import {
@@ -35,6 +35,7 @@ export function NavUser() {
   const navigation = useManagerNavigation();
   const logoutMutation = useManagerMutation("manager.auth.logout");
   const { user } = useSession();
+  const t = useTranslations();
   const avatar = {
     url: user.avatarUrl,
     previewUrl: user.avatarPreviewUrl,
@@ -101,13 +102,15 @@ export function NavUser() {
               >
                 <Switch id="theme-switch" checked={resolvedTheme === "light"} />
                 <Label htmlFor="theme-switch" className="pointer-events-none">
-                  {decodeCamelCase(resolvedTheme || "light")}
+                  {resolvedTheme === "dark"
+                    ? t("navUser.theme.dark")
+                    : t("navUser.theme.light")}
                 </Label>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <ManagerLink href="/account">
                   <BadgeCheck />
-                  Account
+                  {t("navUser.account")}
                 </ManagerLink>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
@@ -117,7 +120,7 @@ export function NavUser() {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
-              Log out
+              {t("navUser.logOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

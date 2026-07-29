@@ -13,25 +13,26 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { useTranslations } from '@/i18n'
 
 export const CreateLanguage = ({ refetch }: { refetch: () => void }) => {
+  const t = useTranslations()
   const [open, setOpen] = useState(false)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Add Language</Button>
+        <Button>{t('settings.languages.add')}</Button>
       </DialogTrigger>
       <DialogContent aria-describedby='Create a new language'>
         <DialogHeader>
-          <DialogTitle>Create language</DialogTitle>
+          <DialogTitle>{t('settings.languages.createTitle')}</DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          Create a new language by filling out the form.
+          {t('settings.languages.createDescription')}
         </DialogDescription>
         <EditLanguageForm refetch={refetch} setOpen={setOpen} />
       </DialogContent>
     </Dialog>
   )
 }
-

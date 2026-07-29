@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { useAsRef } from "@/hooks/use-as-ref";
 import { useIsomorphicLayoutEffect } from "@/hooks/use-isomorphic-layout-effect";
 import { useLazyRef } from "@/hooks/use-lazy-ref";
+import { useTranslations } from "@/i18n";
 import { Button } from "@/components/ui/button";
 
 const ROOT_NAME = "Tour";
@@ -1484,6 +1485,7 @@ interface TourCloseProps extends React.ComponentProps<"button"> {
 }
 
 function TourClose(props: TourCloseProps) {
+  const t = useTranslations();
   const {
     asChild,
     className,
@@ -1508,7 +1510,7 @@ function TourClose(props: TourCloseProps) {
   return (
     <ClosePrimitive
       type="button"
-      aria-label="Close tour"
+      aria-label={t("tour.close")}
       className={cn(
         "absolute top-4 end-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className,
@@ -1522,6 +1524,7 @@ function TourClose(props: TourCloseProps) {
 }
 
 function TourPrev(props: React.ComponentProps<typeof Button>) {
+  const t = useTranslations();
   const { children, onClick: onClickProp, ...prevButtonProps } = props;
 
   const store = useStoreContext(PREV_NAME);
@@ -1542,7 +1545,7 @@ function TourPrev(props: React.ComponentProps<typeof Button>) {
   return (
     <Button
       type="button"
-      aria-label="Previous step"
+      aria-label={t("tour.previousStep")}
       data-slot="tour-prev"
       variant="outline"
       {...prevButtonProps}
@@ -1552,7 +1555,7 @@ function TourPrev(props: React.ComponentProps<typeof Button>) {
       {children ?? (
         <>
           <ChevronLeft />
-          Previous
+          {t("tour.previous")}
         </>
       )}
     </Button>
@@ -1560,6 +1563,7 @@ function TourPrev(props: React.ComponentProps<typeof Button>) {
 }
 
 function TourNext(props: React.ComponentProps<typeof Button>) {
+  const t = useTranslations();
   const { children, onClick: onClickProp, ...nextButtonProps } = props;
   const store = useStoreContext(NEXT_NAME);
   const value = useStore((state) => state.value);
@@ -1580,14 +1584,14 @@ function TourNext(props: React.ComponentProps<typeof Button>) {
   return (
     <Button
       type="button"
-      aria-label="Next step"
+      aria-label={t("tour.nextStep")}
       data-slot="tour-next"
       {...nextButtonProps}
       onClick={onClick}
     >
       {children ?? (
         <>
-          {isLastStep ? "Finish" : "Next"}
+          {isLastStep ? t("tour.finish") : t("tour.next")}
           {!isLastStep && <ChevronRight />}
         </>
       )}

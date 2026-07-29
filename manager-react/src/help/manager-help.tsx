@@ -11,6 +11,7 @@ import {
 } from 'react'
 
 import type { ManagerResolvedRoute } from '@/router/shared/types'
+import { useTranslations } from '@/i18n'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -84,6 +85,7 @@ export type ManagerHelpProviderProps = {
 }
 
 export function ManagerHelpProvider({ route, children }: ManagerHelpProviderProps) {
+  const t = useTranslations()
   const { user, setUser } = useSession()
   const currentTour = useMemo(() => getManagerTourForRoute(route), [route])
   const [activeTour, setActiveTour] = useState<ManagerTour | undefined>()
@@ -198,10 +200,9 @@ export function ManagerHelpProvider({ route, children }: ManagerHelpProviderProp
       <Dialog open={promptOpen}>
         <DialogContent className="sm:max-w-md" onClick={() => void handleTutorialPreference(false)}>
           <DialogHeader>
-            <DialogTitle>¿Quieres activar tutoriales?</DialogTitle>
+            <DialogTitle>{t('help.tutorialsPromptTitle')}</DialogTitle>
             <DialogDescription>
-              Te mostraremos una guía rápida la primera vez que visites cada pantalla. Siempre
-              podrás lanzar la ayuda desde el sidebar.
+              {t('help.tutorialsPromptDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -211,14 +212,14 @@ export function ManagerHelpProvider({ route, children }: ManagerHelpProviderProp
               loading={updateTutorialPreferences.isPending}
               onClick={() => void handleTutorialPreference(false)}
             >
-              No, gracias
+              {t('help.tutorialsDecline')}
             </Button>
             <Button
               type="button"
               loading={updateTutorialPreferences.isPending}
               onClick={() => void handleTutorialPreference(true)}
             >
-              Activar tutoriales
+              {t('help.tutorialsEnable')}
             </Button>
           </DialogFooter>
         </DialogContent>

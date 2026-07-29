@@ -16,10 +16,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useTranslations } from '@/i18n'
 
 type ConfirmationAction = 'initialize' | 'relink'
 
 export const LinkedIteratorControl = () => {
+  const t = useTranslations()
   const { contentTypeId, contentTypeName, documentActions, linkedIterator } =
     useEditPageContext()
   const { state, mode } = linkedIterator
@@ -51,18 +53,18 @@ export const LinkedIteratorControl = () => {
           <DialogHeader>
             <DialogTitle>
               {confirmationAction === 'initialize'
-                ? 'Use this as the shared structure?'
-                : 'Use the shared structure?'}
+                ? t('contentEdit.useThisAsSharedTitle')
+                : t('contentEdit.useSharedTitle')}
             </DialogTitle>
             <DialogDescription>
               {confirmationAction === 'initialize'
-                ? 'This iterator will become the structure for every linked entry. Local entries will not be changed.'
-                : "This entry's local iterator will be discarded when you save. The shared structure itself will not be changed."}
+                ? t('contentEdit.useThisAsSharedDescription')
+                : t('contentEdit.useSharedDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">{t('common.cancel')}</Button>
             </DialogClose>
             <Button
               loading={
@@ -72,7 +74,7 @@ export const LinkedIteratorControl = () => {
               onClick={handleConfirm}
             >
               <Link2 />
-              Use shared structure
+              {t('contentEdit.useSharedStructure')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -88,10 +90,10 @@ export const LinkedIteratorControl = () => {
         <div className="space-y-1">
           <Badge variant="secondary">
             <Unlink />
-            Local structure
+            {t('contentEdit.localStructure')}
           </Badge>
           <p className="text-sm text-muted-foreground">
-            Changes only affect this entry. The shared structure has not been configured yet.
+            {t('contentEdit.localStructureUnconfiguredDescription')}
           </p>
         </div>
       </div>,
@@ -103,17 +105,17 @@ export const LinkedIteratorControl = () => {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Badge variant="outline">Shared structure not configured</Badge>
+            <Badge variant="outline">{t('contentEdit.sharedStructureNotConfigured')}</Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            Choose this iterator as the initial structure for every linked entry.
+            {t('contentEdit.chooseSharedStructureDescription')}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           {contentTypeId ? (
             <Button variant="outline" onClick={() => linkedIterator.setMode('unlinked')}>
               <Unlink />
-              Keep this entry local
+              {t('contentEdit.keepThisEntryLocal')}
             </Button>
           ) : null}
           {state.canUpdateShared ? (
@@ -123,13 +125,13 @@ export const LinkedIteratorControl = () => {
               onClick={() => setConfirmationAction('initialize')}
             >
               <Link2 />
-              Use this structure
+              {t('contentEdit.useThisStructure')}
             </Button>
           ) : (
             <p className="text-sm text-muted-foreground">
               {contentTypeId
-                ? 'The update-any permission is required to initialize it.'
-                : 'Saving initializes it automatically only when this is the first entry.'}
+                ? t('contentEdit.updateAnyRequired')
+                : t('contentEdit.firstEntryInitializes')}
             </p>
           )}
         </div>
@@ -143,15 +145,15 @@ export const LinkedIteratorControl = () => {
         <div className="space-y-1">
           <Badge variant="secondary">
             <Unlink />
-            Local structure
+            {t('contentEdit.localStructure')}
           </Badge>
           <p className="text-sm text-muted-foreground">
-            Changes only affect this entry.
+            {t('contentEdit.localStructureDescription')}
           </p>
         </div>
         <Button variant="outline" onClick={() => setConfirmationAction('relink')}>
           <Link2 />
-          Use shared structure
+          {t('contentEdit.useSharedStructure')}
         </Button>
       </div>,
     )
@@ -162,18 +164,18 @@ export const LinkedIteratorControl = () => {
       <div className="space-y-1">
         <Badge>
           <Link2 />
-          Shared structure
+          {t('contentEdit.sharedStructure')}
         </Badge>
         <p className="text-sm text-muted-foreground">
           {state.canUpdateShared
-            ? `Iterator changes apply to every linked ${contentTypeName}.`
-            : 'This shared iterator is read-only with your current permissions.'}
+            ? t('contentEdit.iteratorChangesApply', { contentType: contentTypeName })
+            : t('contentEdit.sharedIteratorReadOnly')}
         </p>
       </div>
       {contentTypeId ? (
         <Button variant="outline" onClick={() => linkedIterator.setMode('unlinked')}>
           <Unlink />
-          Unlink this entry
+          {t('contentEdit.unlinkThisEntry')}
         </Button>
       ) : null}
     </div>,

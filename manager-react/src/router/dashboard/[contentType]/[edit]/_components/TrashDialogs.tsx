@@ -11,8 +11,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useTranslations } from '@/i18n'
 
 export const TrashDialogs = () => {
+  const t = useTranslations()
   const {
     documentActions,
     hasLocaleVariants,
@@ -27,23 +29,23 @@ export const TrashDialogs = () => {
       <Dialog open={moveToTrashOpen} onOpenChange={setMoveToTrashOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Move item to trash</DialogTitle>
+            <DialogTitle>{t('contentEdit.moveItemToTrash')}</DialogTitle>
             <DialogDescription>
               {hasLocaleVariants
-                ? 'This moves the primary page and every variant in this group to trash. The whole page group will be hidden from lists and public routes, and can be restored together from trash.'
-                : 'This item will be hidden from lists and public routes. You can restore it from the trash.'}
+                ? t('contentEdit.moveToTrashGroupDescription')
+                : t('contentEdit.moveToTrashDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setMoveToTrashOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               loading={documentActions.pending.trash}
               onClick={() => void documentActions.handleMoveToTrash()}
             >
-              Move to trash
+              {t('contentList.moveToTrash')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -51,21 +53,21 @@ export const TrashDialogs = () => {
       <Dialog open={permanentDeleteOpen} onOpenChange={setPermanentDeleteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete item permanently</DialogTitle>
+            <DialogTitle>{t('contentEdit.deleteItemPermanently')}</DialogTitle>
             <DialogDescription>
-              This item will be permanently deleted. This cannot be undone.
+              {t('contentEdit.deletePermanentlyDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPermanentDeleteOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               loading={documentActions.pending.delete}
               onClick={() => void documentActions.handlePermanentDelete()}
             >
-              Delete permanently
+              {t('contentList.deletePermanently')}
             </Button>
           </DialogFooter>
         </DialogContent>

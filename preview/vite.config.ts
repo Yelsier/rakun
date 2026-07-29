@@ -42,6 +42,10 @@ export default ({ mode }: { mode: string }) => {
       alias: [
         { find: "@", replacement: managerSrc },
         { find: /^@rakun\/manager-react\/(.+)$/, replacement: `${managerSrc}/$1` },
+        {
+          find: "@rakun-kit/manager-react/locales",
+          replacement: path.resolve(managerSrc, "locales.ts"),
+        },
         { find: "@rakun-kit/manager-react", replacement: path.resolve(managerSrc, "index.ts") },
         { find: "@rakun-kit/core/client", replacement: path.resolve(coreSrc, "client.ts") },
         { find: "@rakun-kit/core/contracts", replacement: path.resolve(coreSrc, "contracts.ts") },

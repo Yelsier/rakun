@@ -24,7 +24,8 @@
     "build": "rm -rf dist && bun run build:esm && bun run build:cjs && bun run build:css",
     "build:css": "node ./scripts/build-css.mjs",
     "build:esm": "tsc -b --force tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
-    "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../scripts/fix-dist-imports.mjs dist/cjs && node ../scripts/write-cjs-package-json.mjs dist/cjs"
+    "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../scripts/fix-dist-imports.mjs dist/cjs && node ../scripts/write-cjs-package-json.mjs dist/cjs",
+    "lint": "eslint ."
   },
   "files": [
     "dist"
@@ -113,7 +114,11 @@
     "tw-animate-css": "^1.3.7",
     "use-sync-external-store": "^1.5.0",
     "zod": "^4.3.6",
-    "zustand": "^5.0.8"
+    "zustand": "^5.0.8",
+    "eslint": "^9",
+    "eslint-plugin-react": "^7.37.5",
+    "@typescript-eslint/parser": "^8.46.0",
+    "typescript-eslint": "^8.46.0"
   },
   "exports": {
     ".": {
@@ -169,6 +174,18 @@
       "import": "./dist/esm/plugins.js",
       "require": "./dist/cjs/plugins.js",
       "default": "./dist/esm/plugins.js"
+    },
+    "./i18n": {
+      "types": "./dist/esm/i18n/index.d.ts",
+      "import": "./dist/esm/i18n/index.js",
+      "require": "./dist/cjs/i18n/index.js",
+      "default": "./dist/esm/i18n/index.js"
+    },
+    "./locales": {
+      "types": "./dist/esm/locales.d.ts",
+      "import": "./dist/esm/locales.js",
+      "require": "./dist/cjs/locales.js",
+      "default": "./dist/esm/locales.js"
     },
     "./rich-text": {
       "types": "./dist/esm/rich-text.d.ts",

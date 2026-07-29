@@ -21,6 +21,11 @@ export const managerOperationManifest = {
     method: "get",
     path: "/manager/languages",
   },
+  "manager.uiLocales": {
+    kind: "query",
+    method: "get",
+    path: "/manager/uiLocales",
+  },
   "manager.regenerateRoutes": {
     kind: "mutation",
     method: "post",

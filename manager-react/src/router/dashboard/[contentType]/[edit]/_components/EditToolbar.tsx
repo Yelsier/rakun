@@ -46,6 +46,7 @@ import { TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { createManagerQueryKey, useManagerMutation, useManagerQuery } from '@/client/react'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
+import { useTranslations } from '@/i18n'
 import { cn } from '@/lib/utils'
 
 const visibilitySelectStyles: Record<EditableDocumentVisibility, string> = {
@@ -63,13 +64,17 @@ const visibilityIcons = {
 const tabErrorClassName =
   '!text-destructive data-[state=active]:!text-destructive after:bg-destructive'
 
-const TabErrorText = () => (
-  <span className="ml-1 rounded-sm bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium uppercase leading-none text-destructive">
-    Error
-  </span>
-)
+const TabErrorText = () => {
+  const t = useTranslations()
+  return (
+    <span className="ml-1 rounded-sm bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium uppercase leading-none text-destructive">
+      {t('common.error')}
+    </span>
+  )
+}
 
 const FavoriteMenuItem = () => {
+  const t = useTranslations()
   const { contentTypeId, contentTypeName, isTrashed } = useEditPageContext()
   const queryClient = useQueryClient()
   const favoriteInput = contentTypeId
@@ -85,7 +90,9 @@ const FavoriteMenuItem = () => {
   })
   const toggleFavoriteMutation = useManagerMutation('manager.favorites.toggle')
   const isFavorite = (favoriteQuery.data?.favorites.length ?? 0) > 0
-  const label = isFavorite ? 'Remove from favorites' : 'Add to favorites'
+  const label = isFavorite
+    ? t('common.removeFromFavorites')
+    : t('common.addToFavorites')
 
   const invalidateFavorites = async () => {
     await Promise.all([
@@ -109,9 +116,15 @@ const FavoriteMenuItem = () => {
         favorite: !isFavorite,
       })
       await invalidateFavorites()
-      toast.success(result.favorite ? 'Added to favorites' : 'Removed from favorites')
+      toast.success(
+        result.favorite
+          ? t('common.addedToFavorites')
+          : t('dashboard.removedFavorite'),
+      )
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not update favorite'))
+      toast.error(
+        getActionErrorMessage(error, t('common.couldNotUpdateFavorite')),
+      )
     }
   }
 
@@ -129,6 +142,7 @@ const FavoriteMenuItem = () => {
 }
 
 export const EditToolbar = () => {
+  const t = useTranslations()
   const [commentsOpen, setCommentsOpen] = useState(false)
   const {
     canPreview,
@@ -187,21 +201,21 @@ export const EditToolbar = () => {
           {sections.hasNonIterables ? (
             <TabsTrigger value="info" className={cn(tabErrors.info && tabErrorClassName)}>
               <NotepadText />
-              Info
+              {t('contentEdit.tabInfo')}
               {tabErrors.info ? <TabErrorText /> : null}
             </TabsTrigger>
           ) : null}
           {sections.hasIterables ? (
             <TabsTrigger value="content" className={cn(tabErrors.content && tabErrorClassName)}>
               <ScrollText />
-              Content
+              {t('contentEdit.tabContent')}
               {tabErrors.content ? <TabErrorText /> : null}
             </TabsTrigger>
           ) : null}
           {sections.hasSeo ? (
             <TabsTrigger value="seo" className={cn(tabErrors.seo && tabErrorClassName)}>
               <Globe />
-              Seo
+              {t('contentEdit.tabSeo')}
               {tabErrors.seo ? <TabErrorText /> : null}
             </TabsTrigger>
           ) : null}
@@ -214,13 +228,13 @@ export const EditToolbar = () => {
           {hasLocaleVariants ? (
             <TabsTrigger value="variants">
               <MapPinned />
-              Variants
+              {t('contentEdit.tabVariants')}
             </TabsTrigger>
           ) : null}
           {hasVersioning && contentTypeId ? (
             <TabsTrigger value="history">
               <GitBranch />
-              History
+              {t('contentEdit.tabHistory')}
             </TabsTrigger>
           ) : null}
         </TabsList>
@@ -242,9 +256,9 @@ export const EditToolbar = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="hidden">Hidden</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
+                <SelectItem value="draft">{t('visibility.draft')}</SelectItem>
+                <SelectItem value="hidden">{t('visibility.hidden')}</SelectItem>
+                <SelectItem value="published">{t('visibility.published')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -261,17 +275,17 @@ export const EditToolbar = () => {
                   className="cursor-pointer rounded-none shadow-none focus-visible:z-10 focus-visible:ring-0"
                   onClick={() => void documentActions.handleSave()}
                 >
-                  Save
+                  {t('common.save')}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top" sideOffset={8}>
-                Hay errores por corregir
+                {t('contentEdit.formHasErrors')}
               </TooltipContent>
             </Tooltip>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  aria-label="Save options"
+                  aria-label={t('contentEdit.saveOptions')}
                   disabled={savePending}
                   className="w-9 rounded-none border-l border-primary-foreground/25 px-0! shadow-none focus-visible:z-10 focus-visible:ring-0"
                 >
@@ -281,7 +295,7 @@ export const EditToolbar = () => {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => void documentActions.handleSaveAsDraft()}>
                   <Copy />
-                  Save as draft
+                  {t('contentEdit.saveAsDraft')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -295,11 +309,11 @@ export const EditToolbar = () => {
                 onClick={() => void documentActions.handleSave()}
                 data-tour="content-edit-save"
               >
-                Save
+                {t('common.save')}
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top" sideOffset={8}>
-              Hay errores por corregir
+              {t('contentEdit.formHasErrors')}
             </TooltipContent>
           </Tooltip>
         )}
@@ -312,7 +326,7 @@ export const EditToolbar = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  aria-label="More actions"
+                  aria-label={t('contentEdit.moreActions')}
                   variant="outline"
                   size="icon"
                   data-tour="content-edit-actions"
@@ -325,7 +339,7 @@ export const EditToolbar = () => {
                 {translationEnabled ? (
                   <DropdownMenuItem disabled={pending.translate} onSelect={openTranslationDialog}>
                     <Languages />
-                    Translate
+                    {t('contentList.translate')}
                   </DropdownMenuItem>
                 ) : null}
                 {canPreview ? (
@@ -341,7 +355,9 @@ export const EditToolbar = () => {
                     }}
                   >
                     <Monitor />
-                    {previewState.previewOpen ? 'Close preview' : 'Preview'}
+                    {previewState.previewOpen
+                      ? t('contentEdit.closePreview')
+                      : t('common.preview')}
                   </DropdownMenuItem>
                 ) : null}
                 {hasPrimaryMenuActions && (contentTypeId || isTrashed) ? (
@@ -354,7 +370,7 @@ export const EditToolbar = () => {
                       onSelect={() => void documentActions.handleRestoreFromTrash()}
                     >
                       <RotateCcw />
-                      Restore from trash
+                      {t('contentEdit.restoreFromTrash')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       disabled={pending.delete}
@@ -362,7 +378,7 @@ export const EditToolbar = () => {
                       onSelect={openPermanentDeleteDialog}
                     >
                       <Trash />
-                      Delete permanently
+                      {t('contentList.deletePermanently')}
                     </DropdownMenuItem>
                   </>
                 ) : contentTypeId ? (
@@ -372,7 +388,7 @@ export const EditToolbar = () => {
                     onSelect={openMoveToTrashDialog}
                   >
                     <Trash />
-                    Move to trash
+                    {t('contentList.moveToTrash')}
                   </DropdownMenuItem>
                 ) : null}
               </DropdownMenuContent>

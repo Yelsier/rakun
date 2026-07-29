@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useTranslations } from "@/i18n";
 
 import TotpForm from "./totp";
 import WebauthnForm from "./webauthnn";
@@ -27,6 +28,7 @@ export function ManagerMfaScreen({
   method,
   expiresAt,
 }: ManagerMfaScreenProps) {
+  const t = useTranslations();
   const navigation = useManagerNavigation();
   const { refreshAuth } = useManagerRuntimeAuth();
 
@@ -55,16 +57,15 @@ export function ManagerMfaScreen({
     return (
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Challenge Expired</CardTitle>
+          <CardTitle>{t("mfa.challengeExpired")}</CardTitle>
           <CardDescription>
-            Your 2FA challenge has expired. Please login again to receive a new
-            challenge.
+            {t("mfa.challengeExpiredDescription")}
           </CardDescription>
         </CardHeader>
 
         <CardFooter className="flex-col gap-2">
           <Button className="w-full" onClick={goToLogin} type="button">
-            Login
+            {t("login.submit")}
           </Button>
         </CardFooter>
       </Card>
@@ -88,7 +89,7 @@ export function ManagerMfaScreen({
 
   return (
     methodsMap[method ?? ""] || (
-      <div>Unsupported 2FA method. Please try logging in again.</div>
+      <div>{t("mfa.unsupportedMethod")}</div>
     )
   );
 }

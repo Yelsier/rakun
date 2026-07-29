@@ -1,41 +1,42 @@
-"use client";
+'use client'
 
-import { ExternalLink } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ExternalLink } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
-import { Button } from "../../../ui/button";
+import { Button } from '../../../ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "../../../ui/dialog";
-import { Input } from "../../../ui/input";
-import { Label } from "../../../ui/label";
-import { ScrollArea } from "../../../ui/scroll-area";
-import { Skeleton } from "../../../ui/skeleton";
+} from '../../../ui/dialog'
+import { Input } from '../../../ui/input'
+import { Label } from '../../../ui/label'
+import { ScrollArea } from '../../../ui/scroll-area'
+import { Skeleton } from '../../../ui/skeleton'
 import {
   FileTypeIcon,
   formatFileSize,
   formatPercent,
   isImage,
   isVideo,
-} from "../utils/mediaPreview";
+} from '../utils/mediaPreview'
 
-import type { MediaRecord } from "@/lib/media";
+import { useTranslations } from '@/i18n'
+import type { MediaRecord } from '@/lib/media'
 
 type ExpandedPreviewDialogProps = {
-  preview: MediaRecord | null;
-  previewUrl: string;
-  isSaving?: boolean;
-  onClose: () => void;
+  preview: MediaRecord | null
+  previewUrl: string
+  isSaving?: boolean
+  onClose: () => void
   onSaveDetails: (input: {
-    name: string;
-    title: string;
-    alt: string;
-  }) => Promise<void>;
-};
+    name: string
+    title: string
+    alt: string
+  }) => Promise<void>
+}
 
 export default function ExpandedPreviewDialog({
   preview,
@@ -44,36 +45,50 @@ export default function ExpandedPreviewDialog({
   onClose,
   onSaveDetails,
 }: ExpandedPreviewDialogProps) {
-  const [name, setName] = useState("");
-  const [title, setTitle] = useState("");
-  const [alt, setAlt] = useState("");
+  const t = useTranslations()
+  const [name, setName] = useState('')
+  const [title, setTitle] = useState('')
+  const [alt, setAlt] = useState('')
 
   useEffect(() => {
-    setName(preview?.name || "");
-    setTitle(preview?.title || "");
-    setAlt(preview?.alt || "");
-  }, [preview?._id, preview?.title, preview?.name, preview?.alt]);
+    setName(preview?.name || '')
+    setTitle(preview?.title || '')
+    setAlt(preview?.alt || '')
+  }, [preview?._id, preview?.title, preview?.name, preview?.alt])
 
   const hasChanges =
     !!preview &&
-    (name.trim() !== (preview.name || "") ||
-      title.trim() !== (preview.title || "") ||
-      alt.trim() !== (preview.alt || ""));
+    (name.trim() !== (preview.name || '') ||
+      title.trim() !== (preview.title || '') ||
+      alt.trim() !== (preview.alt || ''))
+
+  const optimizationLabel = preview?.optimized
+    ? preview.optimizedFormat
+      ? t('media.optimizedWithFormat', { format: preview.optimizedFormat })
+      : t('media.yes')
+    : t('media.no')
+
+  const previewVariantLabel =
+    preview?.previewUrl || preview?.previewKey
+      ? t('media.available')
+      : t('media.no')
 
   return (
     <Dialog
       open={!!preview}
       onOpenChange={(open) => {
-        if (!open) onClose();
+        if (!open) onClose()
       }}
     >
       <DialogContent className="max-w-[95vw] p-4 sm:max-w-6xl">
         <DialogHeader>
           <DialogTitle className="truncate">
-            {preview?.name || preview?.title || "Preview"}
+            {preview?.name || preview?.title || t('media.preview')}
           </DialogTitle>
           <DialogDescription className="truncate">
-            {preview ? `${preview.mime} • ${formatFileSize(preview.size)}` : ""}
+            {preview
+              ? `${preview.mime} · ${formatFileSize(preview.size)}`
+              : ''}
           </DialogDescription>
         </DialogHeader>
         <div className="grid max-h-[85vh] min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
@@ -98,12 +113,12 @@ export default function ExpandedPreviewDialog({
                   <FileTypeIcon mime={preview.mime} />
                 </div>
                 <p className="text-muted-foreground text-sm">
-                  This file type does not have inline preview.
+                  {t('media.noInlinePreview')}
                 </p>
                 <Button asChild variant="outline">
                   <a href={previewUrl} target="_blank" rel="noreferrer">
                     <ExternalLink className="size-4" />
-                    Open file
+                    {t('media.openFile')}
                   </a>
                 </Button>
               </div>
@@ -115,7 +130,7 @@ export default function ExpandedPreviewDialog({
               <div className="space-y-4 p-3 text-sm">
                 <div className="space-y-3">
                   <div className="space-y-2">
-                    <Label htmlFor="media-name">Name</Label>
+                    <Label htmlFor="media-name">{t('fields.name')}</Label>
                     <Input
                       id="media-name"
                       value={name}
@@ -123,7 +138,7 @@ export default function ExpandedPreviewDialog({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="media-title">Title</Label>
+                    <Label htmlFor="media-title">{t('fields.title')}</Label>
                     <Input
                       id="media-title"
                       value={title}
@@ -131,7 +146,7 @@ export default function ExpandedPreviewDialog({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="media-alt">Alt</Label>
+                    <Label htmlFor="media-alt">{t('media.alt')}</Label>
                     <Input
                       id="media-alt"
                       value={alt}
@@ -147,113 +162,107 @@ export default function ExpandedPreviewDialog({
                         name: name.trim(),
                         title: title.trim(),
                         alt: alt.trim(),
-                      });
+                      })
                     }}
                   >
-                    Save
+                    {t('common.save')}
                   </Button>
                 </div>
 
                 <div className="grid grid-cols-1 gap-2">
                   <div>
-                    <p className="text-muted-foreground text-xs">MIME</p>
+                    <p className="text-muted-foreground text-xs">{t('media.mime')}</p>
                     <p className="font-medium break-all">{preview.mime}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground text-xs">Size</p>
+                    <p className="text-muted-foreground text-xs">{t('media.size')}</p>
                     <p className="font-medium">
                       {formatFileSize(preview.size)}
                     </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground text-xs">
-                      Original Size
+                      {t('media.originalSize')}
                     </p>
                     <p className="font-medium">
                       {preview.originalSize != null
                         ? formatFileSize(preview.originalSize)
-                        : "N/A"}
+                        : t('media.na')}
                     </p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground text-xs">Dimensions</p>
+                    <p className="text-muted-foreground text-xs">{t('media.dimensions')}</p>
                     <p className="font-medium">
                       {preview.width && preview.height
                         ? `${preview.width}x${preview.height}`
-                        : "N/A"}
+                        : t('media.na')}
                     </p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground text-xs">Orientation</p>
+                    <p className="text-muted-foreground text-xs">{t('media.orientation')}</p>
                     <p className="font-medium">
-                      {preview.orientation || "N/A"}
+                      {preview.orientation || t('media.na')}
                     </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground text-xs">
-                      Optimization
+                      {t('media.optimization')}
                     </p>
-                    <p className="font-medium">
-                      {preview.optimized
-                        ? `Yes${preview.optimizedFormat ? ` (${preview.optimizedFormat})` : ""}`
-                        : "No"}
-                    </p>
+                    <p className="font-medium">{optimizationLabel}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground text-xs">Quality</p>
+                    <p className="text-muted-foreground text-xs">{t('media.quality')}</p>
                     <p className="font-medium">
                       {preview.optimizationQuality != null
                         ? preview.optimizationQuality
-                        : "N/A"}
+                        : t('media.na')}
                     </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground text-xs">
-                      Preview Variant
+                      {t('media.previewVariant')}
                     </p>
-                    <p className="font-medium">
-                      {preview.previewUrl || preview.previewKey
-                        ? "Available"
-                        : "No"}
-                    </p>
+                    <p className="font-medium">{previewVariantLabel}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground text-xs">Saved</p>
+                    <p className="text-muted-foreground text-xs">{t('media.saved')}</p>
                     <p className="font-medium">
                       {preview.originalSize &&
                       preview.originalSize > preview.size
                         ? `${formatFileSize(preview.originalSize - preview.size)} (${formatPercent(((preview.originalSize - preview.size) / preview.originalSize) * 100)})`
-                        : "N/A"}
+                        : t('media.na')}
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <p className="font-medium text-sm">Responsive sizes</p>
+                  <p className="font-medium text-sm">{t('media.responsiveSizes')}</p>
                   {preview.sizes?.length ? (
                     <div className="space-y-2">
-                      {preview.sizes.map((size) => (
-                        <div
-                          key={size.key}
-                          className="rounded-md border p-2 text-xs"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-medium">{size.width}w</span>
-                            <span className="text-muted-foreground">
-                              {formatFileSize(size.size)}
-                            </span>
+                      {preview.sizes.map((size) => {
+                        const widthLabel = `${size.width}w`
+                        const dimensions = `${size.width}x${size.height}`
+                        return (
+                          <div
+                            key={size.key}
+                            className="rounded-md border p-2 text-xs"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-medium">{widthLabel}</span>
+                              <span className="text-muted-foreground">
+                                {formatFileSize(size.size)}
+                              </span>
+                            </div>
+                            <p className="text-muted-foreground">{dimensions}</p>
+                            <p className="truncate text-muted-foreground">
+                              {size.mime}
+                            </p>
                           </div>
-                          <p className="text-muted-foreground">
-                            {size.width}x{size.height}
-                          </p>
-                          <p className="truncate text-muted-foreground">
-                            {size.mime}
-                          </p>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   ) : (
-                    <p className="text-muted-foreground text-sm">N/A</p>
+                    <p className="text-muted-foreground text-sm">{t('media.na')}</p>
                   )}
                 </div>
               </div>
@@ -262,5 +271,5 @@ export default function ExpandedPreviewDialog({
         </div>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

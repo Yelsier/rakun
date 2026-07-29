@@ -11,8 +11,10 @@ import NewRelation from './NewRelation'
 import { Button } from '@/components/ui/button'
 import { useEditErrorStore } from '@/hooks/app-store'
 import { decodeCamelCase } from '@/helpers/decodeCamelCase'
+import { useTranslations } from '@/i18n'
 
 const ContentTypeUI: React.FC<RelationPropsRef> = ({ ref, ...props }) => {
+  const t = useTranslations()
   const defaultRelationType = (props.defaultData as RelationFieldValue)?.type
   const [relation, setRelation] = useState<'new' | 'existing' | undefined>(
     defaultRelationType || props.only || undefined,
@@ -84,7 +86,7 @@ const ContentTypeUI: React.FC<RelationPropsRef> = ({ ref, ...props }) => {
               removeRelatedErrors(props.id)
             }}
           >
-            <Plus /> Add existing
+            <Plus /> {t('contentEdit.addExisting')}
           </Button>
           <Button
             variant={'outline'}
@@ -93,7 +95,7 @@ const ContentTypeUI: React.FC<RelationPropsRef> = ({ ref, ...props }) => {
               removeRelatedErrors(props.id)
             }}
           >
-            <Plus /> Add new
+            <Plus /> {t('contentEdit.addNew')}
           </Button>
         </div>
       )}
@@ -111,7 +113,9 @@ const ContentTypeUI: React.FC<RelationPropsRef> = ({ ref, ...props }) => {
               >
                 <Trash />
               </Button>
-              <b>New {props.contentType.name}</b>
+              <b>
+                {t('common.new')} {props.contentType.name}
+              </b>
             </div>
           )}
           <NewRelation ref={newRef} {...props} />
@@ -131,7 +135,10 @@ const ContentTypeUI: React.FC<RelationPropsRef> = ({ ref, ...props }) => {
               >
                 <Trash />
               </Button>
-              <b>Existing {decodeCamelCase(props.contentType.name)}</b>
+              <b>
+                {t('common.existing')}{' '}
+                {decodeCamelCase(props.contentType.name)}
+              </b>
             </div>
           )}
           <ExistingRelation ref={existingRef} {...props} />

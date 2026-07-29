@@ -13,21 +13,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { useTranslations } from '@/i18n'
 
 export default function CreateUser({ refetch }: { refetch: () => void }) {
+  const t = useTranslations()
   const [open, setOpen] = useState(false)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Add User</Button>
+        <Button>{t('users.add')}</Button>
       </DialogTrigger>
       <DialogContent aria-describedby='Create a new user'>
         <DialogHeader>
-          <DialogTitle>Create user</DialogTitle>
+          <DialogTitle>{t('users.createTitle')}</DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          Create a new user by filling out the form.
+          {t('users.createDescription')}
         </DialogDescription>
         <EditUserForm refetch={refetch} setOpen={setOpen} />
       </DialogContent>

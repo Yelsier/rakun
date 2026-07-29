@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useTranslations } from '@/i18n'
 import { useSession } from "@/state/session";
 
 type BackupRecord = {
@@ -66,6 +67,7 @@ const formatDateTime = (value: string | Date) =>
   }).format(new Date(value));
 
 export const ManagerSettingsSystemScreen = () => {
+  const t = useTranslations()
   const { hasPermissions, hasAnyPermission } = useSession();
   const [restoreTarget, setRestoreTarget] = useState<BackupRecord | null>(null);
   const canReadBackups = hasPermissions(["content.Backup.readAny"]);
@@ -92,7 +94,7 @@ export const ManagerSettingsSystemScreen = () => {
     await createBackupMutation.mutateAsync({
       reason: "manual backup",
     });
-    toast.success("Backup created successfully");
+    toast.success(t('settings.system.backupCreated'));
     await backupsQuery.refetch();
   };
 
@@ -103,7 +105,7 @@ export const ManagerSettingsSystemScreen = () => {
       backupId: restoreTarget._id,
       reason: "manual restore",
     });
-    toast.success("Backup restored successfully");
+    toast.success(t('settings.system.backupRestored'));
     setRestoreTarget(null);
     await backupsQuery.refetch();
   };
@@ -137,7 +139,7 @@ export const ManagerSettingsSystemScreen = () => {
     <div className="container mx-auto flex flex-col gap-6 py-10">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">System</h1>
+          <h1 className="text-2xl font-semibold">{t('settings.system')}</h1>
         </div>
         {canUpdateBackups ? (
           <Button
@@ -145,7 +147,7 @@ export const ManagerSettingsSystemScreen = () => {
             onClick={() => void createBackup()}
           >
             <DatabaseBackup />
-            Create backup
+            {t('settings.system.createBackup')}
           </Button>
         ) : null}
       </div>
@@ -154,12 +156,12 @@ export const ManagerSettingsSystemScreen = () => {
         {canReadBackups ? (
           <Card className="rounded-lg" data-tour="system-backups">
             <CardHeader>
-              <CardTitle>Backups</CardTitle>
+              <CardTitle>{t('settings.system.backups')}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               {backups.length === 0 ? (
                 <div className="text-muted-foreground text-sm">
-                  No backups yet.
+                  {t('settings.system.noBackups')}
                 </div>
               ) : (
                 backups.map((backup) => (
@@ -183,9 +185,11 @@ export const ManagerSettingsSystemScreen = () => {
                         </Badge>
                       </div>
                       <div className="text-muted-foreground text-xs">
-                        {formatDateTime(backup.createdAt)} ·{" "}
-                        {backup.documentCount} docs ·{" "}
-                        {backup.contentTypes.join(", ")}
+                        {t('settings.system.backupMeta', {
+                          date: formatDateTime(backup.createdAt),
+                          count: backup.documentCount,
+                          types: backup.contentTypes.join(', '),
+                        })}
                       </div>
                     </div>
                     {canUpdateBackups ? (
@@ -197,7 +201,7 @@ export const ManagerSettingsSystemScreen = () => {
                         onClick={() => setRestoreTarget(backup)}
                       >
                         <RotateCcw />
-                        Restore
+                        {t('common.restore')}
                       </Button>
                     ) : null}
                   </div>
@@ -210,18 +214,17 @@ export const ManagerSettingsSystemScreen = () => {
         {canReadMigrations ? (
           <Card className="rounded-lg" data-tour="system-migrations">
             <CardHeader>
-              <CardTitle>Schema State</CardTitle>
+              <CardTitle>{t('settings.system.schemaState')}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               {pending.length > 0 ? (
                 <div className="rounded-md border border-amber-300 p-3 text-sm">
-                  {pending.length} pending migration
-                  {pending.length === 1 ? "" : "s"}
+                  {t('settings.system.pendingMigrations', { count: pending.length })}
                 </div>
               ) : null}
               {states.length === 0 ? (
                 <div className="text-muted-foreground text-sm">
-                  No schema state recorded.
+                  {t('settings.system.noSchemaState')}
                 </div>
               ) : (
                 states.map((state) => (
@@ -230,7 +233,7 @@ export const ManagerSettingsSystemScreen = () => {
                     className="flex items-center justify-between rounded-md border p-3 text-sm"
                   >
                     <span className="font-medium">{state.contentType}</span>
-                    <Badge variant="outline">v{state.version}</Badge>
+                    <Badge variant="outline">{t('settings.system.version', { version: state.version })}</Badge>
                   </div>
                 ))
               )}
@@ -242,12 +245,12 @@ export const ManagerSettingsSystemScreen = () => {
       {canReadMigrations ? (
         <Card className="rounded-lg" data-tour="system-migrations">
           <CardHeader>
-            <CardTitle>Migration Ledger</CardTitle>
+            <CardTitle>{t('settings.system.migrationLedger')}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {migrations.length === 0 ? (
               <div className="text-muted-foreground text-sm">
-                No migrations executed yet.
+                {t('settings.system.noMigrations')}
               </div>
             ) : (
               migrations.map((migration) => (
@@ -271,8 +274,12 @@ export const ManagerSettingsSystemScreen = () => {
                       </Badge>
                     </div>
                     <div className="text-muted-foreground text-xs">
-                      {migration.contentType} · v{migration.from} to v
-                      {migration.to} · {formatDateTime(migration.startedAt)}
+                      {t('settings.system.migrationMeta', {
+                        contentType: migration.contentType,
+                        from: migration.from,
+                        to: migration.to,
+                        date: formatDateTime(migration.startedAt),
+                      })}
                     </div>
                     {migration.error ? (
                       <div className="text-destructive mt-2 text-xs">
@@ -302,11 +309,9 @@ export const ManagerSettingsSystemScreen = () => {
                 <AlertTriangle className="size-5" />
               </div>
               <div className="min-w-0">
-                <DialogTitle>Restore backup</DialogTitle>
+                <DialogTitle>{t('settings.system.restoreBackup')}</DialogTitle>
                 <DialogDescription className="mt-2">
-                  This will replace the current database documents for the
-                  backed up content types. A safety backup will be created
-                  before restoring.
+{t('settings.system.restoreDescription')}
                 </DialogDescription>
               </div>
             </div>
@@ -319,18 +324,18 @@ export const ManagerSettingsSystemScreen = () => {
                   {restoreTarget.reason ?? restoreTarget._id}
                 </div>
                 <div className="text-muted-foreground mt-1 text-xs">
-                  {formatDateTime(restoreTarget.createdAt)} ·{" "}
-                  {restoreTarget.documentCount} docs ·{" "}
-                  {restoreTarget.contentTypes.join(", ")}
+                  {t('settings.system.backupMeta', {
+                    date: formatDateTime(restoreTarget.createdAt),
+                    count: restoreTarget.documentCount,
+                    types: restoreTarget.contentTypes.join(', '),
+                  })}
                 </div>
               </div>
 
               <div className="rounded-md border border-amber-300 bg-amber-500/10 p-3 text-sm">
-                <div className="font-medium">Files are not restored</div>
+                <div className="font-medium">{t('settings.system.filesNotRestored')}</div>
                 <div className="text-muted-foreground mt-1">
-                  Backups only store database documents. Images and other
-                  uploaded files are not included, so deleted or changed assets
-                  will not be recovered by this restore.
+{t('settings.system.filesNotRestoredDescription')}
                 </div>
               </div>
             </div>
@@ -343,7 +348,7 @@ export const ManagerSettingsSystemScreen = () => {
               disabled={restoreBackupMutation.isPending}
               onClick={() => setRestoreTarget(null)}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="button"
@@ -351,7 +356,7 @@ export const ManagerSettingsSystemScreen = () => {
               loading={restoreBackupMutation.isPending}
               onClick={() => void restoreBackup()}
             >
-              Restore backup
+              {t('settings.system.restoreBackup')}
             </Button>
           </DialogFooter>
         </DialogContent>

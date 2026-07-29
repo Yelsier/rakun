@@ -15,8 +15,10 @@ import { useEditPageContext } from '../_context/EditPageContext'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useTranslations } from '@/i18n'
 
 export const PreviewPanel = () => {
+  const t = useTranslations()
   const { previewState } = useEditPageContext()
   const [fullscreenOpen, setFullscreenOpen] = useState(false)
 
@@ -27,9 +29,11 @@ export const PreviewPanel = () => {
           <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b px-3">
             <div className="flex min-w-0 items-center gap-2">
               <Monitor className="size-4 shrink-0" />
-              <span className="truncate text-sm font-medium">Preview</span>
+              <span className="truncate text-sm font-medium">{t('common.preview')}</span>
               {previewState.isPreviewPending ? (
-                <span className="text-muted-foreground text-xs">Updating</span>
+                <span className="text-muted-foreground text-xs">
+                  {t('contentEdit.updating')}
+                </span>
               ) : null}
             </div>
             <div className="flex items-center gap-1">
@@ -42,10 +46,10 @@ export const PreviewPanel = () => {
                     onClick={() => void previewState.handlePreview()}
                   >
                     <RefreshCw />
-                    <span className="sr-only">Update preview</span>
+                    <span className="sr-only">{t('contentEdit.updatePreview')}</span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="left">Update preview</TooltipContent>
+                <TooltipContent side="left">{t('contentEdit.updatePreview')}</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -59,13 +63,13 @@ export const PreviewPanel = () => {
                     }
                   >
                     <SquareDashedMousePointer />
-                    <span className="sr-only">Select module</span>
+                    <span className="sr-only">{t('contentEdit.selectModule')}</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">
                   {previewState.previewInspectorEnabled
-                    ? 'Stop selecting modules'
-                    : 'Select module'}
+                    ? t('contentEdit.stopSelectingModules')
+                    : t('contentEdit.selectModule')}
                 </TooltipContent>
               </Tooltip>
               <Tooltip>
@@ -77,10 +81,10 @@ export const PreviewPanel = () => {
                     onClick={() => setFullscreenOpen(true)}
                   >
                     <Maximize2 />
-                    <span className="sr-only">Open large preview</span>
+                    <span className="sr-only">{t('contentEdit.openLargePreview')}</span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="left">Open large preview</TooltipContent>
+                <TooltipContent side="left">{t('contentEdit.openLargePreview')}</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -90,10 +94,10 @@ export const PreviewPanel = () => {
                     onClick={() => previewState.setPreviewOpen(false)}
                   >
                     <EyeOff />
-                    <span className="sr-only">Close preview</span>
+                    <span className="sr-only">{t('contentEdit.closePreview')}</span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="left">Close preview</TooltipContent>
+                <TooltipContent side="left">{t('contentEdit.closePreview')}</TooltipContent>
               </Tooltip>
             </div>
           </div>
@@ -110,11 +114,11 @@ export const PreviewPanel = () => {
               className="min-h-0 flex-1 border-0"
               src={previewState.previewUrl}
               tabIndex={-1}
-              title="Preview"
+              title={t('common.preview')}
             />
           ) : (
             <div className="text-muted-foreground flex flex-1 items-center justify-center text-sm">
-              Loading preview
+              {t('contentEdit.loadingPreview')}
             </div>
           )}
         </div>
@@ -127,12 +131,12 @@ export const PreviewPanel = () => {
           <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b px-4">
             <DialogTitle className="flex min-w-0 items-center gap-2 text-sm">
               <Monitor className="size-4 shrink-0" />
-              <span className="truncate">Preview</span>
+              <span className="truncate">{t('common.preview')}</span>
             </DialogTitle>
             <DialogClose asChild>
               <Button variant="ghost" size="icon">
                 <X />
-                <span className="sr-only">Close large preview</span>
+                <span className="sr-only">{t('contentEdit.closeLargePreview')}</span>
               </Button>
             </DialogClose>
           </div>
@@ -142,7 +146,7 @@ export const PreviewPanel = () => {
               allow="fullscreen"
               className="min-h-0 flex-1 border-0"
               src={previewState.previewUrl}
-              title="Preview fullscreen"
+              title={t('common.preview')}
             />
           ) : null}
         </DialogContent>

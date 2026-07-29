@@ -3,8 +3,10 @@
 import { ManagerBrowserApp } from "@rakun-kit/manager-react/app/runtime-app";
 import { createHttpManagerClient } from "@rakun-kit/manager-react/client/http";
 import type { ManagerClient } from "@rakun-kit/manager-react/client/request";
-import type { ManagerPreviewConfig } from "@rakun-kit/manager-react";
-import type { RakunManagerPluginDefinition } from '@rakun-kit/manager-react'
+import type {
+  ManagerPreviewConfig,
+  RakunManagerPluginDefinition,
+} from "@rakun-kit/manager-react";
 import "@rakun-kit/manager-react/styles.css";
 import { useMemo, useSyncExternalStore, type ReactNode } from "react";
 

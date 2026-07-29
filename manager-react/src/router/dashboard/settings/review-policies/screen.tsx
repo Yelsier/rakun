@@ -38,6 +38,7 @@ import {
   TagsValue,
 } from '@/components/ui/shadcn-io/tags'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
+import { useTranslations } from '@/i18n'
 import { useSession } from '@/state/session'
 
 const PolicyMultiSelect = ({
@@ -87,6 +88,7 @@ const PolicyMultiSelect = ({
 }
 
 export const ManagerSettingsReviewPoliciesScreen = () => {
+  const t = useTranslations()
   const { hasPermissions } = useSession()
   const allowed = hasPermissions(['review.policy.configure'])
   const policiesQuery = useManagerQuery({
@@ -129,9 +131,9 @@ export const ManagerSettingsReviewPoliciesScreen = () => {
       })
       await policiesQuery.refetch()
       reset()
-      toast.success('Review policy saved')
+      toast.success(t('settings.reviewPolicies.saved'))
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not save review policy'))
+      toast.error(getActionErrorMessage(error, t('settings.reviewPolicies.saveError')))
     }
   }
 
@@ -149,18 +151,18 @@ export const ManagerSettingsReviewPoliciesScreen = () => {
       await policiesQuery.refetch()
       if (editingId === id) reset()
       setDeletingPolicyId(null)
-      toast.success('Review policy deleted')
+      toast.success(t('settings.reviewPolicies.deleted'))
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not delete review policy'))
+      toast.error(getActionErrorMessage(error, t('settings.reviewPolicies.deleteError')))
     }
   }
 
   return (
     <div className="container mx-auto space-y-6 py-10">
       <div>
-        <h1 className="text-2xl font-semibold">Review policies</h1>
+        <h1 className="text-2xl font-semibold">{t('settings.reviewPolicies.title')}</h1>
         <p className="text-sm text-muted-foreground">
-          Require approvals by author role and content type.
+          {t('settings.reviewPolicies.description')}
         </p>
       </div>
       <Card>
@@ -169,10 +171,10 @@ export const ManagerSettingsReviewPoliciesScreen = () => {
         </CardHeader>
         <CardContent className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
-            <Label>Author role</Label>
+            <Label>{t('settings.reviewPolicies.authorRole')}</Label>
             <Select value={roleId || undefined} onValueChange={setRoleId}>
               <SelectTrigger>
-                <SelectValue placeholder="Select role" />
+                <SelectValue placeholder={t('users.selectRole')} />
               </SelectTrigger>
               <SelectContent>
                 {(data?.roles ?? []).map((role) => (
@@ -184,7 +186,7 @@ export const ManagerSettingsReviewPoliciesScreen = () => {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Content types</Label>
+            <Label>{t('settings.reviewPolicies.contentTypes')}</Label>
             <PolicyMultiSelect
               options={(data?.contentTypes ?? []).map((item) => ({
                 value: item.name,
@@ -196,7 +198,7 @@ export const ManagerSettingsReviewPoliciesScreen = () => {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="required-approvals">Required approvals</Label>
+            <Label htmlFor="required-approvals">{t('settings.reviewPolicies.requiredApprovals')}</Label>
             <Input
               id="required-approvals"
               type="number"
@@ -208,7 +210,7 @@ export const ManagerSettingsReviewPoliciesScreen = () => {
             />
           </div>
           <div className="space-y-2">
-            <Label>Reviewer roles</Label>
+            <Label>{t('settings.reviewPolicies.reviewerRoles')}</Label>
             <PolicyMultiSelect
               options={(data?.roles ?? []).map((role) => ({
                 value: role._id,
@@ -230,7 +232,7 @@ export const ManagerSettingsReviewPoliciesScreen = () => {
             </Button>
             {editingId ? (
               <Button variant="outline" onClick={reset}>
-                Cancel
+                {t('common.cancel')}
               </Button>
             ) : null}
           </div>
@@ -242,22 +244,23 @@ export const ManagerSettingsReviewPoliciesScreen = () => {
             <CardContent className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-2">
                 <strong>{roleNames.get(policy.roleId) ?? policy.roleId}</strong>
-                <span className="text-muted-foreground">for</span>
+                <span className="text-muted-foreground">{t('settings.reviewPolicies.for')}</span>
                 {policy.contentTypes.map((contentType) => (
                   <Badge key={contentType} variant="outline">
                     {contentType}
                   </Badge>
                 ))}
                 <span className="text-sm text-muted-foreground">
-                  {policy.requiredApprovals} approval
-                  {policy.requiredApprovals === 1 ? '' : 's'} from{' '}
+                  {t('settings.reviewPolicies.approvalsFrom', {
+                    count: policy.requiredApprovals,
+                  })}{' '}
                   {policy.reviewerRoleIds.map((id) => roleNames.get(id) ?? id).join(', ')}
                 </span>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => edit(policy)}>
                   <Pencil />
-                  Edit
+                  {t('common.edit')}
                 </Button>
                 <Button
                   variant="destructive"
@@ -266,14 +269,14 @@ export const ManagerSettingsReviewPoliciesScreen = () => {
                   onClick={() => setDeletingPolicyId(policy._id)}
                 >
                   <Trash2 />
-                  Delete
+                  {t('common.delete')}
                 </Button>
               </div>
             </CardContent>
           </Card>
         ))}
         {!policiesQuery.isLoading && !data?.policies.length ? (
-          <p className="text-sm text-muted-foreground">No review policies configured.</p>
+          <p className="text-sm text-muted-foreground">{t('settings.reviewPolicies.empty')}</p>
         ) : null}
       </div>
       <Dialog
@@ -284,15 +287,14 @@ export const ManagerSettingsReviewPoliciesScreen = () => {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete review policy</DialogTitle>
+            <DialogTitle>{t('settings.reviewPolicies.deleteTitle')}</DialogTitle>
             <DialogDescription>
-              This policy will stop requiring its configured review workflow. This action cannot be
-              undone.
+              {t('settings.reviewPolicies.deleteDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setDeletingPolicyId(null)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -301,7 +303,7 @@ export const ManagerSettingsReviewPoliciesScreen = () => {
                 if (deletingPolicyId) void remove(deletingPolicyId)
               }}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

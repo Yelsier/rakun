@@ -28,6 +28,7 @@ import { errorStyle } from './edit.styles'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { decodeCamelCase } from '@/helpers/decodeCamelCase'
+import { useTranslations } from '@/i18n'
 import { cn } from '@/lib/utils'
 import { useEditErrorStore } from '@/hooks/app-store'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -45,6 +46,8 @@ import {
   type ManagerFieldEditorRef,
 } from '@/plugins'
 import MissingUI from './_fields/Missing'
+
+const REQUIRED_MARK = '*'
 
 const defaultDataExtractor = (fieldName: string, defaultData?: Record<string, FieldValue>) => {
   if (!defaultData) {
@@ -90,20 +93,23 @@ const FieldLabel = ({
   fieldName: string
   isRequired?: boolean
   className?: string
-}) => (
-  <span className={cn('flex min-w-0 items-center gap-1', className)}>
-    <span className="truncate">{decodeCamelCase(fieldName)}</span>
-    {isRequired ? (
-      <span
-        aria-label="Required field"
-        className="shrink-0 text-2xl font-bold leading-none text-destructive"
-        title="Required field"
-      >
-        *
-      </span>
-    ) : null}
-  </span>
-)
+}) => {
+  const t = useTranslations()
+  return (
+    <span className={cn('flex min-w-0 items-center gap-1', className)}>
+      <span className="truncate">{decodeCamelCase(fieldName)}</span>
+      {isRequired ? (
+        <span
+          aria-label={t('contentEdit.requiredField')}
+          className="shrink-0 text-2xl font-bold leading-none text-destructive"
+          title={t('contentEdit.requiredField')}
+        >
+          {REQUIRED_MARK}
+        </span>
+      ) : null}
+    </span>
+  )
+}
 
 const FieldTags = ({
   isTranslatable,
@@ -111,16 +117,19 @@ const FieldTags = ({
 }: {
   isTranslatable?: boolean
   children?: ReactNode
-}) => (
-  <div className="flex min-w-0 shrink-0 items-center gap-2">
-    {children}
-    {isTranslatable ? (
-      <FieldMetaIcon label="Translatable field">
-        <Languages aria-hidden="true" size={16} />
-      </FieldMetaIcon>
-    ) : null}
-  </div>
-)
+}) => {
+  const t = useTranslations()
+  return (
+    <div className="flex min-w-0 shrink-0 items-center gap-2">
+      {children}
+      {isTranslatable ? (
+        <FieldMetaIcon label={t('contentEdit.translatableField')}>
+          <Languages aria-hidden="true" size={16} />
+        </FieldMetaIcon>
+      ) : null}
+    </div>
+  )
+}
 
 export const fieldsMap = {
   String: StringField,
@@ -206,6 +215,7 @@ const ContentTypeEdit = forwardRef<
     hideTitle?: boolean
   }
 >((props, ref) => {
+  const t = useTranslations()
   const { contentType, id, collapsible, hideTitle } = props
   const dynamicSourceContentType = props.parentContentType ?? contentType
   const trpc = useTRPC()
@@ -295,7 +305,7 @@ const ContentTypeEdit = forwardRef<
         )
 
         if (Object.values(values).some(hasNestedError)) {
-          const _error = 'Please fix the errors above'
+          const _error = t('contentEdit.formFixErrors')
           addError(id, _error)
           return { _error }
         }
@@ -350,7 +360,7 @@ const ContentTypeEdit = forwardRef<
               ? dynamicBindings?.lists?.[fieldName]
               : dynamicBindings?.fields?.[fieldName]
           const dynamicFallbackPlaceholder =
-            showDynamicData && dynamicBinding ? 'Fallback value' : undefined
+            showDynamicData && dynamicBinding ? t('contentEdit.fallbackValue') : undefined
           const field = FieldComponent ? (
             <FieldComponent
               id={id + '.' + fieldName}
@@ -418,7 +428,7 @@ const ContentTypeEdit = forwardRef<
                             <Button variant="ghost" size="icon" className="size-8" asChild>
                               <span>
                                 <ChevronsUpDown />
-                                <span className="sr-only">Toggle</span>
+                                <span className="sr-only">{t('common.toggle')}</span>
                               </span>
                             </Button>
                             <FieldLabel

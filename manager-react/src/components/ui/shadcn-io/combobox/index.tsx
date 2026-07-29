@@ -28,6 +28,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { useTranslations } from '@/i18n'
 
 type ComboboxData = {
   label: string
@@ -279,6 +280,7 @@ export const ComboboxCreateNew = ({
   children,
   className,
 }: ComboboxCreateNewProps) => {
+  const t = useTranslations()
   const { inputValue, type, onValueChange, onOpenChange } =
     useContext(ComboboxContext)
 
@@ -307,7 +309,7 @@ export const ComboboxCreateNew = ({
         <>
           <PlusIcon className='h-4 w-4 text-muted-foreground' />
           <span>
-            Create new {type}: &quot;{inputValue}&quot;
+            {t('combobox.createNew', { type, value: inputValue })}
           </span>
         </>
       )}

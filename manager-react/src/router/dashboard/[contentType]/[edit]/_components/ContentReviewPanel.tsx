@@ -31,9 +31,12 @@ import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { UserAvatar } from '@/components/user-avatar'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
+import { useTranslations } from '@/i18n'
 import { useSession } from '@/state/session'
 import { useManagerUsers } from '@/state/users'
 import { useQueryClient } from '@tanstack/react-query'
+
+const AT = '@'
 
 const statusVariant = (status?: string) => {
   if (status === 'approved') return 'default' as const
@@ -42,6 +45,7 @@ const statusVariant = (status?: string) => {
 }
 
 export const ContentReviewPanel = ({ open }: { open: boolean }) => {
+  const t = useTranslations()
   const {
     contentTypeId,
     contentTypeName,
@@ -161,9 +165,9 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
       await requestMutation.mutateAsync({ ...input, reviewerIds: selectedReviewers })
       setSelectedReviewers([])
       await refresh()
-      toast.success('Review requested')
+      toast.success(t('review.requestedToast'))
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not request review'))
+      toast.error(getActionErrorMessage(error, t('review.couldNotRequest')))
     }
   }
 
@@ -177,9 +181,13 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
       })
       setFeedback('')
       await refresh()
-      toast.success(decision === 'approve' ? 'Review approved' : 'Changes requested')
+      toast.success(
+        decision === 'approve'
+          ? t('review.approvedToast')
+          : t('review.changesRequestedToast'),
+      )
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not submit review'))
+      toast.error(getActionErrorMessage(error, t('review.couldNotSubmit')))
     }
   }
 
@@ -188,16 +196,16 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
     try {
       await cancelMutation.mutateAsync({ reviewId: review._id })
       await refresh()
-      toast.success('Review cancelled')
+      toast.success(t('review.cancelledToast'))
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not cancel review'))
+      toast.error(getActionErrorMessage(error, t('review.couldNotCancel')))
     }
   }
 
   if (!contentTypeId || reviewQuery.isLoading) {
     return (
       <div className="border-b px-4 py-3 text-sm text-muted-foreground">
-        {contentTypeId ? 'Loading review…' : 'Save the document before requesting review.'}
+        {contentTypeId ? t('review.loading') : t('review.saveBeforeRequest')}
       </div>
     )
   }
@@ -213,14 +221,14 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <GitPullRequestArrow className="size-4" />
-          <span className="text-sm font-medium">Review</span>
+          <span className="text-sm font-medium">{t('review.title')}</span>
           {review ? (
             <Badge variant={statusVariant(review.status)}>
               {review.status.replaceAll('_', ' ')}
             </Badge>
           ) : (
             <Badge variant="outline">
-              {reviewQuery.data?.policy ? 'required' : 'not requested'}
+              {reviewQuery.data?.policy ? t('review.required') : t('review.notRequested')}
             </Badge>
           )}
         </div>
@@ -231,7 +239,7 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
             disabled={cancelMutation.isPending}
             onClick={() => void cancel()}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
         ) : null}
       </div>
@@ -239,8 +247,13 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
       {review ? (
         <div className="space-y-2 text-sm">
           <div className="text-muted-foreground">
-            {review.approvalCount}/{review.requiredApprovals} approvals
-            {review.blocking ? ' · required before publishing' : ' · optional'}
+            {t('review.approvals', {
+              count: review.approvalCount,
+              required: review.requiredApprovals,
+            })}
+            {review.blocking
+              ? ` · ${t('review.requiredBeforePublishing')}`
+              : ` · ${t('review.optional')}`}
           </div>
           <div className="grid gap-2">
             {review.reviewers.map((reviewer) => {
@@ -265,7 +278,8 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
                         {reviewer.user.name || reviewer.user.user}
                       </div>
                       <div className="truncate text-xs text-muted-foreground">
-                        @{reviewer.user.user}
+                        {AT}
+                        {reviewer.user.user}
                       </div>
                     </div>
                     <span
@@ -280,17 +294,17 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
                       {decision?.decision === 'approve' ? (
                         <>
                           <CheckCircle2 className="size-3.5" />
-                          Approved
+                          {t('review.approved')}
                         </>
                       ) : decision?.decision === 'request_changes' ? (
                         <>
                           <XCircle className="size-3.5" />
-                          Changes requested
+                          {t('review.changesRequested')}
                         </>
                       ) : reviewer.canApprove ? (
-                        'Review requested'
+                        t('review.reviewRequested')
                       ) : (
-                        'Feedback requested'
+                        t('review.feedbackRequested')
                       )}
                     </span>
                   </div>
@@ -306,12 +320,12 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
           {review.status === 'changes_requested' ? (
             <p className="flex items-center gap-2 text-destructive">
               <CircleAlert className="size-4" />
-              Save a new revision before requesting review again.
+              {t('review.saveRevisionBeforeRequest')}
             </p>
           ) : null}
           {review.status === 'outdated' ? (
             <p className="text-muted-foreground">
-              The document changed; request review again for the current revision.
+              {t('review.documentChanged')}
             </p>
           ) : null}
         </div>
@@ -324,11 +338,9 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
           <Separator />
           <div className="space-y-2 rounded-md border bg-muted/40 p-3">
             <div>
-              <p className="text-sm font-medium">Ready to publish</p>
+              <p className="text-sm font-medium">{t('review.readyToPublish')}</p>
               <p className="text-xs text-muted-foreground">
-                This is a new page, so it will be published directly in{' '}
-                {languageCode}. Promotion is only needed when replacing an
-                existing published version.
+                {t('review.newPagePublishDescription', { language: languageCode })}
               </p>
             </div>
             <Button
@@ -338,7 +350,7 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
                 void documentActions.handlePublishApprovedDraft()
               }
             >
-              Publish page
+              {t('review.publishPage')}
             </Button>
           </div>
         </>
@@ -356,16 +368,16 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
               >
                 <UserPlus className="size-4" />
                 {selectedReviewers.length
-                  ? `${selectedReviewers.length} reviewer${selectedReviewers.length === 1 ? '' : 's'} selected`
-                  : 'Select reviewers'}
+                  ? t('review.reviewersSelected', { count: selectedReviewers.length })
+                  : t('review.selectReviewers')}
               </Button>
             </PopoverTrigger>
             <PopoverContent align="start" className="w-80 p-0">
               <Command>
-                <CommandInput placeholder="Search people…" />
+                <CommandInput placeholder={t('review.searchPeople')} />
                 <CommandList>
-                  <CommandEmpty>No reviewers found.</CommandEmpty>
-                  <CommandGroup heading="Reviewers">
+                  <CommandEmpty>{t('review.noReviewersFound')}</CommandEmpty>
+                  <CommandGroup heading={t('review.reviewers')}>
                     {candidates.map((candidate) => {
                       const selected = selectedReviewers.includes(
                         candidate.user._id,
@@ -392,14 +404,15 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
                               {candidate.user.name || candidate.user.user}
                             </div>
                             <div className="truncate text-xs text-muted-foreground">
-                              @{candidate.user.user}
+                              {AT}
+                              {candidate.user.user}
                             </div>
                           </div>
                           <Badge
                             variant={candidate.canApprove ? 'secondary' : 'outline'}
                             className="shrink-0 text-[10px]"
                           >
-                            {candidate.canApprove ? 'Approver' : 'Feedback'}
+                            {candidate.canApprove ? t('review.approver') : t('review.feedback')}
                           </Badge>
                         </CommandItem>
                       )
@@ -427,7 +440,7 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
                     {candidate.user.name || candidate.user.user}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {candidate.canApprove ? 'Approver' : 'Feedback only'}
+                    {candidate.canApprove ? t('review.approver') : t('review.feedbackOnly')}
                   </span>
                   <Button
                     type="button"
@@ -445,8 +458,10 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
           ) : null}
           {reviewQuery.data.policy ? (
             <p className="text-xs text-muted-foreground">
-              Select at least {requiredApprovals} eligible approver
-              {requiredApprovals === 1 ? '' : 's'} ({approvingCandidates} selected).
+              {t('review.selectAtLeastApprovers', {
+                count: requiredApprovals,
+                selected: approvingCandidates,
+              })}
             </p>
           ) : null}
           <Button
@@ -455,7 +470,7 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
             disabled={!canCreateRequest}
             onClick={() => void requestReview()}
           >
-            Request review
+            {t('review.requestReview')}
           </Button>
         </>
       ) : null}
@@ -466,7 +481,7 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
           <Textarea
             value={feedback}
             onChange={(event) => setFeedback(event.target.value)}
-            placeholder="Optional feedback for approval; required when requesting changes"
+            placeholder={t('review.feedbackPlaceholder')}
             className="min-h-20 resize-none"
           />
           <div className="flex gap-2">
@@ -477,7 +492,7 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
                 onClick={() => void decide('approve')}
               >
                 <CheckCircle2 />
-                Approve
+                {t('review.approve')}
               </Button>
             ) : null}
             <Button
@@ -488,7 +503,7 @@ export const ContentReviewPanel = ({ open }: { open: boolean }) => {
               onClick={() => void decide('request_changes')}
             >
               <XCircle />
-              Request changes
+              {t('review.requestChanges')}
             </Button>
           </div>
         </>

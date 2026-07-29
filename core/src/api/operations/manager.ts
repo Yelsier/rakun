@@ -43,6 +43,7 @@ import { getHandler } from "../routes/manager/get";
 import { linkedIteratorGetHandler } from "../routes/manager/linkedIterator";
 import { listHandler } from "../routes/manager/list";
 import { languagesHandler } from "../routes/manager/languages";
+import { uiLocalesHandler } from "../routes/manager/uiLocales";
 import { listMigrationsHandler } from "../routes/manager/migrations/list";
 import { permissionsHandler } from "../routes/manager/permissions";
 import { regenerateRoutesHandler } from "../routes/manager/regenerateRoutes";
@@ -110,6 +111,9 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.languages": {
       resolve: languagesHandler,
+    },
+    "manager.uiLocales": {
+      resolve: uiLocalesHandler,
     },
     "manager.regenerateRoutes": {
       resolve: regenerateRoutesHandler,

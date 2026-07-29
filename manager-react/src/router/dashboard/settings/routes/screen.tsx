@@ -42,6 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLanguage } from "@/state/language";
+import { useTranslations } from '@/i18n'
 import { useSession } from "@/state/session";
 
 type PageOption = {
@@ -72,6 +73,7 @@ type ManagerContentTypeRecord = {
 };
 
 export const ManagerSettingsRoutesScreen = () => {
+  const t = useTranslations()
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [edit, setEdit] = useState<ManagerRouteRecord | null>(null);
@@ -243,11 +245,11 @@ export const ManagerSettingsRoutesScreen = () => {
           data: payload,
         });
       }
-      toast.success("Home page updated successfully!");
+      toast.success(t('settings.routes.homePageUpdated'));
       await routeSettingsQuery.refetch();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Error updating home page",
+        error instanceof Error ? error.message : t('settings.routes.homePageUpdateError'),
       );
     }
   };
@@ -277,12 +279,12 @@ export const ManagerSettingsRoutesScreen = () => {
           }),
         ),
       );
-      toast.success("Layout modules updated successfully!");
+      toast.success(t('settings.routes.layoutModulesUpdated'));
       await routeLayoutModulesQuery.refetch();
       setLayoutModulesRoute(null);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Error updating layout modules",
+        error instanceof Error ? error.message : t('settings.routes.layoutModulesUpdateError'),
       );
     }
   };
@@ -291,15 +293,14 @@ export const ManagerSettingsRoutesScreen = () => {
     <div className="container mx-auto flex flex-col items-start gap-6 px-4 py-10">
       <div className="flex w-full justify-end gap-2" data-tour="routes-create">
         <Button asChild variant="secondary">
-          <ManagerLink href="/settings/routes/paths">Route paths</ManagerLink>
+          <ManagerLink href="/settings/routes/paths">{t('settings.routes.routePaths')}</ManagerLink>
         </Button>
       </div>
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>Home page</CardTitle>
+          <CardTitle>{t('settings.routes.homePage')}</CardTitle>
           <CardDescription>
-            The selected page will resolve to the locale root path, for example
-            `/` for the default language or `/es/` instead of `/es/home/`.
+            {t('settings.routes.homePageDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4 lg:flex-row lg:items-end">
@@ -309,10 +310,10 @@ export const ManagerSettingsRoutesScreen = () => {
               onValueChange={setSelectedHomePageId}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select a page" />
+                <SelectValue placeholder={t('settings.routes.selectPage')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__">No home page</SelectItem>
+                <SelectItem value="__none__">{t('settings.routes.noHomePage')}</SelectItem>
                 {pages.map((pageItem) => (
                   <SelectItem key={pageItem._id} value={pageItem._id}>
                     {getTranslation(pageItem.title) ||
@@ -327,7 +328,7 @@ export const ManagerSettingsRoutesScreen = () => {
             onClick={() => void saveHomePage()}
             loading={createMutation.isPending || updateMutation.isPending}
           >
-            Save home page
+            {t('settings.routes.saveHomePage')}
           </Button>
         </CardContent>
       </Card>
@@ -341,10 +342,9 @@ export const ManagerSettingsRoutesScreen = () => {
       >
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edit layout modules</DialogTitle>
+            <DialogTitle>{t('settings.routes.editLayoutModules')}</DialogTitle>
             <DialogDescription>
-              Select route defaults. Each content entry can override these
-              modules from its edit screen.
+              {t('settings.routes.layoutModulesDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto pr-1">
@@ -371,10 +371,10 @@ export const ManagerSettingsRoutesScreen = () => {
                   }
                 >
                   <SelectTrigger className="w-full sm:w-72">
-                    <SelectValue placeholder="Select module" />
+                    <SelectValue placeholder={t('contentEdit.selectModule')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__">No module</SelectItem>
+                    <SelectItem value="__none__">{t('settings.routes.noModule')}</SelectItem>
                     {(
                       layoutOptionsByContentType.get(layoutModule.contentType) ??
                       []
@@ -393,7 +393,7 @@ export const ManagerSettingsRoutesScreen = () => {
               onClick={() => void saveRouteLayoutModules(layoutModulesForRoute)}
               loading={updateMutation.isPending}
             >
-              Save layout modules
+              {t('settings.routes.saveLayoutModules')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -411,6 +411,7 @@ export const ManagerSettingsRoutesScreen = () => {
             hasPermissions,
             canEditLayoutModules: (route) => layoutModuleRouteIds.has(route._id),
             onEditLayoutModules: setLayoutModulesRoute,
+            t,
           })}
           data={routeListQuery.data.items as ManagerRouteRecord[]}
         />

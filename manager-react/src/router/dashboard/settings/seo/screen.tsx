@@ -4,6 +4,7 @@ import type { EncodedContentType, Permission } from '@rakun-kit/core/client'
 import { Search } from 'lucide-react'
 import { useMemo, useRef } from 'react'
 import { toast } from 'sonner'
+import { useTranslations } from '@/i18n'
 
 import ContentTypeEdit, {
   type FieldRef,
@@ -48,6 +49,7 @@ const createSeoSettingsEditContentType = (
 }
 
 export const ManagerSettingsSeoScreen = () => {
+  const t = useTranslations()
   const formRef = useRef<FieldRef>(null)
   const { hasPermissions } = useSession()
   const canRead = hasPermissions(['content.SeoSettings.readAny' as Permission])
@@ -106,7 +108,7 @@ export const ManagerSettingsSeoScreen = () => {
       | undefined
 
     if (!value || value._error) {
-      toast.error('Please fix SEO settings errors')
+      toast.error(t('settings.seo.fixErrors'))
       return
     }
 
@@ -130,14 +132,14 @@ export const ManagerSettingsSeoScreen = () => {
         })
       }
 
-      toast.success('SEO settings saved')
+      toast.success(t('settings.seo.saved'))
       await settingsListQuery.refetch()
       if (settingsId) {
         await settingsQuery.refetch()
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Error saving SEO settings',
+        error instanceof Error ? error.message : t('settings.seo.saveError'),
       )
     }
   }
@@ -160,10 +162,10 @@ export const ManagerSettingsSeoScreen = () => {
         <CardHeader>
           <CardTitle className='flex items-center gap-2'>
             <Search className='h-5 w-5' />
-            SEO
+            {t('settings.seo')}
           </CardTitle>
           <CardDescription>
-            Configure default metadata, social previews and title templates.
+            {t('settings.seo.description')}
           </CardDescription>
         </CardHeader>
         <CardContent className='flex flex-col gap-8'>
@@ -181,7 +183,7 @@ export const ManagerSettingsSeoScreen = () => {
               loading={isSaving}
               onClick={() => void saveSettings()}
             >
-              Save SEO settings
+              {t('settings.seo.save')}
             </Button>
           ) : (
             <UnauthorizedMessage

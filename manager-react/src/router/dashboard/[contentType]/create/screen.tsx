@@ -6,6 +6,7 @@ import EditPage from '../[edit]/edit'
 import type { ManagerPreviewConfig } from '@/router/shared/types'
 
 import UnauthorizedMessage from '@/components/unauthorized'
+import { useTranslations } from '@/i18n'
 import { useSession } from '@/state/session'
 
 export const ManagerContentTypeCreateScreen = ({
@@ -15,10 +16,11 @@ export const ManagerContentTypeCreateScreen = ({
   contentType?: EncodedContentType
   preview?: ManagerPreviewConfig
 }) => {
+  const t = useTranslations()
   const { hasAnyPermission } = useSession()
 
   if (!contentType) {
-    return <div>Content type not found.</div>
+    return <div>{t('common.contentTypeNotFound')}</div>
   }
 
   const neededPermissions: Permission[] = [

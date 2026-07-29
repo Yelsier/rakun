@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslations } from '@/i18n'
+
 import type {
   EncodedContentType,
   IteratorItemVisibilityCondition,
@@ -44,6 +46,7 @@ export const IteratorVisibilityDialog = ({
   onSave,
   open,
 }: IteratorVisibilityDialogProps) => {
+  const t = useTranslations()
   const [mode, setMode] = useState<VisibilityMode>('always')
   const [field, setField] = useState('')
 
@@ -88,35 +91,36 @@ export const IteratorVisibilityDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{moduleTitle} visibility</DialogTitle>
+          <DialogTitle>{t('modules.visibilityTitle', { title: moduleTitle })}</DialogTitle>
           <DialogDescription>
-            Choose when this module should be rendered. The rule is shared, but it is evaluated
-            using each {contentType?.name ?? 'document'}.
+            {t('modules.visibilityDescription', {
+              contentType: contentType?.name ?? t('modules.documentFallback'),
+            })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label htmlFor="iterator-visibility-mode">Visibility</Label>
+            <Label htmlFor="iterator-visibility-mode">{t('modules.visibility')}</Label>
             <Select value={mode} onValueChange={(value) => setMode(value as VisibilityMode)}>
               <SelectTrigger id="iterator-visibility-mode" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="always">Always visible</SelectItem>
-                <SelectItem value="notEmpty">Visible when a field is not empty</SelectItem>
-                <SelectItem value="empty">Visible when a field is empty</SelectItem>
+                <SelectItem value="always">{t('modules.alwaysVisible')}</SelectItem>
+                <SelectItem value="notEmpty">{t('modules.visibleWhenNotEmpty')}</SelectItem>
+                <SelectItem value="empty">{t('modules.visibleWhenEmpty')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {needsField ? (
             <div className="space-y-2">
-              <Label htmlFor="iterator-visibility-field">Document field</Label>
+              <Label htmlFor="iterator-visibility-field">{t('modules.documentField')}</Label>
               {fields.length > 0 ? (
                 <Select value={field} onValueChange={setField}>
                   <SelectTrigger id="iterator-visibility-field" className="w-full">
-                    <SelectValue placeholder="Select a field" />
+                    <SelectValue placeholder={t('modules.selectField')} />
                   </SelectTrigger>
                   <SelectContent>
                     {fields.map((option) => (
@@ -128,7 +132,7 @@ export const IteratorVisibilityDialog = ({
                 </Select>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  This content type has no fields available for visibility conditions.
+                  {t('modules.noVisibilityFields')}
                 </p>
               )}
             </div>
@@ -137,10 +141,10 @@ export const IteratorVisibilityDialog = ({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button disabled={needsField && !field} onClick={handleSave}>
-            Save visibility
+            {t('modules.saveVisibility')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -38,6 +38,21 @@ import {
 import type { ManagerAppOverrides } from "../router";
 import type { ManagerPreviewConfig } from "../router";
 import type { RakunManagerPluginDefinition } from '../plugins'
+import {
+  ManagerI18nProvider,
+  useTranslations,
+  type ManagerLocalePack,
+} from '@/i18n'
+
+
+const BootstrapFailedMessage = ({ message }: { message: string }) => {
+  const t = useTranslations()
+  return (
+    <div className="p-6">
+      {t("common.bootstrapFailed")} {message}
+    </div>
+  )
+}
 
 type BootstrapState =
   | { status: "loading" }
@@ -98,6 +113,7 @@ export const ManagerRuntimeApp = ({
   plugins,
 }: ManagerRuntimeAppProps) => {
   const queryClient = useMemo(() => createManagerQueryClient(), []);
+  const [localePacks, setLocalePacks] = useState<ManagerLocalePack[]>([]);
   const scopedNavigation = useMemo<ManagerNavigation>(
     () => ({
       ...navigation,
@@ -120,6 +136,26 @@ export const ManagerRuntimeApp = ({
   );
   const [state, setState] = useState<BootstrapState>({ status: "loading" });
   const bootstrapRunRef = useRef(0);
+
+  useEffect(() => {
+    let cancelled = false
+
+    void client
+      .request('manager.uiLocales')
+      .then((result) => {
+        if (cancelled) return
+        const locales = (result as { locales?: ManagerLocalePack[] }).locales
+        setLocalePacks(Array.isArray(locales) ? locales : [])
+      })
+      .catch(() => {
+        if (cancelled) return
+        setLocalePacks([])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [client])
 
   const bootstrap = useCallback(async (): Promise<boolean> => {
     const run = bootstrapRunRef.current + 1;
@@ -199,75 +235,75 @@ export const ManagerRuntimeApp = ({
 
   return (
     <ManagerRootProviders>
-      <QueryClientProvider client={queryClient}>
-        <ManagerProvider client={client}>
-          <ManagerRuntimeAuthProvider value={runtimeAuth}>
-            <ManagerNavigationProvider navigation={scopedNavigation}>
-              <ManagerLinkProvider component={linkComponent}>
-                <ManagerMediaProvider
-                  renderPicker={
-                    renderMediaPicker ?? renderDefaultManagerMediaPicker
-                  }
-                >
-                  {state.status === "loading" ? (
-                    <>{loadingFallback ?? <ManagerLoadingFallback />}</>
-                  ) : null}
+      <ManagerI18nProvider localePacks={localePacks}>
+        <QueryClientProvider client={queryClient}>
+          <ManagerProvider client={client}>
+            <ManagerRuntimeAuthProvider value={runtimeAuth}>
+              <ManagerNavigationProvider navigation={scopedNavigation}>
+                <ManagerLinkProvider component={linkComponent}>
+                  <ManagerMediaProvider
+                    renderPicker={
+                      renderMediaPicker ?? renderDefaultManagerMediaPicker
+                    }
+                  >
+                    {state.status === "loading" ? (
+                      <>{loadingFallback ?? <ManagerLoadingFallback />}</>
+                    ) : null}
 
-                  {state.status === "error" ? (
-                    <>
-                      {errorFallback?.(state.message) ?? (
-                        <div className="p-6">
-                          Bootstrap failed: {state.message}
-                        </div>
-                      )}
-                    </>
-                  ) : null}
+                    {state.status === "error" ? (
+                      <>
+                        {errorFallback?.(state.message) ?? (
+                          <BootstrapFailedMessage message={state.message} />
+                        )}
+                      </>
+                    ) : null}
 
-                  {state.status === "unauthenticated" ? (
-                    <>
-                      {unauthenticatedFallback ?? (
-                        <ManagerApp
-                          pathname={pathname}
-                          basePath={basePath}
-                          searchParams={searchParams}
-                          preview={preview}
-                          plugins={plugins}
-                          {...overrides}
-                        />
-                      )}
-                    </>
-                  ) : null}
-
-                  {state.status === "ready" ? (
-                    <SessionProvider
-                      initialUser={state.user}
-                      contentTypes={state.contentTypes}
-                    >
-                      <ManagerUsersProvider>
-                        <LanguageProvider
-                          languages={state.languages}
-                          initialLanguage={state.initialLanguage}
-                        >
+                    {state.status === "unauthenticated" ? (
+                      <>
+                        {unauthenticatedFallback ?? (
                           <ManagerApp
                             pathname={pathname}
                             basePath={basePath}
                             searchParams={searchParams}
-                            contentTypes={state.contentTypes}
-                            authenticated
                             preview={preview}
                             plugins={plugins}
                             {...overrides}
                           />
-                        </LanguageProvider>
-                      </ManagerUsersProvider>
-                    </SessionProvider>
-                  ) : null}
-                </ManagerMediaProvider>
-              </ManagerLinkProvider>
-            </ManagerNavigationProvider>
-          </ManagerRuntimeAuthProvider>
-        </ManagerProvider>
-      </QueryClientProvider>
+                        )}
+                      </>
+                    ) : null}
+
+                    {state.status === "ready" ? (
+                      <SessionProvider
+                        initialUser={state.user}
+                        contentTypes={state.contentTypes}
+                      >
+                        <ManagerUsersProvider>
+                          <LanguageProvider
+                            languages={state.languages}
+                            initialLanguage={state.initialLanguage}
+                          >
+                            <ManagerApp
+                              pathname={pathname}
+                              basePath={basePath}
+                              searchParams={searchParams}
+                              contentTypes={state.contentTypes}
+                              authenticated
+                              preview={preview}
+                              plugins={plugins}
+                              {...overrides}
+                            />
+                          </LanguageProvider>
+                        </ManagerUsersProvider>
+                      </SessionProvider>
+                    ) : null}
+                  </ManagerMediaProvider>
+                </ManagerLinkProvider>
+              </ManagerNavigationProvider>
+            </ManagerRuntimeAuthProvider>
+          </ManagerProvider>
+        </QueryClientProvider>
+      </ManagerI18nProvider>
     </ManagerRootProviders>
   );
 };

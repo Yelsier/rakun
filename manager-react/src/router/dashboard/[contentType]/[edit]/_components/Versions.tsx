@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UserAvatar } from '@/components/user-avatar'
+import { useTranslations } from '@/i18n'
 
 type VersionRecord = {
   _id: string
@@ -170,12 +171,13 @@ const getTextDiffParts = (before: string, after: string): TextDiffPart[] => {
 }
 
 const DiffText = ({ before, after }: { before: unknown; after: unknown }) => {
+  const t = useTranslations()
   const beforeText = stringifyDiffValue(before)
   const afterText = stringifyDiffValue(after)
   const parts = getTextDiffParts(beforeText, afterText)
 
   if (!beforeText && !afterText) {
-    return <span className="text-muted-foreground">Empty</span>
+    return <span className="text-muted-foreground">{t('common.empty')}</span>
   }
 
   return (
@@ -512,6 +514,7 @@ const ModuleUpdateDetails = ({ change }: { change: ModuleChange }) => {
 }
 
 const ModuleListDiff = ({ entry }: { entry: VersionDiffEntry }) => {
+  const t = useTranslations()
   if (!isModuleList(entry.before) && !isModuleList(entry.after)) {
     return null
   }
@@ -526,7 +529,7 @@ const ModuleListDiff = ({ entry }: { entry: VersionDiffEntry }) => {
       </div>
       <div className="flex flex-col gap-3 px-3 py-3">
         {changes.length === 0 ? (
-          <div className="text-muted-foreground text-sm">No visible module changes.</div>
+          <div className="text-muted-foreground text-sm">{t('contentEdit.noVisibleModuleChanges')}</div>
         ) : null}
         {changes.map((change, index) => {
           const module = change.after ?? change.before
@@ -552,6 +555,7 @@ const ModuleListDiff = ({ entry }: { entry: VersionDiffEntry }) => {
 }
 
 const DiffBlock = ({ entry }: { entry: VersionDiffEntry }) => {
+  const t = useTranslations()
   const beforeText = stringifyDiffValue(entry.before)
   const afterText = stringifyDiffValue(entry.after)
   const isSimpleText = typeof entry.before === 'string' || typeof entry.after === 'string'
@@ -575,17 +579,17 @@ const DiffBlock = ({ entry }: { entry: VersionDiffEntry }) => {
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             <div className="min-w-0 rounded-md border border-red-500/20 bg-red-500/5 p-3">
-              <div className="mb-2 text-xs font-medium text-red-700 dark:text-red-300">Removed</div>
+              <div className="mb-2 text-xs font-medium text-red-700 dark:text-red-300">{t('common.removed')}</div>
               <pre className="max-h-56 overflow-auto whitespace-pre-wrap wrap-break-word text-xs text-red-900 line-through dark:text-red-200">
-                {beforeText || 'Empty'}
+                {beforeText || t('common.empty')}
               </pre>
             </div>
             <div className="min-w-0 rounded-md border border-emerald-500/20 bg-emerald-500/5 p-3">
               <div className="mb-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                Added
+                {t('common.added')}
               </div>
               <pre className="max-h-56 overflow-auto whitespace-pre-wrap wrap-break-word text-xs text-emerald-900 dark:text-emerald-200">
-                {afterText || 'Empty'}
+                {afterText || t('common.empty')}
               </pre>
             </div>
           </div>
@@ -606,6 +610,7 @@ export const VersionHistory = ({
   canRestore: boolean
   onRestored?: () => Promise<unknown> | unknown
 }) => {
+  const t = useTranslations()
   const versionsQuery = useManagerQuery({
     name: 'manager.versions.list',
     input: { contentType, documentId },
@@ -617,7 +622,7 @@ export const VersionHistory = ({
       versionId,
       reason: 'manager restore',
     })
-    toast.success('Version restored successfully')
+    toast.success(t('contentEdit.versionRestored'))
     await versionsQuery.refetch()
     await onRestored?.()
   }
@@ -625,11 +630,11 @@ export const VersionHistory = ({
   const versions = (versionsQuery.data ?? []) as VersionRecord[]
 
   if (versionsQuery.isLoading) {
-    return <div className="text-muted-foreground text-sm">Loading...</div>
+    return <div className="text-muted-foreground text-sm">{t('common.loading')}</div>
   }
 
   if (versions.length === 0) {
-    return <div className="text-muted-foreground text-sm">No versions recorded yet.</div>
+    return <div className="text-muted-foreground text-sm">{t('contentEdit.noVersionsYet')}</div>
   }
 
   return (
@@ -642,18 +647,17 @@ export const VersionHistory = ({
             <CardHeader className="flex-row items-center justify-between gap-4 px-4">
               <div className="flex min-w-0 flex-col gap-2">
                 <CardTitle className="flex flex-wrap items-center gap-2 text-sm">
-                  Revision {version.revision}
+                  {t('contentEdit.revision')} {version.revision}
                   <Badge variant="outline">{version.operation}</Badge>
                   <Badge variant="secondary">
-                    {visibleDiffs.length} field
-                    {visibleDiffs.length === 1 ? '' : 's'}
+                    {t('contentEdit.fieldCount', { count: visibleDiffs.length })}
                   </Badge>
                 </CardTitle>
                 <div className="text-muted-foreground flex items-center gap-2 text-xs">
                   <span>{formatDateTime(version.changedAt)}</span>
                   {version.actorLabel || version.actorId ? (
                     <>
-                      <span>by</span>
+                      <span>{t('common.by')}</span>
                       <UserAvatar
                         name={version.actorLabel}
                         avatar={version.actorAvatar}
@@ -673,7 +677,7 @@ export const VersionHistory = ({
                   onClick={() => void restoreVersion(version._id)}
                 >
                   <RotateCcw />
-                  Restore
+                  {t('common.restore')}
                 </Button>
               ) : null}
             </CardHeader>
@@ -686,7 +690,7 @@ export const VersionHistory = ({
                 </div>
               ) : (
                 <div className="text-muted-foreground rounded-md border bg-muted/20 px-3 py-2 text-sm">
-                  No content fields changed.
+                  {t('contentEdit.noContentFieldsChanged')}
                 </div>
               )}
             </CardContent>

@@ -44,6 +44,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { useTranslations } from '@/i18n'
 import { useSession } from '@/state/session'
 
 const formSchema = z
@@ -85,6 +86,7 @@ const defaultValues: RobotsRuleFormValues = {
 }
 
 export const ManagerSettingsRobotsScreen = () => {
+  const t = useTranslations()
   const { user, hasPermissions } = useSession()
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(1)
@@ -163,18 +165,18 @@ export const ManagerSettingsRobotsScreen = () => {
           id: editing._id,
           data: payload,
         })
-        toast.success('Robots rule updated')
+        toast.success(t('settings.robots.updated'))
       } else {
         await createMutation.mutateAsync({
           contentType: 'RobotsRule',
           data: payload,
         })
-        toast.success('Robots rule created')
+        toast.success(t('settings.robots.created'))
       }
       await listQuery.refetch()
       setOpen(false)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error saving robots rule')
+      toast.error(error instanceof Error ? error.message : t('settings.robots.saveError'))
     }
   }
 
@@ -185,11 +187,11 @@ export const ManagerSettingsRobotsScreen = () => {
         contentType: 'RobotsRule',
         id: deleting._id,
       })
-      toast.success('Robots rule deleted')
+      toast.success(t('settings.robots.deleted'))
       await listQuery.refetch()
       setDeleting(null)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error deleting robots rule')
+      toast.error(error instanceof Error ? error.message : t('settings.robots.deleteError'))
     }
   }
 
@@ -205,10 +207,10 @@ export const ManagerSettingsRobotsScreen = () => {
         <CardHeader>
           <CardTitle className='flex items-center gap-2'>
             <Bot className='h-5 w-5' />
-            Robots.txt
+            {t('settings.robots.title')}
           </CardTitle>
           <CardDescription>
-            Configure crawler rules, crawl delays, sitemap hints and host directives.
+            {t('settings.robots.description')}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -216,7 +218,7 @@ export const ManagerSettingsRobotsScreen = () => {
       <div className='flex justify-end'>
         {canCreate ? (
           <Button onClick={openForCreate}>
-            <Plus className='mr-1 h-4 w-4' /> New rule
+            <Plus className='mr-1 h-4 w-4' /> {t('settings.robots.newRule')}
           </Button>
         ) : null}
       </div>
@@ -227,6 +229,7 @@ export const ManagerSettingsRobotsScreen = () => {
           onDelete: setDeleting,
           canEditItem,
           canDeleteItem,
+          t,
         })}
         data={listQuery.data.items as RobotsRuleManager[]}
       />
@@ -242,7 +245,7 @@ export const ManagerSettingsRobotsScreen = () => {
         <DialogContent className='max-h-[85vh] w-screen max-w-3xl! overflow-y-auto'>
           <DialogHeader>
             <DialogTitle>{editing ? 'Edit robots rule' : 'Create robots rule'}</DialogTitle>
-            <DialogDescription>Rules are rendered by order and grouped by user-agent.</DialogDescription>
+            <DialogDescription>{t('settings.robots.formDescription')}</DialogDescription>
           </DialogHeader>
 
           <Form {...form}>
@@ -253,9 +256,9 @@ export const ManagerSettingsRobotsScreen = () => {
                   name='name'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name</FormLabel>
+                      <FormLabel>{t('fields.name')}</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder='Block private files' />
+                        <Input {...field} placeholder={t('settings.robots.namePlaceholder')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -266,7 +269,7 @@ export const ManagerSettingsRobotsScreen = () => {
                   name='enabled'
                   render={({ field }) => (
                     <FormItem >
-                      <FormLabel>Enabled</FormLabel>
+                      <FormLabel>{t('common.enabled')}</FormLabel>
                       <FormControl>
                         <div className='flex h-9 items-center gap-2'>
                           <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -285,19 +288,19 @@ export const ManagerSettingsRobotsScreen = () => {
                   name='directive'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Directive</FormLabel>
+                      <FormLabel>{t('settings.robots.directive')}</FormLabel>
                       <FormControl>
                         <Select value={field.value} onValueChange={field.onChange}>
                           <SelectTrigger className='w-full'>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value='allow'>Allow</SelectItem>
-                            <SelectItem value='disallow'>Disallow</SelectItem>
-                            <SelectItem value='crawlDelay'>Crawl-delay</SelectItem>
-                            <SelectItem value='sitemap'>Sitemap</SelectItem>
-                            <SelectItem value='host'>Host</SelectItem>
-                            <SelectItem value='comment'>Comment</SelectItem>
+                            <SelectItem value='allow'>{t('settings.robots.allow')}</SelectItem>
+                            <SelectItem value='disallow'>{t('settings.robots.disallow')}</SelectItem>
+                            <SelectItem value='crawlDelay'>{t('settings.robots.crawlDelayOption')}</SelectItem>
+                            <SelectItem value='sitemap'>{t('settings.robots.sitemap')}</SelectItem>
+                            <SelectItem value='host'>{t('settings.robots.host')}</SelectItem>
+                            <SelectItem value='comment'>{t('settings.robots.comment')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </FormControl>
@@ -310,7 +313,7 @@ export const ManagerSettingsRobotsScreen = () => {
                   name='userAgent'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>User-agent</FormLabel>
+                      <FormLabel>{t('settings.robots.userAgent')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -327,7 +330,7 @@ export const ManagerSettingsRobotsScreen = () => {
                   name='order'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Order</FormLabel>
+                      <FormLabel>{t('common.order')}</FormLabel>
                       <FormControl>
                         <Input
                           type='number'
@@ -347,7 +350,7 @@ export const ManagerSettingsRobotsScreen = () => {
                   name='path'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Path</FormLabel>
+                      <FormLabel>{t('common.path')}</FormLabel>
                       <FormControl>
                         <Input {...field} value={field.value ?? ''} placeholder='/private/' />
                       </FormControl>
@@ -363,7 +366,7 @@ export const ManagerSettingsRobotsScreen = () => {
                   name='crawlDelay'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Crawl delay</FormLabel>
+                      <FormLabel>{t('settings.robots.crawlDelay')}</FormLabel>
                       <FormControl>
                         <Input
                           type='number'
@@ -386,7 +389,7 @@ export const ManagerSettingsRobotsScreen = () => {
                   name='value'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Value</FormLabel>
+                      <FormLabel>{t('common.value')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -408,7 +411,7 @@ export const ManagerSettingsRobotsScreen = () => {
 
               <DialogFooter>
                 <Button type='button' variant='ghost' onClick={() => setOpen(false)}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button type='submit' loading={createMutation.isPending || updateMutation.isPending}>
                   {editing ? 'Save changes' : 'Create rule'}
@@ -422,17 +425,17 @@ export const ManagerSettingsRobotsScreen = () => {
       <Dialog open={!!deleting} onOpenChange={(value) => !value && setDeleting(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete robots rule</DialogTitle>
+            <DialogTitle>{t('settings.robots.deleteTitle')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete <span className='font-medium'>{deleting?.name}</span>?
+              {t('common.deleteNamedConfirm', { name: deleting?.name ?? '' })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button type='button' variant='ghost' onClick={() => setDeleting(null)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button variant='destructive' loading={deleteMutation.isPending} onClick={() => void handleDelete()}>
-              Delete
+              {t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

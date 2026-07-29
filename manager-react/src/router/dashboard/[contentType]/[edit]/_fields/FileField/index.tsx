@@ -4,6 +4,8 @@ import { GripVertical, ImagePlus, Settings2, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
+
+import { useTranslations } from '@/i18n'
 import type { EncodedFileField } from '@rakun-kit/core/client'
 import type { TranslatableValue } from '@rakun-kit/core/types'
 
@@ -105,6 +107,7 @@ const SelectedMediaListItem = ({
   reorderable?: boolean
   layout?: 'list' | 'grid'
 }) => {
+  const t = useTranslations()
   const trpcClient = useTRPCClient()
   const canResolvePreview = Boolean(
     media.mime?.startsWith('image/') && media.access && (media.previewKey || media.key)
@@ -164,7 +167,7 @@ const SelectedMediaListItem = ({
                 className="absolute top-2 left-2 size-8 cursor-grab shadow-sm active:cursor-grabbing"
               >
                 <GripVertical className="size-4" />
-                <span className="sr-only">Reorder media</span>
+                <span className="sr-only">{t('contentEdit.reorderMedia')}</span>
               </Button>
             </SortableItemHandle>
           ) : null}
@@ -176,7 +179,7 @@ const SelectedMediaListItem = ({
             onClick={() => onDelete(media._id)}
           >
             <Trash2 className="size-4" />
-            <span className="sr-only">Remove media</span>
+            <span className="sr-only">{t('contentEdit.removeMedia')}</span>
           </Button>
         </div>
         <div className="min-w-0 p-2.5">
@@ -193,7 +196,7 @@ const SelectedMediaListItem = ({
         <SortableItemHandle asChild>
           <Button type="button" variant="ghost" size="icon" className="size-8 shrink-0">
             <GripVertical className="size-4" />
-            <span className="sr-only">Reorder media</span>
+            <span className="sr-only">{t('contentEdit.reorderMedia')}</span>
           </Button>
         </SortableItemHandle>
       ) : null}
@@ -222,13 +225,14 @@ const SelectedMediaListItem = ({
         onClick={() => onDelete(media._id)}
       >
         <Trash2 className="size-4" />
-        <span className="sr-only">Remove media</span>
+        <span className="sr-only">{t('contentEdit.removeMedia')}</span>
       </Button>
     </div>
   )
 }
 
 const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
+  const t = useTranslations()
   const { language } = useLanguage()
   const { openMediaLibrary } = useMedia()
   const trpc = useTRPC()
@@ -535,7 +539,7 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
       )
 
       if (mediaList.length === 0) {
-        toast.error(`Selected files are not valid ${props.mediaType} media`)
+        toast.error(t('contentEdit.invalidMediaFiles', { mediaType: props.mediaType }))
         return
       }
 
@@ -559,7 +563,7 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
     const media = mediaOrList as MediaRecord
 
     if (!isValidType(props.mediaType, media.mime)) {
-      toast.error(`Selected file is not a valid ${props.mediaType} media type`)
+      toast.error(t('contentEdit.invalidMediaFile', { mediaType: props.mediaType }))
       return
     }
 
@@ -621,7 +625,7 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
                 }}
               >
                 <Trash2 className="size-4" />
-                Clear
+                {t('common.clear')}
               </Button>
             ) : null
           ) : value ? (
@@ -641,7 +645,7 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
               }}
             >
               <Trash2 className="size-4" />
-              Clear
+              {t('common.clear')}
             </Button>
           ) : null}
         </div>
@@ -651,10 +655,10 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="font-medium">{valueList.length} media selected</p>
+                    <p className="font-medium">{t('contentEdit.mediaSelected', { count: valueList.length })}</p>
                     {hasMoreMedia ? (
                       <p className="text-muted-foreground text-xs">
-                        Showing the first {INLINE_MEDIA_LIMIT}
+                        {t('contentEdit.showingFirst', { count: INLINE_MEDIA_LIMIT })}
                       </p>
                     ) : null}
                   </div>
@@ -666,7 +670,7 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
                       onClick={() => setManageMediaOpen(true)}
                     >
                       <Settings2 className="size-4" />
-                      Manage & reorder
+                      {t('contentEdit.manageAndReorder')}
                     </Button>
                   ) : null}
                 </div>
@@ -728,9 +732,9 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
         <Dialog open={manageMediaOpen} onOpenChange={setManageMediaOpen}>
           <DialogContent className="max-h-[92vh] w-[calc(100vw-2rem)] max-w-7xl! overflow-hidden">
             <DialogHeader>
-              <DialogTitle>Manage selected media</DialogTitle>
+              <DialogTitle>{t('contentEdit.manageSelectedMedia')}</DialogTitle>
               <DialogDescription>
-                Drag the files to reorder them or remove files from the selection.
+                {t('contentEdit.manageSelectedMediaDescription')}
               </DialogDescription>
             </DialogHeader>
             <ScrollArea className="h-[68vh] pr-3">
@@ -757,7 +761,7 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
             </ScrollArea>
             <DialogFooter>
               <Button type="button" onClick={() => setManageMediaOpen(false)}>
-                Done
+                {t('common.done')}
               </Button>
             </DialogFooter>
           </DialogContent>

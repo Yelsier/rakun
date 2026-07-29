@@ -1,4 +1,7 @@
+import { useTranslations } from '@/i18n'
+
 export const LoadingSpinner = () => {
+  const t = useTranslations()
   return (
     <div role="status">
       <svg
@@ -17,7 +20,7 @@ export const LoadingSpinner = () => {
           fill="currentFill"
         />
       </svg>
-      <span className="sr-only">Loading...</span>
+      <span className="sr-only">{t('common.loading')}</span>
     </div>
   )
 }

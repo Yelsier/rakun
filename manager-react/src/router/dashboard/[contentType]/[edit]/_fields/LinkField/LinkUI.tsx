@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select'
 import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
 import { useTRPC } from '@/components/trpc-provider'
+import { useTranslations } from '@/i18n'
 
 const RouteSelect: React.FC<{
   value: LinkfieldValue
@@ -43,6 +44,7 @@ const RouteSelect: React.FC<{
   setRoutes,
   dynamicFallbackPlaceholder,
 }) => {
+  const t = useTranslations()
   const trpc = useTRPC()
   const { data } = useQuery(
     trpc.manager.list.queryOptions({
@@ -72,7 +74,7 @@ const RouteSelect: React.FC<{
   return (
     <div className='flex gap-2'>
       <Label className='flex flex-col items-start'>
-        Route
+        {t('contentEdit.route')}
         <div className='flex gap-2'>
           {!isRequired && value.routeId && (
             <Button
@@ -96,7 +98,7 @@ const RouteSelect: React.FC<{
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectLabel>Routes</SelectLabel>
+                <SelectLabel>{t('contentEdit.routes')}</SelectLabel>
                 {routes.map((route) => (
                   <SelectItem key={route.contentType} value={route._id}>
                     {route.contentType} - {route.field}
@@ -126,6 +128,7 @@ const ItemSelect: React.FC<{
   isRequired,
   dynamicFallbackPlaceholder,
 }) => {
+  const t = useTranslations()
   const { language } = useLanguage()
   const trpc = useTRPC()
   const { data, refetch, isFetching } = useQuery(
@@ -170,7 +173,7 @@ const ItemSelect: React.FC<{
     route && contentType && (
       <div className='flex gap-2'>
         <Label className='flex flex-col items-start'>
-          Item
+          {t('common.item')}
           <div className='flex gap-2'>
             {!isRequired && value.contentTypeId && (
               <Button
@@ -194,7 +197,7 @@ const ItemSelect: React.FC<{
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectLabel>Items</SelectLabel>
+                  <SelectLabel>{t('common.items')}</SelectLabel>
                   {items.map((item) => {
                     const field = getListField(
                       item,

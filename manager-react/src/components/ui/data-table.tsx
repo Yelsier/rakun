@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useTranslations } from '@/i18n'
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -96,6 +97,7 @@ export function DataTable<TData, TValue>({
   setRowSelection,
   getRowId,
 }: DataTableProps<TData, TValue>) {
+  const t = useTranslations()
   const state = {
     ...(sorting !== undefined ? { sorting } : {}),
     ...(rowSelection !== undefined ? { rowSelection } : {}),
@@ -166,7 +168,7 @@ export function DataTable<TData, TValue>({
               ) : (
                 <TableRow>
                   <TableCell colSpan={columns.length} className="h-24 text-center">
-                    No results.
+                    {t('dataTable.noResults')}
                   </TableCell>
                 </TableRow>
               )}

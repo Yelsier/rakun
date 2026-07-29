@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useTranslations } from '@/i18n'
 
 const languageFormSchema = z.object({
   _type: z.literal('Language'),
@@ -54,6 +55,7 @@ export const EditLanguageForm = ({
   refetch: () => void
   setOpen: (open: boolean) => void
 }) => {
+  const t = useTranslations()
   const languageListQuery = useManagerQuery({
     name: 'manager.list',
     input: {
@@ -111,19 +113,19 @@ export const EditLanguageForm = ({
           id: defaultValues._id,
           data,
         })
-        toast.success('Language updated successfully!')
+        toast.success(t('settings.languages.updated'))
       } else {
         await createMutation.mutateAsync({
           contentType: 'Language',
           data,
         })
-        toast.success('Language created successfully!')
+        toast.success(t('settings.languages.created'))
       }
 
       refetch()
       setOpen(false)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error saving language')
+      toast.error(error instanceof Error ? error.message : t('settings.languages.saveError'))
     }
   }
 
@@ -137,7 +139,7 @@ export const EditLanguageForm = ({
           name='code'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Code</FormLabel>
+              <FormLabel>{t('common.code')}</FormLabel>
               <FormControl>
                 <Input autoComplete='off' placeholder='en' {...field} />
               </FormControl>
@@ -150,9 +152,9 @@ export const EditLanguageForm = ({
           name='name'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>{t('fields.name')}</FormLabel>
               <FormControl>
-                <Input autoComplete='off' placeholder='English' {...field} />
+                <Input autoComplete='off' placeholder={t('settings.languages.namePlaceholder')} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -163,7 +165,7 @@ export const EditLanguageForm = ({
           name='parent'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Parent</FormLabel>
+              <FormLabel>{t('common.parent')}</FormLabel>
               <Select
                 onValueChange={(value) =>
                   field.onChange(
@@ -179,10 +181,10 @@ export const EditLanguageForm = ({
                 value={field.value?._id ?? '__none__'}
               >
                 <SelectTrigger className='w-full'>
-                  <SelectValue placeholder='Select parent language' />
+                  <SelectValue placeholder={t('settings.languages.selectParent')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value='__none__'>No parent</SelectItem>
+                  <SelectItem value='__none__'>{t('settings.languages.noParent')}</SelectItem>
                   {languages
                     .filter(
                       (lang) =>
@@ -205,7 +207,7 @@ export const EditLanguageForm = ({
             type='submit'
             loading={createMutation.isPending || updateMutation.isPending}
           >
-            Save
+            {t('common.save')}
           </Button>
         </DialogFooter>
       </form>

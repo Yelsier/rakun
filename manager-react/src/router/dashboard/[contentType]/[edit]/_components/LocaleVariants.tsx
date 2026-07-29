@@ -16,6 +16,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import type { ListContentVersionsOutput } from '@rakun-kit/core/client'
+import { useTranslations } from '@/i18n'
 
 import { useEditPageContext } from '../_context/EditPageContext'
 import { VariantNameDialog } from './VariantNameDialog'
@@ -62,6 +63,7 @@ const LocaleMultiSelect = ({
   value: string[]
   onValueChange: (value: string[]) => void
 }) => {
+  const t = useTranslations()
   const labelsByValue = new Map(options.map((option) => [option.value, option.label]))
   const remove = (removedValue: string) =>
     onValueChange(value.filter((item) => item !== removedValue))
@@ -70,7 +72,7 @@ const LocaleMultiSelect = ({
 
   return (
     <Tags className="min-w-64 max-w-md">
-      <TagsTrigger placeholder="Select locales...">
+      <TagsTrigger placeholder={t('variants.selectLocales')}>
         {value.map((selectedValue) => (
           <TagsValue key={selectedValue} onRemove={() => remove(selectedValue)}>
             {labelsByValue.get(selectedValue) ?? selectedValue}
@@ -78,16 +80,16 @@ const LocaleMultiSelect = ({
         ))}
       </TagsTrigger>
       <TagsContent>
-        <TagsInput placeholder="Search locale..." />
+        <TagsInput placeholder={t('variants.searchLocale')} />
         <TagsList>
-          <TagsEmpty>No locales found.</TagsEmpty>
+          <TagsEmpty>{t('variants.noLocalesFound')}</TagsEmpty>
           <TagsGroup>
             {options.map((option) => (
               <TagsItem key={option.value} value={option.value} onSelect={toggle}>
                 <span>
                   {option.label}
                   {option.active ? (
-                    <span className="text-muted-foreground"> · currently active</span>
+                    <span className="text-muted-foreground"> {'\u00B7'} {t('variants.currentlyActive')}</span>
                   ) : null}
                 </span>
                 {value.includes(option.value) ? (
@@ -103,6 +105,7 @@ const LocaleMultiSelect = ({
 }
 
 export const ContentVariants = () => {
+  const t = useTranslations()
   const {
     contentTypeId,
     contentTypeName,
@@ -199,7 +202,7 @@ export const ContentVariants = () => {
       })
       await invalidate()
       setCreateDialogOpen(false)
-      toast.success('Draft variant created')
+      toast.success(t('variants.draftVariantCreated'))
       const nextId = result.document._id
       if (typeof nextId === 'string') {
         navigation.push?.({
@@ -209,7 +212,7 @@ export const ContentVariants = () => {
         })
       }
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not create draft variant'))
+      toast.error(getActionErrorMessage(error, t('variants.couldNotCreate')))
     }
   }
 
@@ -237,7 +240,7 @@ export const ContentVariants = () => {
         if (documentId === contentTypeId) {
           handleVisibilityChange('published')
         }
-        toast.success(initialPublication ? 'Page published' : 'Variant promoted')
+        toast.success(initialPublication ? t('variants.pagePublished') : t('variants.variantPromoted'))
       } else {
         await assignMutation.mutateAsync({
           contentType: contentTypeName,
@@ -245,12 +248,12 @@ export const ContentVariants = () => {
           routeKey: localeVariantRoute.key,
           languageCodes,
         })
-        toast.success('Locale moved')
+        toast.success(t('variants.localeMoved'))
       }
       setLocalesByDocument((current) => ({ ...current, [documentId]: [] }))
       await invalidate()
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not move locale'))
+      toast.error(getActionErrorMessage(error, t('variants.couldNotMoveLocale')))
     }
   }
 
@@ -264,9 +267,9 @@ export const ContentVariants = () => {
         languageCodes: [locale],
       })
       await invalidate()
-      toast.success('Locale unassigned')
+      toast.success(t('variants.localeUnassigned'))
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not unassign locale'))
+      toast.error(getActionErrorMessage(error, t('variants.couldNotUnassignLocale')))
     }
   }
 
@@ -279,9 +282,9 @@ export const ContentVariants = () => {
         routeKey: localeVariantRoute.key,
       })
       await invalidate()
-      toast.success('Primary variant updated')
+      toast.success(t('variants.primaryUpdated'))
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not set primary variant'))
+      toast.error(getActionErrorMessage(error, t('variants.couldNotSetPrimary')))
     }
   }
 
@@ -296,7 +299,7 @@ export const ContentVariants = () => {
       })
       setVariantToTrash(null)
       await invalidate()
-      toast.success('Variant moved to trash')
+      toast.success(t('variants.movedToTrash'))
 
       if (documentId === contentTypeId) {
         navigation.replace?.({
@@ -306,7 +309,7 @@ export const ContentVariants = () => {
         })
       }
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not move variant to trash'))
+      toast.error(getActionErrorMessage(error, t('variants.couldNotMoveToTrash')))
     }
   }
 
@@ -319,9 +322,9 @@ export const ContentVariants = () => {
         routeKey: localeVariantRoute.key,
       })
       await invalidate()
-      toast.success('Variant restored. Assign its locales when ready.')
+      toast.success(t('variants.restored'))
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not restore variant'))
+      toast.error(getActionErrorMessage(error, t('variants.couldNotRestore')))
     }
   }
 
@@ -334,10 +337,10 @@ export const ContentVariants = () => {
       })
       setVariantToDelete(null)
       await invalidate()
-      toast.success('Variant permanently deleted')
+      toast.success(t('variants.permanentlyDeleted'))
     } catch (error) {
       toast.error(
-        getActionErrorMessage(error, 'Could not permanently delete variant')
+        getActionErrorMessage(error, t('variants.couldNotDelete'))
       )
     }
   }
@@ -345,12 +348,12 @@ export const ContentVariants = () => {
   if (!contentTypeId || !localeVariantRoute) {
     return (
       <div className="text-muted-foreground text-sm">
-        Variants are available for routeable content.
+        {t('variants.availableForRouteable')}
       </div>
     )
   }
   if (versionsQuery.isLoading) {
-    return <div className="text-muted-foreground text-sm">Loading...</div>
+    return <div className="text-muted-foreground text-sm">{t('common.loading')}</div>
   }
 
   return (
@@ -371,10 +374,10 @@ export const ContentVariants = () => {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Move variant to trash?</DialogTitle>
+            <DialogTitle>{t('variants.moveToTrashTitle')}</DialogTitle>
             <DialogDescription>
               {variantToTrash
-                ? `“${variantToTrash.label}” will be removed from this page group and its locale assignments will be cleared. The other variants will not be affected.`
+                ? t('variants.moveToTrashConfirm', { label: variantToTrash.label })
                 : null}
             </DialogDescription>
           </DialogHeader>
@@ -384,7 +387,7 @@ export const ContentVariants = () => {
               disabled={trashVariantMutation.isPending}
               onClick={() => setVariantToTrash(null)}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -392,7 +395,7 @@ export const ContentVariants = () => {
               onClick={() => void trashVariant()}
             >
               <Trash2 />
-              Move variant to trash
+              {t('variants.moveVariantToTrash')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -407,10 +410,10 @@ export const ContentVariants = () => {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete variant permanently?</DialogTitle>
+            <DialogTitle>{t('variants.deletePermanentlyTitle')}</DialogTitle>
             <DialogDescription>
               {variantToDelete
-                ? `“${variantToDelete.label}” will be permanently deleted. This action cannot be undone.`
+                ? t('variants.deletePermanentlyConfirm', { label: variantToDelete.label })
                 : null}
             </DialogDescription>
           </DialogHeader>
@@ -420,7 +423,7 @@ export const ContentVariants = () => {
               disabled={deleteVariantMutation.isPending}
               onClick={() => setVariantToDelete(null)}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -428,7 +431,7 @@ export const ContentVariants = () => {
               onClick={() => void deleteVariantPermanently()}
             >
               <Trash2 />
-              Delete permanently
+              {t('contentList.deletePermanently')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -436,14 +439,14 @@ export const ContentVariants = () => {
       <div className="flex flex-wrap gap-2">
         <Button loading={createMutation.isPending} onClick={() => setCreateDialogOpen(true)}>
           <GitBranchPlus />
-          Create draft variant
+          {t('variants.createDraftVariant')}
         </Button>
         {trashedVariantsCount ? (
           <Button variant="outline" onClick={() => setShowTrashed((current) => !current)}>
             {showTrashed ? <EyeOff /> : <Eye />}
             {showTrashed
-              ? 'Hide trashed'
-              : `Show trashed (${trashedVariantsCount})`}
+              ? t('variants.hideTrashed')
+              : t('variants.showTrashed', { count: trashedVariantsCount })}
           </Button>
         ) : null}
       </div>
@@ -471,7 +474,7 @@ export const ContentVariants = () => {
                 <div className="min-w-0">
                   <CardTitle className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
                     <span className="truncate">{document.label}</span>
-                    {isCurrent ? <Badge>current</Badge> : null}
+                    {isCurrent ? <Badge>{t('variants.current')}</Badge> : null}
                     <Badge variant={document.role === 'primary' ? 'default' : 'secondary'}>
                       {document.role}
                     </Badge>
@@ -502,7 +505,7 @@ export const ContentVariants = () => {
                       }
                     >
                       <Pencil />
-                      Edit
+                      {t('common.edit')}
                     </Button>
                   ) : null}
                   {document.role === 'variant' && isVariantTrashed ? (
@@ -524,7 +527,7 @@ export const ContentVariants = () => {
                         onClick={() => void restoreVariant(document.documentId)}
                       >
                         <RotateCcw />
-                        Restore
+                        {t('common.restore')}
                       </Button>
                       <Button
                         variant="destructive"
@@ -541,7 +544,7 @@ export const ContentVariants = () => {
                         }
                       >
                         <Trash2 />
-                        Delete permanently
+                        {t('contentList.deletePermanently')}
                       </Button>
                     </>
                   ) : document.role === 'variant' ? (
@@ -557,7 +560,7 @@ export const ContentVariants = () => {
                         onClick={() => void setAsPrimary(document.documentId)}
                       >
                         <Star />
-                        Set as primary
+                        {t('variants.setAsPrimary')}
                       </Button>
                       <Button
                         aria-label={`Move ${document.label} to trash`}
@@ -573,7 +576,7 @@ export const ContentVariants = () => {
                         }
                       >
                         <Trash2 />
-                        Move to trash
+                        {t('contentList.moveToTrash')}
                       </Button>
                     </>
                   ) : null}
@@ -582,8 +585,7 @@ export const ContentVariants = () => {
               <CardContent className="flex flex-col gap-3 px-4">
                 {isVariantTrashed ? (
                   <p className="text-sm text-muted-foreground">
-                    This variant is in trash. Restore it before editing or assigning locales.
-                    Previous locale assignments were cleared when it was moved to trash.
+                    {t('variants.inTrashHint')}
                   </p>
                 ) : (
                   <>
@@ -603,14 +605,14 @@ export const ContentVariants = () => {
                             {language.code}
                             {language.code === languageCode ? (
                               <Badge variant="secondary" className="ml-1">
-                                current
+                                {t('variants.current')}
                               </Badge>
                             ) : null}
                           </Button>
                         ))
                       ) : (
                         <span className="text-muted-foreground text-sm">
-                          No locale assignments.
+                          {t('variants.noLocaleAssignments')}
                         </span>
                       )}
                     </div>
@@ -644,13 +646,13 @@ export const ContentVariants = () => {
                                 }))
                               }
                             >
-                              Select all active locales
+                              {t('variants.selectAllActiveLocales')}
                             </Button>
                           ) : null}
                         </div>
                       ) : (
                         <div className="text-muted-foreground flex items-center text-sm">
-                          This is a new page. It will be published in {languageCode}.
+                          {t('variants.newPagePublishIn', { language: languageCode })}
                         </div>
                       )}
                       <Button

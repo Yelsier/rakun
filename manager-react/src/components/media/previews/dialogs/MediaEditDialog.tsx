@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../../ui/dialog'
+import { useTranslations } from '@/i18n'
 
 type EditTarget = {
   contentType: 'Media' | 'MediaFolder'
@@ -34,20 +35,24 @@ export default function MediaEditDialog({
   onClose,
   onConfirm,
 }: MediaEditDialogProps) {
+  const t = useTranslations()
+
   return (
     <Dialog open={!!target} onOpenChange={(open) => !open && onClose()}>
       <DialogContent aria-describedby='Edit media item'>
         <DialogHeader>
           <DialogTitle>
-            Edit {target?.contentType === 'MediaFolder' ? 'folder' : 'file'}
+            {target?.contentType === 'MediaFolder'
+              ? t('media.editFolderTitle')
+              : t('media.editFileTitle')}
           </DialogTitle>
         </DialogHeader>
-        <DialogDescription>Update the name.</DialogDescription>
+        <DialogDescription>{t('media.editDescription')}</DialogDescription>
         <div className='py-2'>
           <Input
             value={value}
             onChange={(event) => onValueChange(event.target.value)}
-            placeholder='Name'
+            placeholder={t('fields.name')}
             onKeyDown={(event) => {
               if (event.key === 'Enter') onConfirm()
             }}
@@ -55,10 +60,10 @@ export default function MediaEditDialog({
         </div>
         <DialogFooter>
           <Button variant='ghost' onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button loading={isLoading} onClick={onConfirm}>
-            Save
+            {t('common.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

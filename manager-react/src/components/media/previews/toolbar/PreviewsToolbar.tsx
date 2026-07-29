@@ -24,7 +24,12 @@ import { ToggleGroup, ToggleGroupItem } from '../../../ui/toggle-group'
 import { useMediaLibrary } from '../../contexts/MediaLibraryContext'
 import { useMediaPreview } from '../context/MediaPreviewContext'
 
+import { useTranslations } from '@/i18n'
+
+const OPTIMIZE_FORMATS = ['webp', 'jpeg', 'png', 'avif'] as const
+
 export default function PreviewsToolbar() {
+  const t = useTranslations()
   const {
     mediaCount,
     isUploading,
@@ -45,28 +50,28 @@ export default function PreviewsToolbar() {
   return (
     <div className="flex items-center justify-between gap-2 flex-wrap" data-tour="media-toolbar">
       <p className="text-muted-foreground text-sm">
-        {mediaCount} file{mediaCount === 1 ? '' : 's'}
+        {t('media.fileCount', { count: mediaCount })}
       </p>
       <div className="flex items-center gap-2 flex-wrap">
         <FileUploadTrigger asChild>
           <Button size={'sm'} variant={'outline'}>
             <Upload className="size-4" />
-            Upload
+            {t('common.upload')}
           </Button>
         </FileUploadTrigger>
         <FileUploadClear className="inline-flex items-center rounded-md border px-3 py-1.5 font-medium text-sm hover:bg-accent/40">
-          Clear
+          {t('common.clear')}
         </FileUploadClear>
         <Popover>
           <PopoverTrigger asChild>
             <Button size="sm" variant="outline">
               <SlidersHorizontal className="size-4" />
-              Optimization
+              {t('media.optimization')}
             </Button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-80 space-y-4">
             <div className="flex items-center justify-between gap-2">
-              <p className="font-medium text-sm">Enable optimization</p>
+              <p className="font-medium text-sm">{t('media.enableOptimization')}</p>
               <Switch
                 checked={optimizeEnabled}
                 disabled={optimizeLocked}
@@ -75,11 +80,11 @@ export default function PreviewsToolbar() {
             </div>
             {optimizeLocked ? (
               <p className="text-muted-foreground text-xs">
-                Optimization is enforced by this field configuration.
+                {t('media.optimizationEnforced')}
               </p>
             ) : null}
             <div className="space-y-2">
-              <p className="text-muted-foreground text-xs">Format</p>
+              <p className="text-muted-foreground text-xs">{t('media.format')}</p>
               <Select
                 value={optimizeOptions.format}
                 disabled={!optimizeEnabled}
@@ -90,18 +95,19 @@ export default function PreviewsToolbar() {
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select format" />
+                  <SelectValue placeholder={t('media.selectFormat')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="webp">webp</SelectItem>
-                  <SelectItem value="jpeg">jpeg</SelectItem>
-                  <SelectItem value="png">png</SelectItem>
-                  <SelectItem value="avif">avif</SelectItem>
+                  {OPTIMIZE_FORMATS.map((format) => (
+                    <SelectItem key={format} value={format}>
+                      {format}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <p className="text-muted-foreground text-xs">Quality (1-100)</p>
+              <p className="text-muted-foreground text-xs">{t('media.qualityRange')}</p>
               <Input
                 type="number"
                 min={1}
@@ -117,7 +123,7 @@ export default function PreviewsToolbar() {
               />
             </div>
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm">Generate preview</p>
+              <p className="text-sm">{t('media.generatePreview')}</p>
               <Switch
                 checked={optimizeOptions.generatePreview}
                 disabled={!optimizeEnabled}
@@ -125,7 +131,7 @@ export default function PreviewsToolbar() {
               />
             </div>
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm">Generate responsive sizes</p>
+              <p className="text-sm">{t('media.generateResponsiveSizes')}</p>
               <Switch
                 checked={optimizeOptions.generateSizes ?? true}
                 disabled={!optimizeEnabled}
@@ -137,7 +143,7 @@ export default function PreviewsToolbar() {
         {isUploading ? (
           <span className="inline-flex items-center gap-1 text-muted-foreground text-sm">
             <Loader2 className="size-4 animate-spin" />
-            Uploading...
+            {t('media.uploading')}
           </span>
         ) : null}
 
@@ -156,7 +162,7 @@ export default function PreviewsToolbar() {
               aria-label="All files"
               className="flex-none whitespace-nowrap"
             >
-              All
+              {t('common.all')}
             </ToggleGroupItem>
             <ToggleGroupItem
               value="image"
@@ -164,7 +170,7 @@ export default function PreviewsToolbar() {
               className="flex-none whitespace-nowrap"
             >
               <Image className="size-4" />
-              Images
+              {t('media.filterImages')}
             </ToggleGroupItem>
             <ToggleGroupItem
               value="video"
@@ -172,7 +178,7 @@ export default function PreviewsToolbar() {
               className="flex-none whitespace-nowrap"
             >
               <FilmIcon className="size-4" />
-              Videos
+              {t('media.filterVideos')}
             </ToggleGroupItem>
             <ToggleGroupItem
               value="document"
@@ -180,7 +186,7 @@ export default function PreviewsToolbar() {
               className="flex-none whitespace-nowrap"
             >
               <FileText className="size-4" />
-              Docs
+              {t('media.filterDocs')}
             </ToggleGroupItem>
           </ToggleGroup>
         ) : null}
@@ -209,6 +215,7 @@ export default function PreviewsToolbar() {
 }
 
 export function PreviewsSelectionToolbar() {
+  const t = useTranslations()
   const { bulkSelectedCount, onRequestBulkDelete, onRequestBulkMove, onClearSelection } =
     useMediaPreview()
 
@@ -221,18 +228,18 @@ export function PreviewsSelectionToolbar() {
     >
       <div className="flex flex-wrap items-center justify-center gap-2 rounded-md border bg-background px-3 py-2 shadow-lg">
         <span className="min-w-20 text-center text-muted-foreground text-sm">
-          {bulkSelectedCount} selected
+          {t('contentList.selectedCount', { count: bulkSelectedCount })}
         </span>
         <Button size="sm" variant="outline" onClick={onRequestBulkMove}>
           <FolderInput className="size-4" />
-          Move
+          {t('common.move')}
         </Button>
         <Button size="sm" variant="destructive" onClick={onRequestBulkDelete}>
           <Trash2 className="size-4" />
-          Delete
+          {t('common.delete')}
         </Button>
         <Button size="sm" variant="ghost" onClick={onClearSelection}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     </div>

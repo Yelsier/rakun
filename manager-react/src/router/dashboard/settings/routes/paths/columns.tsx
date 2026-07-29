@@ -6,6 +6,9 @@ import { ArrowUpDown, Eye } from 'lucide-react'
 import IDColumn from '@/components/IDColumnt'
 import { Button } from '@/components/ui/button'
 import { ManagerLink } from '@/link'
+import type { useTranslations } from '@/i18n'
+
+type Translate = ReturnType<typeof useTranslations>
 
 export type RouteMapRecord = {
   _id: string
@@ -15,12 +18,12 @@ export type RouteMapRecord = {
   contentTypeId?: string
 }
 
-export const columns = (): ColumnDef<RouteMapRecord>[] => [
+export const columns = ({ t }: { t: Translate }): ColumnDef<RouteMapRecord>[] => [
   {
     accessorKey: '_id',
     header: ({ column }) => (
       <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-        ID
+        {t('contentList.id')}
         <ArrowUpDown />
       </Button>
     ),
@@ -30,7 +33,7 @@ export const columns = (): ColumnDef<RouteMapRecord>[] => [
     accessorKey: 'path',
     header: ({ column }) => (
       <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-        Path
+        {t('common.path')}
         <ArrowUpDown />
       </Button>
     ),
@@ -40,7 +43,7 @@ export const columns = (): ColumnDef<RouteMapRecord>[] => [
     accessorKey: 'routeId',
     header: ({ column }) => (
       <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-        Route ID
+        {t('settings.routes.routeId')}
         <ArrowUpDown />
       </Button>
     ),
@@ -51,7 +54,7 @@ export const columns = (): ColumnDef<RouteMapRecord>[] => [
     accessorKey: 'contentType',
     header: ({ column }) => (
       <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-        Content Type
+        {t('common.contentType')}
         <ArrowUpDown />
       </Button>
     ),
@@ -61,7 +64,7 @@ export const columns = (): ColumnDef<RouteMapRecord>[] => [
     accessorKey: 'contentTypeId',
     header: ({ column }) => (
       <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-        Content Type ID
+        {t('settings.routes.contentTypeId')}
         <ArrowUpDown />
       </Button>
     ),

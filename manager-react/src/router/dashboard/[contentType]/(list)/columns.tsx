@@ -27,11 +27,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
-import { decodeCamelCase } from '@/helpers/decode-camel-case'
+import { translateFieldLabel } from '@/i18n/fieldLabel'
 
 export const columns = ({
   fields,
   contentType,
+  t,
   getTranslation,
   setDeleteItem,
   setPermanentDeleteItem,
@@ -51,6 +52,7 @@ export const columns = ({
 }: {
   fields: string[]
   contentType: string
+  t: (key: string, values?: Record<string, string | number | boolean>) => string
   getTranslation: <T>(object: MaybeTranslatableValue<T>) => T
   setDeleteItem: (item: { _id: string } | null) => void
   setPermanentDeleteItem: (item: { _id: string } | null) => void
@@ -107,7 +109,7 @@ export const columns = ({
             }
             disabled={!hasRows}
             onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
+            aria-label={t("common.selectAll")}
           />
         </div>
       )
@@ -117,7 +119,7 @@ export const columns = ({
         <Checkbox
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
+          aria-label={t("common.selectRow")}
         />
       </div>
     ),
@@ -129,7 +131,7 @@ export const columns = ({
     ...(enableSelection ? [selectionColumn] : []),
     {
       accessorKey: '_id',
-      header: () => <span className="ml-2">ID</span>,
+      header: () => <span className="ml-2">{t("contentList.id")}</span>,
       cell: ({ row }) => {
         const id = row.getValue('_id') as string
         return <IDColumn _id={id} />
@@ -139,16 +141,16 @@ export const columns = ({
       ? [
           {
             id: 'visibility',
-            header: () => <span className="ml-2">Status</span>,
+            header: () => <span className="ml-2">{t("contentList.status")}</span>,
             cell: ({ row }) => {
               const visibility = getVisibility(row.original as Record<string, unknown>)
 
               return (
                 <Badge
                   variant="outline"
-                  className={`ml-2 capitalize ${visibilityStyles[visibility]}`}
+                  className={`ml-2 ${visibilityStyles[visibility]}`}
                 >
-                  {visibility}
+                  {t(`visibility.${visibility}`)}
                 </Badge>
               )
             },
@@ -159,11 +161,10 @@ export const columns = ({
       (key, i) =>
         ({
           accessorKey: key,
-          header: () => <span className="ml-2">{decodeCamelCase(key.split('.').shift()!)}</span>,
+          header: () => <span className="ml-2">{translateFieldLabel(t, key)}</span>,
           cell: ({ row }) => {
             const value = key
               .split('.')
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               .reduce((acc, key) => acc?.[key], row.original as any)
 
             if (typeof value === 'boolean') {
@@ -195,9 +196,9 @@ export const columns = ({
             <button
               type="button"
               className="ml-2 inline-flex items-center gap-1.5 rounded-sm outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Filter by creator"
+              aria-label={t("contentList.filterByCreator")}
             >
-              <span>Created by</span>
+              <span>{t("contentList.createdBy")}</span>
               {creatorFilterIds.length ? (
                 <Badge variant="secondary" className="h-5 min-w-5 px-1.5 text-[10px]">
                   {creatorFilterIds.length}
@@ -209,12 +210,12 @@ export const columns = ({
           </HoverCardTrigger>
           <HoverCardContent align="start" className="w-72 p-0">
             <Command>
-              <CommandInput placeholder="Search people..." />
+              <CommandInput placeholder={t("contentList.searchPeople")} />
               <CommandList>
-                <CommandEmpty>No people found.</CommandEmpty>
-                <CommandGroup heading="Created by">
+                <CommandEmpty>{t("contentList.noPeopleFound")}</CommandEmpty>
+                <CommandGroup heading={t("contentList.createdBy")}>
                   {creators.map((creator) => {
-                    const creatorName = creator.name?.trim() || creator.user || 'Unknown user'
+                    const creatorName = creator.name?.trim() || creator.user || t('common.unknownUser')
                     const selected = creatorFilterIds.includes(creator._id)
 
                     return (
@@ -255,7 +256,7 @@ export const columns = ({
                     onClick={() => onCreatorFilterChange([])}
                   >
                     <X />
-                    Clear filter
+                    {t('contentList.clearFilter')}
                   </Button>
                 </div>
               ) : null}
@@ -270,7 +271,7 @@ export const columns = ({
         }
 
         const creator = creatorsById.get(creatorId)
-        const creatorName = creator?.name?.trim() || creator?.user || 'Unknown user'
+        const creatorName = creator?.name?.trim() || creator?.user || t('common.unknownUser')
 
         return (
           <span className="ml-2 flex items-center gap-2">
@@ -289,7 +290,7 @@ export const columns = ({
       ? [
           {
             accessorKey: '_variantCount',
-            header: () => <span className="ml-2">Variants</span>,
+            header: () => <span className="ml-2">{t("contentList.variants")}</span>,
             cell: ({ row }) => (
               <span className="ml-2">{Number(row.getValue('_variantCount') ?? 0)}</span>
             ),
@@ -329,7 +330,7 @@ export const columns = ({
               {hasActions && (
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-8 w-8 p-0">
-                    <span className="sr-only">Open menu</span>
+                    <span className="sr-only">{t("common.openMenu")}</span>
                     <MoreHorizontal />
                   </Button>
                 </DropdownMenuTrigger>
@@ -338,7 +339,7 @@ export const columns = ({
                 {isTrash && canUpdate && (
                   <DropdownMenuItem onClick={() => setRestoreItem(item)}>
                     <RotateCcw />
-                    Restore
+                    {t('common.restore')}
                   </DropdownMenuItem>
                 )}
                 {isTrash && canDelete && (
@@ -347,7 +348,7 @@ export const columns = ({
                     className="text-destructive"
                   >
                     <Trash className="text-destructive" />
-                    Delete permanently
+                    {t('contentList.deletePermanently')}
                   </DropdownMenuItem>
                 )}
                 {!isTrash && canDelete && (
@@ -356,13 +357,13 @@ export const columns = ({
                     className="text-destructive"
                   >
                     <Trash className="text-destructive" />
-                    Move to trash
+                    {t('contentList.moveToTrash')}
                   </DropdownMenuItem>
                 )}
                 {!isTrash && canDuplicate && (
                   <DropdownMenuItem disabled={isDuplicating} onClick={() => onDuplicateItem(item)}>
                     <Copy />
-                    {isDuplicating ? 'Duplicating...' : 'Duplicate'}
+                    {isDuplicating ? t('contentList.duplicating') : t('common.duplicate')}
                   </DropdownMenuItem>
                 )}
                 {!isTrash && canUpdate && (
@@ -372,7 +373,7 @@ export const columns = ({
                       className="flex w-full items-center gap-2"
                     >
                       <Edit />
-                      Edit
+                      {t('common.edit')}
                     </ManagerLink>
                   </DropdownMenuItem>
                 )}

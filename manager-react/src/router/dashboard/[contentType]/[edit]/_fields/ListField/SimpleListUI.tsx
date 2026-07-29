@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { fieldsMap, type FieldRef } from '../../ContentTypeEdit'
 import { FieldValue, useFieldValues } from '../shared'
 import { FieldWrapper } from '../shared/FieldWrapper'
+import { useTranslations } from '@/i18n'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -114,6 +115,7 @@ const mapPrimitiveDefaultDataToStrings = (
 }
 
 const RelationSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) => {
+  const t = useTranslations()
   const relationField = props.field as EncodedRelationField
   const trpc = useTRPC()
   const { getTranslation } = useLanguage()
@@ -275,6 +277,7 @@ const RelationSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) 
 }
 
 const PrimitiveSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) => {
+  const t = useTranslations()
   const { removeRelatedErrors } = useEditErrorStore()
   const [query, setQuery] = useState('')
   const isNumberField = props.field.config.type === 'Number'
@@ -311,7 +314,7 @@ const PrimitiveSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props })
     const parsed = Number(trimmed)
     if (!Number.isFinite(parsed)) {
       if (!options?.silent) {
-        toast.error('Invalid number')
+        toast.error(t('contentEdit.invalidNumber'))
       }
       return null
     }
@@ -423,7 +426,7 @@ const PrimitiveSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props })
                   value={query}
                   onSelect={() => handleAdd(query)}
                 >
-                  Create "{query.trim()}"
+                  {t('contentEdit.createQuoted', { query: query.trim() })}
                 </TagsItem>
               ) : null}
               {filteredExisting.map((item) => (
@@ -441,6 +444,7 @@ const PrimitiveSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props })
 }
 
 const GenericSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) => {
+  const t = useTranslations()
   const refs = useRef<Record<string, FieldRef | null>>({})
   const valueRef = useRef<SimpleListItem[]>([])
   const { language } = useLanguage()
@@ -546,7 +550,7 @@ const GenericSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) =
       ref={ref}
     >
       <Button onClick={handleAddItem} variant={'outline'} type='button'>
-        <Plus /> Add {relationName}
+        <Plus /> {t('common.add')} {relationName}
       </Button>
 
       {value.length > 0 ? (

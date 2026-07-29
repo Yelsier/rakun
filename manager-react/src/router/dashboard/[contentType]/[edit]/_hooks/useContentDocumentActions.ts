@@ -19,6 +19,7 @@ import {
   useManagerQuery,
 } from '@/client/react'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
+import { useTranslations } from '@/i18n'
 import { useManagerNavigation } from '@/state/navigation'
 
 const DRAFT_COPY_SUFFIX = '-draft'
@@ -143,6 +144,7 @@ export const useContentDocumentActions = ({
   setVisibility,
   visibilityBeforeTrash,
 }: UseContentDocumentActionsParams) => {
+  const t = useTranslations()
   const navigation = useManagerNavigation()
   const queryClient = useQueryClient()
   const createMutation = useManagerMutation('manager.create')
@@ -303,9 +305,9 @@ export const useContentDocumentActions = ({
         onAfterRestore?.(),
       ])
       await refreshReviewState()
-      toast.success(`Published in ${languageCode}`)
+      toast.success(t('contentEdit.publishedIn', { language: languageCode }))
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not publish page'))
+      toast.error(getActionErrorMessage(error, t('contentEdit.couldNotPublishPage')))
     }
   }
 
@@ -328,7 +330,7 @@ export const useContentDocumentActions = ({
     }
 
     await invalidateContentListQueries()
-    toast.success('Created successfully')
+    toast.success(t('contentEdit.createdSuccessfully'))
   }
 
   const createReviewVariant = async (name: string) => {
@@ -356,10 +358,10 @@ export const useContentDocumentActions = ({
         invalidateContentListQueries(),
         invalidateLocaleVariantQueries(),
       ])
-      toast.success('Draft variant created for review')
+      toast.success(t('contentEdit.draftVariantCreatedForReview'))
     } catch (error) {
       toast.error(
-        getActionErrorMessage(error, 'Could not create draft variant'),
+        getActionErrorMessage(error, t('contentEdit.couldNotCreateDraftVariant')),
       )
     }
   }
@@ -387,7 +389,7 @@ export const useContentDocumentActions = ({
         })
         await invalidateContentListQueries()
         await reviewStateQuery.refetch()
-        toast.success('Published approved draft')
+        toast.success(t('contentEdit.publishedApprovedDraft'))
         return
       }
     }
@@ -420,7 +422,7 @@ export const useContentDocumentActions = ({
     await invalidateContentListQueries()
     await refreshReviewState()
     await onLinkedIteratorSaved?.()
-    toast.success('Updated successfully')
+    toast.success(t('contentEdit.updatedSuccessfully'))
   }
 
   const saveDocument = async (requestedAction?: LinkedIteratorAction) => {
@@ -435,7 +437,7 @@ export const useContentDocumentActions = ({
         await handleCreate(data, requestedAction)
       }
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not save document'))
+      toast.error(getActionErrorMessage(error, t('contentEdit.couldNotSaveDocument')))
     }
   }
 
@@ -463,9 +465,9 @@ export const useContentDocumentActions = ({
       }
 
       await invalidateContentListQueries()
-      toast.success('Draft copy created')
+      toast.success(t('contentEdit.draftCopyCreated'))
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not create draft copy'))
+      toast.error(getActionErrorMessage(error, t('contentEdit.couldNotCreateDraftCopy')))
     }
   }
 
@@ -485,7 +487,7 @@ export const useContentDocumentActions = ({
     setVisibility(restoredVisibility)
     await invalidateContentListQueries()
     await onAfterRestore?.()
-    toast.success('Restored from trash')
+    toast.success(t('contentEdit.restoredFromTrash'))
   }
 
   const handleMoveToTrash = async () => {
@@ -499,9 +501,9 @@ export const useContentDocumentActions = ({
       closeMoveToTrashDialog()
       await invalidateContentListQueries()
       await onAfterRestore?.()
-      toast.success('Moved to trash')
+      toast.success(t('contentEdit.movedToTrash'))
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not move item to trash'))
+      toast.error(getActionErrorMessage(error, t('contentEdit.couldNotMoveToTrash')))
     }
   }
 
@@ -519,9 +521,9 @@ export const useContentDocumentActions = ({
         name: 'content.list',
         contentType: contentTypeName,
       })
-      toast.success('Deleted permanently')
+      toast.success(t('contentEdit.deletedPermanently'))
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not delete item'))
+      toast.error(getActionErrorMessage(error, t('contentEdit.couldNotDeleteItem')))
     }
   }
 
@@ -536,7 +538,7 @@ export const useContentDocumentActions = ({
   }) => {
     if (!contentTypeId) return
     if (to.length === 0) {
-      toast.error('Select at least one target language')
+      toast.error(t('contentList.selectTargetLanguage'))
       return
     }
 
@@ -557,7 +559,7 @@ export const useContentDocumentActions = ({
     await invalidateContentListQueries()
     await invalidateVersions()
     await onAfterRestore?.()
-    toast.success('Translated successfully')
+    toast.success(t('contentEdit.translatedSuccessfully'))
   }
 
   return {

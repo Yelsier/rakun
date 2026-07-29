@@ -21,16 +21,13 @@ import { useManagerClient } from "@/client/react";
 type LanguageState = {
   languageList: LanguageSchema[];
   language: LanguageSchema;
-  managerLanguage: LanguageSchema;
   setLanguage: (lang: LanguageSchema) => void;
-  setManagerLanguage: (lang: LanguageSchema) => void;
   setLanguageList: (langs: LanguageSchema[]) => void;
   getTranslation: <T>(object: MaybeTranslatableValue<T>) => T;
   refetch: () => void;
 };
 
 const LANGUAGE_STORAGE_KEY = "cms-selected-language";
-const MANAGER_LANGUAGE_STORAGE_KEY = "cms-selected-manager-language";
 
 const LanguageStoreContext = createContext<StoreApi<LanguageState> | null>(null);
 
@@ -55,23 +52,12 @@ export function createLanguageStore(
   return createStore<LanguageState>((set, get) => ({
     languageList: initialLanguages,
     language: initialLanguage,
-    managerLanguage: initialLanguage,
     setLanguage: (language) => {
       try {
         localStorage.setItem(LANGUAGE_STORAGE_KEY, JSON.stringify(language.code));
       } catch {}
 
       set({ language });
-    },
-    setManagerLanguage: (language) => {
-      try {
-        localStorage.setItem(
-          MANAGER_LANGUAGE_STORAGE_KEY,
-          JSON.stringify(language.code),
-        );
-      } catch {}
-
-      set({ managerLanguage: language });
     },
     setLanguageList: (languages) => {
       const current = get().language;
@@ -117,9 +103,6 @@ export function LanguageProvider({
   useEffect(() => {
     try {
       const rawLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-      const rawManagerLanguage = localStorage.getItem(
-        MANAGER_LANGUAGE_STORAGE_KEY,
-      );
 
       if (rawLanguage) {
         const languageCode = JSON.parse(rawLanguage);
@@ -127,18 +110,6 @@ export function LanguageProvider({
 
         if (language && language.code !== store.getState().language.code) {
           store.getState().setLanguage(language);
-        }
-      }
-
-      if (rawManagerLanguage) {
-        const languageCode = JSON.parse(rawManagerLanguage);
-        const language = languages.find((lang) => lang.code === languageCode);
-
-        if (
-          language &&
-          language.code !== store.getState().managerLanguage.code
-        ) {
-          store.getState().setManagerLanguage(language);
         }
       }
     } catch {}

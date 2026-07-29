@@ -16,8 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useTranslations } from '@/i18n'
 
 const SelectUI: React.FC<SelectPropsRef> = ({ id, ref, ...props }) => {
+  const t = useTranslations()
   const { value, errors, onValueChange, getValue, getState } =
     useStringFieldValues({
       id,
@@ -45,12 +47,14 @@ const SelectUI: React.FC<SelectPropsRef> = ({ id, ref, ...props }) => {
         <Select value={value} onValueChange={onValueChange}>
           <SelectTrigger className='w-full'>
             <SelectValue
-              placeholder={props.dynamicFallbackPlaceholder ?? 'Select an option'}
+              placeholder={
+                props.dynamicFallbackPlaceholder ?? t('contentEdit.selectAnOption')
+              }
             />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectLabel>Options</SelectLabel>
+              <SelectLabel>{t('common.options')}</SelectLabel>
               {props.options.map((option) => (
                 <SelectItem key={option} value={option}>
                   {option}

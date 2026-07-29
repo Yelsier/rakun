@@ -44,6 +44,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useTranslations } from '@/i18n'
 import { useLanguage } from '@/state/language'
 import { useTRPC } from '@/components/trpc-provider'
 import { useSession } from '@/state/session'
@@ -80,6 +81,7 @@ const ContentListSearch = memo(function ContentListSearch({
   onDebouncedChange: (value: string) => void
   className?: string
 }) {
+  const t = useTranslations()
   const [value, setValue] = useState('')
 
   useEffect(() => {
@@ -100,7 +102,7 @@ const ContentListSearch = memo(function ContentListSearch({
     <SearchInput
       value={value}
       onChange={(event) => setValue(event.target.value)}
-      placeholder="Search..."
+      placeholder={t("contentList.search")}
       className={className}
     />
   )
@@ -121,6 +123,7 @@ const ContentListToolbar = memo(function ContentListToolbar({
   canCreate: boolean
   onDebouncedSearch: (value: string) => void
 }) {
+  const t = useTranslations()
   return (
     <Tabs value={isTrash ? 'trash' : 'active'} onValueChange={onTrashChange} className="w-full">
       <div className="grid gap-3 border-b pb-3 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
@@ -128,11 +131,11 @@ const ContentListToolbar = memo(function ContentListToolbar({
           <TabsList variant="line">
             <TabsTrigger value="active">
               <Archive />
-              Active
+              {t('contentList.active')}
             </TabsTrigger>
             <TabsTrigger value="trash">
               <Trash />
-              Trash
+              {t('contentList.trash')}
             </TabsTrigger>
           </TabsList>
         </div>
@@ -154,7 +157,7 @@ const ContentListToolbar = memo(function ContentListToolbar({
             >
               <Button className="w-full min-[420px]:w-auto">
                 <Plus />
-                Create
+                {t('contentList.create')}
               </Button>
             </ManagerLink>
           ) : null}
@@ -233,6 +236,7 @@ const ListContents: React.FC<{
   const [bulkTranslationOpen, setBulkTranslationOpen] = useState(false)
   const [isBulkTranslating, setIsBulkTranslating] = useState(false)
   const { getTranslation, language, languageList } = useLanguage()
+  const t = useTranslations()
   const [bulkTranslationSource, setBulkTranslationSource] = useState(language.code)
   const [bulkTranslationTargets, setBulkTranslationTargets] = useState<string[]>(() =>
     languageList.filter((item) => item.code !== language.code).map((item) => item.code)
@@ -388,7 +392,7 @@ const ListContents: React.FC<{
           : {}),
       },
     })
-    toast.success('Item restored')
+    toast.success(t('contentList.itemRestored'))
     setRestoreItem(null)
     await refetch()
   }
@@ -405,7 +409,7 @@ const ListContents: React.FC<{
         contentType,
         id,
       })
-      toast.success('Item duplicated')
+      toast.success(t('contentList.itemDuplicated'))
       await refetch()
     } catch (error) {
       toast.error(getActionErrorMessage(error))
@@ -439,17 +443,18 @@ const ListContents: React.FC<{
       setRowSelection({})
       setBulkDeleteOpen(false)
       toast.success(
-        `${successCount} item${successCount === 1 ? '' : 's'} ${
-          isTrash ? 'deleted permanently' : 'moved to trash'
-        }`
+        isTrash
+          ? t('contentList.bulkDeleted', { count: successCount })
+          : t('contentList.bulkMoved', { count: successCount })
       )
     }
 
     if (failedCount > 0) {
       toast.error(
-        `${failedCount} item${failedCount === 1 ? '' : 's'} failed. ${getActionErrorMessage(
-          lastError
-        )}`
+        t('contentList.bulkFailed', {
+          count: failedCount,
+          reason: getActionErrorMessage(lastError),
+        })
       )
     }
 
@@ -460,7 +465,7 @@ const ListContents: React.FC<{
     if (selectedIds.length === 0) return
 
     if (bulkTranslationTargets.length === 0) {
-      toast.error('Select at least one target language')
+      toast.error(t('contentList.selectTargetLanguage'))
       return
     }
 
@@ -493,15 +498,19 @@ const ListContents: React.FC<{
       setRowSelection({})
       setBulkTranslationOpen(false)
       toast.success(
-        `${successCount} item${successCount === 1 ? '' : 's'} translated (${translatedSegments} segment${translatedSegments === 1 ? '' : 's'})`
+        t('contentList.bulkTranslated', {
+          count: successCount,
+          segments: translatedSegments,
+        })
       )
     }
 
     if (failedCount > 0) {
       toast.error(
-        `${failedCount} item${failedCount === 1 ? '' : 's'} failed. ${getActionErrorMessage(
-          lastError
-        )}`
+        t('contentList.bulkFailed', {
+          count: failedCount,
+          reason: getActionErrorMessage(lastError),
+        })
       )
     }
 
@@ -544,6 +553,7 @@ const ListContents: React.FC<{
             columns={columns({
               fields: fields || [],
               contentType,
+              t,
               getTranslation,
               setDeleteItem,
               setPermanentDeleteItem,
@@ -581,7 +591,7 @@ const ListContents: React.FC<{
           >
             <div className="flex flex-wrap items-center justify-center gap-2 rounded-md border bg-background px-3 py-2 shadow-lg">
               <span className="min-w-20 text-center text-muted-foreground text-sm">
-                {selectedCount} selected
+                {t('contentList.selectedCount', { count: selectedCount })}
               </span>
               {canBulkTranslate ? (
                 <Dialog open={bulkTranslationOpen} onOpenChange={setBulkTranslationOpen}>
@@ -599,20 +609,19 @@ const ListContents: React.FC<{
                       }}
                     >
                       <Languages />
-                      Translate
+                      {t('contentList.translate')}
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Translate selected items</DialogTitle>
+                      <DialogTitle>{t('contentList.translateSelectedTitle')}</DialogTitle>
                       <DialogDescription>
-                        Translate supported fields for {selectedCount} selected item
-                        {selectedCount === 1 ? '' : 's'}.
+                        {t('contentList.translateSelectedDescription', { count: selectedCount })}
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4">
                       <div className="grid gap-2">
-                        <Label>Source language</Label>
+                        <Label>{t('contentList.sourceLanguage')}</Label>
                         <Select
                           value={bulkTranslationSource}
                           onValueChange={(value) => {
@@ -623,7 +632,7 @@ const ListContents: React.FC<{
                           }}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select source" />
+                            <SelectValue placeholder={t("contentList.selectSource")} />
                           </SelectTrigger>
                           <SelectContent>
                             {languageList.map((item) => (
@@ -635,7 +644,7 @@ const ListContents: React.FC<{
                         </Select>
                       </div>
                       <div className="grid gap-2">
-                        <Label>Target languages</Label>
+                        <Label>{t('contentList.targetLanguages')}</Label>
                         <div className="grid max-h-56 gap-2 overflow-auto rounded-md border p-3">
                           {bulkTranslationTargetOptions.map((item) => {
                             const checked = bulkTranslationTargets.includes(item.code)
@@ -669,19 +678,19 @@ const ListContents: React.FC<{
                             setBulkTranslationOverwrite(Boolean(checked))
                           }
                         />
-                        <span className="text-sm">Overwrite existing translations</span>
+                        <span className="text-sm">{t('contentList.overwriteTranslations')}</span>
                       </label>
                     </div>
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setBulkTranslationOpen(false)}>
-                        Cancel
+                        {t('common.cancel')}
                       </Button>
                       <Button
                         loading={isBulkTranslating || translateDocumentMutation.isPending}
                         disabled={bulkTranslationTargets.length === 0}
                         onClick={() => void bulkTranslateItems()}
                       >
-                        Translate
+                        {t('contentList.translate')}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -692,34 +701,36 @@ const ListContents: React.FC<{
                   <DialogTrigger asChild>
                     <Button variant="destructive" size="sm">
                       <Trash />
-                      {isTrash ? 'Delete permanently' : 'Move to trash'}
+                      {isTrash
+                        ? t('contentList.deletePermanently')
+                        : t('contentList.moveToTrash')}
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>
-                        {isTrash ? 'Delete selected permanently' : 'Move selected to trash'}
+                        {isTrash
+                          ? t('contentList.deleteSelectedTitle')
+                          : t('contentList.moveSelectedTitle')}
                       </DialogTitle>
                       <DialogDescription>
                         {isTrash
-                          ? `This will permanently delete ${selectedCount} selected item${
-                              selectedCount === 1 ? '' : 's'
-                            }. This cannot be undone.`
-                          : `This will move ${selectedCount} selected item${
-                              selectedCount === 1 ? '' : 's'
-                            } to trash.`}
+                          ? t('contentList.deleteSelectedDescription', { count: selectedCount })
+                          : t('contentList.moveSelectedDescription', { count: selectedCount })}
                       </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setBulkDeleteOpen(false)}>
-                        Cancel
+                        {t('common.cancel')}
                       </Button>
                       <Button
                         variant="destructive"
                         loading={isBulkDeleting}
                         onClick={() => void bulkDeleteItems()}
                       >
-                        {isTrash ? 'Delete permanently' : 'Move to trash'}
+                        {isTrash
+                          ? t('contentList.deletePermanently')
+                          : t('contentList.moveToTrash')}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -731,13 +742,13 @@ const ListContents: React.FC<{
       </div>
       {restoreItem ? (
         <div className="flex items-center justify-end gap-2 rounded-md border p-3">
-          <span className="text-muted-foreground text-sm">Restore selected item?</span>
+          <span className="text-muted-foreground text-sm">{t('contentList.restoreSelected')}</span>
           <Button variant="outline" size="sm" onClick={() => setRestoreItem(null)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button size="sm" loading={restoreMutation.isPending} onClick={() => void restore()}>
             <RotateCcw />
-            Restore
+            {t('common.restore')}
           </Button>
         </div>
       ) : null}

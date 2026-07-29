@@ -36,7 +36,7 @@ export default function PreviewsGridSmallView({ media }: PreviewsGridSmallViewPr
               <div className="p-2 pt-0">
                 <p className="truncate font-medium text-sm">{item.name}</p>
                 <p className="truncate text-muted-foreground text-xs">
-                  {formatFileSize(item.size)} • {item.mime}
+                  {[formatFileSize(item.size), item.mime].join(' · ')}
                 </p>
               </div>
             </Card>

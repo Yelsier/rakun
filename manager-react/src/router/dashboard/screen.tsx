@@ -21,6 +21,7 @@ import {
   useManagerMutation,
   useManagerQuery,
 } from '@/client/react'
+import { useTranslations } from '@/i18n'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -76,8 +77,11 @@ const getFavoriteTitle = (
   return fallbackTitle(favorite)
 }
 
-const getUpdatedBy = (favorite: FavoriteItem) =>
-  favorite.updatedBy?.user || favorite.updatedBy?.email || 'Unknown'
+const getUpdatedBy = (
+  favorite: FavoriteItem,
+  t: ReturnType<typeof useTranslations>,
+) =>
+  favorite.updatedBy?.user || favorite.updatedBy?.email || t('common.unknown')
 
 const FavoriteCard = ({
   favorite,
@@ -89,13 +93,15 @@ const FavoriteCard = ({
   removing: boolean
   onRemove: (favorite: FavoriteItem) => void
   title: string
-}) => (
+}) => {
+  const t = useTranslations()
+  return (
   <Card className='relative gap-3 rounded-md py-4 shadow-xs transition-colors hover:bg-accent/40'>
     <ManagerLink
       href={`/${favorite.contentType}/${favorite.documentId}`}
       className='absolute inset-0 z-0 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring'
     >
-      <span className='sr-only'>Open {title}</span>
+      <span className='sr-only'>{t('dashboard.openFavorite', { title })}</span>
     </ManagerLink>
     <CardHeader className='pointer-events-none relative z-10 gap-2 px-4'>
       <div className='grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3'>
@@ -108,7 +114,7 @@ const FavoriteCard = ({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              aria-label='Remove from favorites'
+              aria-label={t('dashboard.removeFromFavoritesTooltip')}
               className='pointer-events-auto'
               variant='ghost'
               size='icon'
@@ -118,7 +124,7 @@ const FavoriteCard = ({
               <StarOff />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side='top'>Remove from favorites</TooltipContent>
+          <TooltipContent side='top'>{t('dashboard.removeFromFavoritesTooltip')}</TooltipContent>
         </Tooltip>
       </div>
     </CardHeader>
@@ -126,16 +132,21 @@ const FavoriteCard = ({
       <div className='flex min-w-0 items-center gap-2'>
         <Clock3 className='size-3.5 shrink-0' />
         <span className='truncate'>
-          Last updated {favorite.updatedAt ? formatDate(favorite.updatedAt) : 'Unknown'}
+          {t('dashboard.lastUpdated', {
+            date: favorite.updatedAt ? formatDate(favorite.updatedAt) : t('common.unknown'),
+          })}
         </span>
       </div>
       <div className='flex min-w-0 items-center gap-2'>
         <UserRound className='size-3.5 shrink-0' />
-        <span className='truncate'>Last updated by {getUpdatedBy(favorite)}</span>
+        <span className='truncate'>
+          {t('dashboard.lastUpdatedBy', { name: getUpdatedBy(favorite, t) })}
+        </span>
       </div>
     </CardContent>
   </Card>
-)
+  )
+}
 
 const FavoritesSkeleton = () => (
   <div className='grid gap-3'>
@@ -185,6 +196,7 @@ const NotificationCard = ({
   notification: NotificationItem
   title: string
 }) => {
+  const t = useTranslations()
   const isReviewNotification = Boolean(
     notification.kind && notification.kind !== 'comment_mention',
   )
@@ -219,7 +231,9 @@ const NotificationCard = ({
         }=open`}
         className='absolute inset-0 z-0 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring'
       >
-        <span className='sr-only'>Open notification for {title}</span>
+        <span className='sr-only'>
+          {t('dashboard.openNotificationFor', { title })}
+        </span>
       </ManagerLink>
       <CardHeader className='pointer-events-none relative z-10 gap-2 px-4'>
         <div className='flex min-w-0 items-start gap-3'>
@@ -262,6 +276,7 @@ const NotificationHistoryDrawer = ({
 }: {
   getTranslation: <T>(object: MaybeTranslatableValue<T>) => T
 }) => {
+  const t = useTranslations()
   const [open, setOpen] = useState(false)
   const notificationsQuery = useManagerQuery({
     name: 'manager.notifications.list',
@@ -276,15 +291,16 @@ const NotificationHistoryDrawer = ({
     <Drawer direction='right' open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
         <Button className='ml-auto' variant='ghost' size='sm'>
-          View all
+          {t('dashboard.viewAll')}
         </Button>
       </DrawerTrigger>
       <DrawerContent className='h-full w-[min(92vw,520px)] sm:max-w-[520px]'>
         <DrawerHeader className='shrink-0 border-b'>
-          <DrawerTitle>Notifications</DrawerTitle>
+          <DrawerTitle>{t('dashboard.notifications')}</DrawerTitle>
           <DrawerDescription>
-            Latest {NOTIFICATION_HISTORY_LIMIT} notifications, including those already
-            viewed.
+            {t('dashboard.notificationsDescription', {
+              count: NOTIFICATION_HISTORY_LIMIT,
+            })}
           </DrawerDescription>
         </DrawerHeader>
         <ScrollArea className='min-h-0 flex-1'>
@@ -301,7 +317,7 @@ const NotificationHistoryDrawer = ({
               ))
             ) : (
               <div className='rounded-md border border-dashed p-4 text-sm text-muted-foreground'>
-                No notifications yet
+                {t('dashboard.noNotifications')}
               </div>
             )}
           </div>
@@ -312,6 +328,7 @@ const NotificationHistoryDrawer = ({
 }
 
 export const ManagerDashboardHomeScreen = () => {
+  const t = useTranslations()
   const { getTranslation } = useLanguage()
   const queryClient = useQueryClient()
   const [removingFavoriteId, setRemovingFavoriteId] = useState<string | null>(null)
@@ -343,9 +360,9 @@ export const ManagerDashboardHomeScreen = () => {
       await queryClient.invalidateQueries({
         queryKey: createManagerQueryKey('manager.favorites.list', undefined),
       })
-      toast.success('Removed from favorites')
+      toast.success(t('dashboard.removedFavorite'))
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not remove favorite'))
+      toast.error(getActionErrorMessage(error, t('dashboard.removeFavoriteError')))
     } finally {
       setRemovingFavoriteId(null)
     }
@@ -356,7 +373,7 @@ export const ManagerDashboardHomeScreen = () => {
         <div className='flex h-11 items-center gap-2 border-b'>
           <Star className='size-4 fill-amber-400 text-amber-500' />
           <h1 className='text-sm font-semibold uppercase text-muted-foreground'>
-            Favorites
+            {t('dashboard.favorites')}
           </h1>
         </div>
         {isLoading ? (
@@ -377,7 +394,7 @@ export const ManagerDashboardHomeScreen = () => {
           </div>
         ) : (
           <div className='rounded-md border border-dashed p-4 text-sm text-muted-foreground'>
-            No favorites yet
+            {t('dashboard.noFavorites')}
           </div>
         )}
       </section>
@@ -385,7 +402,7 @@ export const ManagerDashboardHomeScreen = () => {
         <div className='flex h-11 items-center gap-2 border-b'>
           <Bell className='size-4 text-primary' />
           <h1 className='text-sm font-semibold uppercase text-muted-foreground'>
-            Notifications
+            {t('dashboard.notifications')}
           </h1>
           {totalUnread ? (
             <Badge variant='destructive'>
@@ -408,7 +425,7 @@ export const ManagerDashboardHomeScreen = () => {
           </div>
         ) : (
           <div className='rounded-md border border-dashed p-4 text-sm text-muted-foreground'>
-            No unread notifications
+            {t('dashboard.noUnreadNotifications')}
           </div>
         )}
       </section>

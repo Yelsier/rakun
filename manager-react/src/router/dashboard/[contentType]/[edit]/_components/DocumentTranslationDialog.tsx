@@ -25,12 +25,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useTranslations } from '@/i18n'
 
 export const DocumentTranslationDialog = ({
   trigger,
 }: {
   trigger?: ReactNode | false
 } = {}) => {
+  const t = useTranslations()
   const { documentActions, languageCode, languageList, translation, translationEnabled } =
     useEditPageContext()
 
@@ -47,7 +49,7 @@ export const DocumentTranslationDialog = ({
       }}
     >
       <Languages />
-      Translate
+      {t('contentList.translate')}
     </Button>
   )
 
@@ -58,12 +60,14 @@ export const DocumentTranslationDialog = ({
       )}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Translate document</DialogTitle>
-          <DialogDescription>Translate supported fields and save the document.</DialogDescription>
+          <DialogTitle>{t('contentEdit.translateDocument')}</DialogTitle>
+          <DialogDescription>
+            {t('contentEdit.translateDocumentDescription')}
+          </DialogDescription>
         </DialogHeader>
         <div className='grid gap-4'>
           <div className='grid gap-2'>
-            <Label>Source language</Label>
+            <Label>{t('contentList.sourceLanguage')}</Label>
             <Select
               value={source}
               onValueChange={(value) => {
@@ -74,7 +78,7 @@ export const DocumentTranslationDialog = ({
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder='Select source' />
+                <SelectValue placeholder={t('contentList.selectSource')} />
               </SelectTrigger>
               <SelectContent>
                 {languageList.map((item) => (
@@ -86,7 +90,7 @@ export const DocumentTranslationDialog = ({
             </Select>
           </div>
           <div className='grid gap-2'>
-            <Label>Target languages</Label>
+            <Label>{t('contentList.targetLanguages')}</Label>
             <div className='grid max-h-56 gap-2 overflow-auto rounded-md border p-3'>
               {targetOptions.map((item) => {
                 const checked = targets.includes(item.code)
@@ -118,12 +122,12 @@ export const DocumentTranslationDialog = ({
               checked={overwrite}
               onCheckedChange={(checked) => translation.setOverwrite(Boolean(checked))}
             />
-            <span className='text-sm'>Overwrite existing translations</span>
+            <span className='text-sm'>{t('contentList.overwriteTranslations')}</span>
           </label>
         </div>
         <DialogFooter>
           <Button variant='outline' onClick={() => translation.setOpen(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             loading={documentActions.pending.translate}
@@ -139,7 +143,7 @@ export const DocumentTranslationDialog = ({
               })()
             }}
           >
-            Translate
+            {t('contentList.translate')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -126,6 +126,7 @@ import {
   webauthnRegisterVerifyInput,
 } from "../../contracts";
 import { apiOperationsOutput } from "../../schemas/manager/apiOperations";
+import { ManagerUiLocalesOutputSchema } from "../../schemas/manager/uiLocales";
 
 const okOutput = z.object({ ok: z.boolean() });
 
@@ -151,6 +152,13 @@ export const createManagerOperationContracts = () =>
       kind: "query",
       description: "Get all languages",
       output: z.array(Language.getOutputSchema()),
+      method: "get",
+    }),
+    "manager.uiLocales": defineOperationContract({
+      access: "public",
+      kind: "query",
+      description: "Get installable manager UI locale packs",
+      output: ManagerUiLocalesOutputSchema,
       method: "get",
     }),
     "manager.regenerateRoutes": defineOperationContract({

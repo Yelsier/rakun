@@ -21,6 +21,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { useTranslations } from '@/i18n'
 import { useLanguage } from '@/state/language'
 
 const formSchema = z.object({
@@ -36,6 +37,7 @@ export const EditRouteForm = ({
   refetch: () => void
   setOpen: (open: boolean) => void
 }) => {
+  const t = useTranslations()
   const { language } = useLanguage()
   const mutation = useManagerMutation('manager.update')
   const form = useForm<z.infer<typeof formSchema>>({
@@ -68,11 +70,11 @@ export const EditRouteForm = ({
         id: defaultValues._id,
         data: values,
       })
-      toast.success('Route updated successfully!')
+      toast.success(t('settings.routes.updated'))
       refetch()
       setOpen(false)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error updating route')
+      toast.error(error instanceof Error ? error.message : t('settings.routes.updateError'))
     }
   }
 
@@ -81,15 +83,15 @@ export const EditRouteForm = ({
       <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
         <div className='grid grid-cols-2 gap-4'>
           <div className='space-y-2'>
-            <FormLabel>Content Type</FormLabel>
+            <FormLabel>{t('common.contentType')}</FormLabel>
             <Input value={defaultValues?.contentType || ''} disabled />
           </div>
           <div className='space-y-2'>
-            <FormLabel>Field</FormLabel>
+            <FormLabel>{t('common.field')}</FormLabel>
             <Input value={defaultValues?.field || ''} disabled />
           </div>
           <div className='space-y-2'>
-            <FormLabel>Parent Relation Field</FormLabel>
+            <FormLabel>{t('settings.routes.parentRelationField')}</FormLabel>
             <Input value={defaultValues?.parentRelationField || ''} disabled />
           </div>
         </div>
@@ -101,7 +103,7 @@ export const EditRouteForm = ({
             const value = field.value as MaybeTranslatableValue<string> & Record<string, string>
             return (
               <FormItem>
-                <FormLabel>Literal path</FormLabel>
+                <FormLabel>{t('settings.routes.literalPath')}</FormLabel>
                 <FormControl>
                   <Input
                     type='text'
@@ -130,10 +132,10 @@ export const EditRouteForm = ({
 
         <DialogFooter>
           <Button type='button' variant='ghost' onClick={() => setOpen(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type='submit' loading={mutation.isPending}>
-            Save
+            {t('common.save')}
           </Button>
         </DialogFooter>
       </form>

@@ -128,6 +128,17 @@ placeholder so module cards keep a consistent height.
 
 `ensureRakunBootstrap(options)` only calls `rakunBootstrap` if the runtime has not been bootstrapped yet.
 
+Install extra manager UI locales with `managerLanguages` (English is built into `@rakun-kit/manager-react`). The public `manager.uiLocales` operation returns those packs to the manager client:
+
+```ts
+import { esManagerLocalePack } from '@rakun-kit/manager-react/locales'
+
+rakunBootstrap({
+  // ...
+  managerLanguages: [esManagerLocalePack],
+})
+```
+
 ## Plugins
 
 Trusted server plugins contribute to the same bootstrap registry without coupling
@@ -697,8 +708,8 @@ Bootstrap receives `literals`. Related utilities:
 
 - `getTranslation`: resolves translatable values.
 - `translateObject`: translates objects with translatable fields.
-- `managerLiterals`: base manager texts.
-- Manager schemas for listing/upserting literals.
+- Manager schemas for listing/upserting website literals (not manager UI chrome).
+
 
 Translatable values use this shape:
 

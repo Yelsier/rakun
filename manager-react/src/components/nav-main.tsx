@@ -2,6 +2,7 @@
 import { ChevronRight, type LucideIcon } from 'lucide-react'
 
 import { ManagerLink } from '@/link'
+import { useTranslations } from '@/i18n'
 import {
   Collapsible,
   CollapsibleContent,
@@ -26,7 +27,7 @@ const closedCategoryActiveMenuClass =
 
 export function NavMain({
   items,
-  label = 'Content types',
+  label,
 }: {
   items: {
     title: string
@@ -42,6 +43,8 @@ export function NavMain({
   }[]
   label?: string
 }) {
+  const t = useTranslations()
+  const resolvedLabel = label ?? t('sidebar.contentTypes')
   const totalItems = items.reduce(
     (total, item) => total + (item.items?.length ?? 1),
     0,
@@ -49,7 +52,9 @@ export function NavMain({
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>{label} ({totalItems})</SidebarGroupLabel>
+      <SidebarGroupLabel>
+        {t('navMain.groupLabel', { label: resolvedLabel, count: totalItems })}
+      </SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <Collapsible

@@ -5,9 +5,11 @@ import { ManagerDashboardLayout } from '../../layouts'
 import { useManagerPlugins } from '../../plugins'
 import { useSession } from '../../state/session'
 import UnauthorizedMessage from '../../components/unauthorized'
+import { useTranslations } from '@/i18n'
 
 const ManagerPluginRouteRenderer = (props: ManagerRouteRendererProps) => {
   const { route } = props
+  const t = useTranslations()
   const registry = useManagerPlugins()
   const session = useSession()
 
@@ -15,7 +17,11 @@ const ManagerPluginRouteRenderer = (props: ManagerRouteRendererProps) => {
 
   const definition = registry.routesById.get(`${route.pluginId}:${route.routeId}`)
   if (!definition) {
-    return <div>Plugin route definition not found: {route.pluginId}:{route.routeId}</div>
+    return (
+      <div>
+        {t('routes.pluginNotFound')} {route.pluginId}:{route.routeId}
+      </div>
+    )
   }
 
   const permissions = [...(definition.permissions ?? [])]
@@ -51,9 +57,18 @@ const ManagerPluginRouteRenderer = (props: ManagerRouteRendererProps) => {
 
 export const ManagerRouteRenderer = (props: ManagerRouteRendererProps) => {
   const { route } = props
+  const t = useTranslations()
 
   if (route.kind === 'unknown') {
-    return <>{props.renderUnknown?.(route) ?? <div>Unknown route: {route.pathname}</div>}</>
+    return (
+      <>
+        {props.renderUnknown?.(route) ?? (
+          <div>
+            {t('routes.unknown')} {route.pathname}
+          </div>
+        )}
+      </>
+    )
   }
 
   if (route.kind === 'plugin') {
@@ -62,7 +77,11 @@ export const ManagerRouteRenderer = (props: ManagerRouteRendererProps) => {
 
   const definition = getManagerRouteDefinition(route.kind)
   if (!definition) {
-    return <div>Route definition not found: {route.kind}</div>
+    return (
+      <div>
+        {t('routes.definitionNotFound')} {route.kind}
+      </div>
+    )
   }
 
   return renderManagerRoute({

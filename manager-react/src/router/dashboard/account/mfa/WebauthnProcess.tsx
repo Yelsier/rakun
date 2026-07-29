@@ -11,12 +11,14 @@ import { useManagerClient, useManagerMutation } from '@/client/react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { useTranslations } from '@/i18n'
 
 export const WebauthnProcess = ({
   closeDialog,
 }: {
   closeDialog: () => void
 }) => {
+  const t = useTranslations()
   const client = useManagerClient()
   const [loading, setLoading] = useState(false)
   const mutation = useManagerMutation('manager.auth.webauthn.register.verify')
@@ -54,16 +56,16 @@ export const WebauthnProcess = ({
           onSuccess: (result) => {
             if (result.ok) {
               toast.success(
-                'Device registered successfully! Your account is now more secure.',
+                t('account.mfa.deviceRegistered'),
               )
               closeDialog()
             } else {
-              toast.error('Failed to register the device. Please try again.')
+              toast.error(t('account.mfa.registerDeviceFailed'))
               form.reset()
             }
           },
           onError: () => {
-            toast.error('Failed to register the device. Please try again.')
+            toast.error(t('account.mfa.registerDeviceFailed'))
             form.reset()
           },
           onSettled: () => {
@@ -73,7 +75,7 @@ export const WebauthnProcess = ({
       )
     } catch {
       setLoading(false)
-      toast.error('Failed to register the device. Please try again.')
+      toast.error(t('account.mfa.registerDeviceFailed'))
       form.reset()
     }
   }
@@ -88,19 +90,19 @@ export const WebauthnProcess = ({
         control={form.control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor='deviceName'>Device Name</FieldLabel>
+            <FieldLabel htmlFor='deviceName'>{t('account.mfa.deviceName')}</FieldLabel>
             <Input
               {...field}
               id='deviceName'
               aria-invalid={fieldState.invalid}
-              placeholder='Enter your device name'
+              placeholder={t('account.mfa.deviceNamePlaceholder')}
             />
             {fieldState.invalid ? <FieldError errors={[fieldState.error]} /> : null}
           </Field>
         )}
       />
       <Button loading={loading} type='submit'>
-        Register Device
+        {t('account.mfa.registerDevice')}
       </Button>
     </form>
   )

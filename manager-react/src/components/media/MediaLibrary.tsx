@@ -11,6 +11,7 @@ import { FolderItem, MediaLibraryProvider } from './contexts/MediaLibraryContext
 import FoldersTree from './folders/FoldersTree'
 import Previews from './previews/Previews'
 
+import { useTranslations } from '@/i18n'
 import { type MediaRecord } from '@/lib/media'
 import { useMedia } from '@/media'
 import { cn } from '@/lib/utils'
@@ -36,6 +37,7 @@ export default function MediaLibrary({
   forcedMediaTypeFilter,
   optimizeOptions,
 }: MediaLibraryProps) {
+  const t = useTranslations()
   const managerClient = useManagerClient()
   const { uploadMedia } = useMedia()
 
@@ -107,9 +109,9 @@ export default function MediaLibrary({
       })) as { _id: string }
       await refetchFolders()
       setCurrentFolderId(created._id)
-      toast.success('Folder created')
+      toast.success(t('media.folderCreated'))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not create folder')
+      toast.error(error instanceof Error ? error.message : t('media.createFolderError'))
     }
   }
 
@@ -225,7 +227,7 @@ export default function MediaLibrary({
 
         <div className="flex min-h-0 min-w-0 flex-col overflow-hidden p-4">
           <p className="mb-4 shrink-0 text-muted-foreground text-sm">
-            Current folder:{' '}
+            {t('media.currentFolder')}{' '}
             <span className="font-medium text-foreground">{currentFolder?.path || '/'}</span>
           </p>
           <div className="min-h-0 flex-1">

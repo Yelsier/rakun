@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useTranslations } from '@/i18n'
 
 type Props = {
   defaultValues?: ManagerUserRecord
@@ -58,7 +59,12 @@ type ManagerRoleRecord = {
   name?: string
 }
 
-export function EditUserForm({ defaultValues, refetch, setOpen }: Props) {
+export function EditUserForm({
+  defaultValues,
+  refetch,
+  setOpen,
+}: Props) {
+  const t = useTranslations()
   const rolesQuery = useManagerQuery({
     name: 'manager.list',
     input: {
@@ -125,11 +131,11 @@ export function EditUserForm({ defaultValues, refetch, setOpen }: Props) {
       setOpen(false)
       toast.success(
         defaultValues?._id
-          ? 'User updated successfully!'
-          : 'User created successfully!',
+          ? t('users.updated')
+          : t('users.created'),
       )
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error saving user')
+      toast.error(error instanceof Error ? error.message : t('users.saveError'))
     }
   }
 
@@ -141,7 +147,7 @@ export function EditUserForm({ defaultValues, refetch, setOpen }: Props) {
           name='email'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>{t('common.email')}</FormLabel>
               <FormControl>
                 <Input autoComplete='off' placeholder='user@example.com' {...field} />
               </FormControl>
@@ -154,9 +160,9 @@ export function EditUserForm({ defaultValues, refetch, setOpen }: Props) {
           name='name'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>{t('fields.name')}</FormLabel>
               <FormControl>
-                <Input autoComplete='off' placeholder='Name' {...field} />
+                <Input autoComplete='off' placeholder={t('fields.name')} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -167,9 +173,9 @@ export function EditUserForm({ defaultValues, refetch, setOpen }: Props) {
           name='user'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Username</FormLabel>
+              <FormLabel>{t('common.username')}</FormLabel>
               <FormControl>
-                <Input autoComplete='off' placeholder='Username' {...field} />
+                <Input autoComplete='off' placeholder={t('common.username')} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -180,12 +186,12 @@ export function EditUserForm({ defaultValues, refetch, setOpen }: Props) {
           name='password'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>{t('common.password')}</FormLabel>
               <FormControl>
                 <Input
                   autoComplete='off'
                   type='password'
-                  placeholder='Secret password'
+                  placeholder={t('users.passwordPlaceholder')}
                   {...field}
                 />
               </FormControl>
@@ -198,7 +204,7 @@ export function EditUserForm({ defaultValues, refetch, setOpen }: Props) {
           name='role'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Role</FormLabel>
+              <FormLabel>{t('common.role')}</FormLabel>
               <FormControl>
                 <div className='flex items-center gap-2'>
                   {field.value ? (
@@ -224,7 +230,7 @@ export function EditUserForm({ defaultValues, refetch, setOpen }: Props) {
                     value={field.value?._id || ''}
                   >
                     <SelectTrigger className='w-full'>
-                      <SelectValue placeholder='Select role' />
+                      <SelectValue placeholder={t('users.selectRole')} />
                     </SelectTrigger>
                     <SelectContent>
                       {(rolesQuery.data?.items as ManagerRoleRecord[] | undefined)?.map(
@@ -244,7 +250,7 @@ export function EditUserForm({ defaultValues, refetch, setOpen }: Props) {
         />
         <DialogFooter>
           <Button type='submit' loading={createMutation.isPending || updateMutation.isPending}>
-            Save
+            {t('common.save')}
           </Button>
         </DialogFooter>
       </form>

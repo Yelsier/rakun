@@ -1,12 +1,13 @@
-"use client";
-import { useManagerMutation } from "@/client/react";
-import { UpdatePasswordInput, updatePasswordInput } from "@rakun-kit/core/contracts";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import z from "zod";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+'use client'
+import { useManagerMutation } from '@/client/react'
+import { UpdatePasswordInput, updatePasswordInput } from '@rakun-kit/core/contracts'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import z from 'zod'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
+import { useTranslations } from '@/i18n'
 import {
   Form,
   FormControl,
@@ -14,7 +15,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "./ui/form";
+} from './ui/form'
 import {
   Dialog,
   DialogContent,
@@ -23,15 +24,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "./ui/dialog";
-import { Input } from "./ui/input";
-import { Button } from "./ui/button";
+} from './ui/dialog'
+import { Input } from './ui/input'
+import { Button } from './ui/button'
 
 export const UpdatePassword = () => {
-  const [open, setOpen] = useState(false);
+  const t = useTranslations()
+  const [open, setOpen] = useState(false)
   type UpdatePasswordFormValues = UpdatePasswordInput & {
-    confirmNewPassword: string;
-  };
+    confirmNewPassword: string
+  }
 
   const form = useForm<UpdatePasswordFormValues>({
     resolver: zodResolver(
@@ -42,50 +44,54 @@ export const UpdatePassword = () => {
           }),
         )
         .refine((data) => data.newPassword === data.confirmNewPassword, {
-          message: "Passwords do not match",
-          path: ["confirmNewPassword"],
+          message: t('account.password.mismatch'),
+          path: ['confirmNewPassword'],
         }),
     ),
     defaultValues: {
-      currentPassword: "",
-      newPassword: "",
-      confirmNewPassword: "",
+      currentPassword: '',
+      newPassword: '',
+      confirmNewPassword: '',
     },
-  });
+  })
 
   const { mutate, isPending } = useManagerMutation(
-    "manager.auth.updatePassword",
-  );
+    'manager.auth.updatePassword',
+  )
 
   function onSubmit(values: UpdatePasswordFormValues) {
     mutate(values, {
       onSuccess() {
-        form.reset();
-        setOpen(false);
-        toast.success("Password updated successfully");
+        form.reset()
+        setOpen(false)
+        toast.success(t('account.password.updated'))
       },
       onError(error) {
-        toast.error(`Error updating password: ${error.message}`);
+        toast.error(
+          t('account.password.updateError', { reason: error.message }),
+        )
       },
-    });
+    })
   }
 
   useEffect(() => {
     if (!open) {
-      form.reset();
+      form.reset()
     }
-  }, [open, form]);
+  }, [open, form])
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Update Password</Button>
+        <Button>{t('account.password.update')}</Button>
       </DialogTrigger>
-      <DialogContent aria-describedby="Edit password">
+      <DialogContent aria-describedby={t('account.password.editDescription')}>
         <DialogHeader>
-          <DialogTitle>Edit Password</DialogTitle>
+          <DialogTitle>{t('account.password.editTitle')}</DialogTitle>
         </DialogHeader>
-        <DialogDescription>Edit password</DialogDescription>
+        <DialogDescription>
+          {t('account.password.editDescription')}
+        </DialogDescription>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <FormField
@@ -93,12 +99,12 @@ export const UpdatePassword = () => {
               name="currentPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Current Password</FormLabel>
+                  <FormLabel>{t('account.password.current')}</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
                       autoComplete="off"
-                      placeholder="Current Password"
+                      placeholder={t('account.password.current')}
                       {...field}
                     />
                   </FormControl>
@@ -111,12 +117,12 @@ export const UpdatePassword = () => {
               name="newPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>New Password</FormLabel>
+                  <FormLabel>{t('account.password.new')}</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
                       autoComplete="off"
-                      placeholder="New Password"
+                      placeholder={t('account.password.new')}
                       {...field}
                     />
                   </FormControl>
@@ -129,12 +135,12 @@ export const UpdatePassword = () => {
               name="confirmNewPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Confirm New Password</FormLabel>
+                  <FormLabel>{t('account.password.confirmNew')}</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
                       autoComplete="off"
-                      placeholder="Confirm New Password"
+                      placeholder={t('account.password.confirmNew')}
                       {...field}
                     />
                   </FormControl>
@@ -144,12 +150,12 @@ export const UpdatePassword = () => {
             />
             <DialogFooter>
               <Button type="submit" loading={isPending}>
-                Save
+                {t('common.save')}
               </Button>
             </DialogFooter>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
-  );
-};
+  )
+}

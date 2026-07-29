@@ -10,6 +10,7 @@ import { Controller, useForm } from "react-hook-form";
 
 import { cn } from "../lib/utils";
 import { useManagerRuntimeAuth } from "@/app/runtime-auth";
+import { useTranslations } from "@/i18n";
 import { useManagerNavigation } from "@/state/navigation";
 import { useManagerMutation } from "@/client/react";
 import { Button } from "./ui/button";
@@ -26,6 +27,7 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const t = useTranslations();
   const navigation = useManagerNavigation();
   const { refreshAuth } = useManagerRuntimeAuth();
   const { mutate, isPending } = useManagerMutation("manager.auth.login");
@@ -107,16 +109,16 @@ export function LoginForm({
               <div className="flex size-8 items-center justify-center rounded-md">
                 <GalleryVerticalEnd className="size-6" />
               </div>
-              <span className="sr-only">Acme Inc.</span>
+              <span className="sr-only">{t("login.brand")}</span>
             </a>
-            <h1 className="text-xl font-bold">Welcome to Acme Inc.</h1>
+            <h1 className="text-xl font-bold">{t("login.welcome")}</h1>
           </div>
           <Controller
             name="username"
             control={form.control}
             render={({ field, fieldState }) => (
               <Field>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <FieldLabel htmlFor="email">{t("login.email")}</FieldLabel>
                 <Input
                   {...field}
                   id="email"
@@ -137,7 +139,7 @@ export function LoginForm({
             control={form.control}
             render={({ field, fieldState }) => (
               <Field>
-                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <FieldLabel htmlFor="password">{t("login.password")}</FieldLabel>
                 <Input
                   {...field}
                   id="password"
@@ -154,10 +156,10 @@ export function LoginForm({
           />
           <Field>
             <Button loading={isPending} type="submit">
-              Login
+              {t("login.submit")}
             </Button>
           </Field>
-          <FieldSeparator>Or</FieldSeparator>
+          <FieldSeparator>{t("login.or")}</FieldSeparator>
           <Field className="grid gap-4 sm:grid-cols-2">
             <Button variant="outline" type="button">
               <svg
@@ -173,7 +175,7 @@ export function LoginForm({
                   fill="currentColor"
                 />
               </svg>
-              GitHub
+              {t("login.github")}
             </Button>
             <Button variant="outline" type="button">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -182,7 +184,7 @@ export function LoginForm({
                   fill="currentColor"
                 />
               </svg>
-              Google
+              {t("login.google")}
             </Button>
           </Field>
         </FieldGroup>

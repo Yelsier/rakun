@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useTranslations } from '@/i18n'
 import type { ManagerMediaPickerRenderArgs } from '@/media'
 
 function DefaultManagerMediaPicker({
@@ -23,12 +24,14 @@ function DefaultManagerMediaPicker({
   select,
   confirmMultiple,
 }: ManagerMediaPickerRenderArgs) {
+  const t = useTranslations()
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
       <DialogContent className="flex max-h-[95svh] w-screen max-w-[95vw]! flex-col gap-4 overflow-hidden p-4">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Media library</DialogTitle>
-          <DialogDescription>Select existing media or upload new files.</DialogDescription>
+          <DialogTitle>{t('mediaPicker.title')}</DialogTitle>
+          <DialogDescription>{t('mediaPicker.description')}</DialogDescription>
         </DialogHeader>
 
         <div className="min-h-0 flex-1">
@@ -46,10 +49,10 @@ function DefaultManagerMediaPicker({
         {isMultipleSelection ? (
           <DialogFooter className="shrink-0">
             <Button type="button" variant="outline" onClick={close}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="button" onClick={confirmMultiple}>
-              Select {selectedMediaList.length}
+              {t('mediaPicker.selectCount', { count: selectedMediaList.length })}
             </Button>
           </DialogFooter>
         ) : null}

@@ -1,5 +1,9 @@
 'use client'
 
+import { useTranslations } from '@/i18n'
+
+const REQUIRED_MARK = '*'
+
 import type {
   EncodedListFieldItem,
   EncodedRelationField,
@@ -252,6 +256,7 @@ export const IteratorModulePickerDialog = ({
   fields: EncodedListFieldItem[]
   onAdd: (fieldName: string, value?: RelationFieldValue) => void
 }) => {
+  const t = useTranslations()
   const managerClient = useManagerClient()
   const { getTranslation } = useLanguage()
   const { hasAnyPermission, user } = useSession()
@@ -417,10 +422,10 @@ export const IteratorModulePickerDialog = ({
         id: deleteTarget.id,
       })
       await Promise.allSettled(existingModuleQueries.map((query) => query.refetch()))
-      toast.success(`${deleteTarget.title} deleted`)
+      toast.success(t('modules.deleted', { title: deleteTarget.title }))
       setDeleteTarget(null)
     } catch (error) {
-      toast.error(getActionErrorMessage(error, 'Could not delete module'))
+      toast.error(getActionErrorMessage(error, t('modules.couldNotDelete')))
     }
   }
 
@@ -435,7 +440,7 @@ export const IteratorModulePickerDialog = ({
               data-rakun-manager-add-module-trigger
             >
               <Plus />
-              Add module
+              {t('modules.addModule')}
             </Button>
           </DialogTrigger>
         </div>
@@ -449,9 +454,9 @@ export const IteratorModulePickerDialog = ({
           }}
         >
           <DialogHeader className="border-b px-6 py-4">
-            <DialogTitle>Add module</DialogTitle>
+            <DialogTitle>{t('modules.addModule')}</DialogTitle>
             <DialogDescription className="sr-only">
-              Select a module to add to the iterator.
+              {t('modules.addModuleDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="grid min-h-0 gap-4 px-6 pb-6">
@@ -459,7 +464,7 @@ export const IteratorModulePickerDialog = ({
               <SearchInput
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search modules"
+                placeholder={t('modules.searchModules')}
               />
               {categories.length > 1 ? (
                 <div className="flex flex-wrap gap-2">
@@ -468,7 +473,7 @@ export const IteratorModulePickerDialog = ({
                     variant={selectedCategory === ALL_CATEGORIES ? 'default' : 'outline'}
                     onClick={() => setSelectedCategory(ALL_CATEGORIES)}
                   >
-                    All
+                    {t('common.all')}
                   </Button>
                   {categories.map((category) => (
                     <Button
@@ -486,7 +491,7 @@ export const IteratorModulePickerDialog = ({
             <ScrollArea className="h-[58vh] rounded-md border">
               <div className="grid gap-5 p-3">
               <section className="grid gap-3">
-                <h3 className="text-sm font-medium">Saved modules</h3>
+                <h3 className="text-sm font-medium">{t('modules.savedModules')}</h3>
                 {filteredExistingModules.length > 0 ? (
                   <div className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredExistingModules.map((module) => (
@@ -511,7 +516,7 @@ export const IteratorModulePickerDialog = ({
                                 </div>
                               </div>
                               <div className="flex min-w-0 flex-wrap gap-1.5">
-                                <Badge variant="secondary">Global</Badge>
+                                <Badge variant="secondary">{t('common.global')}</Badge>
                                 <Badge variant="outline">{module.category}</Badge>
                               </div>
                             </div>
@@ -525,12 +530,12 @@ export const IteratorModulePickerDialog = ({
                                 onClick={() => handleOpenChange(false)}
                               >
                                 <Pencil />
-                                Edit
+                                {t('common.edit')}
                               </ManagerLink>
                             ) : (
                               <>
                                 <Pencil />
-                                Edit
+                                {t('common.edit')}
                               </>
                             )}
                           </ContextMenuItem>
@@ -541,7 +546,7 @@ export const IteratorModulePickerDialog = ({
                             onSelect={() => setDeleteTarget(module)}
                           >
                             <Trash2 />
-                            Delete
+                            {t('common.delete')}
                           </ContextMenuItem>
                         </ContextMenuContent>
                       </ContextMenu>
@@ -549,16 +554,16 @@ export const IteratorModulePickerDialog = ({
                   </div>
                 ) : isLoadingExistingModules ? (
                   <div className="flex h-24 items-center justify-center rounded-md border border-dashed px-4 text-center text-sm text-muted-foreground">
-                    Loading saved modules...
+                    {t('modules.loadingSaved')}
                   </div>
                 ) : (
                   <div className="flex h-24 items-center justify-center rounded-md border border-dashed px-4 text-center text-sm text-muted-foreground">
-                    No saved modules found.
+                    {t('modules.noSavedFound')}
                   </div>
                 )}
               </section>
               <section className="grid gap-3">
-                <h3 className="text-sm font-medium">All modules</h3>
+                <h3 className="text-sm font-medium">{t('modules.allModules')}</h3>
                 {filteredOptions.length > 0 ? (
                   <div className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredOptions.map((option) => (
@@ -594,9 +599,9 @@ export const IteratorModulePickerDialog = ({
                                   {prop.required ? (
                                     <>
                                       <span aria-hidden="true" className="text-destructive">
-                                        *
+                                        {REQUIRED_MARK}
                                       </span>
-                                      <span className="sr-only">required</span>
+                                      <span className="sr-only">{t('common.required')}</span>
                                     </>
                                   ) : null}
                                 </Badge>
@@ -609,7 +614,7 @@ export const IteratorModulePickerDialog = ({
                   </div>
                 ) : (
                   <div className="flex h-40 items-center justify-center px-4 text-center text-sm text-muted-foreground">
-                    No modules found.
+                    {t('modules.noModulesFound')}
                   </div>
                 )}
               </section>
@@ -626,23 +631,23 @@ export const IteratorModulePickerDialog = ({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete saved module</DialogTitle>
+            <DialogTitle>{t('modules.deleteSavedModule')}</DialogTitle>
             <DialogDescription>
               {deleteTarget
-                ? `Permanently delete “${deleteTarget.title}”? This cannot be undone.`
-                : 'Permanently delete this saved module? This cannot be undone.'}
+                ? t('modules.deleteSavedConfirm', { title: deleteTarget.title })
+                : t('modules.deleteSavedConfirmGeneric')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               loading={deleteModule.isPending}
               onClick={() => void handleDelete()}
             >
-              Delete permanently
+              {t('contentList.deletePermanently')}
             </Button>
           </DialogFooter>
         </DialogContent>

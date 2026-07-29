@@ -13,6 +13,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import type { useTranslations } from '@/i18n'
+
+type Translate = ReturnType<typeof useTranslations>
 
 export type ManagerRoleRecord = {
   _id: string
@@ -24,19 +27,21 @@ export const columns = ({
   setDelete,
   hasPermissions,
   hasAnyPermission,
+  t,
 }: {
   setDelete: (role: ManagerRoleRecord | null) => void
   hasPermissions: (permissions: Permission[]) => boolean
   hasAnyPermission: (permissions: Permission[]) => boolean
+  t: Translate
 }): ColumnDef<ManagerRoleRecord>[] => [
   {
     accessorKey: '_id',
-    header: () => <span className='ml-2'>ID</span>,
+    header: () => <span className='ml-2'>{t('contentList.id')}</span>,
     cell: ({ row }) => <IDColumn _id={row.getValue('_id') as string} />,
   },
   {
     accessorKey: 'name',
-    header: () => <span className='ml-2'>Name</span>,
+    header: () => <span className='ml-2'>{t('fields.name')}</span>,
     cell: ({ row }) => <span className='ml-2'>{row.getValue('name')}</span>,
   },
   {
@@ -56,7 +61,7 @@ export const columns = ({
                 variant='ghost'
                 className='m-auto flex h-8 w-8 items-center justify-center p-0!'
               >
-                <span className='sr-only'>Open menu</span>
+                <span className='sr-only'>{t('common.openMenu')}</span>
                 <MoreHorizontal />
               </Button>
             </DropdownMenuTrigger>
@@ -68,14 +73,14 @@ export const columns = ({
                 onClick={() => setDelete(role)}
               >
                 <Trash className='text-destructive' />
-                Delete {role.name}
+                {t('common.delete')} {role.name}
               </DropdownMenuItem>
             )}
             {hasPermissions(['content.ManagerRole.updateAny']) && (
               <DropdownMenuItem asChild>
                 <ManagerLink href={`/settings/user-roles/${role._id}`}>
                   <Edit />
-                  Edit {role.name}
+                  {t('common.edit')} {role.name}
                 </ManagerLink>
               </DropdownMenuItem>
             )}

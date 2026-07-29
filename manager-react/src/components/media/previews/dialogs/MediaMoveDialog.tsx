@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../ui/select'
+import { useTranslations } from '@/i18n'
 
 type MoveTarget = {
   id?: string
@@ -49,6 +50,7 @@ export default function MediaMoveDialog({
   onClose,
   onConfirm,
 }: MediaMoveDialogProps) {
+  const t = useTranslations()
   const bulkCount = target?.ids?.length ?? 0
   const isBulk = bulkCount > 0
 
@@ -57,18 +59,18 @@ export default function MediaMoveDialog({
       <DialogContent aria-describedby='Move media item'>
         <DialogHeader>
           <DialogTitle>
-            Move {bulkCount > 1 ? 'files' : 'file'}
+            {bulkCount > 1 ? t('media.moveFilesTitle') : t('media.moveFileTitle')}
           </DialogTitle>
         </DialogHeader>
         <DialogDescription>
           {isBulk
-            ? `Select the destination folder for ${bulkCount} selected file${bulkCount === 1 ? '' : 's'}.`
-            : `Select the destination folder for "${target?.name}".`}
+            ? t('media.moveBulkDescription', { count: bulkCount })
+            : t('media.moveSingleDescription', { name: target?.name ?? '' })}
         </DialogDescription>
         <div className='py-2'>
           <Select value={value} onValueChange={onValueChange}>
             <SelectTrigger className='w-full'>
-              <SelectValue placeholder='Select folder' />
+              <SelectValue placeholder={t('media.selectFolder')} />
             </SelectTrigger>
             <SelectContent>
               {folders.map((folder) => (
@@ -84,7 +86,7 @@ export default function MediaMoveDialog({
         </div>
         <DialogFooter>
           <Button variant='ghost' onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             loading={isLoading}
@@ -96,7 +98,7 @@ export default function MediaMoveDialog({
             }
             onClick={onConfirm}
           >
-            Move
+            {t('common.move')}
           </Button>
         </DialogFooter>
       </DialogContent>

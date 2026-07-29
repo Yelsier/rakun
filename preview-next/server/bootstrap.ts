@@ -1,4 +1,7 @@
 import { createLocalMediaServiceConfig, type RakunBootstrapOptions } from '@rakun-kit/next'
+// Relative path to the data-only pack: package/subpath aliases can resolve to
+// `@rakun-kit/manager-react` main and pull React into this API-route bootstrap.
+import { esManagerLocalePack } from '../../manager-react/src/i18n/packs/es'
 
 import {
   Category,
@@ -41,6 +44,7 @@ export const createPreviewBootstrap = () =>
       },
     },
     contentTypes: previewContentTypes,
+    managerLanguages: [esManagerLocalePack],
     internalContentTypes: {
       Page: PreviewPage,
     },
