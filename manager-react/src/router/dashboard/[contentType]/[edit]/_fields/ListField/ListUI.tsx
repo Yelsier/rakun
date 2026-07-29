@@ -36,7 +36,6 @@ import { getIteratorModuleDisplay, IteratorModulePickerDialog } from './Iterator
 import { IteratorVisibilityDialog } from './IteratorVisibilityDialog'
 import { useSession } from '@/state/session'
 import { getEncodedContentPermissions } from '@/state/permissions'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import { useTranslations } from '@/i18n'
 

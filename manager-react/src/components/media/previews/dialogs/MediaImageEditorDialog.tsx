@@ -88,25 +88,25 @@ const resizeHandles: Array<{
     mode: 'nw',
     label: 'Resize top left corner',
     className: 'left-0 top-0 h-8 w-8 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize',
-    gripClassName: 'h-4 w-4 rounded-[4px]',
+    gripClassName: 'h-4 w-4 rounded-sm',
   },
   {
     mode: 'ne',
     label: 'Resize top right corner',
     className: 'right-0 top-0 h-8 w-8 -translate-y-1/2 translate-x-1/2 cursor-nesw-resize',
-    gripClassName: 'h-4 w-4 rounded-[4px]',
+    gripClassName: 'h-4 w-4 rounded-sm',
   },
   {
     mode: 'sw',
     label: 'Resize bottom left corner',
     className: 'bottom-0 left-0 h-8 w-8 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize',
-    gripClassName: 'h-4 w-4 rounded-[4px]',
+    gripClassName: 'h-4 w-4 rounded-sm',
   },
   {
     mode: 'se',
     label: 'Resize bottom right corner',
     className: 'bottom-0 right-0 h-8 w-8 translate-x-1/2 translate-y-1/2 cursor-nwse-resize',
-    gripClassName: 'h-4 w-4 rounded-[4px]',
+    gripClassName: 'h-4 w-4 rounded-sm',
   },
 ]
 

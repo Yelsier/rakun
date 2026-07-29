@@ -15,11 +15,20 @@ type EncodedField = {
 const registry: Record<string, ContentType> = {};
 const internalRegistry: Record<string, ContentType> = {};
 
-export function registerContentType(ct: ContentType) {
-  if (registry[ct.name]) {
+export function registerContentType(
+  ct: ContentType,
+  options?: { override?: boolean },
+) {
+  if (registry[ct.name] && !options?.override) {
     return;
   }
   registry[ct.name] = ct;
+}
+
+export function clearExternalContentTypes() {
+  for (const key of Object.keys(registry)) {
+    delete registry[key];
+  }
 }
 
 export function registerInternalContentType(

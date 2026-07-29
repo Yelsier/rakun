@@ -1,6 +1,7 @@
 import {
   registerInternalContentType,
   registerContentType,
+  clearExternalContentTypes,
 } from "./lib/Registry";
 import { createLogger, Logger } from "./lib/Logger";
 import * as internalContentTypes from "./internal-content-types";
@@ -214,6 +215,8 @@ export const rakunBootstrap = (options: RakunBootstrapOptions) => {
       .map((route) => route.contentType),
   );
 
+  clearExternalContentTypes();
+
   for (const ct of Object.values(configuredInternalContentTypes)) {
     if (routeableContentTypes.has(ct.name)) {
       ct.enableDocumentVisibility();
@@ -227,7 +230,7 @@ export const rakunBootstrap = (options: RakunBootstrapOptions) => {
       ct.enableDocumentVisibility();
       ct.enableSeoField(Fields.relation(internalContentTypes.Seo, "new"));
     }
-    registerContentType(ct);
+    registerContentType(ct, { override: true });
   }
 };
 

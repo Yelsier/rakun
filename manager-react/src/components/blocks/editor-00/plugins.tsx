@@ -82,7 +82,7 @@ const ToolbarScrollArea = ({ children }: { children: ReactNode }) => {
         <div
           ref={scrollRef}
           data-overflow="false"
-          className="overflow-x-auto p-1 data-[overflow=true]:pb-[1.125rem]"
+          className="overflow-x-auto p-1 data-[overflow=true]:pb-4"
         >
           <div
             ref={contentRef}

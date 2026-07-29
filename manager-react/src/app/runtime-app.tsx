@@ -224,6 +224,39 @@ export const ManagerRuntimeApp = ({
   }, [refreshAuth]);
 
   useEffect(() => {
+    if (state.status !== "ready") {
+      return;
+    }
+
+    const refreshContentTypes = () => {
+      void client
+        .request("manager.contentTypes")
+        .then((contentTypes) => {
+          setState((current) =>
+            current.status === "ready"
+              ? {
+                  ...current,
+                  contentTypes: contentTypes as EncodedContentType[],
+                }
+              : current,
+          );
+        })
+        .catch(() => {
+          // Keep the last known schema if the refresh fails.
+        });
+    };
+
+    const onFocus = () => {
+      refreshContentTypes();
+    };
+
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [client, state.status]);
+
+  useEffect(() => {
     if (state.status !== "unauthenticated") {
       return;
     }
