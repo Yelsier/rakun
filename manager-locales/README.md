@@ -33,11 +33,13 @@ const managerLanguages = [
     code: 'en',
     name: 'English',
     messages: {
+      'field.title': 'Title',
       'project.contentTypes.article.menu': 'Articles',
       'project.contentTypes.category.editorial': 'Editorial',
     },
   },
   extendManagerLanguagePack(esManagerLocalePack, {
+    'field.title': 'Título',
     'project.contentTypes.article.menu': 'Artículos',
     'project.contentTypes.category.editorial': 'Editorial',
   }),
@@ -47,6 +49,11 @@ const managerLanguages = [
 Use those arbitrary keys as the content type's `menu.title` and
 `menu.category`. English project messages are merged with the manager's built-in
 English catalog; other partial project packs retain English fallbacks.
+
+Content-type field labels follow the `field.<fieldName>` convention. For
+example, a field named `title` automatically resolves `field.title` in edit
+forms and list columns. Missing keys fall back to existing manager labels and
+then to a humanized field name.
 
 Every language has an independent package export. Consumers therefore bundle
 only imported locales:

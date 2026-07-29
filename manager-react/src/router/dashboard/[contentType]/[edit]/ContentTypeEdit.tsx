@@ -27,8 +27,7 @@ import {
 import { errorStyle } from './edit.styles'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { decodeCamelCase } from '@/helpers/decodeCamelCase'
-import { useTranslations } from '@/i18n'
+import { translateFieldLabel, useTranslations } from '@/i18n'
 import { cn } from '@/lib/utils'
 import { useEditErrorStore } from '@/hooks/app-store'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -95,9 +94,10 @@ const FieldLabel = ({
   className?: string
 }) => {
   const t = useTranslations()
+  const label = translateFieldLabel(t, fieldName)
   return (
     <span className={cn('flex min-w-0 items-center gap-1', className)}>
-      <span className="truncate">{decodeCamelCase(fieldName)}</span>
+      <span className="truncate">{label}</span>
       {isRequired ? (
         <span
           aria-label={t('contentEdit.requiredField')}

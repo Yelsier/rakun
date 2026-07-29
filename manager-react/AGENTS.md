@@ -34,6 +34,7 @@ It must remain usable from external adapters. Do not assume it always runs insid
 - The manager loads packs at runtime through the public `manager.uiLocales` operation.
 - Content editing locale (`useLanguage`) is separate from manager UI locale (`useManagerI18n`).
 - Host-defined content-type `menu.title` / `menu.category` may use arbitrary project message keys. Register those keys per locale through `managerLanguages`; do not add host or preview keys to the built-in catalog. `t()` falls back to the raw string when no key exists.
+- Host-defined field labels use the dynamic `field.<fieldName>` namespace and remain outside the built-in catalog.
 - Avoid concentrating unrelated behavior in one file; keep components, hooks, utilities, and state boundaries focused on a single responsibility.
 - Use local/context providers for shared screen state when it prevents prop drilling.
 - Show loading, empty, and error states when a screen needs them.

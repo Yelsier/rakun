@@ -164,15 +164,21 @@ rakunBootstrap({
       code: 'en',
       name: 'English',
       messages: {
+        'field.title': 'Title',
         'project.contentTypes.article.menu': 'Articles',
       },
     },
     extendManagerLanguagePack(esManagerLocalePack, {
+      'field.title': 'Título',
       'project.contentTypes.article.menu': 'Artículos',
     }),
   ],
 })
 ```
+
+Content-type field labels automatically use `field.<fieldName>` from these
+project messages. Missing translations fall back to a built-in manager label
+when available and otherwise to the humanized field name.
 
 ## Plugins
 

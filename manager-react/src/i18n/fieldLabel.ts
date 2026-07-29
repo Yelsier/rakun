@@ -5,7 +5,15 @@ export const translateFieldLabel = (
   fieldKey: string,
 ): string => {
   const baseKey = fieldKey.split('.')[0] || fieldKey
-  const messageKey = `fields.${baseKey}`
-  const translated = t(messageKey)
-  return translated === messageKey ? decodeCamelCase(baseKey) : translated
+  const projectMessageKey = `field.${baseKey}`
+  const projectTranslation = t(projectMessageKey)
+  if (projectTranslation !== projectMessageKey) {
+    return projectTranslation
+  }
+
+  const legacyMessageKey = `fields.${baseKey}`
+  const legacyTranslation = t(legacyMessageKey)
+  return legacyTranslation === legacyMessageKey
+    ? decodeCamelCase(baseKey)
+    : legacyTranslation
 }
