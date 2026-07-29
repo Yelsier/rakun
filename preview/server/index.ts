@@ -8,7 +8,7 @@ import { z } from "zod";
 import { Footer, Header, Page, previewContentTypes } from "./content-types";
 import { env } from "./env";
 import { seedPreviewData } from "./seed";
-import { esManagerLocalePack } from "@rakun-kit/manager-react/locales";
+import { esManagerLocalePack } from "@rakun-kit/manager-locales/es";
 
 rakunBootstrap({
   literals: {},

@@ -1,7 +1,6 @@
 import { createLocalMediaServiceConfig, type RakunBootstrapOptions } from '@rakun-kit/next'
-// Relative path to the data-only pack: package/subpath aliases can resolve to
-// `@rakun-kit/manager-react` main and pull React into this API-route bootstrap.
-import { esManagerLocalePack } from '../../manager-react/src/i18n/packs/es'
+// This data-only subpath does not pull React into the API-route bootstrap.
+import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'
 
 import {
   Category,
@@ -36,10 +35,10 @@ export const createPreviewBootstrap = () =>
           name: 'string',
         },
       },
-      "demo.welcome": {
-        defaultMessage: "Welcome to the demo!",
-        description: "A welcome message for the demo",
-        usedBy: ["Page"],
+      'demo.welcome': {
+        defaultMessage: 'Welcome to the demo!',
+        description: 'A welcome message for the demo',
+        usedBy: ['Page'],
         params: {},
       },
     },

@@ -8,9 +8,7 @@ type ParamSpecToType<T extends ManagerMessageParamSpec> = T extends 'number'
       ? U
       : string
 
-type ParamsFromSpec<
-  T extends Record<string, ManagerMessageParamSpec> | undefined,
-> =
+type ParamsFromSpec<T extends Record<string, ManagerMessageParamSpec> | undefined> =
   T extends Record<string, ManagerMessageParamSpec>
     ? { [P in keyof T]: ParamSpecToType<T[P]> }
     : undefined
@@ -27,7 +25,7 @@ export type ManagerLocalePack = {
   code: string
   name: string
   /** ICU messages. Built-in keys should be present; extra host keys are allowed. */
-  messages: Record<string, string>
+  messages: Record<ManagerMessageKey, string>
 }
 
 export type ManagerLocaleOption = {
@@ -35,7 +33,4 @@ export type ManagerLocaleOption = {
   name: string
 }
 
-export type TranslationValues = Record<
-  string,
-  string | number | boolean | null | undefined
->
+export type TranslationValues = Record<string, string | number | boolean | null | undefined>

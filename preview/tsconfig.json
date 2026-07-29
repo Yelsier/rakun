@@ -20,7 +20,7 @@
       ],
       "@rakun-kit/core/types": ["../core/src/lib/types/index.ts"],
       "@rakun-kit/manager-react": ["../manager-react/src/index.ts"],
-      "@rakun-kit/manager-react/locales": ["../manager-react/src/locales.ts"],
+      "@rakun-kit/manager-locales/es": ["../manager-locales/src/es.ts"],
       "@rakun-kit/manager-react/*": ["../manager-react/src/*"]
     },
     "jsx": "react-jsx",

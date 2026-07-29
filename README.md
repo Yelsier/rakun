@@ -31,6 +31,7 @@ with Express and Next.js integrations available.
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `@rakun-kit/core`          | Content types, fields, schemas, runtime bootstrap, operations, auth, media, routes, redirects and shared contracts. |
 | `@rakun-kit/manager-react` | React manager application, manager clients, navigation helpers and styles.                                          |
+| `@rakun-kit/manager-locales` | Optional manager UI translations exposed through one subpath per language.                                        |
 | `@rakun-kit/express`       | Express adapter for Rakun APIs, media routes and optional tRPC support.                                             |
 | `@rakun-kit/next`          | Next.js adapter for APIs, media routes and mounting the manager.                                                    |
 | `@rakun-kit/trpc`          | tRPC router adapter for Rakun operations.                                                                           |
@@ -131,6 +132,17 @@ export function ManagerPage() {
   )
 }
 ```
+
+English is included in the manager. Extra UI languages are provided by a
+separate package:
+
+```sh
+bun add @rakun-kit/manager-locales
+```
+
+Import a language through its subpath, such as
+`@rakun-kit/manager-locales/es`, and register it through `managerLanguages` in
+`rakunBootstrap`.
 
 ## Development
 

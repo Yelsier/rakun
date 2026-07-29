@@ -54,6 +54,16 @@
         "@trpc/server",
       ],
     },
+    "manager-locales": {
+      "name": "@rakun-kit/manager-locales",
+      "version": "1.0.0",
+      "devDependencies": {
+        "typescript": "^6.0.2",
+      },
+      "peerDependencies": {
+        "@rakun-kit/manager-react": "^1.4.11",
+      },
+    },
     "manager-react": {
       "name": "@rakun-kit/manager-react",
       "version": "1.4.11",
@@ -156,8 +166,8 @@
       "name": "@rakun-kit/next",
       "version": "1.4.0",
       "dependencies": {
-        "@rakun-kit/core": "^1.3.8",
-        "@rakun-kit/react": "^1.2.2",
+        "@rakun-kit/core": "^1.4.0",
+        "@rakun-kit/react": "^1.4.0",
       },
       "devDependencies": {
         "@types/react": "^19.2.2",
@@ -206,7 +216,7 @@
         "@lexical/code": "^0.34.0",
         "@lexical/react": "^0.34.0",
         "@lexical/selection": "^0.34.0",
-        "@rakun-kit/manager-react": ">=1.3.0",
+        "@rakun-kit/manager-react": ">=1.4.0",
         "lexical": "^0.34.0",
         "react": ">=18.0.0",
         "react-dom": ">=18.0.0",
@@ -218,6 +228,7 @@
       "dependencies": {
         "@rakun-kit/core": "^1.2.1",
         "@rakun-kit/express": "^1.0.0",
+        "@rakun-kit/manager-locales": "^1.0.0",
         "@rakun-kit/manager-react": "^1.0.0",
         "bcrypt": "^6.0.0",
         "express": "^5.2.1",
@@ -244,6 +255,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@rakun-kit/core": "^1.2.1",
+        "@rakun-kit/manager-locales": "^1.0.0",
         "@rakun-kit/manager-react": "^1.2.0",
         "@rakun-kit/next": "^1.2.0",
         "@rakun-kit/openai": "^1.0.0",
@@ -276,7 +288,7 @@
       "name": "@rakun-kit/react",
       "version": "1.4.0",
       "dependencies": {
-        "@rakun-kit/core": "^1.3.8",
+        "@rakun-kit/core": "^1.4.0",
       },
       "devDependencies": {
         "@types/react": "^19.2.2",
@@ -854,6 +866,8 @@
     "@rakun-kit/core": ["@rakun-kit/core@workspace:core"],
 
     "@rakun-kit/express": ["@rakun-kit/express@workspace:express"],
+
+    "@rakun-kit/manager-locales": ["@rakun-kit/manager-locales@workspace:manager-locales"],
 
     "@rakun-kit/manager-react": ["@rakun-kit/manager-react@workspace:manager-react"],
 

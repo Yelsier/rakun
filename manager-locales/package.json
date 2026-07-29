@@ -1,0 +1,43 @@
+{
+  "name": "@rakun-kit/manager-locales",
+  "version": "1.0.0",
+  "description": "Optional manager UI locale packs for Rakun.",
+  "license": "MIT",
+  "author": {
+    "name": "Yago Claros",
+    "url": "https://github.com/Yelsier"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yelsier/rakun.git",
+    "directory": "manager-locales"
+  },
+  "bugs": {
+    "url": "https://github.com/Yelsier/rakun/issues"
+  },
+  "homepage": "https://github.com/Yelsier/rakun/tree/main/manager-locales#readme",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && bun run build:esm && bun run build:cjs",
+    "build:esm": "tsc -p tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
+    "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../scripts/fix-dist-imports.mjs dist/cjs && node ../scripts/write-cjs-package-json.mjs dist/cjs"
+  },
+  "exports": {
+    "./es": {
+      "types": "./dist/esm/es.d.ts",
+      "import": "./dist/esm/es.js",
+      "require": "./dist/cjs/es.js",
+      "default": "./dist/esm/es.js"
+    }
+  },
+  "peerDependencies": {
+    "@rakun-kit/manager-react": "^1.4.11"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2"
+  }
+}

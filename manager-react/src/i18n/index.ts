@@ -1,4 +1,8 @@
-export { managerMessages, type ManagerMessageKey } from './catalog'
+export {
+  MANAGER_CATALOG_VERSION,
+  managerMessages,
+  type ManagerMessageKey,
+} from './catalog'
 export type {
   ManagerLocaleOption,
   ManagerLocalePack,
@@ -17,5 +21,4 @@ export {
   type ManagerI18nProviderProps,
 } from './provider'
 export { useTranslations } from './useTranslations'
-export { esManagerLocalePack, esManagerMessages } from './packs/es'
 export { translateFieldLabel } from './fieldLabel'

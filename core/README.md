@@ -128,10 +128,20 @@ placeholder so module cards keep a consistent height.
 
 `ensureRakunBootstrap(options)` only calls `rakunBootstrap` if the runtime has not been bootstrapped yet.
 
-Install extra manager UI locales with `managerLanguages` (English is built into `@rakun-kit/manager-react`). The public `manager.uiLocales` operation returns those packs to the manager client:
+English is built into `@rakun-kit/manager-react`. Install only the extra
+manager UI locales an application needs:
+
+```sh
+bun add @rakun-kit/manager-locales
+# or: npm install @rakun-kit/manager-locales
+```
+
+Import the required language subpath and register it with `managerLanguages`;
+the public `manager.uiLocales` operation returns configured packs to the
+manager client:
 
 ```ts
-import { esManagerLocalePack } from '@rakun-kit/manager-react/locales'
+import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'
 
 rakunBootstrap({
   // ...

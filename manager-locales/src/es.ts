@@ -1,7 +1,7 @@
-import type { ManagerMessageKey } from '../catalog'
-import type { ManagerLocalePack } from '../types'
+import type { ManagerLocalePack } from '@rakun-kit/manager-react/i18n'
 
-export const esManagerMessages = {
+/** Spanish manager UI messages. */
+export const esManagerMessages: ManagerLocalePack['messages'] = {
   'brand.name': 'CMS',
   'brand.tagline': 'Enterprise',
   'navUser.account': 'Cuenta',
@@ -91,7 +91,8 @@ export const esManagerMessages = {
   'media.uploadLimits': 'Sube un máximo de 20 archivos de hasta 5 MB cada uno',
   'media.emptyFolder': 'Aún no hay archivos en esta carpeta.',
   'media.bulkDeleteTitle': 'Eliminar archivos seleccionados',
-  'media.bulkDeleteDescription': 'Esto eliminará {count} {count, plural, one {archivo seleccionado} other {archivos seleccionados}}.',
+  'media.bulkDeleteDescription':
+    'Esto eliminará {count} {count, plural, one {archivo seleccionado} other {archivos seleccionados}}.',
   'media.noInlinePreview': 'Este tipo de archivo no tiene vista previa integrada.',
   'media.openFile': 'Abrir archivo',
   'media.alt': 'Alt',
@@ -115,12 +116,14 @@ export const esManagerMessages = {
   'media.deleteFileTitle': 'Eliminar archivo',
   'media.deleteFolderDescription': 'Esto eliminará "{name}" y todo lo que hay dentro.',
   'media.deleteFileDescription': '¿Seguro que quieres eliminar "{name}"?',
-  'media.deleteFolderConfirm': 'Entiendo que esto eliminará permanentemente la carpeta "{path}" y todos sus archivos y subcarpetas.',
+  'media.deleteFolderConfirm':
+    'Entiendo que esto eliminará permanentemente la carpeta "{path}" y todos sus archivos y subcarpetas.',
   'media.editFolderTitle': 'Editar carpeta',
   'media.editFileTitle': 'Editar archivo',
   'media.editDescription': 'Actualiza el nombre.',
   'media.cropTitle': 'Recortar y rotar imagen',
-  'media.cropDescription': 'Arrastra el área de recorte, redimensiona desde cualquier borde y guarda una copia.',
+  'media.cropDescription':
+    'Arrastra el área de recorte, redimensiona desde cualquier borde y guarda una copia.',
   'media.loadingImage': 'Cargando imagen...',
   'media.imageLoadError': 'No se pudo cargar la imagen.',
   'media.shape': 'Forma',
@@ -134,7 +137,8 @@ export const esManagerMessages = {
   'media.saveCopy': 'Guardar copia',
   'media.moveFileTitle': 'Mover archivo',
   'media.moveFilesTitle': 'Mover archivos',
-  'media.moveBulkDescription': 'Selecciona la carpeta de destino para {count} {count, plural, one {archivo seleccionado} other {archivos seleccionados}}.',
+  'media.moveBulkDescription':
+    'Selecciona la carpeta de destino para {count} {count, plural, one {archivo seleccionado} other {archivos seleccionados}}.',
   'media.moveSingleDescription': 'Selecciona la carpeta de destino para "{name}".',
   'media.selectFolder': 'Seleccionar carpeta',
   'media.fileCount': '{count, plural, one {# archivo} other {# archivos}}',
@@ -168,7 +172,8 @@ export const esManagerMessages = {
   'media.folderCreated': 'Carpeta creada',
   'media.createFolderError': 'No se pudo crear la carpeta',
   'media.uploadFailed': 'Error al subir',
-  'media.uploadUnexpectedError': 'Se produjo un error inesperado durante la subida. Inténtalo de nuevo.',
+  'media.uploadUnexpectedError':
+    'Se produjo un error inesperado durante la subida. Inténtalo de nuevo.',
   'media.fileRejected': '"{name}" ha sido rechazado',
   'media.searchFolders': 'Buscar carpetas...',
   'common.save': 'Guardar',
@@ -241,20 +246,27 @@ export const esManagerMessages = {
   'contentList.selectedCount': '{count} seleccionados',
   'contentList.translate': 'Traducir',
   'contentList.translateSelectedTitle': 'Traducir elementos seleccionados',
-  'contentList.translateSelectedDescription': 'Traducir campos compatibles de {count} {count, plural, one {elemento seleccionado} other {elementos seleccionados}}.',
+  'contentList.translateSelectedDescription':
+    'Traducir campos compatibles de {count} {count, plural, one {elemento seleccionado} other {elementos seleccionados}}.',
   'contentList.sourceLanguage': 'Idioma de origen',
   'contentList.targetLanguages': 'Idiomas de destino',
   'contentList.selectSource': 'Seleccionar origen',
   'contentList.overwriteTranslations': 'Sobrescribir traducciones existentes',
   'contentList.deleteSelectedTitle': 'Eliminar selección permanentemente',
   'contentList.moveSelectedTitle': 'Mover selección a la papelera',
-  'contentList.deleteSelectedDescription': 'Esto eliminará permanentemente {count} {count, plural, one {elemento seleccionado} other {elementos seleccionados}}. Esta acción no se puede deshacer.',
-  'contentList.moveSelectedDescription': 'Esto moverá {count} {count, plural, one {elemento seleccionado} other {elementos seleccionados}} a la papelera.',
+  'contentList.deleteSelectedDescription':
+    'Esto eliminará permanentemente {count} {count, plural, one {elemento seleccionado} other {elementos seleccionados}}. Esta acción no se puede deshacer.',
+  'contentList.moveSelectedDescription':
+    'Esto moverá {count} {count, plural, one {elemento seleccionado} other {elementos seleccionados}} a la papelera.',
   'contentList.restoreSelected': '¿Restaurar el elemento seleccionado?',
-  'contentList.bulkMoved': '{count} {count, plural, one {elemento movido} other {elementos movidos}} a la papelera',
-  'contentList.bulkDeleted': '{count} {count, plural, one {elemento eliminado} other {elementos eliminados}} permanentemente',
-  'contentList.bulkTranslated': '{count} {count, plural, one {elemento traducido} other {elementos traducidos}} ({segments} {segments, plural, one {segmento} other {segmentos}})',
-  'contentList.bulkFailed': '{count} {count, plural, one {elemento falló} other {elementos fallaron}}. {reason}',
+  'contentList.bulkMoved':
+    '{count} {count, plural, one {elemento movido} other {elementos movidos}} a la papelera',
+  'contentList.bulkDeleted':
+    '{count} {count, plural, one {elemento eliminado} other {elementos eliminados}} permanentemente',
+  'contentList.bulkTranslated':
+    '{count} {count, plural, one {elemento traducido} other {elementos traducidos}} ({segments} {segments, plural, one {segmento} other {segmentos}})',
+  'contentList.bulkFailed':
+    '{count} {count, plural, one {elemento falló} other {elementos fallaron}}. {reason}',
   'contentList.selectTargetLanguage': 'Selecciona al menos un idioma de destino',
   'pagination.previous': 'Anterior',
   'pagination.next': 'Siguiente',
@@ -278,13 +290,19 @@ export const esManagerMessages = {
   'contentEdit.closePreview': 'Cerrar vista previa',
   'contentEdit.moveItemToTrash': 'Mover elemento a la papelera',
   'contentEdit.deleteItemPermanently': 'Eliminar elemento permanentemente',
-  'contentEdit.moveToTrashDescription': 'Este elemento se ocultará de las listas y rutas públicas. Puedes restaurarlo desde la papelera.',
-  'contentEdit.moveToTrashGroupDescription': 'Esto mueve la página principal y cada variante de este grupo a la papelera. Todo el grupo se ocultará de las listas y rutas públicas, y se podrá restaurar junto desde la papelera.',
-  'contentEdit.deletePermanentlyDescription': 'Este elemento se eliminará permanentemente. Esta acción no se puede deshacer.',
-  'contentEdit.deleteConfirmDescription': '¿Seguro que quieres eliminar permanentemente este elemento? Esta acción no se puede deshacer.',
-  'contentEdit.trashConfirmDescription': '¿Seguro que quieres mover este elemento a la papelera? Se ocultará de las listas y rutas públicas hasta que se restaure.',
+  'contentEdit.moveToTrashDescription':
+    'Este elemento se ocultará de las listas y rutas públicas. Puedes restaurarlo desde la papelera.',
+  'contentEdit.moveToTrashGroupDescription':
+    'Esto mueve la página principal y cada variante de este grupo a la papelera. Todo el grupo se ocultará de las listas y rutas públicas, y se podrá restaurar junto desde la papelera.',
+  'contentEdit.deletePermanentlyDescription':
+    'Este elemento se eliminará permanentemente. Esta acción no se puede deshacer.',
+  'contentEdit.deleteConfirmDescription':
+    '¿Seguro que quieres eliminar permanentemente este elemento? Esta acción no se puede deshacer.',
+  'contentEdit.trashConfirmDescription':
+    '¿Seguro que quieres mover este elemento a la papelera? Se ocultará de las listas y rutas públicas hasta que se restaure.',
   'contentEdit.translateDocument': 'Traducir documento',
-  'contentEdit.translateDocumentDescription': 'Traducir los campos compatibles y guardar el documento.',
+  'contentEdit.translateDocumentDescription':
+    'Traducir los campos compatibles y guardar el documento.',
   'contentEdit.requiredField': 'Campo obligatorio',
   'contentEdit.translatableField': 'Campo traducible',
   'contentEdit.fallbackValue': 'Valor de respaldo',
@@ -322,8 +340,7 @@ export const esManagerMessages = {
   'contentEdit.noVisibleModuleChanges': 'No hay cambios visibles de módulos.',
   'contentEdit.noVersionsYet': 'Aún no hay versiones registradas.',
   'contentEdit.revision': 'Revisión',
-  'contentEdit.fieldCount':
-    '{count} {count, plural, one {campo} other {campos}}',
+  'contentEdit.fieldCount': '{count} {count, plural, one {campo} other {campos}}',
   'contentEdit.noContentFieldsChanged': 'No se modificaron campos de contenido.',
   'contentEdit.localStructure': 'Estructura local',
   'contentEdit.sharedStructure': 'Estructura compartida',
@@ -333,16 +350,23 @@ export const esManagerMessages = {
   'contentEdit.useThisStructure': 'Usar esta estructura',
   'contentEdit.sharedStructureNotConfigured': 'Estructura compartida no configurada',
   'contentEdit.localStructureDescription': 'Los cambios solo afectan a esta entrada.',
-  'contentEdit.localStructureUnconfiguredDescription': 'Los cambios solo afectan a esta entrada. La estructura compartida aún no se ha configurado.',
-  'contentEdit.chooseSharedStructureDescription': 'Elige este iterador como la estructura inicial para cada entrada vinculada.',
+  'contentEdit.localStructureUnconfiguredDescription':
+    'Los cambios solo afectan a esta entrada. La estructura compartida aún no se ha configurado.',
+  'contentEdit.chooseSharedStructureDescription':
+    'Elige este iterador como la estructura inicial para cada entrada vinculada.',
   'contentEdit.useThisAsSharedTitle': '¿Usar esto como estructura compartida?',
   'contentEdit.useSharedTitle': '¿Usar la estructura compartida?',
-  'contentEdit.useThisAsSharedDescription': 'Este iterador se convertirá en la estructura de cada entrada vinculada. Las entradas locales no se modificarán.',
-  'contentEdit.useSharedDescription': 'El iterador local de esta entrada se descartará al guardar. La estructura compartida en sí no se modificará.',
+  'contentEdit.useThisAsSharedDescription':
+    'Este iterador se convertirá en la estructura de cada entrada vinculada. Las entradas locales no se modificarán.',
+  'contentEdit.useSharedDescription':
+    'El iterador local de esta entrada se descartará al guardar. La estructura compartida en sí no se modificará.',
   'contentEdit.updateAnyRequired': 'Se requiere el permiso update-any para inicializarla.',
-  'contentEdit.firstEntryInitializes': 'Al guardar se inicializa automáticamente solo cuando esta es la primera entrada.',
-  'contentEdit.iteratorChangesApply': 'Los cambios del iterador se aplican a cada {contentType} vinculado.',
-  'contentEdit.sharedIteratorReadOnly': 'Este iterador compartido es de solo lectura con tus permisos actuales.',
+  'contentEdit.firstEntryInitializes':
+    'Al guardar se inicializa automáticamente solo cuando esta es la primera entrada.',
+  'contentEdit.iteratorChangesApply':
+    'Los cambios del iterador se aplican a cada {contentType} vinculado.',
+  'contentEdit.sharedIteratorReadOnly':
+    'Este iterador compartido es de solo lectura con tus permisos actuales.',
   'contentEdit.stopSelectingModules': 'Dejar de seleccionar módulos',
   'contentEdit.route': 'Ruta',
   'contentEdit.routes': 'Rutas',
@@ -357,11 +381,14 @@ export const esManagerMessages = {
   'contentEdit.showingFirst': 'Mostrando los primeros {count}',
   'contentEdit.manageAndReorder': 'Gestionar y reordenar',
   'contentEdit.manageSelectedMedia': 'Gestionar medios seleccionados',
-  'contentEdit.manageSelectedMediaDescription': 'Arrastra los archivos para reordenarlos o quítalos de la selección.',
+  'contentEdit.manageSelectedMediaDescription':
+    'Arrastra los archivos para reordenarlos o quítalos de la selección.',
   'contentEdit.invalidMediaFiles': 'Los archivos seleccionados no son medios {mediaType} válidos',
-  'contentEdit.invalidMediaFile': 'El archivo seleccionado no es un tipo de medio {mediaType} válido',
+  'contentEdit.invalidMediaFile':
+    'El archivo seleccionado no es un tipo de medio {mediaType} válido',
   'variants.nameThisVariant': 'Nombra esta variante',
-  'variants.nameDescription': 'Dale un nombre identificativo corto. Es independiente del título del contenido y se usará en la lista de variantes.',
+  'variants.nameDescription':
+    'Dale un nombre identificativo corto. Es independiente del título del contenido y se usará en la lista de variantes.',
   'variants.variantName': 'Nombre de la variante',
   'variants.namePlaceholder': 'Por ejemplo, Rediseño de inicio',
   'variants.createVariant': 'Crear variante',
@@ -369,16 +396,19 @@ export const esManagerMessages = {
   'variants.currentlyActive': 'activo actualmente',
   'variants.availableForRouteable': 'Las variantes están disponibles para contenido con rutas.',
   'variants.moveToTrashTitle': '¿Mover variante a la papelera?',
-  'variants.moveToTrashConfirm': '“{label}” se eliminará de este grupo de páginas y se borrarán sus asignaciones de idioma. Las demás variantes no se verán afectadas.',
+  'variants.moveToTrashConfirm':
+    '“{label}” se eliminará de este grupo de páginas y se borrarán sus asignaciones de idioma. Las demás variantes no se verán afectadas.',
   'variants.moveVariantToTrash': 'Mover variante a la papelera',
   'variants.deletePermanentlyTitle': '¿Eliminar variante permanentemente?',
-  'variants.deletePermanentlyConfirm': '“{label}” se eliminará permanentemente. Esta acción no se puede deshacer.',
+  'variants.deletePermanentlyConfirm':
+    '“{label}” se eliminará permanentemente. Esta acción no se puede deshacer.',
   'variants.createDraftVariant': 'Crear variante en borrador',
   'variants.hideTrashed': 'Ocultar en papelera',
   'variants.showTrashed': 'Mostrar en papelera ({count})',
   'variants.current': 'actual',
   'variants.setAsPrimary': 'Establecer como principal',
-  'variants.inTrashHint': 'Esta variante está en la papelera. Restáurala antes de editar o asignar idiomas. Las asignaciones de idioma anteriores se borraron al moverla a la papelera.',
+  'variants.inTrashHint':
+    'Esta variante está en la papelera. Restáurala antes de editar o asignar idiomas. Las asignaciones de idioma anteriores se borraron al moverla a la papelera.',
   'variants.noLocaleAssignments': 'Sin asignaciones de idioma.',
   'variants.selectAllActiveLocales': 'Seleccionar todos los idiomas activos',
   'variants.newPagePublishIn': 'Esta es una página nueva. Se publicará en {language}.',
@@ -424,13 +454,17 @@ export const esManagerMessages = {
   'review.changesRequested': 'Cambios solicitados',
   'review.reviewRequested': 'Revisión solicitada',
   'review.feedbackRequested': 'Comentarios solicitados',
-  'review.saveRevisionBeforeRequest': 'Guarda una nueva revisión antes de solicitar la revisión de nuevo.',
-  'review.documentChanged': 'El documento cambió; solicita la revisión de nuevo para la revisión actual.',
+  'review.saveRevisionBeforeRequest':
+    'Guarda una nueva revisión antes de solicitar la revisión de nuevo.',
+  'review.documentChanged':
+    'El documento cambió; solicita la revisión de nuevo para la revisión actual.',
   'review.readyToPublish': 'Listo para publicar',
-  'review.newPagePublishDescription': 'Esta es una página nueva, así que se publicará directamente en {language}. La promoción solo es necesaria al reemplazar una versión publicada existente.',
+  'review.newPagePublishDescription':
+    'Esta es una página nueva, así que se publicará directamente en {language}. La promoción solo es necesaria al reemplazar una versión publicada existente.',
   'review.publishPage': 'Publicar página',
   'review.noReviewersFound': 'No se encontraron revisores.',
-  'review.selectAtLeastApprovers': 'Selecciona al menos {count} {count, plural, one {aprobador elegible} other {aprobadores elegibles}} ({selected} seleccionados).',
+  'review.selectAtLeastApprovers':
+    'Selecciona al menos {count} {count, plural, one {aprobador elegible} other {aprobadores elegibles}} ({selected} seleccionados).',
   'review.requestReview': 'Solicitar revisión',
   'review.approve': 'Aprobar',
   'review.requestChanges': 'Solicitar cambios',
@@ -439,13 +473,15 @@ export const esManagerMessages = {
   'review.required': 'obligatoria',
   'review.notRequested': 'no solicitada',
   'review.selectReviewers': 'Seleccionar revisores',
-  'review.reviewersSelected': '{count} {count, plural, one {revisor seleccionado} other {revisores seleccionados}}',
+  'review.reviewersSelected':
+    '{count} {count, plural, one {revisor seleccionado} other {revisores seleccionados}}',
   'review.searchPeople': 'Buscar personas…',
   'review.reviewers': 'Revisores',
   'review.approver': 'Aprobador',
   'review.feedback': 'Comentarios',
   'review.feedbackOnly': 'Solo comentarios',
-  'review.feedbackPlaceholder': 'Comentarios opcionales para aprobar; obligatorios al solicitar cambios',
+  'review.feedbackPlaceholder':
+    'Comentarios opcionales para aprobar; obligatorios al solicitar cambios',
   'review.requestedToast': 'Revisión solicitada',
   'review.approvedToast': 'Revisión aprobada',
   'review.changesRequestedToast': 'Cambios solicitados',
@@ -508,14 +544,16 @@ export const esManagerMessages = {
   'modules.moduleVisibility': 'Visibilidad del módulo',
   'modules.unlinkGlobalModule': 'Desvincular módulo global',
   'modules.visibilityTitle': 'Visibilidad de {title}',
-  'modules.visibilityDescription': 'Elige cuándo debe renderizarse este módulo. La regla es compartida, pero se evalúa usando cada {contentType}.',
+  'modules.visibilityDescription':
+    'Elige cuándo debe renderizarse este módulo. La regla es compartida, pero se evalúa usando cada {contentType}.',
   'modules.visibility': 'Visibilidad',
   'modules.alwaysVisible': 'Siempre visible',
   'modules.visibleWhenNotEmpty': 'Visible cuando un campo no está vacío',
   'modules.visibleWhenEmpty': 'Visible cuando un campo está vacío',
   'modules.documentField': 'Campo del documento',
   'modules.selectField': 'Seleccionar un campo',
-  'modules.noVisibilityFields': 'Este tipo de contenido no tiene campos disponibles para condiciones de visibilidad.',
+  'modules.noVisibilityFields':
+    'Este tipo de contenido no tiene campos disponibles para condiciones de visibilidad.',
   'modules.saveVisibility': 'Guardar visibilidad',
   'modules.deleted': '{title} eliminado',
   'modules.couldNotDelete': 'No se pudo eliminar el módulo',
@@ -575,12 +613,14 @@ export const esManagerMessages = {
   'account.mfa.webauthn': 'WebAuthn',
   'account.mfa.scanBefore': 'Escanea el código QR con tu app de autenticación, o',
   'account.mfa.clickLink': 'haz clic en el enlace',
-  'account.mfa.scanAfter': 'para configurarlo manualmente. Luego introduce el código de 6 dígitos de tu app para verificar y completar la configuración.',
+  'account.mfa.scanAfter':
+    'para configurarlo manualmente. Luego introduce el código de 6 dígitos de tu app para verificar y completar la configuración.',
   'account.mfa.verificationCode': 'Código de verificación',
   'account.mfa.deviceName': 'Nombre del dispositivo',
   'account.mfa.registerDevice': 'Registrar dispositivo',
   'account.mfa.deviceNamePlaceholder': 'Introduce el nombre del dispositivo',
-  'account.mfa.deviceRegistered': '¡Dispositivo registrado correctamente! Tu cuenta ahora es más segura.',
+  'account.mfa.deviceRegistered':
+    '¡Dispositivo registrado correctamente! Tu cuenta ahora es más segura.',
   'account.mfa.registerDeviceFailed': 'No se pudo registrar el dispositivo. Inténtalo de nuevo.',
   'account.mfa.totpSetupComplete': '¡Configuración 2FA completa! Tu cuenta ahora es más segura.',
   'account.mfa.verifyCodeFailed': 'No se pudo verificar el código. Inténtalo de nuevo.',
@@ -596,13 +636,17 @@ export const esManagerMessages = {
   'account.sessions.deleted': '¡Sesión eliminada correctamente!',
   'account.sessions.deleteError': 'Error: {reason}',
   'mfa.challengeExpired': 'Desafío caducado',
-  'mfa.challengeExpiredDescription': 'Tu desafío 2FA ha caducado. Inicia sesión de nuevo para recibir uno nuevo.',
+  'mfa.challengeExpiredDescription':
+    'Tu desafío 2FA ha caducado. Inicia sesión de nuevo para recibir uno nuevo.',
   'mfa.unsupportedMethod': 'Método 2FA no compatible. Intenta iniciar sesión de nuevo.',
   'mfa.verifyLogin': 'Verifica tu inicio de sesión',
-  'mfa.verifyLoginDescription': 'Introduce el código de verificación de tu app de autenticación para completar el inicio de sesión.',
+  'mfa.verifyLoginDescription':
+    'Introduce el código de verificación de tu app de autenticación para completar el inicio de sesión.',
   'mfa.webauthnTitle': 'Completar autenticación WebAuthn',
-  'mfa.webauthnDescription': 'Completa el proceso WebAuthn con tu dispositivo registrado. Sigue las indicaciones del dispositivo para autenticarte y acceder de forma segura.',
-  'mfa.webauthnOptionsError': 'No se pudieron obtener las opciones de autenticación. Inténtalo de nuevo.',
+  'mfa.webauthnDescription':
+    'Completa el proceso WebAuthn con tu dispositivo registrado. Sigue las indicaciones del dispositivo para autenticarte y acceder de forma segura.',
+  'mfa.webauthnOptionsError':
+    'No se pudieron obtener las opciones de autenticación. Inténtalo de nuevo.',
   'mfa.authenticationFailed': 'La autenticación falló. Inténtalo de nuevo.',
   'mfa.verifyCodeError': 'Se produjo un error al verificar el código. Inténtalo de nuevo.',
   'users.twoFactorEnabled': '2FA activado',
@@ -681,17 +725,20 @@ export const esManagerMessages = {
   'settings.routes.literalPath': 'Ruta literal',
   'settings.routes.routePaths': 'Rutas generadas',
   'settings.routes.homePage': 'Página de inicio',
-  'settings.routes.homePageDescription': 'La página seleccionada se resolverá a la ruta raíz del locale, por ejemplo `/` para el idioma predeterminado o `/es/` en lugar de `/es/home/`.',
+  'settings.routes.homePageDescription':
+    'La página seleccionada se resolverá a la ruta raíz del locale, por ejemplo `/` para el idioma predeterminado o `/es/` en lugar de `/es/home/`.',
   'settings.routes.noHomePage': 'Sin página de inicio',
   'settings.routes.saveHomePage': 'Guardar página de inicio',
-  'settings.routes.layoutModulesDescription': 'Selecciona los valores predeterminados de la ruta. Cada entrada de contenido puede sobrescribir estos módulos desde su pantalla de edición.',
+  'settings.routes.layoutModulesDescription':
+    'Selecciona los valores predeterminados de la ruta. Cada entrada de contenido puede sobrescribir estos módulos desde su pantalla de edición.',
   'settings.routes.noModule': 'Sin módulo',
   'settings.routes.saveLayoutModules': 'Guardar módulos de layout',
   'settings.routes.routeId': 'ID de ruta',
   'settings.routes.contentTypeId': 'ID de tipo de contenido',
   'settings.routes.regenerate': 'Regenerar rutas',
   'settings.routes.regenerateTitle': 'Regenerar todas las rutas',
-  'settings.routes.regenerateDescription': '¿Seguro que quieres regenerar todas las rutas? Este proceso puede tardar si hay muchas rutas.',
+  'settings.routes.regenerateDescription':
+    '¿Seguro que quieres regenerar todas las rutas? Este proceso puede tardar si hay muchas rutas.',
   'settings.routes.regenerateConfirm': 'Sí, regenerar',
   'settings.routes.updated': '¡Ruta actualizada correctamente!',
   'settings.routes.updateError': 'Error al actualizar la ruta',
@@ -704,7 +751,8 @@ export const esManagerMessages = {
   'settings.routes.selectLanguage': 'Seleccionar idioma',
   'settings.routes.selectPage': 'Seleccionar una página',
   'settings.routes.searchPath': 'Buscar ruta...',
-  'settings.seo.description': 'Configura metadatos predeterminados, vistas previas sociales y plantillas de título.',
+  'settings.seo.description':
+    'Configura metadatos predeterminados, vistas previas sociales y plantillas de título.',
   'settings.seo.save': 'Guardar ajustes SEO',
   'settings.seo.fixErrors': 'Corrige los errores de la configuración SEO',
   'settings.seo.saved': 'Configuración SEO guardada',
@@ -714,37 +762,45 @@ export const esManagerMessages = {
   'settings.system.noBackups': 'Aún no hay copias de seguridad.',
   'settings.system.backupMeta': '{date} · {count} docs · {types}',
   'settings.system.schemaState': 'Estado del esquema',
-  'settings.system.pendingMigrations': '{count, plural, one {# migración pendiente} other {# migraciones pendientes}}',
+  'settings.system.pendingMigrations':
+    '{count, plural, one {# migración pendiente} other {# migraciones pendientes}}',
   'settings.system.noSchemaState': 'No hay estado de esquema registrado.',
   'settings.system.version': 'v{version}',
   'settings.system.migrationLedger': 'Registro de migraciones',
   'settings.system.noMigrations': 'Aún no se han ejecutado migraciones.',
   'settings.system.migrationMeta': '{contentType} · v{from} a v{to} · {date}',
   'settings.system.restoreBackup': 'Restaurar copia',
-  'settings.system.restoreDescription': 'Esto reemplazará los documentos actuales de la base de datos para los tipos de contenido respaldados. Se creará una copia de seguridad de seguridad antes de restaurar.',
+  'settings.system.restoreDescription':
+    'Esto reemplazará los documentos actuales de la base de datos para los tipos de contenido respaldados. Se creará una copia de seguridad de seguridad antes de restaurar.',
   'settings.system.filesNotRestored': 'Los archivos no se restauran',
-  'settings.system.filesNotRestoredDescription': 'Las copias solo almacenan documentos de la base de datos. Las imágenes y otros archivos subidos no se incluyen, así que los assets eliminados o cambiados no se recuperarán con esta restauración.',
+  'settings.system.filesNotRestoredDescription':
+    'Las copias solo almacenan documentos de la base de datos. Las imágenes y otros archivos subidos no se incluyen, así que los assets eliminados o cambiados no se recuperarán con esta restauración.',
   'settings.system.backupCreated': 'Copia de seguridad creada correctamente',
   'settings.system.backupRestored': 'Copia de seguridad restaurada correctamente',
   'settings.reviewPolicies.title': 'Políticas de revisión',
-  'settings.reviewPolicies.description': 'Requiere aprobaciones según el rol del autor y el tipo de contenido.',
+  'settings.reviewPolicies.description':
+    'Requiere aprobaciones según el rol del autor y el tipo de contenido.',
   'settings.reviewPolicies.authorRole': 'Rol del autor',
   'settings.reviewPolicies.contentTypes': 'Tipos de contenido',
   'settings.reviewPolicies.requiredApprovals': 'Aprobaciones requeridas',
   'settings.reviewPolicies.reviewerRoles': 'Roles de revisor',
   'settings.reviewPolicies.for': 'para',
-  'settings.reviewPolicies.approvalsFrom': '{count, plural, one {# aprobación} other {# aprobaciones}} de',
+  'settings.reviewPolicies.approvalsFrom':
+    '{count, plural, one {# aprobación} other {# aprobaciones}} de',
   'settings.reviewPolicies.empty': 'No hay políticas de revisión configuradas.',
   'settings.reviewPolicies.deleteTitle': 'Eliminar política de revisión',
-  'settings.reviewPolicies.deleteDescription': 'Esta política dejará de exigir su flujo de revisión configurado. Esta acción no se puede deshacer.',
+  'settings.reviewPolicies.deleteDescription':
+    'Esta política dejará de exigir su flujo de revisión configurado. Esta acción no se puede deshacer.',
   'settings.reviewPolicies.saved': 'Política de revisión guardada',
   'settings.reviewPolicies.deleted': 'Política de revisión eliminada',
   'settings.reviewPolicies.saveError': 'No se pudo guardar la política de revisión',
   'settings.reviewPolicies.deleteError': 'No se pudo eliminar la política de revisión',
   'settings.robots.title': 'Robots.txt',
-  'settings.robots.description': 'Configura reglas de rastreo, delays, sitemaps y directivas de host.',
+  'settings.robots.description':
+    'Configura reglas de rastreo, delays, sitemaps y directivas de host.',
   'settings.robots.newRule': 'Nueva regla',
-  'settings.robots.formDescription': 'Las reglas se renderizan por orden y se agrupan por user-agent.',
+  'settings.robots.formDescription':
+    'Las reglas se renderizan por orden y se agrupan por user-agent.',
   'settings.robots.directive': 'Directiva',
   'settings.robots.allow': 'Allow',
   'settings.robots.disallow': 'Disallow',
@@ -764,31 +820,40 @@ export const esManagerMessages = {
   'settings.robots.namePlaceholder': 'Bloquear archivos privados',
   'settings.redirects.showHelp': 'Mostrar ayuda',
   'settings.redirects.title': 'Reglas de redirección',
-  'settings.redirects.description': 'Define patrones de ruta origen y plantillas de destino. Puedes reutilizar parámetros dinámicos como `{slug}`, elegir códigos HTTP, añadir condiciones por cabecera y ejecutar mini funciones.',
+  'settings.redirects.description':
+    'Define patrones de ruta origen y plantillas de destino. Puedes reutilizar parámetros dinámicos como `{slug}`, elegir códigos HTTP, añadir condiciones por cabecera y ejecutar mini funciones.',
   'settings.redirects.new': 'Nueva redirección',
-  'settings.redirects.formDescription': 'Configura el emparejado de la regla, el destino y la lógica condicional opcional.',
-  'settings.redirects.nameHelp': 'Etiqueta interna para identificar esta redirección en el manager.',
+  'settings.redirects.formDescription':
+    'Configura el emparejado de la regla, el destino y la lógica condicional opcional.',
+  'settings.redirects.nameHelp':
+    'Etiqueta interna para identificar esta redirección en el manager.',
   'settings.redirects.enabledHelp': 'Activa o desactiva la regla sin eliminarla.',
   'settings.redirects.sourcePath': 'Ruta origen',
   'settings.redirects.sourcePathHelp': 'Patrón de ruta entrante. Usa marcadores como `{slug}`.',
   'settings.redirects.destinationPath': 'Ruta destino',
-  'settings.redirects.destinationPathHelp': 'Plantilla de ruta de salida. Reutiliza parámetros de los marcadores del origen.',
+  'settings.redirects.destinationPathHelp':
+    'Plantilla de ruta de salida. Reutiliza parámetros de los marcadores del origen.',
   'settings.redirects.previewSample': 'Vista previa con ruta de ejemplo',
-  'settings.redirects.previewHelp': 'Solo prueba el emparejado de tokens de ruta. Las condiciones de cabecera y las mini funciones no se simulan aquí.',
+  'settings.redirects.previewHelp':
+    'Solo prueba el emparejado de tokens de ruta. Las condiciones de cabecera y las mini funciones no se simulan aquí.',
   'settings.redirects.result': 'Resultado:',
   'settings.redirects.statusCode': 'Código de estado',
   'settings.redirects.status301': '301 - Permanente',
   'settings.redirects.status302': '302 - Temporal',
   'settings.redirects.status307': '307 - Temporal (método preservado)',
   'settings.redirects.status308': '308 - Permanente (método preservado)',
-  'settings.redirects.statusHelp': 'Elige un estado de redirección habitual o define uno personalizado.',
+  'settings.redirects.statusHelp':
+    'Elige un estado de redirección habitual o define uno personalizado.',
   'settings.redirects.customStatus': 'Estado personalizado',
   'settings.redirects.customStatusHelp': 'Debe ser un estado HTTP 3xx válido (300-399).',
   'settings.redirects.preserveQuery': 'Conservar query string',
-  'settings.redirects.preserveQueryHelp': 'Ejemplo: si la entrada es `/old?a=1`, el destino pasa a `/new?a=1` cuando está activo.',
+  'settings.redirects.preserveQueryHelp':
+    'Ejemplo: si la entrada es `/old?a=1`, el destino pasa a `/new?a=1` cuando está activo.',
   'settings.redirects.headerConditions': 'Condiciones de cabecera',
-  'settings.redirects.headerConditionsTooltip': 'Úsalo cuando la misma ruta solo deba redirigir para ciertas peticiones, por ejemplo idioma, país, dispositivo o una cabecera de proxy personalizada.',
-  'settings.redirects.headerConditionsHelp': 'Filtro opcional: aplica esta redirección solo cuando las cabeceras coincidan.',
+  'settings.redirects.headerConditionsTooltip':
+    'Úsalo cuando la misma ruta solo deba redirigir para ciertas peticiones, por ejemplo idioma, país, dispositivo o una cabecera de proxy personalizada.',
+  'settings.redirects.headerConditionsHelp':
+    'Filtro opcional: aplica esta redirección solo cuando las cabeceras coincidan.',
   'settings.redirects.matchMode': 'Modo de coincidencia',
   'settings.redirects.noCondition': 'Sin condición',
   'settings.redirects.headerExists': 'La cabecera existe',
@@ -801,11 +866,14 @@ export const esManagerMessages = {
   'settings.redirects.headerValue': 'Valor de cabecera',
   'settings.redirects.headerValueHelp': 'En modo regex, este campo se trata como un patrón regex.',
   'settings.redirects.miniFunction': 'Mini función',
-  'settings.redirects.miniFunctionTooltip': 'Las mini funciones se ejecutan tras el emparejado de ruta y cabeceras. Pueden añadir parámetros de plantilla y luego se renderiza la ruta destino.',
-  'settings.redirects.miniFunctionHelp': 'Ayudante opcional para calcular parámetros extra a partir de las cabeceras.',
+  'settings.redirects.miniFunctionTooltip':
+    'Las mini funciones se ejecutan tras el emparejado de ruta y cabeceras. Pueden añadir parámetros de plantilla y luego se renderiza la ruta destino.',
+  'settings.redirects.miniFunctionHelp':
+    'Ayudante opcional para calcular parámetros extra a partir de las cabeceras.',
   'settings.redirects.acceptLanguageToParam': 'acceptLanguageToParam',
   'settings.redirects.headerValueToParam': 'headerValueToParam',
-  'settings.redirects.functionHints': '`acceptLanguageToParam` mapea Accept-Language a un parámetro de plantilla. `headerValueToParam` mapea cualquier valor de cabecera.',
+  'settings.redirects.functionHints':
+    '`acceptLanguageToParam` mapea Accept-Language a un parámetro de plantilla. `headerValueToParam` mapea cualquier valor de cabecera.',
   'settings.redirects.functionConfig': 'Configuración de función (JSON)',
   'settings.redirects.functionConfigHelp': 'JSON consumido por la mini función seleccionada.',
   'settings.redirects.deleteTitle': 'Eliminar redirección',
@@ -864,8 +932,7 @@ export const esManagerMessages = {
   'combobox.createNew': 'Crear {type}: "{value}"',
 
   'unauthorized.title': 'No autorizado',
-  'unauthorized.defaultMessage':
-    'No estás autorizado para acceder a este recurso.',
+  'unauthorized.defaultMessage': 'No estás autorizado para acceder a este recurso.',
   'unauthorized.neededPermission': 'Permiso necesario:',
   'unauthorized.neededPermissionAny': 'Permiso necesario (cualquiera):',
 
@@ -888,10 +955,10 @@ export const esManagerMessages = {
   'tour.nextStep': 'Paso siguiente',
 
   'navMain.groupLabel': '{label} ({count})',
-} as const satisfies Record<ManagerMessageKey, string>
+}
 
-export const esManagerLocalePack = {
+export const esManagerLocalePack: ManagerLocalePack = {
   code: 'es',
   name: 'Español',
   messages: esManagerMessages,
-} satisfies ManagerLocalePack
+}

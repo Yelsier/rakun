@@ -30,7 +30,7 @@ It must remain usable from external adapters. Do not assume it always runs insid
 - Use existing components from `src/components/ui` before creating new ones.
 - Use `useManagerQuery` and `useManagerMutation` for manager operations.
 - Manager UI copy must use `useTranslations()` with descriptive keys (e.g. `sidebar.settings`, `navUser.account`). Add English defaults in `src/i18n/catalog.ts` and the same keys in every installed locale pack.
-- Host apps install extra manager UI locales via `managerLanguages` on `rakunBootstrap` (English is always built into the manager client). Optional convenience packs ship from `@rakun-kit/manager-react/locales` (e.g. `esManagerLocalePack`). Do not import the main `@rakun-kit/manager-react` entry from server bootstrap code — it pulls React into API routes.
+- Host apps install extra manager UI locales from language-specific exports such as `@rakun-kit/manager-locales/es` and pass them through `managerLanguages` on `rakunBootstrap` (English is always built into the manager client). Do not import the main `@rakun-kit/manager-react` entry from server bootstrap code — it pulls React into API routes.
 - The manager loads packs at runtime through the public `manager.uiLocales` operation.
 - Content editing locale (`useLanguage`) is separate from manager UI locale (`useManagerI18n`).
 - Content-type `menu.title` / `menu.category` should be message keys when you want them translated; `t()` falls back to the raw string when no key exists.

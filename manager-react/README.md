@@ -89,6 +89,30 @@ Import the package stylesheet once:
 import "@rakun-kit/manager-react/styles.css";
 ```
 
+## Manager languages
+
+English and the locale runtime are built into this package. Extra translations
+ship from a separate package:
+
+```sh
+bun add @rakun-kit/manager-locales
+# or: npm install @rakun-kit/manager-locales
+```
+
+Import only the locale needed by the server bootstrap:
+
+```ts
+import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'
+
+rakunBootstrap({
+  // ...
+  managerLanguages: [esManagerLocalePack],
+})
+```
+
+Each language has an independent subpath, so application bundlers only include
+the locales explicitly imported by the host.
+
 ## Manager Plugins
 
 Manager plugins run inside the normal providers and can add dashboard routes,
@@ -187,6 +211,7 @@ conflicts report both plugin owners. Node replacements use Lexical's standard
 - `@rakun-kit/manager-react/app/runtime-app`: `ManagerRuntimeApp`, `ManagerBrowserApp`.
 - `@rakun-kit/manager-react/state/navigation`: navigation helpers and provider.
 - `@rakun-kit/manager-react/link`: link component provider.
+- `@rakun-kit/manager-react/i18n`: locale runtime, catalog, and locale types.
 - `@rakun-kit/manager-react/styles.css`: bundled manager styles.
 
 ## Build

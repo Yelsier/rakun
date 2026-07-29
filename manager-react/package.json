@@ -181,12 +181,6 @@
       "require": "./dist/cjs/i18n/index.js",
       "default": "./dist/esm/i18n/index.js"
     },
-    "./locales": {
-      "types": "./dist/esm/locales.d.ts",
-      "import": "./dist/esm/locales.js",
-      "require": "./dist/cjs/locales.js",
-      "default": "./dist/esm/locales.js"
-    },
     "./rich-text": {
       "types": "./dist/esm/rich-text.d.ts",
       "import": "./dist/esm/rich-text.js",

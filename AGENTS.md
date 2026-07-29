@@ -8,6 +8,7 @@ Main packages:
 
 - `core`: shared domain logic, content types, fields, schemas, manager/web operations, auth, permissions, media, routes, redirects, translations, MongoDB, and contracts.
 - `manager-react`: React manager app, clients, internal routing, UI components, and packaged styles.
+- `manager-locales`: optional manager UI locale packs with one public subpath per language.
 - `express`: Express adapter for APIs, local media, and optional tRPC.
 - `next`: Next.js App Router adapter for APIs, media, manager, and web rendering.
 - `trpc`: tRPC router built on top of Rakun operations.
@@ -23,6 +24,7 @@ Main packages:
 - Main test command: `bun run test` or `bun run --filter @rakun-kit/core test`
 - Build everything: `bun run build`
 - Build one package: `bun run build:core`, `bun run build:manager-react`, etc.
+- Build manager locales: `bun run build:manager-locales`
 - Vite/Express preview: `bun run preview`, `bun run preview:api`, `bun run preview:web`
 - Next preview: `bun run preview:next`
 

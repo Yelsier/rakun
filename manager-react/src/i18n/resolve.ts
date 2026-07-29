@@ -11,7 +11,7 @@ export const createEnglishLocalePack = (): ManagerLocalePack => ({
       key,
       definition.defaultMessage,
     ]),
-  ),
+  ) as Record<ManagerMessageKey, string>,
 })
 
 const localeCandidates = (locale: string): string[] => {
@@ -31,7 +31,7 @@ export const resolveManagerMessage = ({
 }): string => {
   for (const candidate of localeCandidates(locale)) {
     const pack = packsByCode.get(candidate)
-    const message = pack?.messages[key]
+    const message = pack?.messages[key as ManagerMessageKey]
     if (typeof message === 'string' && message.length > 0) {
       return message
     }
