@@ -93,6 +93,12 @@
       "require": "./dist/cjs/translation.js",
       "default": "./dist/esm/translation.js"
     },
+    "./dev": {
+      "types": "./dist/esm/dev.d.ts",
+      "import": "./dist/esm/dev.js",
+      "require": "./dist/cjs/dev.js",
+      "default": "./dist/esm/dev.js"
+    },
     "./manager": {
       "types": "./dist/esm/manager.d.ts",
       "import": "./dist/esm/manager.js",
