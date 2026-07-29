@@ -49,7 +49,7 @@ export const createMailSender = <const TTemplates extends MailTemplateRegistry>(
       throw new MailErrorInvalidData(`Unknown mail template "${input.template}"`)
     }
 
-    const { template: _template, props, ...envelope } = input
+    const { template: templateName, props, ...envelope } = input
     const subject =
       typeof template.subject === 'function'
         ? await (template.subject as unknown as (value: unknown) => MaybePromise<string>)(props)
@@ -63,6 +63,10 @@ export const createMailSender = <const TTemplates extends MailTemplateRegistry>(
       ...envelope,
       ...content,
       subject,
+      event: {
+        ...envelope.event,
+        template: templateName,
+      },
     })
   },
 })

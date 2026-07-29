@@ -45,6 +45,8 @@ import {
   markCommentsReadOutput,
   listFavoritesInput,
   listFavoritesOutput,
+  listEventLogsInput,
+  listEventLogsOutput,
   localeVariantAssignInput,
   localeVariantCreateInput,
   localeVariantCreateOutput,
@@ -485,6 +487,15 @@ export const createManagerOperationContracts = () =>
       description: "Get the list of all permissions",
       output: z.array(z.string()),
       method: "get",
+    }),
+    "manager.logs.list": defineOperationContract({
+      access: "auth",
+      kind: "query",
+      description:
+        "List persistent Rakun events using filters and cursor pagination",
+      input: listEventLogsInput,
+      output: listEventLogsOutput,
+      method: "post",
     }),
     "manager.backups.list": defineOperationContract({
       access: "auth",

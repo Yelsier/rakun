@@ -23,6 +23,7 @@ const formatAddresses = (addresses: MailAddress[] | undefined): string[] | undef
   addresses?.map(formatAddress)
 
 export class ResendMailAdapter implements MailAdapter {
+  readonly provider = 'resend'
   private readonly client: Resend
 
   constructor(apiKey: string, client?: Resend) {

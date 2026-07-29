@@ -1,5 +1,6 @@
 import type { MailServiceConfig } from './mailService'
 import { createMailServiceFromAdapter, type MailService, type SendMailInput } from './mailService'
+import { getEventLogService, hasEventLogService } from '../eventLog'
 
 let _mailService: MailService | null = null
 let _config: MailServiceConfig | null = null
@@ -9,8 +10,12 @@ export const createMailConnection = (config: MailServiceConfig): void => {
 }
 
 export const createMailService = (config: MailServiceConfig): MailService => {
-  _config = config
-  _mailService = createMailServiceFromAdapter(config)
+  const resolvedConfig = {
+    ...config,
+    eventLog: config.eventLog ?? (hasEventLogService() ? getEventLogService() : undefined),
+  }
+  _config = resolvedConfig
+  _mailService = createMailServiceFromAdapter(resolvedConfig)
   return _mailService
 }
 

@@ -7,6 +7,8 @@ import type {
   MailMessage,
   MailSendResult,
 } from './adapters'
+import type { EventLogService } from '../eventLog'
+import { Logger } from '../lib/Logger'
 
 type MailErrorTag = 'MailError' | 'MailErrorInvalidData' | 'MailErrorSendFailed'
 
@@ -53,12 +55,27 @@ export type SendMailInput = {
   text?: string
   headers?: Record<string, string>
   attachments?: readonly MailAttachment[]
+  /**
+   * Non-sensitive context added to the persistent mail events.
+   * Template senders populate `template` automatically.
+   */
+  event?: {
+    template?: string
+    source?: string
+    correlationId?: string
+    tags?: readonly string[]
+  }
 }
 
 export type MailServiceConfig = {
   adapter: MailAdapter
   defaultFrom?: MailAddressInput
   defaultReplyTo?: MailAddressListInput
+  /**
+   * Injected by Rakun bootstrap. Standalone services can provide their own
+   * event log or omit it when persistence is managed externally.
+   */
+  eventLog?: EventLogService
 }
 
 export interface MailService {
@@ -164,11 +181,77 @@ const normalizeMessage = (input: SendMailInput, config: MailServiceConfig): Mail
   }
 }
 
+const countAddresses = (...groups: Array<MailAddress[] | undefined>) =>
+  groups.reduce((total, group) => total + (group?.length ?? 0), 0)
+
+const createSafeEventData = (
+  message: MailMessage,
+  config: MailServiceConfig,
+  template: string | undefined
+) => ({
+  provider: config.adapter.provider ?? 'custom',
+  recipientCount: countAddresses(message.to, message.cc, message.bcc),
+  toCount: message.to.length,
+  ccCount: message.cc?.length ?? 0,
+  bccCount: message.bcc?.length ?? 0,
+  attachmentCount: message.attachments?.length ?? 0,
+  hasHtml: Boolean(message.html),
+  hasText: Boolean(message.text),
+  ...(template ? { template } : {}),
+})
+
+const recordMailEvent = async (
+  eventLog: EventLogService,
+  input: SendMailInput,
+  event: {
+    type: 'mail.send.attempted' | 'mail.send.succeeded' | 'mail.send.failed'
+    severity?: 'info' | 'error'
+    outcome: 'pending' | 'success' | 'failure'
+    correlationId: string
+    resourceId?: string
+    data: Record<string, string | number | boolean>
+  }
+) =>
+  eventLog.record({
+    type: event.type,
+    category: 'mail',
+    severity: event.severity,
+    outcome: event.outcome,
+    source: input.event?.source ?? '@rakun-kit/core/mail',
+    correlationId: event.correlationId,
+    actor: { type: 'system' },
+    resource: {
+      type: 'mail',
+      ...(event.resourceId ? { id: event.resourceId } : {}),
+    },
+    tags: ['mail', ...(input.event?.tags ?? [])],
+    data: event.data,
+  })
+
 export const createMailServiceFromAdapter = (config: MailServiceConfig): MailService => ({
   rawAdapter: config.adapter,
 
   async send(input) {
     const message = normalizeMessage(input, config)
+    const correlationId = input.event?.correlationId ?? globalThis.crypto.randomUUID()
+    const safeData = createSafeEventData(message, config, input.event?.template)
+    const startedAt = Date.now()
+
+    if (config.eventLog) {
+      try {
+        await recordMailEvent(config.eventLog, input, {
+          type: 'mail.send.attempted',
+          outcome: 'pending',
+          correlationId,
+          data: safeData,
+        })
+      } catch (error) {
+        throw new MailErrorSendFailed(
+          'Mail was not sent because its event log could not be persisted',
+          error
+        )
+      }
+    }
 
     try {
       const result = await config.adapter.send(message)
@@ -177,11 +260,55 @@ export const createMailServiceFromAdapter = (config: MailServiceConfig): MailSer
         throw new MailErrorSendFailed('Mail adapter returned an empty message id')
       }
 
+      if (config.eventLog) {
+        try {
+          await recordMailEvent(config.eventLog, input, {
+            type: 'mail.send.succeeded',
+            outcome: 'success',
+            correlationId,
+            resourceId: result.id,
+            data: {
+              ...safeData,
+              durationMs: Date.now() - startedAt,
+              acceptedCount: result.accepted?.length ?? 0,
+              rejectedCount: result.rejected?.length ?? 0,
+            },
+          })
+        } catch (error) {
+          Logger?.error?.('mail.send.succeeded event could not be persisted', {
+            correlationId,
+            errorName: error instanceof Error ? error.name : 'UnknownError',
+          })
+        }
+      }
+
       return result
     } catch (error) {
-      if (error instanceof MailError) throw error
+      const mailError =
+        error instanceof MailError ? error : new MailErrorSendFailed('Failed to send mail', error)
 
-      throw new MailErrorSendFailed('Failed to send mail', error)
+      if (config.eventLog) {
+        try {
+          await recordMailEvent(config.eventLog, input, {
+            type: 'mail.send.failed',
+            severity: 'error',
+            outcome: 'failure',
+            correlationId,
+            data: {
+              ...safeData,
+              durationMs: Date.now() - startedAt,
+              errorName: error instanceof Error ? error.name : 'UnknownError',
+            },
+          })
+        } catch (logError) {
+          Logger?.error?.('mail.send.failed event could not be persisted', {
+            correlationId,
+            errorName: logError instanceof Error ? logError.name : 'UnknownError',
+          })
+        }
+      }
+
+      throw mailError
     }
   },
 })

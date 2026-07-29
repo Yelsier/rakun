@@ -3,6 +3,7 @@ import type { createLogger } from "./lib/Logger";
 import type { LiteralCatalogInput } from "./literals/definitions";
 import type { MediaServiceConfig } from "./media";
 import type { MailServiceConfig } from "./mail";
+import type { EventLogServiceConfig } from "./eventLog";
 import type { TranslationServiceConfig } from "./translation";
 import type { MongoConfig } from "./orm/database";
 import type { RouteDefinition } from "./api/utils/routes/routeDefinitions";
@@ -11,8 +12,8 @@ import type {
   RakunPluginDefinition,
   RakunPluginFieldDefinition,
   RakunResolvedPluginContributions,
-} from './plugins'
-import type { ManagerLanguagePack } from './schemas/manager/uiLocales'
+} from "./plugins";
+import type { ManagerLanguagePack } from "./schemas/manager/uiLocales";
 
 export interface RakunBootstrapOptions {
   literals: LiteralCatalogInput;
@@ -32,6 +33,10 @@ export interface RakunBootstrapOptions {
   mongo?: MongoConfig;
   media?: MediaServiceConfig;
   mail?: MailServiceConfig;
+  /**
+   * Persistent business event log. Defaults to the built-in MongoDB adapter.
+   */
+  eventLog?: EventLogServiceConfig;
   translation?: TranslationServiceConfig;
   logger?: Parameters<typeof createLogger>[0];
   revalidate?:
@@ -48,17 +53,17 @@ export type RakunContentType = ContentType;
 
 export type ResolvedRakunBootstrapOptions = Omit<
   RakunBootstrapOptions,
-  'contentTypes' | 'routes' | 'apiOperations' | 'literals' | 'permissions'
+  "contentTypes" | "routes" | "apiOperations" | "literals" | "permissions"
 > &
   RakunResolvedPluginContributions & {
-    fields: RakunPluginFieldDefinition[]
-  }
+    fields: RakunPluginFieldDefinition[];
+  };
 
 let bootstrapOptions: ResolvedRakunBootstrapOptions | null = null;
 let bootstrapped = false;
 
-export const getRakunBootstrapOptions = (): ResolvedRakunBootstrapOptions | null =>
-  bootstrapOptions;
+export const getRakunBootstrapOptions =
+  (): ResolvedRakunBootstrapOptions | null => bootstrapOptions;
 
 export const setRakunBootstrapOptions = (
   options: ResolvedRakunBootstrapOptions,

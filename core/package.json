@@ -119,6 +119,12 @@
       "import": "./dist/esm/plugins.js",
       "require": "./dist/cjs/plugins.js",
       "default": "./dist/esm/plugins.js"
+    },
+    "./event-log": {
+      "types": "./dist/esm/eventLog/index.d.ts",
+      "import": "./dist/esm/eventLog/index.js",
+      "require": "./dist/cjs/eventLog/index.js",
+      "default": "./dist/esm/eventLog/index.js"
     }
   },
   "devDependencies": {

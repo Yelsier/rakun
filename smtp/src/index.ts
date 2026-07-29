@@ -40,6 +40,7 @@ const normalizeProviderAddresses = (
 }
 
 export class SmtpMailAdapter implements MailAdapter {
+  readonly provider = 'smtp'
   private readonly transporter: SmtpTransporter
 
   constructor(transport: string | SMTPTransport.Options, transporter?: SmtpTransporter) {

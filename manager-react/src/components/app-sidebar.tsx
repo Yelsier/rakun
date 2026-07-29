@@ -110,6 +110,7 @@ const getDefaultSecondaryNavItems = (
       'content.Redirect.readAny',
       'content.RobotsRule.readAny',
       'content.SeoSettings.readAny',
+      'system.eventLog.read',
     ],
     permissionMode: 'any',
   },

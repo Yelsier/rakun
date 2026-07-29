@@ -34,5 +34,6 @@ export type MailSendResult = {
 }
 
 export interface MailAdapter {
+  readonly provider?: string
   send(message: MailMessage): Promise<MailSendResult>
 }

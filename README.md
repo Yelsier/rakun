@@ -29,7 +29,7 @@ with Express and Next.js integrations available.
 
 | Package                    | Purpose                                                                                                             |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `@rakun-kit/core`          | Content types, fields, schemas, runtime bootstrap, operations, auth, media, routes, redirects and shared contracts. |
+| `@rakun-kit/core`          | Content types, fields, schemas, runtime bootstrap, operations, auth, media, event logs, routes, redirects and shared contracts. |
 | `@rakun-kit/manager-react` | React manager application, manager clients, navigation helpers and styles.                                          |
 | `@rakun-kit/manager-locales` | Optional manager UI translations exposed through one subpath per language.                                        |
 | `@rakun-kit/express`       | Express adapter for Rakun APIs, media routes and optional tRPC support.                                             |

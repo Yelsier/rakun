@@ -10,6 +10,7 @@ export * from "./schemas/manager/favorites";
 export * from "./schemas/manager/notifications";
 export * from "./schemas/manager/users";
 export * from "./schemas/manager/apiOperations";
+export * from "./schemas/manager/eventLogs";
 export * from "./schemas/manager/setDefaultLanguage";
 export * from "./schemas/manager/backups";
 export * from "./schemas/manager/migrations";

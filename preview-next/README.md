@@ -137,6 +137,13 @@ bun run mail:preview
 bun run mail:check
 ```
 
+Mail attempts and results are persisted in the generic Rakun event log. Open
+`/backend/settings/logs` to inspect them through the built-in manager UI. Its
+native `manager.logs.list` operation requires an authenticated session with the
+`system.eventLog.read` permission and supports cursor pagination and composable
+filters. Stored mail events contain operational metadata only; email content
+and recipient data are intentionally excluded.
+
 ## Rendering
 
 The page route uses `RakunPageRenderer` from `@rakun-kit/next/web`:

@@ -8,6 +8,8 @@ import {
 } from './mailService'
 import { createMailConnection, getMailService, hasMailService, sendMail } from './index'
 import { createMailSender, defineMailTemplate } from './templates'
+import { createEventLogServiceFromAdapter } from '../eventLog'
+import type { EventLogRecord, EventLogWrite } from '../eventLog'
 
 const createAdapter = () => {
   const messages: MailMessage[] = []
@@ -129,6 +131,128 @@ describe('mail service', () => {
         text: 'Body',
       })
     ).rejects.toBeInstanceOf(MailErrorSendFailed)
+  })
+
+  test('persists safe attempt and success events for sent mail', async () => {
+    const { adapter: baseAdapter } = createAdapter()
+    const adapter: MailAdapter = {
+      ...baseAdapter,
+      provider: 'test-provider',
+    }
+    const events: EventLogRecord[] = []
+    const eventLog = createEventLogServiceFromAdapter({
+      adapter: {
+        append: async (event: EventLogWrite) => {
+          const record = { id: `event-${events.length + 1}`, ...event }
+          events.push(record)
+          return record
+        },
+        query: async () => ({ items: events }),
+      },
+    })
+    const service = createMailServiceFromAdapter({
+      adapter,
+      eventLog,
+      defaultFrom: 'sender@example.com',
+    })
+
+    await service.send({
+      to: ['private@example.com', 'other@example.com'],
+      subject: 'Sensitive subject',
+      html: '<p>Private body</p>',
+      headers: { Authorization: 'secret' },
+      attachments: [
+        {
+          filename: 'private.pdf',
+          content: new Uint8Array([1, 2, 3]),
+        },
+      ],
+      event: {
+        template: 'welcome',
+        tags: ['transactional'],
+      },
+    })
+
+    expect(events).toHaveLength(2)
+    expect(events.map((event) => event.type)).toEqual([
+      'mail.send.attempted',
+      'mail.send.succeeded',
+    ])
+    expect(events[0]?.correlationId).toBe(events[1]?.correlationId)
+    expect(events[1]).toMatchObject({
+      outcome: 'success',
+      resource: { type: 'mail', id: 'mail-1' },
+      tags: ['mail', 'transactional'],
+      data: {
+        provider: 'test-provider',
+        recipientCount: 2,
+        attachmentCount: 1,
+        template: 'welcome',
+      },
+    })
+
+    const serializedEvents = JSON.stringify(events)
+    expect(serializedEvents).not.toContain('private@example.com')
+    expect(serializedEvents).not.toContain('Sensitive subject')
+    expect(serializedEvents).not.toContain('Private body')
+    expect(serializedEvents).not.toContain('Authorization')
+    expect(serializedEvents).not.toContain('private.pdf')
+  })
+
+  test('records provider failures and refuses unlogged sends', async () => {
+    const events: EventLogRecord[] = []
+    const failedProvider = mock(async () => {
+      throw new Error('provider secret response')
+    })
+    const eventLog = createEventLogServiceFromAdapter({
+      adapter: {
+        append: async (event) => {
+          const record = { id: `event-${events.length + 1}`, ...event }
+          events.push(record)
+          return record
+        },
+        query: async () => ({ items: events }),
+      },
+    })
+    const service = createMailServiceFromAdapter({
+      adapter: { send: failedProvider },
+      eventLog,
+      defaultFrom: 'sender@example.com',
+    })
+
+    await expect(
+      service.send({
+        to: 'recipient@example.com',
+        subject: 'Hello',
+        text: 'Body',
+      })
+    ).rejects.toBeInstanceOf(MailErrorSendFailed)
+
+    expect(events.map((event) => event.type)).toEqual(['mail.send.attempted', 'mail.send.failed'])
+    expect(JSON.stringify(events)).not.toContain('provider secret response')
+
+    const send = mock(async () => ({ id: 'should-not-send' }))
+    const serviceWithoutWritableLog = createMailServiceFromAdapter({
+      adapter: { send },
+      eventLog: createEventLogServiceFromAdapter({
+        adapter: {
+          append: async () => {
+            throw new Error('log unavailable')
+          },
+          query: async () => ({ items: [] }),
+        },
+      }),
+      defaultFrom: 'sender@example.com',
+    })
+
+    await expect(
+      serviceWithoutWritableLog.send({
+        to: 'recipient@example.com',
+        subject: 'Hello',
+        text: 'Body',
+      })
+    ).rejects.toBeInstanceOf(MailErrorSendFailed)
+    expect(send).not.toHaveBeenCalled()
   })
 })
 
