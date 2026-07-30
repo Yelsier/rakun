@@ -10,6 +10,7 @@ import {
 import { previewManagerLanguages } from './manager-locales'
 import { apiOperations } from './api-operations'
 import { createOpenAITranslationServiceConfig } from '@rakun-kit/openai'
+import { createResendMailServiceConfig } from '@rakun-kit/resend'
 
 export const getPreviewMongoUri = () =>
   process.env.MONGO_URI ?? 'mongodb://127.0.0.1:27017/rakun_preview'
@@ -101,6 +102,13 @@ export const createPreviewBootstrap = () =>
       apiKey: process.env.OPENAI_API_KEY || '',
       model: 'gpt-5-mini',
     }),
+    mail:
+      process.env.RESEND_API_KEY?.trim() && process.env.RAKUN_MAIL_FROM?.trim()
+        ? createResendMailServiceConfig({
+            apiKey: process.env.RESEND_API_KEY,
+            defaultFrom: process.env.RAKUN_MAIL_FROM,
+          })
+        : undefined,
     apiOperations,
     logger: {
       level: 'info',

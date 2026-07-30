@@ -182,6 +182,7 @@ describe("permissions", () => {
     );
     expect(getPermissionList()).toContain("content.Migration.readAny");
     expect(getPermissionList()).toContain("content.ApiOperation.readAny");
+    expect(getPermissionList()).toContain("system.eventLog.read");
     expect(getPermissionList()).not.toContain("manager.routes.readAny");
     expect(getPermissionList()).not.toContain("manager.users.readAny");
     expect(getPermissionList()).not.toContain("manager.roles.updateAny");

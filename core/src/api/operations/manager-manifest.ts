@@ -231,6 +231,11 @@ export const managerOperationManifest = {
     method: "get",
     path: "/manager/permissions",
   },
+  "manager.logs.list": {
+    kind: "query",
+    method: "post",
+    path: "/manager/logs/list",
+  },
   "manager.backups.list": {
     kind: "query",
     method: "get",

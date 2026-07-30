@@ -23,6 +23,14 @@ export const managerSettingsTour = {
       align: 'center',
     },
     {
+      target: '[data-tour="settings-link-logs"]',
+      title: 'Logs',
+      description:
+        'Inspect operational events and filter them by type, outcome, severity, or source.',
+      side: 'bottom',
+      align: 'center',
+    },
+    {
       target: '[data-tour="settings-link-system"]',
       title: 'System',
       description:

@@ -29,13 +29,16 @@ with Express and Next.js integrations available.
 
 | Package                    | Purpose                                                                                                             |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `@rakun-kit/core`          | Content types, fields, schemas, runtime bootstrap, operations, auth, media, routes, redirects and shared contracts. |
+| `@rakun-kit/core`          | Content types, fields, schemas, runtime bootstrap, operations, auth, media, event logs, routes, redirects and shared contracts. |
 | `@rakun-kit/manager-react` | React manager application, manager clients, navigation helpers and styles.                                          |
 | `@rakun-kit/manager-locales` | Optional manager UI translations exposed through one subpath per language.                                        |
 | `@rakun-kit/express`       | Express adapter for Rakun APIs, media routes and optional tRPC support.                                             |
 | `@rakun-kit/next`          | Next.js adapter for APIs, media routes and mounting the manager.                                                    |
 | `@rakun-kit/trpc`          | tRPC router adapter for Rakun operations.                                                                           |
 | `@rakun-kit/s3`            | S3 media storage adapter.                                                                                           |
+| `@rakun-kit/smtp`          | Nodemailer SMTP adapter for outbound mail.                                                                          |
+| `@rakun-kit/resend`        | Resend adapter for outbound mail.                                                                                   |
+| `@rakun-kit/jsx-email`     | ESM JSX Email renderer for typed React mail templates.                                                              |
 | `@rakun-kit/openai`        | OpenAI automatic translation adapter.                                                                               |
 | `@rakun-kit/preview`       | Local development app, not intended for publication.                                                                |
 

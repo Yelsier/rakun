@@ -48,6 +48,9 @@ SEED_PREVIEW=true
 PREVIEW_ADMIN_EMAIL=admin@example.com
 PREVIEW_ADMIN_PASSWORD=admin123
 PREVIEW_ADMIN_NAME=Preview Admin
+RESEND_API_KEY=
+RAKUN_MAIL_FROM=
+RAKUN_MAIL_TO=
 ```
 
 ## Scripts
@@ -56,6 +59,8 @@ PREVIEW_ADMIN_NAME=Preview Admin
 bun run preview
 bun run preview:api
 bun run preview:web
+bun run preview:mail
+bun run preview:mail:check
 ```
 
 From inside `preview`:
@@ -65,3 +70,24 @@ bun run dev
 bun run dev:api
 bun run dev:web
 ```
+
+## Mail preview and Resend smoke test
+
+The sample template lives in `emails/WelcomeEmail.tsx` and exports typed
+`previewProps`. Open the JSX Email preview or run its compatibility check with:
+
+```sh
+bun run preview:mail
+bun run preview:mail:check
+```
+
+To send that template through the real Resend adapter, configure
+`RESEND_API_KEY`, `RAKUN_MAIL_FROM` and `RAKUN_MAIL_TO` in `preview/.env`, then
+run:
+
+```sh
+bun run preview:mail:send
+```
+
+This command is opt-in and is never executed by the normal preview or test
+scripts.

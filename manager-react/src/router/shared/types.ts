@@ -14,6 +14,7 @@ export type ManagerResolvedRoute =
   | { kind: "users" }
   | { kind: "settings-home" }
   | { kind: "settings-system" }
+  | { kind: "settings-logs" }
   | { kind: "settings-review-policies" }
   | { kind: "settings-languages" }
   | { kind: "settings-routes" }

@@ -14,6 +14,7 @@ import {
 } from "../internal-content-types";
 import { getContentTypes } from "../lib/Registry";
 import { getPersistedUniqueGroups } from "../lib/routeableContent";
+import { EVENT_LOG_COLLECTION } from "../eventLog/mongo";
 
 const LEGACY_INTERNAL_COLLECTIONS = [
   ["_rakun_backups", Backup.name],
@@ -53,6 +54,21 @@ export async function createIndexes(db: Db): Promise<void> {
   } catch {}
 
   await Promise.all([
+    db
+      .collection(EVENT_LOG_COLLECTION)
+      .createIndex({ occurredAt: -1, _id: -1 }),
+    db
+      .collection(EVENT_LOG_COLLECTION)
+      .createIndex({ category: 1, type: 1, occurredAt: -1 }),
+    db
+      .collection(EVENT_LOG_COLLECTION)
+      .createIndex({ outcome: 1, severity: 1, occurredAt: -1 }),
+    db
+      .collection(EVENT_LOG_COLLECTION)
+      .createIndex({ correlationId: 1, occurredAt: -1 }),
+    db
+      .collection(EVENT_LOG_COLLECTION)
+      .createIndex({ tags: 1, occurredAt: -1 }),
     db.collection(Backup.name).createIndex({ createdAt: -1 }),
     db
       .collection(BackupDocument.name)

@@ -12,6 +12,12 @@ import { syncConfiguredRoutes } from "./api/utils/routes/syncConfiguredRoutes";
 import { createMongoConnection, getMongoService } from "./orm";
 import { runMigrations } from "./orm/migrations";
 import { createMediaService, getMediaService } from "./media";
+import { createMailService, getMailService } from "./mail";
+import {
+  createEventLogService,
+  createMongoEventLogAdapter,
+  getEventLogService,
+} from "./eventLog";
 import {
   createTranslationService,
   getTranslationService,
@@ -30,10 +36,10 @@ import {
   resolveRakunPluginContributions,
   runRakunPluginInitializers,
   assertRakunPluginFieldsDeclared,
-} from './plugins'
+} from "./plugins";
 
 let initPromise: Promise<void> | null = null;
-let initializedPluginIds = new Set<string>()
+let initializedPluginIds = new Set<string>();
 
 const ensureLogger = (): void => {
   const bootstrapOptions = getRakunBootstrapOptions();
@@ -71,6 +77,32 @@ const ensureMedia = (): void => {
   createMediaService(media);
 };
 
+const ensureMail = (): void => {
+  const bootstrapOptions = getRakunBootstrapOptions();
+  const mail = bootstrapOptions?.mail;
+
+  if (!mail) return;
+
+  createMailService({
+    ...mail,
+    eventLog: getEventLogService(),
+  });
+};
+
+const ensureEventLog = (
+  db: Awaited<ReturnType<typeof getMongoService>>,
+): void => {
+  const bootstrapOptions = getRakunBootstrapOptions();
+
+  createEventLogService(
+    bootstrapOptions?.eventLog ?? {
+      adapter: createMongoEventLogAdapter(
+        db.rawDB as Parameters<typeof createMongoEventLogAdapter>[0],
+      ),
+    },
+  );
+};
+
 const ensureTranslation = (): void => {
   const bootstrapOptions = getRakunBootstrapOptions();
   const translation = bootstrapOptions?.translation;
@@ -95,6 +127,8 @@ export const ensureRakunInitialized = async () => {
     ensureTranslation();
 
     const db = await getMongoService();
+    ensureEventLog(db);
+    ensureMail();
     await runMigrations(db);
     await syncAdminRole(db);
 
@@ -104,7 +138,7 @@ export const ensureRakunInitialized = async () => {
       await syncConfiguredRoutes();
     }
 
-    if (!bootstrapOptions) return
+    if (!bootstrapOptions) return;
 
     await runRakunPluginInitializers({
       plugins: bootstrapOptions.plugins,
@@ -113,12 +147,14 @@ export const ensureRakunInitialized = async () => {
         db,
         logger: Logger!,
         media: bootstrapOptions.media ? getMediaService() : undefined,
+        mail: bootstrapOptions.mail ? getMailService() : undefined,
+        eventLog: getEventLogService(),
         translation: hasTranslationService()
           ? getTranslationService()
           : undefined,
         options: bootstrapOptions,
       },
-    })
+    });
   })();
 
   try {
@@ -188,16 +224,16 @@ export const runWithRakunRequestTrace = <T>(
 };
 
 export const rakunBootstrap = (options: RakunBootstrapOptions) => {
-  const contributions = resolveRakunPluginContributions(options)
+  const contributions = resolveRakunPluginContributions(options);
   const resolvedOptions: ResolvedRakunBootstrapOptions = {
     ...options,
     ...contributions,
-  }
+  };
 
   setRakunBootstrapOptions(resolvedOptions);
   setLiteralCatalog(resolvedOptions.literals);
   initPromise = null;
-  initializedPluginIds = new Set()
+  initializedPluginIds = new Set();
 
   const configuredInternalContentTypes = {
     ...internalContentTypes,
@@ -206,7 +242,7 @@ export const rakunBootstrap = (options: RakunBootstrapOptions) => {
   assertRakunPluginFieldsDeclared(
     Object.values(configuredInternalContentTypes),
     resolvedOptions.fields,
-  )
+  );
   applyManagerRoleHooks(configuredInternalContentTypes.ManagerRole);
   applyManagerUserHooks(configuredInternalContentTypes.ManagerUser);
   const routeableContentTypes = new Set(
@@ -252,7 +288,7 @@ export {
   type RakunPluginFieldDefinition,
   type RakunPluginInitContext,
   type RakunResolvedPluginContributions,
-} from './plugins'
+} from "./plugins";
 export {
   getContentHookContext,
   runContentHookContext,
@@ -304,6 +340,7 @@ export {
 } from "./lib/ContentType";
 export * from "./lib/fields";
 export * from "./translation";
+export * from "./eventLog";
 
 export {
   type AnyRakunOperation,
@@ -398,5 +435,6 @@ export type {
   PrepareUploadOutput,
 } from "./schemas/manager/media/prepareUpload";
 export * from "./media";
+export * from "./mail";
 export * from "./contracts";
 export * from "./web";

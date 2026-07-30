@@ -150,6 +150,14 @@ Layout module labels follow `layoutModule.<layoutKey>`. For example, the
 `header` slot automatically resolves `layoutModule.header` in its tab and
 configuration panel.
 
+## Event Logs
+
+Settings → Logs displays the persistent Rakun event stream through the native
+`manager.logs.list` operation. The screen supports filters, cursor pagination,
+and structured event details. Both the settings card and the operation require
+the `system.eventLog.read` permission, which can be assigned from Settings →
+User Roles.
+
 ## Manager Plugins
 
 Manager plugins run inside the normal providers and can add dashboard routes,

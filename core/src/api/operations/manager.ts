@@ -45,6 +45,7 @@ import { listHandler } from "../routes/manager/list";
 import { languagesHandler } from "../routes/manager/languages";
 import { uiLocalesHandler } from "../routes/manager/uiLocales";
 import { listMigrationsHandler } from "../routes/manager/migrations/list";
+import { listEventLogsHandler } from "../routes/manager/logs/list";
 import { permissionsHandler } from "../routes/manager/permissions";
 import { regenerateRoutesHandler } from "../routes/manager/regenerateRoutes";
 import { setDefaultLanguageHandler } from "../routes/manager/setDefaultLanguage";
@@ -237,6 +238,9 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.permissions": {
       resolve: permissionsHandler,
+    },
+    "manager.logs.list": {
+      resolve: listEventLogsHandler,
     },
     "manager.backups.list": {
       resolve: listBackupsHandler,

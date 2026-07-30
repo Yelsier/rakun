@@ -2,7 +2,8 @@ import type { ManagerUserSchema } from "../internal-content-types/ManagerUser";
 import { isAdminRole } from "./ManagerRolePolicy";
 import type ContentType from "./ContentType";
 import { getContentTypes } from "./Registry";
-import { getRakunBootstrapOptions } from '../bootstrapState'
+import { getRakunBootstrapOptions } from "../bootstrapState";
+import { EVENT_LOG_READ_PERMISSION } from "../eventLog/types";
 
 type ContentPermissionAction = "own" | "readAny" | "updateAny" | "deleteAny";
 
@@ -21,6 +22,7 @@ export const REVIEW_SELF_APPROVE_PERMISSION = "review.workflow.selfApprove";
 const builtInPermissions: Permission[] = [
   REVIEW_POLICY_CONFIGURE_PERMISSION,
   REVIEW_SELF_APPROVE_PERMISSION,
+  EVENT_LOG_READ_PERMISSION,
 ];
 
 const getContentPermissionConfig = (contentType: ContentType) => {

@@ -8,6 +8,7 @@ import {
   GitPullRequestArrow,
   WholeWord,
   Waypoints,
+  ScrollText,
 } from 'lucide-react'
 import type { Permission } from '@rakun-kit/core/client'
 import type { ReactNode } from 'react'
@@ -43,6 +44,12 @@ const cards: Array<{
     icon: <Route size="80" />,
     link: '/settings/routes',
     tour: 'settings-link-routes',
+  },
+  {
+    titleKey: 'settings.logs',
+    icon: <ScrollText size="80" />,
+    link: '/settings/logs',
+    tour: 'settings-link-logs',
   },
   {
     titleKey: 'settings.system',

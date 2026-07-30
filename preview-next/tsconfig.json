@@ -27,6 +27,7 @@
       "@rakun-kit/core/internal-content-types": ["../core/src/internal-content-types/index.ts"],
       "@rakun-kit/core/internal-content-types/*": ["../core/src/internal-content-types/*.ts"],
       "@rakun-kit/core/types": ["../core/src/lib/types/index.ts"],
+      "@rakun-kit/jsx-email": ["../jsx-email/src/index.ts"],
       "@rakun-kit/manager-react": ["../manager-react/src/index.ts"],
       "@rakun-kit/manager-react/locales": ["../manager-react/src/locales.ts"],
       "@rakun-kit/manager-react/*": ["../manager-react/src/*"],
@@ -36,6 +37,7 @@
       "@rakun-kit/trpc": ["../trpc/src/index.ts"],
       "@rakun-kit/s3": ["../s3/src/index.ts"],
       "@rakun-kit/openai": ["../openai/src/index.ts"],
+      "@rakun-kit/resend": ["../resend/src/index.ts"],
       "@rakun-kit/plugin-code-editor/manager": ["../plugin-code-editor/src/manager.tsx"]
     }
   },

@@ -21,6 +21,7 @@ The main entrypoint exports:
 - Context: `createRequestContext`, `getSessionCookie`, `setSessionCookie`.
 - Operations: manager/web contracts and definitions.
 - Media: `createMediaService`, `getMediaService`, adapters, and types.
+- Mail: `createMailService`, `sendMail`, typed template registries, adapters, and types.
 - Permissions, translations, errors, contracts, and public types.
 - Basic internal content types: `Language`, `ManagerUser`, `Seo`.
 
@@ -65,6 +66,7 @@ Options:
 - `apiOperations`: custom API operations added to the Rakun operation registry.
 - `mongo`: MongoDB connection. Required before serving Rakun requests.
 - `media`: media adapter/configuration. Optional.
+- `mail`: outbound mail adapter and default sender configuration. Optional.
 - `logger`: logger configuration. If omitted, an `info` logger with `prettify` is created.
 - `syncRoutes`: syncs configured routes during initialization. Enabled by default.
 
@@ -748,6 +750,140 @@ APIs:
 
 The service supports prepare/finalize upload, URL generation, folders, and image optimization depending on adapter/configuration.
 
+## Persistent Event Log
+
+Rakun keeps business/audit events separate from its technical console logger.
+The event log uses an append-only adapter and defaults to a MongoDB collection
+with indexes for time, type, category, outcome, severity, correlation and tags:
+
+```ts
+import { recordEvent, queryEvents } from "@rakun-kit/core";
+
+await recordEvent({
+  type: "content.article.published",
+  category: "content",
+  outcome: "success",
+  actor: { type: "manager-user", id: userId },
+  resource: { type: "Article", id: articleId },
+  correlationId: requestId,
+  tags: ["editorial"],
+  data: {
+    locale: "es",
+    changedFields: 3,
+  },
+});
+
+const page = await queryEvents({
+  categories: ["content"],
+  outcomes: ["success"],
+  from: new Date("2026-01-01T00:00:00.000Z"),
+  limit: 50,
+});
+```
+
+`data` accepts nested JSON values. Event queries use cursor pagination and can
+filter by types, categories, severities, outcomes, sources, correlation,
+required tags and a date range. A custom persistence implementation can be
+plugged in globally:
+
+```ts
+import type { EventLogAdapter } from "@rakun-kit/core";
+
+const adapter: EventLogAdapter = {
+  async append(event) {
+    return customStore.append(event);
+  },
+  async query(filters) {
+    return customStore.query(filters);
+  },
+};
+
+rakunBootstrap({
+  // ...
+  eventLog: { adapter },
+});
+```
+
+Plugins receive the resolved `eventLog` service in their initialization
+context. Reading a shared event stream should be protected with the built-in
+`system.eventLog.read` permission. The built-in `manager.logs.list` operation and the
+manager Settings → Logs screen both enforce it.
+
+## Mail
+
+Mail providers receive normalized, already-rendered messages through
+`MailAdapter`, so neither `core` nor an adapter depends on React or a template
+engine:
+
+```ts
+import type { MailAdapter } from '@rakun-kit/core'
+
+const adapter: MailAdapter = {
+  async send(message) {
+    const result = await provider.send(message)
+    return { id: result.id }
+  },
+}
+
+rakunBootstrap({
+  // ...
+  mail: {
+    adapter,
+    defaultFrom: 'hello@example.com',
+    defaultReplyTo: 'support@example.com',
+  },
+})
+```
+
+Send rendered content directly:
+
+```ts
+import { sendMail } from '@rakun-kit/core'
+
+await sendMail({
+  to: 'ada@example.com',
+  subject: 'Welcome',
+  html: '<p>Hello Ada</p>',
+  text: 'Hello Ada',
+})
+```
+
+Or create a typed application template registry:
+
+```ts
+import { createMailSender, defineMailTemplate } from '@rakun-kit/core'
+
+const mail = createMailSender({
+  templates: {
+    welcome: defineMailTemplate<{ name: string }>({
+      subject: ({ name }) => `Welcome, ${name}`,
+      render: ({ name }) => ({
+        html: `<p>Hello ${name}</p>`,
+        text: `Hello ${name}`,
+      }),
+    }),
+  },
+})
+
+await mail.send({
+  template: 'welcome',
+  props: { name: 'Ada' },
+  to: 'ada@example.com',
+})
+```
+
+The common contract supports To/CC/BCC/Reply-To, custom headers and in-memory
+`Uint8Array` attachments. Sending is immediate; queues, retries and delivery
+events belong to application infrastructure.
+
+Every mail sent through a bootstrapped Rakun mail service creates append-only
+`mail.send.attempted` and `mail.send.succeeded` or `mail.send.failed` events.
+They share a correlation id and include only operational counts, provider,
+template and duration. Recipient addresses, subject, HTML/text, headers,
+attachment names/content, credentials and raw provider errors are never copied
+to the persistent event log. If the initial attempt event cannot be persisted,
+the provider is not called.
+
 ## Literals and Translation
 
 Bootstrap receives `literals`. Related utilities:
@@ -801,7 +937,8 @@ Database errors live in `orm/dbService`:
 1. The app defines content types with `ContentType` and `Fields`.
 2. The app calls `rakunBootstrap(options)`.
 3. The HTTP adapter calls `ensureRakunInitialized()` before serving Rakun routes.
-4. `ensureRakunInitialized()` configures logger, MongoDB, media, and route syncing.
+4. `ensureRakunInitialized()` configures logger, MongoDB, the persistent event
+   log, media, mail, and route syncing.
 5. Each request creates a `RakunRequestContext`.
 6. Manager/web operations validate input, run logic, validate output, and return typed contracts.
 
