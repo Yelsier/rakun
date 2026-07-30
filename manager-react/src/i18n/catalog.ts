@@ -8,8 +8,8 @@ export type ManagerMessageDefinition = {
 export const MANAGER_CATALOG_VERSION = 1
 
 export const managerMessages = {
-  'brand.name': { defaultMessage: 'CMS' },
-  'brand.tagline': { defaultMessage: 'Enterprise' },
+  'brand.name': { defaultMessage: 'Rakun' },
+  'brand.tagline': { defaultMessage: 'Manager' },
 
   'navUser.account': { defaultMessage: 'Account' },
   'navUser.logOut': { defaultMessage: 'Log out' },
@@ -28,8 +28,8 @@ export const managerMessages = {
   'nav.dashboard': { defaultMessage: 'Dashboard' },
   'nav.toggleSidebar': { defaultMessage: 'Toggle Sidebar' },
 
-  'login.brand': { defaultMessage: 'Acme Inc.' },
-  'login.welcome': { defaultMessage: 'Welcome to Acme Inc.' },
+  'login.brand': { defaultMessage: 'Rakun Manager' },
+  'login.welcome': { defaultMessage: 'Welcome to Rakun Manager' },
   'login.email': { defaultMessage: 'Email' },
   'login.password': { defaultMessage: 'Password' },
   'login.submit': { defaultMessage: 'Login' },

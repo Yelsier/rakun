@@ -1,5 +1,4 @@
-import { Command } from 'lucide-react'
-
+import { RakunLogoBadge, RakunLogoMark } from '@/components/rakun-logo'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useTranslations } from '@/i18n'
 
@@ -20,9 +19,7 @@ export const ManagerLoadingFallback = () => {
 
       <aside className="hidden w-64 shrink-0 flex-col border-r bg-sidebar p-2 text-sidebar-foreground md:flex">
         <div className="flex h-14 items-center gap-2 px-2">
-          <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-            <Command className="size-4" />
-          </div>
+          <RakunLogoBadge className='size-8 shrink-0 text-sidebar-primary' />
           <div className="grid flex-1 gap-1">
             <Skeleton className="h-4 w-16 bg-sidebar-accent" />
             <Skeleton className="h-3 w-24 bg-sidebar-accent" />
@@ -106,7 +103,7 @@ export const ManagerAuthLoadingFallback = () => {
       <span className='sr-only'>{t('common.loadingManager')}</span>
       <div className='w-full max-w-sm space-y-6 rounded-xl border p-6 shadow-sm'>
         <div className='flex flex-col items-center gap-3'>
-          <Skeleton className='size-8 rounded-md' />
+          <RakunLogoMark className='h-12 w-auto text-primary' />
           <Skeleton className='h-6 w-48 max-w-full' />
           <Skeleton className='h-4 w-64 max-w-full' />
         </div>

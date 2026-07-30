@@ -2,8 +2,8 @@ import type { ManagerLocalePack } from '@rakun-kit/manager-react/i18n'
 
 /** Spanish manager UI messages. */
 export const esManagerMessages: ManagerLocalePack['messages'] = {
-  'brand.name': 'CMS',
-  'brand.tagline': 'Enterprise',
+  'brand.name': 'Rakun',
+  'brand.tagline': 'Manager',
   'navUser.account': 'Cuenta',
   'navUser.logOut': 'Cerrar sesión',
   'navUser.language': 'Idiomas',
@@ -18,8 +18,8 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'sidebar.contentTypes': 'Tipos de contenido',
   'nav.dashboard': 'Panel',
   'nav.toggleSidebar': 'Alternar barra lateral',
-  'login.brand': 'Acme Inc.',
-  'login.welcome': 'Bienvenido a Acme Inc.',
+  'login.brand': 'Rakun Manager',
+  'login.welcome': 'Bienvenido a Rakun Manager',
   'login.email': 'Email',
   'login.password': 'Contraseña',
   'login.submit': 'Iniciar sesión',

@@ -5,7 +5,6 @@ import {
   loginInput,
   type LoginInput,
 } from "@rakun-kit/core/client";
-import { GalleryVerticalEnd } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 
 import { cn } from "../lib/utils";
@@ -23,6 +22,7 @@ import {
 } from "./ui/field";
 import { Input } from "./ui/input";
 import { AuthLanguageSelector } from './auth-language-selector'
+import { RakunLogoMark } from './rakun-logo'
 
 export function LoginForm({
   className,
@@ -124,9 +124,7 @@ export function LoginForm({
               href="#"
               className="flex flex-col items-center gap-2 font-medium"
             >
-              <div className="flex size-8 items-center justify-center rounded-md">
-                <GalleryVerticalEnd className="size-6" />
-              </div>
+              <RakunLogoMark className='h-14 w-auto text-primary' />
               <span className="sr-only">{t("login.brand")}</span>
             </a>
             <h1 className="text-xl font-bold">{t("login.welcome")}</h1>
