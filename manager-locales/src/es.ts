@@ -26,6 +26,39 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'login.or': 'O',
   'login.github': 'GitHub',
   'login.google': 'Google',
+  'login.forgotPassword': '¿Has olvidado tu contraseña?',
+  'login.emailPlaceholder': 'tu@ejemplo.com',
+  'login.invalidCredentials': 'El email o la contraseña no son correctos.',
+  'login.rateLimited':
+    'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.',
+  'login.error':
+    'No se pudo completar el inicio de sesión. Inténtalo de nuevo.',
+  'passwordRecovery.forgotTitle': 'Recupera tu cuenta',
+  'passwordRecovery.forgotDescription':
+    'Introduce tu email y te enviaremos un enlace de restablecimiento con caducidad.',
+  'passwordRecovery.sendLink': 'Enviar enlace',
+  'passwordRecovery.emailSentTitle': 'Revisa tu correo',
+  'passwordRecovery.emailSentDescription':
+    'Si existe una cuenta con ese email, recibirás en breve un enlace para restablecer la contraseña.',
+  'passwordRecovery.requestError':
+    'No se pudo completar la solicitud. Inténtalo de nuevo.',
+  'passwordRecovery.invalidEmail': 'Introduce una dirección de email válida.',
+  'passwordRecovery.backToLogin': 'Volver al inicio de sesión',
+  'passwordRecovery.resetTitle': 'Elige una contraseña nueva',
+  'passwordRecovery.resetDescription':
+    'Usa al menos 8 caracteres. Este enlace solo se puede usar una vez.',
+  'passwordRecovery.newPassword': 'Contraseña nueva',
+  'passwordRecovery.passwordRequirements':
+    'La contraseña debe tener al menos 8 caracteres.',
+  'passwordRecovery.confirmPassword': 'Confirmar contraseña nueva',
+  'passwordRecovery.passwordsDoNotMatch': 'Las contraseñas no coinciden.',
+  'passwordRecovery.resetAction': 'Restablecer contraseña',
+  'passwordRecovery.invalidTitle': 'Enlace de recuperación no válido',
+  'passwordRecovery.invalidDescription':
+    'Este enlace no es válido, ha caducado o ya se ha utilizado. Solicita uno nuevo.',
+  'passwordRecovery.completeTitle': 'Contraseña actualizada',
+  'passwordRecovery.completeDescription':
+    'Se han cerrado tus sesiones. Ya puedes iniciar sesión con la contraseña nueva. Si tienes MFA activado, seguirá siendo obligatorio.',
   'dashboard.favorites': 'Favoritos',
   'dashboard.notifications': 'Notificaciones',
   'dashboard.viewAll': 'Ver todas',
@@ -633,6 +666,26 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'account.mfa.verifyCodeFailed': 'No se pudo verificar el código. Inténtalo de nuevo.',
   'account.mfa.setupWarning': 'Aún no has configurado 2FA. Configúralo para proteger tu cuenta.',
   'account.mfa.setupAction': 'Configurar 2FA',
+  'account.mfa.updateAction': 'Actualizar 2FA',
+  'account.mfa.enabledWithMethod': 'Tienes 2FA activado mediante {method}.',
+  'account.mfa.notEnabled': 'No tienes 2FA activado.',
+  'account.mfa.qrAlt': 'Código QR para configurar TOTP',
+  'account.mfa.recoveryCodesTitle': 'Guarda tus códigos de recuperación',
+  'account.mfa.recoveryCodesDescription':
+    'Cada código se puede usar una sola vez. Guárdalos en un lugar seguro; no volverán a mostrarse.',
+  'account.mfa.copyRecoveryCodes': 'Copiar códigos',
+  'account.mfa.recoveryCodesCopied': 'Códigos copiados',
+  'account.mfa.savedRecoveryCodes': 'Ya los he guardado',
+  'account.mfa.noBypassWarning':
+    'El MFA no se puede omitir desde el CMS. Si pierdes todos los métodos MFA y códigos de recuperación, contacta con una persona autorizada por un canal ajeno al CMS.',
+  'account.mfa.regenerateRecoveryCodes': 'Reemplazar códigos de recuperación',
+  'account.mfa.regenerateDescription':
+    'Introduce tu contraseña actual. Los códigos existentes dejarán de funcionar inmediatamente.',
+  'account.mfa.currentPassword': 'Contraseña actual',
+  'account.mfa.currentPasswordInvalid': 'La contraseña actual no es válida.',
+  'account.mfa.regenerateAction': 'Generar códigos nuevos',
+  'account.mfa.regenerateFailed':
+    'No se pudieron reemplazar los códigos de recuperación.',
   'account.sessions.title': 'Sesiones activas',
   'account.sessions.current': 'Sesión actual',
   'account.sessions.createdAt': 'Creada el',
@@ -656,6 +709,19 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
     'No se pudieron obtener las opciones de autenticación. Inténtalo de nuevo.',
   'mfa.authenticationFailed': 'La autenticación falló. Inténtalo de nuevo.',
   'mfa.verifyCodeError': 'Se produjo un error al verificar el código. Inténtalo de nuevo.',
+  'mfa.invalidCode': 'El código de verificación no es válido.',
+  'mfa.useRecoveryCode': 'Usar un código de recuperación',
+  'mfa.usePrimaryMethod': 'Usar mi método MFA principal',
+  'mfa.recoveryCodeTitle': 'Introduce un código de recuperación',
+  'mfa.recoveryCodeDescription':
+    'Los códigos son de un solo uso y sustituyen tu método MFA habitual para este inicio de sesión.',
+  'mfa.recoveryCodeLabel': 'Código de recuperación',
+  'mfa.invalidRecoveryCode':
+    'Este código no es válido o ya se ha utilizado.',
+  'mfa.recoveryCodeError':
+    'No se pudo verificar el código de recuperación.',
+  'mfa.noRecoveryAccess':
+    'Si no puedes acceder al MFA ni a un código de recuperación, contacta con una persona autorizada fuera del CMS.',
   'users.twoFactorEnabled': '2FA activado',
   'users.add': 'Añadir usuario',
   'users.createTitle': 'Crear usuario',

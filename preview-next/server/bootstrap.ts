@@ -11,6 +11,7 @@ import { previewManagerLanguages } from './manager-locales'
 import { apiOperations } from './api-operations'
 import { createOpenAITranslationServiceConfig } from '@rakun-kit/openai'
 import { createResendMailServiceConfig } from '@rakun-kit/resend'
+import { passwordResetEmailTemplate } from './mail'
 
 export const getPreviewMongoUri = () =>
   process.env.MONGO_URI ?? 'mongodb://127.0.0.1:27017/rakun_preview'
@@ -108,6 +109,20 @@ export const createPreviewBootstrap = () =>
             apiKey: process.env.RESEND_API_KEY,
             defaultFrom: process.env.RAKUN_MAIL_FROM,
           })
+        : undefined,
+    accountRecovery:
+      process.env.RESEND_API_KEY?.trim() && process.env.RAKUN_MAIL_FROM?.trim()
+        ? {
+            passwordReset: {
+              createUrl: (token) => {
+                const managerUrl =
+                  process.env.RAKUN_MANAGER_URL?.replace(/\/+$/, '') ??
+                  'http://localhost:3000/backend'
+                return `${managerUrl}/reset-password?token=${encodeURIComponent(token)}`
+              },
+              template: passwordResetEmailTemplate,
+            },
+          }
         : undefined,
     apiOperations,
     logger: {

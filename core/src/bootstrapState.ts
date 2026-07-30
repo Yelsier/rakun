@@ -14,6 +14,7 @@ import type {
   RakunResolvedPluginContributions,
 } from "./plugins";
 import type { ManagerLanguagePack } from "./schemas/manager/uiLocales";
+import type { AccountRecoveryConfig } from './auth/accountRecovery'
 
 export interface RakunBootstrapOptions {
   literals: LiteralCatalogInput;
@@ -33,6 +34,11 @@ export interface RakunBootstrapOptions {
   mongo?: MongoConfig;
   media?: MediaServiceConfig;
   mail?: MailServiceConfig;
+  /**
+   * Account recovery email template and manager reset URL builder.
+   * Requires `mail` to be configured.
+   */
+  accountRecovery?: AccountRecoveryConfig;
   /**
    * Persistent business event log. Defaults to the built-in MongoDB adapter.
    */

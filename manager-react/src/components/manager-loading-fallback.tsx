@@ -92,3 +92,36 @@ export const ManagerLoadingFallback = () => {
     </div>
   )
 }
+
+export const ManagerAuthLoadingFallback = () => {
+  const t = useTranslations()
+
+  return (
+    <div
+      aria-busy='true'
+      aria-live='polite'
+      className='bg-background flex min-h-svh items-center justify-center p-6 md:p-10'
+      role='status'
+    >
+      <span className='sr-only'>{t('common.loadingManager')}</span>
+      <div className='w-full max-w-sm space-y-6 rounded-xl border p-6 shadow-sm'>
+        <div className='flex flex-col items-center gap-3'>
+          <Skeleton className='size-8 rounded-md' />
+          <Skeleton className='h-6 w-48 max-w-full' />
+          <Skeleton className='h-4 w-64 max-w-full' />
+        </div>
+        <div className='space-y-5'>
+          <div className='space-y-2'>
+            <Skeleton className='h-4 w-24' />
+            <Skeleton className='h-9 w-full rounded-md' />
+          </div>
+          <div className='space-y-2'>
+            <Skeleton className='h-4 w-32' />
+            <Skeleton className='h-9 w-full rounded-md' />
+          </div>
+          <Skeleton className='h-9 w-full rounded-md' />
+        </div>
+      </div>
+    </div>
+  )
+}

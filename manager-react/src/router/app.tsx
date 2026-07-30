@@ -13,7 +13,10 @@ import {
 } from '../plugins'
 
 const isAuthRoute = (route: ManagerResolvedRoute) =>
-  route.kind === "login" || route.kind === "mfa";
+  route.kind === "login" ||
+  route.kind === 'forgot-password' ||
+  route.kind === 'reset-password' ||
+  route.kind === "mfa";
 
 const ManagerAppContent = ({
   pathname,

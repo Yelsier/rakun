@@ -34,4 +34,18 @@ describe("ManagerUser hooks", () => {
 
     expect(next).toEqual({ user: "Yago" });
   });
+
+  it('rejects MFA state changes made through generic CMS updates', () => {
+    expect(() =>
+      ManagerUser.hooks?.beforeUpdate?.({
+        id: 'user-id',
+        data: {
+          twoFactorEnabled: false,
+        },
+        context: {
+          requestContext: {},
+        } as never,
+      }),
+    ).toThrow('FORBIDDEN')
+  })
 });

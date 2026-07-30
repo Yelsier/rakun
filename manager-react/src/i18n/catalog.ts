@@ -36,6 +36,60 @@ export const managerMessages = {
   'login.or': { defaultMessage: 'Or' },
   'login.github': { defaultMessage: 'GitHub' },
   'login.google': { defaultMessage: 'Google' },
+  'login.forgotPassword': { defaultMessage: 'Forgot your password?' },
+  'login.emailPlaceholder': { defaultMessage: 'you@example.com' },
+  'login.invalidCredentials': {
+    defaultMessage: 'The email or password is incorrect.',
+  },
+  'login.rateLimited': {
+    defaultMessage: 'Too many attempts. Wait a few minutes and try again.',
+  },
+  'login.error': {
+    defaultMessage: 'Login could not be completed. Please try again.',
+  },
+
+  'passwordRecovery.forgotTitle': { defaultMessage: 'Recover your account' },
+  'passwordRecovery.forgotDescription': {
+    defaultMessage: 'Enter your email and we will send you a time-limited reset link.',
+  },
+  'passwordRecovery.sendLink': { defaultMessage: 'Send reset link' },
+  'passwordRecovery.emailSentTitle': { defaultMessage: 'Check your email' },
+  'passwordRecovery.emailSentDescription': {
+    defaultMessage:
+      'If an account exists for that email, you will receive a password reset link shortly.',
+  },
+  'passwordRecovery.requestError': {
+    defaultMessage: 'The reset request could not be completed. Please try again.',
+  },
+  'passwordRecovery.invalidEmail': {
+    defaultMessage: 'Enter a valid email address.',
+  },
+  'passwordRecovery.backToLogin': { defaultMessage: 'Back to login' },
+  'passwordRecovery.resetTitle': { defaultMessage: 'Choose a new password' },
+  'passwordRecovery.resetDescription': {
+    defaultMessage: 'Use at least 8 characters. This link can only be used once.',
+  },
+  'passwordRecovery.newPassword': { defaultMessage: 'New password' },
+  'passwordRecovery.passwordRequirements': {
+    defaultMessage: 'The password must contain at least 8 characters.',
+  },
+  'passwordRecovery.confirmPassword': { defaultMessage: 'Confirm new password' },
+  'passwordRecovery.passwordsDoNotMatch': {
+    defaultMessage: 'The passwords do not match.',
+  },
+  'passwordRecovery.resetAction': { defaultMessage: 'Reset password' },
+  'passwordRecovery.invalidTitle': {
+    defaultMessage: 'Invalid recovery link',
+  },
+  'passwordRecovery.invalidDescription': {
+    defaultMessage:
+      'This recovery link is invalid, expired, or has already been used. Request a new one.',
+  },
+  'passwordRecovery.completeTitle': { defaultMessage: 'Password updated' },
+  'passwordRecovery.completeDescription': {
+    defaultMessage:
+      'Your sessions have been closed. You can now log in with your new password. MFA is still required if it is enabled.',
+  },
 
   'dashboard.favorites': { defaultMessage: 'Favorites' },
   'dashboard.notifications': { defaultMessage: 'Notifications' },
@@ -1016,6 +1070,40 @@ export const managerMessages = {
     defaultMessage: 'You have not set up 2FA yet. Please set it up to secure your account.',
   },
   'account.mfa.setupAction': { defaultMessage: 'Set up 2FA' },
+  'account.mfa.updateAction': { defaultMessage: 'Update 2FA' },
+  'account.mfa.enabledWithMethod': {
+    defaultMessage: 'You have 2FA enabled using {method}.',
+    params: { method: 'string' },
+  },
+  'account.mfa.notEnabled': { defaultMessage: 'You do not have 2FA enabled.' },
+  'account.mfa.qrAlt': { defaultMessage: 'TOTP setup QR code' },
+  'account.mfa.recoveryCodesTitle': { defaultMessage: 'Save your recovery codes' },
+  'account.mfa.recoveryCodesDescription': {
+    defaultMessage:
+      'Each code can be used once. Store them somewhere safe; they will not be shown again.',
+  },
+  'account.mfa.copyRecoveryCodes': { defaultMessage: 'Copy codes' },
+  'account.mfa.recoveryCodesCopied': { defaultMessage: 'Codes copied' },
+  'account.mfa.savedRecoveryCodes': { defaultMessage: 'I have saved them' },
+  'account.mfa.noBypassWarning': {
+    defaultMessage:
+      'MFA cannot be bypassed from the CMS. If you lose every MFA method and recovery code, contact an authorized person through a channel outside the CMS.',
+  },
+  'account.mfa.regenerateRecoveryCodes': {
+    defaultMessage: 'Replace recovery codes',
+  },
+  'account.mfa.regenerateDescription': {
+    defaultMessage:
+      'Enter your current password. Existing recovery codes will stop working immediately.',
+  },
+  'account.mfa.currentPassword': { defaultMessage: 'Current password' },
+  'account.mfa.currentPasswordInvalid': {
+    defaultMessage: 'The current password is not valid.',
+  },
+  'account.mfa.regenerateAction': { defaultMessage: 'Generate new codes' },
+  'account.mfa.regenerateFailed': {
+    defaultMessage: 'Recovery codes could not be replaced.',
+  },
   'account.profileImageMustBeImage': {
     defaultMessage: 'Profile image must be an image file',
   },
@@ -1066,6 +1154,24 @@ export const managerMessages = {
   },
   'mfa.verifyCodeError': {
     defaultMessage: 'An error occurred while verifying the code. Please try again.',
+  },
+  'mfa.invalidCode': { defaultMessage: 'The verification code is not valid.' },
+  'mfa.useRecoveryCode': { defaultMessage: 'Use a recovery code' },
+  'mfa.usePrimaryMethod': { defaultMessage: 'Use my primary MFA method' },
+  'mfa.recoveryCodeTitle': { defaultMessage: 'Enter a recovery code' },
+  'mfa.recoveryCodeDescription': {
+    defaultMessage: 'Recovery codes are single-use and replace your usual MFA method for this login.',
+  },
+  'mfa.recoveryCodeLabel': { defaultMessage: 'Recovery code' },
+  'mfa.invalidRecoveryCode': {
+    defaultMessage: 'This recovery code is not valid or has already been used.',
+  },
+  'mfa.recoveryCodeError': {
+    defaultMessage: 'The recovery code could not be verified.',
+  },
+  'mfa.noRecoveryAccess': {
+    defaultMessage:
+      'If you cannot access MFA or a recovery code, contact an authorized person outside the CMS.',
   },
 
   'users.twoFactorEnabled': { defaultMessage: 'Two Factor Enabled' },

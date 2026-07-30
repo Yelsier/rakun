@@ -18,8 +18,16 @@ import {
   InputOTPSlot,
 } from '@/components/ui/input-otp'
 import { useTranslations } from '@/i18n'
+import { useState } from 'react'
+import { RecoveryCodes } from './RecoveryCodes'
 
-export const TotpProcess = ({ closeDialog }: { closeDialog: () => void }) => {
+export const TotpProcess = ({
+  closeDialog,
+  onCodesReady,
+}: {
+  closeDialog: () => void
+  onCodesReady: () => void
+}) => {
   const t = useTranslations()
   const enrollQuery = useManagerQuery({
     name: 'manager.auth.totp.enroll',
@@ -29,6 +37,7 @@ export const TotpProcess = ({ closeDialog }: { closeDialog: () => void }) => {
     refetchOnMount: false,
   })
   const mutation = useManagerMutation('manager.auth.totp.confirm')
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null)
 
   const form = useForm<ConfirmTotpInput>({
     resolver: zodResolver(confirmTotpInput),
@@ -42,7 +51,8 @@ export const TotpProcess = ({ closeDialog }: { closeDialog: () => void }) => {
       onSuccess: (result) => {
         if (result.ok) {
           toast.success(t('account.mfa.totpSetupComplete'))
-          closeDialog()
+          setRecoveryCodes(result.recoveryCodes)
+          onCodesReady()
         } else {
           toast.error(t('account.mfa.verifyCodeFailed'))
           form.reset()
@@ -54,6 +64,10 @@ export const TotpProcess = ({ closeDialog }: { closeDialog: () => void }) => {
         console.log(error)
       },
     })
+  }
+
+  if (recoveryCodes) {
+    return <RecoveryCodes codes={recoveryCodes} onDone={closeDialog} />
   }
 
   return (
@@ -69,7 +83,7 @@ export const TotpProcess = ({ closeDialog }: { closeDialog: () => void }) => {
         {t('account.mfa.scanAfter')}
       </DialogDescription>
       {enrollQuery.data?.qrDataURL ? (
-        <img src={enrollQuery.data.qrDataURL} alt='QR Code' />
+        <img src={enrollQuery.data.qrDataURL} alt={t('account.mfa.qrAlt')} />
       ) : (
         <div className='flex justify-center'>
           <LoadingSpinner />

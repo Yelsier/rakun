@@ -67,8 +67,59 @@ Options:
 - `mongo`: MongoDB connection. Required before serving Rakun requests.
 - `media`: media adapter/configuration. Optional.
 - `mail`: outbound mail adapter and default sender configuration. Optional.
+- `accountRecovery`: password-reset URL builder, expiry, and application-owned
+  mail template. Requires `mail`.
 - `logger`: logger configuration. If omitted, an `info` logger with `prettify` is created.
 - `syncRoutes`: syncs configured routes during initialization. Enabled by default.
+
+## Account recovery and MFA recovery
+
+Password recovery is enabled when both `mail` and `accountRecovery` are
+configured. The reset URL must point to the manager's public
+`/reset-password` screen and preserve the token as the `token` query parameter:
+
+```ts
+import { defineMailTemplate, rakunBootstrap } from '@rakun-kit/core'
+import { createResendMailServiceConfig } from '@rakun-kit/resend'
+
+rakunBootstrap({
+  // ...
+  mail: createResendMailServiceConfig({
+    apiKey: process.env.RESEND_API_KEY!,
+    defaultFrom: process.env.RAKUN_MAIL_FROM!,
+  }),
+  accountRecovery: {
+    passwordReset: {
+      expiresInMs: 60 * 60 * 1000,
+      createUrl: (token) =>
+        `https://cms.example.com/backend/reset-password?token=${encodeURIComponent(token)}`,
+      template: defineMailTemplate({
+        subject: 'Reset your password',
+        render: ({ resetUrl, expiresAt, user }) => ({
+          text: [
+            `Hello ${user.name ?? user.email},`,
+            `Reset your password: ${resetUrl}`,
+            `This link expires at ${expiresAt.toISOString()}.`,
+          ].join('\n\n'),
+        }),
+      }),
+    },
+  },
+})
+```
+
+Reset tokens are random, stored only as SHA-256 hashes, expire, and are consumed
+once. A successful reset closes every existing session but never disables MFA.
+The request endpoint always returns the same result for known and unknown email
+addresses.
+
+Enabling TOTP or the first WebAuthn device returns one-time recovery codes to
+the manager UI. Only their hashes are persisted, each code is consumed after
+one login, and users can replace the entire set from their account after
+confirming their current password. MFA state cannot be disabled through generic
+manager content operations. If a user loses all MFA methods and recovery codes,
+recovery must be handled by an authorized person through a channel outside the
+CMS.
 
 Content types can define lifecycle `hooks` and opt into manager-selected
 `dynamicData` sources.

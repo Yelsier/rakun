@@ -14,6 +14,7 @@ import { loadManagerBootstrap } from "@/app/bootstrap";
 import {
   createPathManagerNavigation,
   getManagerPathHref,
+  getManagerRelativePathname,
   ManagerNavigationProvider,
 } from "../state/navigation";
 import type { ManagerNavigation } from "../state/navigation";
@@ -24,7 +25,10 @@ import { SessionProvider } from "@/state/session";
 import { LanguageProvider } from "@/state/language";
 import { ManagerUsersProvider } from "@/state/users";
 import { ManagerRootProviders } from "@/app/root-providers";
-import { ManagerLoadingFallback } from "@/components/manager-loading-fallback";
+import {
+  ManagerAuthLoadingFallback,
+  ManagerLoadingFallback,
+} from "@/components/manager-loading-fallback";
 import { ManagerLinkProvider, type ManagerLinkComponent } from "@/link";
 import {
   ManagerRuntimeAuthProvider,
@@ -97,6 +101,13 @@ export type ManagerBrowserAppProps = Omit<
   overrides?: ManagerAppOverrides;
 };
 
+const authLoadingPaths = new Set([
+  '/forgot-password',
+  '/login',
+  '/mfa',
+  '/reset-password',
+])
+
 export const ManagerRuntimeApp = ({
   client,
   navigation,
@@ -136,6 +147,10 @@ export const ManagerRuntimeApp = ({
   );
   const [state, setState] = useState<BootstrapState>({ status: "loading" });
   const bootstrapRunRef = useRef(0);
+  const managerPathname = getManagerRelativePathname(pathname, { basePath })
+  const useAuthLoadingFallback = authLoadingPaths.has(
+    managerPathname.replace(/\/+$/, '') || '/',
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -280,7 +295,14 @@ export const ManagerRuntimeApp = ({
                     }
                   >
                     {state.status === "loading" ? (
-                      <>{loadingFallback ?? <ManagerLoadingFallback />}</>
+                      <>
+                        {loadingFallback ??
+                          (useAuthLoadingFallback ? (
+                            <ManagerAuthLoadingFallback />
+                          ) : (
+                            <ManagerLoadingFallback />
+                          ))}
+                      </>
                     ) : null}
 
                     {state.status === "error" ? (

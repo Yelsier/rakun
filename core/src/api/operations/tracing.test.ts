@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { createEventLogService } from '../../eventLog'
 import type { EventLogRecord, EventLogWrite } from '../../eventLog'
 import { AppError } from '../../lib/errors'
-import { createLogger } from '../../lib/Logger'
+import { createLogger, Logger } from '../../lib/Logger'
 import type { RakunRequestContext } from '../context'
 
 import { recordApiError } from './apiEventLog'
@@ -207,6 +207,32 @@ describe('API operation error logging', () => {
     })
     expect(JSON.stringify(events[0])).not.toContain('sensitive-input-password')
     expect(JSON.stringify(events[0])).not.toContain('sensitive-result-token')
+  })
+
+  test('redacts MFA recovery codes from diagnostic traces', async () => {
+    Logger.clearTrace()
+    const operations = traceOperationMap({
+      'manager.test.recoveryCodes': defineOperation({
+        access: 'auth',
+        kind: 'mutation',
+        method: 'post',
+        input: z.object({ code: z.string() }),
+        output: z.object({ recoveryCodes: z.array(z.string()) }),
+        resolve: async () => ({
+          recoveryCodes: ['ABCD-EF12-3456-7890'],
+        }),
+      }),
+    })
+
+    await operations['manager.test.recoveryCodes'].resolve({
+      ctx: createContext(),
+      input: { code: '123456' },
+    })
+
+    const trace = JSON.stringify(Logger.getTrace())
+    expect(trace).not.toContain('ABCD-EF12-3456-7890')
+    expect(trace).not.toContain('123456')
+    expect(trace).toContain('[redacted]')
   })
 
   test('does not persist successful queries', async () => {

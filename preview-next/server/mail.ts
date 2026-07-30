@@ -2,6 +2,12 @@ import { createMailSender } from '@rakun-kit/core'
 import { createJsxEmailTemplate } from '@rakun-kit/jsx-email'
 
 import TestEmail from '../emails/TestEmail'
+import PasswordResetEmail from '../emails/PasswordResetEmail'
+
+export const passwordResetEmailTemplate = createJsxEmailTemplate({
+  component: PasswordResetEmail,
+  subject: 'Reset your Rakun manager password',
+})
 
 export const testMailSender = createMailSender({
   templates: {

@@ -6,6 +6,8 @@ import type { RakunManagerPluginDefinition } from '../../plugins'
 
 export type ManagerResolvedRoute =
   | { kind: "login" }
+  | { kind: 'forgot-password' }
+  | { kind: 'reset-password'; token?: string }
   | { kind: "mfa"; challenge?: string; method?: string; expiresAt?: string }
   | { kind: "dashboard-home" }
   | { kind: "account" }
@@ -62,6 +64,10 @@ export type ManagerRouteRendererProps = {
   plugins?: readonly RakunManagerPluginDefinition[];
   searchParams?: ManagerSearchParams;
   renderLogin?: () => ReactNode;
+  renderForgotPassword?: () => ReactNode
+  renderResetPassword?: (
+    route: Extract<ManagerResolvedRoute, { kind: 'reset-password' }>,
+  ) => ReactNode
   renderMfa?: (
     route: Extract<ManagerResolvedRoute, { kind: "mfa" }>,
   ) => ReactNode;

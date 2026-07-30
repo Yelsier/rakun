@@ -57,7 +57,7 @@ export default function TotpForm({
 
         if ("error" in result) {
           form.setError("code", {
-            message: result.error,
+            message: t('mfa.invalidCode'),
           });
         }
       },

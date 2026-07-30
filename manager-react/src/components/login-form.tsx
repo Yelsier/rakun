@@ -22,6 +22,7 @@ import {
   FieldSeparator,
 } from "./ui/field";
 import { Input } from "./ui/input";
+import { AuthLanguageSelector } from './auth-language-selector'
 
 export function LoginForm({
   className,
@@ -31,6 +32,8 @@ export function LoginForm({
   const navigation = useManagerNavigation();
   const { refreshAuth } = useManagerRuntimeAuth();
   const { mutate, isPending } = useManagerMutation("manager.auth.login");
+  const forgotPasswordHref =
+    navigation.hrefPath?.('/forgot-password') ?? '/forgot-password'
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginInput),
@@ -88,17 +91,29 @@ export function LoginForm({
       },
       onError: (error: unknown) => {
         if (instanceofAppErrorShape(error) && error.key === "FORBIDDEN") {
+          const reason = error.cause.reason
           form.setError("username", {});
           form.setError("password", {
-            message: error.cause.reason,
+            message:
+              reason === 'INVALID_CREDENTIALS'
+                ? t('login.invalidCredentials')
+                : reason === 'RATE_LIMITED'
+                  ? t('login.rateLimited')
+                  : t('login.error'),
           });
+          return
         }
+
+        form.setError('password', {
+          message: t('login.error'),
+        })
       },
     });
   };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
+      <AuthLanguageSelector />
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
@@ -123,7 +138,7 @@ export function LoginForm({
                   {...field}
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  placeholder={t('login.emailPlaceholder')}
                   required
                   aria-invalid={fieldState.invalid}
                   onChange={handleFieldChange(field.onChange)}
@@ -139,7 +154,17 @@ export function LoginForm({
             control={form.control}
             render={({ field, fieldState }) => (
               <Field>
-                <FieldLabel htmlFor="password">{t("login.password")}</FieldLabel>
+                <div className='flex items-center justify-between gap-4'>
+                  <FieldLabel htmlFor="password">
+                    {t("login.password")}
+                  </FieldLabel>
+                  <a
+                    className='text-sm underline'
+                    href={forgotPasswordHref}
+                  >
+                    {t('login.forgotPassword')}
+                  </a>
+                </div>
                 <Input
                   {...field}
                   id="password"

@@ -33,7 +33,7 @@ export const enrollTotpHandler = async ({
       enabled: false,
       preferredMethod: "totp",
       _type: "UserMfa",
-    });
+    }, { reason: 'mfa enrollment started' });
 
   const bytes = randomBytes(20);
   const secret = new OTPAuth.Secret({
@@ -61,7 +61,7 @@ export const enrollTotpHandler = async ({
 
   await db.update(UserMfa, mfa._id, {
     totpSecretPending: secret.base32,
-  });
+  }, { reason: 'mfa totp enrollment refreshed' });
 
   return {
     otpauthURL,

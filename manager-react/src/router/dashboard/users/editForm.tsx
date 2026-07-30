@@ -49,7 +49,6 @@ const managerUserInput = z.object({
   user: z.string().min(1),
   role: managerUserRoleInput.nullable().optional(),
   _type: z.literal('ManagerUser'),
-  twoFactorEnabled: z.boolean(),
 })
 
 type ManagerUserInput = z.infer<typeof managerUserInput>
@@ -90,7 +89,6 @@ export function EditUserForm({
           }
         : undefined,
       _type: 'ManagerUser',
-      twoFactorEnabled: false,
     },
   })
 
@@ -108,7 +106,6 @@ export function EditUserForm({
           }
         : undefined,
       _type: 'ManagerUser',
-      twoFactorEnabled: false,
     })
   }, [defaultValues, form])
 
@@ -123,7 +120,10 @@ export function EditUserForm({
       } else {
         await createMutation.mutateAsync({
           contentType: 'ManagerUser',
-          data: values,
+          data: {
+            ...values,
+            twoFactorEnabled: false,
+          },
         })
       }
 
