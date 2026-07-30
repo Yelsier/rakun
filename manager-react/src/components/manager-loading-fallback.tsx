@@ -1,4 +1,4 @@
-import { RakunLogoBadge, RakunLogoMark } from '@/components/rakun-logo'
+import { RakunLogoMark } from '@/components/rakun-logo'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useTranslations } from '@/i18n'
 
@@ -18,11 +18,15 @@ export const ManagerLoadingFallback = () => {
       <span className="sr-only">{t('common.loadingManager')}</span>
 
       <aside className="hidden w-64 shrink-0 flex-col border-r bg-sidebar p-2 text-sidebar-foreground md:flex">
-        <div className="flex h-14 items-center gap-2 px-2">
-          <RakunLogoBadge className='size-8 shrink-0 text-sidebar-primary' />
-          <div className="grid flex-1 gap-1">
-            <Skeleton className="h-4 w-16 bg-sidebar-accent" />
-            <Skeleton className="h-3 w-24 bg-sidebar-accent" />
+        <div className="flex flex-col gap-2 p-2">
+          <div className="flex h-12 items-center gap-2 rounded-md p-2 text-sm">
+            <div className="flex aspect-square size-8 items-center justify-center rounded-lg">
+              <RakunLogoMark className="size-8 text-sidebar-foreground" />
+            </div>
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <Skeleton className="h-4 w-16 bg-sidebar-accent" />
+              <Skeleton className="h-3 w-24 bg-sidebar-accent" />
+            </div>
           </div>
         </div>
 
@@ -101,22 +105,29 @@ export const ManagerAuthLoadingFallback = () => {
       role='status'
     >
       <span className='sr-only'>{t('common.loadingManager')}</span>
-      <div className='w-full max-w-sm space-y-6 rounded-xl border p-6 shadow-sm'>
-        <div className='flex flex-col items-center gap-3'>
-          <RakunLogoMark className='h-12 w-auto text-primary' />
-          <Skeleton className='h-6 w-48 max-w-full' />
-          <Skeleton className='h-4 w-64 max-w-full' />
-        </div>
-        <div className='space-y-5'>
-          <div className='space-y-2'>
+      <div className='w-full max-w-sm'>
+        <div className='flex w-full flex-col gap-7'>
+          <div className='flex flex-col items-center gap-6 text-center'>
+            <RakunLogoMark className='h-14 w-auto text-primary' />
+            <Skeleton className='h-7 w-48 max-w-full' />
+          </div>
+          <div className='flex w-full flex-col gap-3'>
             <Skeleton className='h-4 w-24' />
             <Skeleton className='h-9 w-full rounded-md' />
           </div>
-          <div className='space-y-2'>
+          <div className='flex w-full flex-col gap-3'>
             <Skeleton className='h-4 w-32' />
             <Skeleton className='h-9 w-full rounded-md' />
           </div>
           <Skeleton className='h-9 w-full rounded-md' />
+          <div className='relative -my-2 h-5'>
+            <Skeleton className='absolute inset-x-0 top-1/2 h-px' />
+            <Skeleton className='relative mx-auto h-5 w-8' />
+          </div>
+          <div className='grid gap-4 sm:grid-cols-2'>
+            <Skeleton className='h-9 w-full rounded-md' />
+            <Skeleton className='h-9 w-full rounded-md' />
+          </div>
         </div>
       </div>
     </div>
