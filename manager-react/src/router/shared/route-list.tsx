@@ -43,7 +43,12 @@ export const managerRouteDefinitions = [
     path: "/login",
     layout: "auth",
     parse: () => ({ kind: "login" }),
-    render: (_route, props) => props.renderLogin?.() ?? <ManagerLoginScreen />,
+    render: (_route, props) =>
+      props.renderLogin?.() ?? (
+        <ManagerLoginScreen
+          passwordRecoveryEnabled={props.passwordRecoveryEnabled}
+        />
+      ),
   }),
   defineManagerRoute({
     kind: 'forgot-password',

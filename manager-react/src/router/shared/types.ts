@@ -56,6 +56,7 @@ export type ManagerPreviewConfig = {
 
 export type ManagerRouteRendererProps = {
   authenticated?: boolean;
+  passwordRecoveryEnabled?: boolean
   route: ManagerResolvedRoute;
   contentTypes?: EncodedContentType[];
   pathname?: string;

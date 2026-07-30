@@ -21,6 +21,9 @@ export const extendManagerLanguagePack = (
 
 export const ManagerUiLocalesOutputSchema = z.object({
   locales: z.array(ManagerLanguagePackSchema),
+  features: z.object({
+    passwordRecovery: z.boolean(),
+  }),
 })
 
 export type ManagerUiLocalesOutput = z.infer<typeof ManagerUiLocalesOutputSchema>

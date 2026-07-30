@@ -26,8 +26,11 @@ import { AuthLanguageSelector } from './auth-language-selector'
 
 export function LoginForm({
   className,
+  passwordRecoveryEnabled = false,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & {
+  passwordRecoveryEnabled?: boolean
+}) {
   const t = useTranslations();
   const navigation = useManagerNavigation();
   const { refreshAuth } = useManagerRuntimeAuth();
@@ -158,12 +161,14 @@ export function LoginForm({
                   <FieldLabel htmlFor="password">
                     {t("login.password")}
                   </FieldLabel>
-                  <a
-                    className='text-sm underline'
-                    href={forgotPasswordHref}
-                  >
-                    {t('login.forgotPassword')}
-                  </a>
+                  {passwordRecoveryEnabled ? (
+                    <a
+                      className='text-sm underline'
+                      href={forgotPasswordHref}
+                    >
+                      {t('login.forgotPassword')}
+                    </a>
+                  ) : null}
                 </div>
                 <Input
                   {...field}
