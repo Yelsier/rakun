@@ -1,7 +1,7 @@
 'use client'
 
 import type { ManagerOperationOutput } from '@rakun-kit/core/manager'
-import { Eye, Filter, RotateCcw } from 'lucide-react'
+import { Eye, Filter, RotateCcw, XIcon } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 
 import { useManagerQuery } from '@/client/react'
@@ -10,6 +10,14 @@ import UnauthorizedMessage from '@/components/unauthorized'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -18,13 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
 import {
   Table,
   TableBody,
@@ -394,19 +395,36 @@ export const ManagerSettingsLogsScreen = () => {
         </div>
       </div>
 
-      <Sheet
+      <Drawer
+        direction="right"
         open={selectedEvent !== null}
         onOpenChange={(open) => {
           if (!open) setSelectedEvent(null)
         }}
       >
-        <SheetContent className="overflow-y-auto sm:max-w-xl">
-          <SheetHeader>
-            <SheetTitle>{selectedEvent?.type}</SheetTitle>
-            <SheetDescription>
-              {selectedEvent ? formatDateTime(selectedEvent.occurredAt) : ''}
-            </SheetDescription>
-          </SheetHeader>
+        <DrawerContent className="h-full overflow-y-auto data-[vaul-drawer-direction=right]:w-full data-[vaul-drawer-direction=right]:max-w-none md:data-[vaul-drawer-direction=right]:w-[min(92vw,36rem)] md:data-[vaul-drawer-direction=right]:max-w-[36rem]">
+          <DrawerHeader className="shrink-0 border-b text-start">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-1">
+                <DrawerTitle>{selectedEvent?.type}</DrawerTitle>
+                <DrawerDescription>
+                  {selectedEvent ? formatDateTime(selectedEvent.occurredAt) : ''}
+                </DrawerDescription>
+              </div>
+              <DrawerClose asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                  aria-label={t('common.close')}
+                >
+                  <XIcon className="size-4" />
+                  <span className="sr-only">{t('common.close')}</span>
+                </Button>
+              </DrawerClose>
+            </div>
+          </DrawerHeader>
           {selectedEvent ? (
             <div className="grid gap-5 px-4 pb-6 text-sm">
               <div className="grid grid-cols-2 gap-3">
@@ -477,8 +495,8 @@ export const ManagerSettingsLogsScreen = () => {
               </div>
             </div>
           ) : null}
-        </SheetContent>
-      </Sheet>
+        </DrawerContent>
+      </Drawer>
     </div>
   )
 }
