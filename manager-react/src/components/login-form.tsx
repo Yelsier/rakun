@@ -1,26 +1,16 @@
-"use client";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  instanceofAppErrorShape,
-  loginInput,
-  type LoginInput,
-} from "@rakun-kit/core/client";
-import { Controller, useForm } from "react-hook-form";
+'use client'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { instanceofAppErrorShape, loginInput, type LoginInput } from '@rakun-kit/core/client'
+import { Controller, useForm } from 'react-hook-form'
 
-import { cn } from "../lib/utils";
-import { useManagerRuntimeAuth } from "@/app/runtime-auth";
-import { useTranslations } from "@/i18n";
-import { useManagerNavigation } from "@/state/navigation";
-import { useManagerMutation } from "@/client/react";
-import { Button } from "./ui/button";
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-  FieldSeparator,
-} from "./ui/field";
-import { Input } from "./ui/input";
+import { cn } from '../lib/utils'
+import { useManagerRuntimeAuth } from '@/app/runtime-auth'
+import { useTranslations } from '@/i18n'
+import { useManagerNavigation } from '@/state/navigation'
+import { useManagerMutation } from '@/client/react'
+import { Button } from './ui/button'
+import { Field, FieldError, FieldGroup, FieldLabel, FieldSeparator } from './ui/field'
+import { Input } from './ui/input'
 import { AuthLanguageSelector } from './auth-language-selector'
 import { RakunLogoMark } from './rakun-logo'
 
@@ -28,82 +18,73 @@ export function LoginForm({
   className,
   passwordRecoveryEnabled = false,
   ...props
-}: React.ComponentProps<"div"> & {
+}: React.ComponentProps<'div'> & {
   passwordRecoveryEnabled?: boolean
 }) {
-  const t = useTranslations();
-  const navigation = useManagerNavigation();
-  const { refreshAuth } = useManagerRuntimeAuth();
-  const { mutate, isPending } = useManagerMutation("manager.auth.login");
-  const forgotPasswordHref =
-    navigation.hrefPath?.('/forgot-password') ?? '/forgot-password'
+  const t = useTranslations()
+  const navigation = useManagerNavigation()
+  const { refreshAuth } = useManagerRuntimeAuth()
+  const { mutate, isPending } = useManagerMutation('manager.auth.login')
+  const forgotPasswordHref = navigation.hrefPath?.('/forgot-password') ?? '/forgot-password'
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginInput),
     defaultValues: {
-      username: "",
-      password: "",
+      username: '',
+      password: '',
     },
-  });
+  })
 
   const handleFieldChange =
     (onChange: (...event: unknown[]) => void) =>
     (...event: unknown[]) => {
-      onChange(...event);
-      form.clearErrors();
-    };
+      onChange(...event)
+      form.clearErrors()
+    }
 
   const navigateToManagerRoot = () => {
     if (navigation.replacePath) {
-      navigation.replacePath("/");
-      return;
+      navigation.replacePath('/')
+      return
     }
 
-    navigation.pushPath?.("/");
-  };
+    navigation.pushPath?.('/')
+  }
 
   const onSubmit = (values: LoginInput) => {
     mutate(values, {
       onSuccess: async (result) => {
-        if (
-          typeof result === "object" &&
-          result !== null &&
-          "token" in result
-        ) {
-          const authenticated = await refreshAuth();
+        if (typeof result === 'object' && result !== null && 'token' in result) {
+          const authenticated = await refreshAuth()
 
           if (authenticated) {
-            navigateToManagerRoot();
+            navigateToManagerRoot()
           }
         }
 
-        if (
-          typeof result === "object" &&
-          result !== null &&
-          "challenge" in result
-        ) {
+        if (typeof result === 'object' && result !== null && 'challenge' in result) {
           const mfaResult = result as {
-            challenge: string;
-            method: string;
-            expiresAt: string;
-          };
+            challenge: string
+            method: string
+            expiresAt: string
+          }
           navigation.pushPath?.(
-            `/mfa?challenge=${mfaResult.challenge}&method=${mfaResult.method}&expiresAt=${mfaResult.expiresAt}`,
-          );
+            `/mfa?challenge=${mfaResult.challenge}&method=${mfaResult.method}&expiresAt=${mfaResult.expiresAt}`
+          )
         }
       },
       onError: (error: unknown) => {
-        if (instanceofAppErrorShape(error) && error.key === "FORBIDDEN") {
+        if (instanceofAppErrorShape(error) && error.key === 'FORBIDDEN') {
           const reason = error.cause.reason
-          form.setError("username", {});
-          form.setError("password", {
+          form.setError('username', {})
+          form.setError('password', {
             message:
               reason === 'INVALID_CREDENTIALS'
                 ? t('login.invalidCredentials')
                 : reason === 'RATE_LIMITED'
                   ? t('login.rateLimited')
                   : t('login.error'),
-          });
+          })
           return
         }
 
@@ -111,30 +92,27 @@ export function LoginForm({
           message: t('login.error'),
         })
       },
-    });
-  };
+    })
+  }
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn('flex flex-col gap-6', className)} {...props}>
       <AuthLanguageSelector />
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <FieldGroup>
-          <div className="flex flex-col items-center gap-2 text-center">
-            <a
-              href="#"
-              className="flex flex-col items-center gap-2 font-medium"
-            >
-              <RakunLogoMark className='h-14 w-auto text-primary' />
-              <span className="sr-only">{t("login.brand")}</span>
+          <div className="flex flex-col items-center gap-6 text-center">
+            <a href="#" className="flex flex-col items-center gap-2 font-medium">
+              <RakunLogoMark className="h-14 w-auto text-primary" />
+              <span className="sr-only">{t('login.brand')}</span>
             </a>
-            <h1 className="text-xl font-bold">{t("login.welcome")}</h1>
+            <h1 className="text-xl font-bold">{t('login.welcome')}</h1>
           </div>
           <Controller
             name="username"
             control={form.control}
             render={({ field, fieldState }) => (
               <Field>
-                <FieldLabel htmlFor="email">{t("login.email")}</FieldLabel>
+                <FieldLabel htmlFor="email">{t('login.email')}</FieldLabel>
                 <Input
                   {...field}
                   id="email"
@@ -144,9 +122,7 @@ export function LoginForm({
                   aria-invalid={fieldState.invalid}
                   onChange={handleFieldChange(field.onChange)}
                 />
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
           />
@@ -155,15 +131,10 @@ export function LoginForm({
             control={form.control}
             render={({ field, fieldState }) => (
               <Field>
-                <div className='flex items-center justify-between gap-4'>
-                  <FieldLabel htmlFor="password">
-                    {t("login.password")}
-                  </FieldLabel>
+                <div className="flex items-center justify-between gap-4">
+                  <FieldLabel htmlFor="password">{t('login.password')}</FieldLabel>
                   {passwordRecoveryEnabled ? (
-                    <a
-                      className='text-sm underline'
-                      href={forgotPasswordHref}
-                    >
+                    <a className="text-sm underline" href={forgotPasswordHref}>
                       {t('login.forgotPassword')}
                     </a>
                   ) : null}
@@ -176,18 +147,16 @@ export function LoginForm({
                   aria-invalid={fieldState.invalid}
                   onChange={handleFieldChange(field.onChange)}
                 />
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
           />
           <Field>
             <Button loading={isPending} type="submit">
-              {t("login.submit")}
+              {t('login.submit')}
             </Button>
           </Field>
-          <FieldSeparator>{t("login.or")}</FieldSeparator>
+          <FieldSeparator>{t('login.or')}</FieldSeparator>
           <Field className="grid gap-4 sm:grid-cols-2">
             <Button variant="outline" type="button">
               <svg
@@ -203,7 +172,7 @@ export function LoginForm({
                   fill="currentColor"
                 />
               </svg>
-              {t("login.github")}
+              {t('login.github')}
             </Button>
             <Button variant="outline" type="button">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -212,11 +181,11 @@ export function LoginForm({
                   fill="currentColor"
                 />
               </svg>
-              {t("login.google")}
+              {t('login.google')}
             </Button>
           </Field>
         </FieldGroup>
       </form>
     </div>
-  );
+  )
 }
