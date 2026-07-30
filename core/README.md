@@ -67,8 +67,8 @@ Options:
 - `mongo`: MongoDB connection. Required before serving Rakun requests.
 - `media`: media adapter/configuration. Optional.
 - `mail`: outbound mail adapter and default sender configuration. Optional.
-- `accountRecovery`: password-reset URL builder, expiry, and application-owned
-  mail template. Requires `mail`.
+- `accountRecovery`: password-reset URL builder, expiry, and optional custom
+  mail template. Requires `mail`; core provides the default template.
 - `logger`: logger configuration. If omitted, an `info` logger with `prettify` is created.
 - `syncRoutes`: syncs configured routes during initialization. Enabled by default.
 
@@ -79,7 +79,7 @@ configured. The reset URL must point to the manager's public
 `/reset-password` screen and preserve the token as the `token` query parameter:
 
 ```ts
-import { defineMailTemplate, rakunBootstrap } from '@rakun-kit/core'
+import { rakunBootstrap } from '@rakun-kit/core'
 import { createResendMailServiceConfig } from '@rakun-kit/resend'
 
 rakunBootstrap({
@@ -93,20 +93,14 @@ rakunBootstrap({
       expiresInMs: 60 * 60 * 1000,
       createUrl: (token) =>
         `https://cms.example.com/backend/reset-password?token=${encodeURIComponent(token)}`,
-      template: defineMailTemplate({
-        subject: 'Reset your password',
-        render: ({ resetUrl, expiresAt, user }) => ({
-          text: [
-            `Hello ${user.name ?? user.email},`,
-            `Reset your password: ${resetUrl}`,
-            `This link expires at ${expiresAt.toISOString()}.`,
-          ].join('\n\n'),
-        }),
-      }),
     },
   },
 })
 ```
+
+Core uses its branded HTML and plain-text password-reset template by default.
+Pass `accountRecovery.passwordReset.template` only when the application needs
+to replace it with custom branding or copy.
 
 Reset tokens are random, stored only as SHA-256 hashes, expire, and are consumed
 once. A successful reset closes every existing session but never disables MFA.

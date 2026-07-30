@@ -35,8 +35,8 @@ export interface RakunBootstrapOptions {
   media?: MediaServiceConfig;
   mail?: MailServiceConfig;
   /**
-   * Account recovery email template and manager reset URL builder.
-   * Requires `mail` to be configured.
+   * Manager password-reset URL builder, expiry, and optional mail template.
+   * Requires `mail`; core provides the default template.
    */
   accountRecovery?: AccountRecoveryConfig;
   /**

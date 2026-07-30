@@ -283,6 +283,7 @@ export type {
   AccountRecoveryConfig,
   PasswordResetMailProps,
 } from './auth/accountRecovery'
+export { passwordResetMailTemplate } from './auth/passwordResetMailTemplate'
 export {
   defineRakunPlugin,
   assertRakunPluginFieldsDeclared,

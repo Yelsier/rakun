@@ -20,6 +20,7 @@ import {
   getRequestRateLimitIdentifier,
 } from '../../../utils/authRateLimit'
 import { PASSWORD_RESET_DEFAULT_EXPIRES_IN_MS } from '../../../../auth/accountRecovery'
+import { passwordResetMailTemplate } from '../../../../auth/passwordResetMailTemplate'
 import { recordAuthEvent } from '../../../utils/authEvents'
 
 const hashToken = (token: string) =>
@@ -109,11 +110,12 @@ export const requestPasswordResetHandler = async ({
         ...(user.name ? { name: user.name } : {}),
       },
     }
+    const template = config.template ?? passwordResetMailTemplate
     const subject =
-      typeof config.template.subject === 'function'
-        ? await config.template.subject(props)
-        : config.template.subject
-    const content = await config.template.render(props)
+      typeof template.subject === 'function'
+        ? await template.subject(props)
+        : template.subject
+    const content = await template.render(props)
 
     await getMailService().send({
       to: user.email,

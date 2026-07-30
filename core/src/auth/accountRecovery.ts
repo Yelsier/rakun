@@ -13,7 +13,7 @@ export type AccountRecoveryConfig = {
   passwordReset: {
     createUrl: (token: string) => string
     expiresInMs?: number
-    template: MailTemplate<PasswordResetMailProps>
+    template?: MailTemplate<PasswordResetMailProps>
   }
 }
 

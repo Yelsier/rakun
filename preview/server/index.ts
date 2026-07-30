@@ -10,7 +10,6 @@ import { Footer, Header, Page, previewContentTypes } from "./content-types";
 import { env } from "./env";
 import { previewManagerLanguages } from "./manager-locales";
 import { seedPreviewData } from "./seed";
-import { passwordResetEmailTemplate } from './mail'
 
 rakunBootstrap({
   literals: {},
@@ -58,7 +57,6 @@ rakunBootstrap({
           passwordReset: {
             createUrl: (token) =>
               `${env.managerPublicUrl.replace(/\/+$/, '')}/reset-password?token=${encodeURIComponent(token)}`,
-            template: passwordResetEmailTemplate,
           },
         }
       : undefined,
