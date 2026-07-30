@@ -1,7 +1,7 @@
 import type { RakunRequestContext } from '../context'
 import { Logger } from '../../lib/Logger'
 
-import { recordApiError } from './apiErrorLog'
+import { recordApiError, recordApiOperationSuccess } from './apiEventLog'
 import type { AnyRakunOperation, RakunOperationMap } from './types'
 
 const operationTracingSymbol = Symbol.for('rakun.operation.tracing')
@@ -112,6 +112,17 @@ const traceOperation = (name: string, operation: AnyRakunOperation): AnyRakunOpe
         throw error
       }
     },
+    onSuccess:
+      operation.onSuccess || operation.kind === 'mutation'
+        ? async (args: { ctx: RakunRequestContext; result: unknown }) => {
+            await operation.onSuccess?.(args as never)
+            await recordApiOperationSuccess({
+              name,
+              operation,
+              ctx: args.ctx,
+            })
+          }
+        : undefined,
   } as TraceableOperation
 
   Object.defineProperty(wrapped, operationTracingSymbol, { value: true })

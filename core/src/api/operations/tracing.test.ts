@@ -7,7 +7,7 @@ import { AppError } from '../../lib/errors'
 import { createLogger } from '../../lib/Logger'
 import type { RakunRequestContext } from '../context'
 
-import { recordApiError } from './apiErrorLog'
+import { recordApiError } from './apiEventLog'
 import { traceOperationMap } from './tracing'
 import { defineOperation } from './types'
 
@@ -156,6 +156,86 @@ describe('API operation error logging', () => {
       },
     })
     expect(JSON.stringify(events[0])).not.toContain('database password leaked in message')
+  })
+
+  test('records successful mutations with a distinct operation event', async () => {
+    const operations = traceOperationMap({
+      'manager.test.update': defineOperation({
+        access: 'auth',
+        kind: 'mutation',
+        method: 'post',
+        input: z.object({ password: z.string() }),
+        output: z.object({ ok: z.boolean(), token: z.string() }),
+        resolve: async () => ({ ok: true, token: 'sensitive-result-token' }),
+      }),
+    })
+    const ctx = createContext()
+    const result = await operations['manager.test.update'].resolve({
+      ctx,
+      input: { password: 'sensitive-input-password' },
+    })
+
+    expect(events).toHaveLength(0)
+
+    await operations['manager.test.update'].onSuccess?.({
+      ctx,
+      result,
+    })
+
+    expect(events).toHaveLength(1)
+    expect(events[0]).toMatchObject({
+      type: 'manager.test.update.succeeded',
+      category: 'api',
+      severity: 'info',
+      outcome: 'success',
+      source: '@rakun-kit/core/api',
+      correlationId: 'request-123',
+      actor: {
+        type: 'manager-user',
+        id: '507f1f77bcf86cd799439011',
+      },
+      resource: {
+        type: 'api-operation',
+        id: 'manager.test.update',
+      },
+      tags: ['api', 'mutation', 'success', 'manager'],
+      data: {
+        operation: 'manager.test.update',
+        kind: 'mutation',
+        method: 'post',
+      },
+    })
+    expect(JSON.stringify(events[0])).not.toContain('sensitive-input-password')
+    expect(JSON.stringify(events[0])).not.toContain('sensitive-result-token')
+  })
+
+  test('does not persist successful queries', async () => {
+    let onSuccessCalled = false
+    const operations = traceOperationMap({
+      'manager.test.list': defineOperation({
+        access: 'auth',
+        kind: 'query',
+        method: 'get',
+        output: z.object({ ok: z.boolean() }),
+        resolve: async () => ({ ok: true }),
+        onSuccess: () => {
+          onSuccessCalled = true
+        },
+      }),
+    })
+    const ctx = createContext()
+    const result = await operations['manager.test.list'].resolve({
+      ctx,
+      input: undefined,
+    })
+
+    await operations['manager.test.list'].onSuccess?.({
+      ctx,
+      result,
+    })
+
+    expect(onSuccessCalled).toBe(true)
+    expect(events).toHaveLength(0)
   })
 
   test('keeps the original API error when persisting its event fails', async () => {

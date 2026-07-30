@@ -32,6 +32,11 @@ const getErrorName = (error: unknown): string | undefined => {
 const isObjectError = (error: unknown): error is object =>
   (typeof error === 'object' && error !== null) || typeof error === 'function'
 
+const getActor = (ctx: RakunRequestContext | undefined) =>
+  ctx?.user?._id
+    ? { type: 'manager-user', id: String(ctx.user._id) }
+    : { type: 'anonymous' }
+
 export type ApiErrorLogInput = {
   name: string
   operation?: Pick<AnyRakunOperation, 'kind' | 'method'>
@@ -80,9 +85,7 @@ export const recordApiError = async ({
       outcome: 'failure',
       source: '@rakun-kit/core/api',
       correlationId: getCorrelationId(ctx),
-      actor: ctx?.user?._id
-        ? { type: 'manager-user', id: String(ctx.user._id) }
-        : { type: 'anonymous' },
+      actor: getActor(ctx),
       resource: { type: 'api-operation', id: name },
       tags: ['api', 'error', ...(operation ? [operation.kind] : [])],
       data: {
@@ -102,6 +105,56 @@ export const recordApiError = async ({
       operation: name,
       statusCode: resolvedStatusCode,
       error: logError,
+    })
+  }
+}
+
+export type ApiOperationSuccessLogInput = {
+  name: string
+  operation: Pick<AnyRakunOperation, 'kind' | 'method'>
+  ctx: RakunRequestContext
+}
+
+export const recordApiOperationSuccess = async ({
+  name,
+  operation,
+  ctx,
+}: ApiOperationSuccessLogInput): Promise<void> => {
+  if (operation.kind !== 'mutation') {
+    return
+  }
+
+  if (!hasEventLogService()) {
+    Logger?.error?.(
+      'API mutation success could not be persisted because the event log is not initialized',
+      { operation: name }
+    )
+    return
+  }
+
+  try {
+    const namespace = name.split('.')[0] || 'api'
+
+    await getEventLogService().record({
+      type: `${name}.succeeded`,
+      category: 'api',
+      severity: 'info',
+      outcome: 'success',
+      source: '@rakun-kit/core/api',
+      correlationId: getCorrelationId(ctx),
+      actor: getActor(ctx),
+      resource: { type: 'api-operation', id: name },
+      tags: ['api', 'mutation', 'success', namespace],
+      data: {
+        operation: name,
+        kind: operation.kind,
+        method: operation.method,
+      },
+    })
+  } catch (error) {
+    Logger?.error?.('API mutation success event could not be persisted', {
+      operation: name,
+      error,
     })
   }
 }

@@ -10,7 +10,12 @@ import {
 } from "./custom";
 import { traceOperationMap } from "./tracing";
 
-export { recordApiError, type ApiErrorLogInput } from "./apiErrorLog";
+export {
+  recordApiError,
+  recordApiOperationSuccess,
+  type ApiErrorLogInput,
+  type ApiOperationSuccessLogInput,
+} from "./apiEventLog";
 
 export const createRakunOperationDefinitions = () => {
   const coreOperations = {

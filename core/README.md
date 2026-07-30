@@ -816,6 +816,13 @@ adapters. Events include the operation, status, method, kind, correlation ID,
 and authenticated actor when available. Request payloads, application error
 causes, and raw internal error messages are not persisted.
 
+Every successful API mutation is also persisted with an operation-specific
+event type such as `manager.create.succeeded` or
+`manager.backups.restore.succeeded`. Successful queries are not recorded by
+default, which keeps the event stream focused on state changes. Mutation
+events contain operation metadata and actor/correlation context, but never
+copy the input payload or result.
+
 ## Mail
 
 Mail providers receive normalized, already-rendered messages through
