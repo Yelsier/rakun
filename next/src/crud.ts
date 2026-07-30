@@ -3,6 +3,8 @@ import {
   createRakunOperationDefinitions,
   createRequestContext,
   parseCookieHeader,
+  recordApiError,
+  type RakunRequestContext,
   runContentHookContext,
 } from "@rakun-kit/core";
 import {
@@ -123,6 +125,7 @@ const getOperationInput = async (
 const createOperationResponse = async (
   operation: AnyRakunOperation,
   request: Request,
+  onContext: (ctx: RakunRequestContext) => void,
 ) => {
   assertAllowedMutationOrigin(operation, request);
   const headers = new Headers();
@@ -131,6 +134,7 @@ const createOperationResponse = async (
     cookies: parseCookieHeader(request.headers.get("cookie") ?? undefined),
     res: createResponseHeaderAdapter(headers),
   });
+  onContext(ctx);
   if (operation.access === "auth") {
     ctx.getUser();
   }
@@ -185,9 +189,26 @@ export const rakunNextCrud = (): RakunNextIntegration => {
       });
     }
 
+    let ctx: RakunRequestContext | undefined;
+
     try {
-      return await createOperationResponse(operation, request);
+      return await createOperationResponse(operation, request, (requestContext) => {
+        ctx = requestContext;
+      });
     } catch (error) {
+      await recordApiError({
+        name: [...segments].join("."),
+        operation,
+        ctx,
+        error,
+        boundary: true,
+        statusCode: isAppError(error)
+          ? (getAppErrorStatusCode(error) ?? 500)
+          : hasIssues(error)
+            ? 400
+            : 500,
+      });
+
       if (isAppError(error)) {
         return jsonResponse(
           getAppErrorStatusCode(error) ?? 500,

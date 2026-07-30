@@ -12,6 +12,7 @@ import {
   createWebOperationDefinitions,
   type RakunOperationDefinition,
   type RakunRequestContext,
+  recordApiError,
   runContentHookContext,
 } from "@rakun-kit/core";
 import {
@@ -227,13 +228,35 @@ const assertAllowedMutationOrigin = (
   throwAppError("FORBIDDEN", { reason: "INVALID_ORIGIN" });
 };
 
-const createProcedureFromOperation = <
-  TOperation extends AnyRakunOperation,
->(
+const createProcedureFromOperation = <TOperation extends AnyRakunOperation>(
+  name: string,
   operation: TOperation,
 ): ProcedureFromOperation<TOperation> => {
-  let procedure: any =
-    operation.access === "auth" ? authProcedure : publicProcedure;
+  const errorLoggingMiddleware = t.middleware(async ({ ctx, next }) => {
+    try {
+      return await next();
+    } catch (error) {
+      await recordApiError({
+        name,
+        operation,
+        ctx,
+        error,
+        boundary: true,
+        statusCode:
+          error instanceof ZodError ||
+          (error instanceof TRPCError && error.cause instanceof ZodError)
+            ? 400
+            : undefined,
+      });
+      throw error;
+    }
+  });
+
+  let procedure: any = publicProcedure.use(errorLoggingMiddleware);
+
+  if (operation.access === "auth") {
+    procedure = procedure.use(isAuthed);
+  }
 
   procedure = procedure.meta({
     description: operation.description,
@@ -279,7 +302,7 @@ export const createRouterFromOperations = <
     setNestedValue(
       tree,
       name.split("."),
-      createProcedureFromOperation(operation),
+      createProcedureFromOperation(name, operation),
     );
   }
 

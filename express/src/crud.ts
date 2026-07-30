@@ -5,6 +5,8 @@ import {
   createRakunOperationDefinitions,
   createRequestContext,
   parseCookieHeader,
+  recordApiError,
+  type RakunRequestContext,
   RakunOperationHttpMethod,
   runContentHookContext,
 } from "@rakun-kit/core";
@@ -99,27 +101,30 @@ const getOperationInput = (operation: AnyRakunOperation, req: Request) => {
 };
 
 const createHandler =
-  (operation: AnyRakunOperation) =>
+  (name: string, operation: AnyRakunOperation) =>
   async (req: Request, res: Response, next: NextFunction) => {
+    let ctx: RakunRequestContext | undefined;
+
     try {
       assertAllowedMutationOrigin(operation, req);
-      const ctx = await createContext(req, res);
+      const requestContext = await createContext(req, res);
+      ctx = requestContext;
       if (operation.access === "auth") {
-        ctx.getUser();
+        requestContext.getUser();
       }
       const result = await runContentHookContext(
-        { requestContext: ctx },
+        { requestContext },
         async () => {
           const input = getOperationInput(operation, req);
           const parsedResult = operation.output.parse(
             await operation.resolve({
-              ctx,
+              ctx: requestContext,
               input,
             }),
           );
 
           await operation.onSuccess?.({
-            ctx,
+            ctx: requestContext,
             result: parsedResult,
           });
 
@@ -129,6 +134,19 @@ const createHandler =
 
       res.status(200).json(result);
     } catch (error) {
+      await recordApiError({
+        name,
+        operation,
+        ctx,
+        error,
+        boundary: true,
+        statusCode: isAppError(error)
+          ? (getAppErrorStatusCode(error) ?? 500)
+          : hasIssues(error)
+            ? 400
+            : 500,
+      });
+
       if (isAppError(error)) {
         res.status(getAppErrorStatusCode(error) ?? 500).json({
           message: error.message,
@@ -156,7 +174,7 @@ export const rakunExpressCrud = (): RakunExpressIntegration => {
     for (const [name, operation] of Object.entries(operations)) {
       router[operation.method as RakunOperationHttpMethod](
         toRoutePath(name),
-        createHandler(operation),
+        createHandler(name, operation),
       );
     }
   };

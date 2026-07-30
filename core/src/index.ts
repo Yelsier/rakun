@@ -345,6 +345,7 @@ export * from "./eventLog";
 export {
   type AnyRakunOperation,
   type AnyRakunOperationContract,
+  type ApiErrorLogInput,
   createRakunOperationDefinitions,
   createManagerOperationContracts,
   createManagerOperationDefinitions,
@@ -355,6 +356,7 @@ export {
   defineOperation,
   defineOperationContract,
   mergeOperationContracts,
+  recordApiError,
   type RakunOperationAccess,
   type RakunOperationContractDefinition,
   type RakunOperationContractMap,

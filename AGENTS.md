@@ -41,6 +41,9 @@ Main packages:
 
 - Start with `rg`/`rg --files` to find nearby patterns.
 - Read the package `README.md` before changing a public API.
+- For every new or changed action, use judgment to decide whether it must be recorded in the persistent event log. Audit-relevant operations, external side effects, and important lifecycle transitions should be logged with enough outcome context; mail delivery (`attempted`, `succeeded`, and `failed`) is the reference pattern. Do not confuse persistent business events with diagnostic `Logger` output.
+- Every API error must be recorded in the persistent event log displayed by the manager, including expected 4xx application errors and unexpected 5xx failures. Never persist request payloads, credentials, sensitive causes, or raw internal error messages.
+- Never hardcode user-facing copy. Web/content-facing text must be declared as Rakun literals; manager UI text must use the manager translation catalog and static translation keys.
 - If a change touches core-manager contracts, review both sides: `core/src/api/operations`, `core/src/schemas`, `manager-react/src/client`, and the affected screens.
 - If a change touches web routes, review `core/src/api/utils/routes`, `core/src/api/routes/web`, and adapters (`next`, `express`) when relevant.
 - If a change touches media, review `core/src/media`, `manager-react/src/components/media`, `express/src/media.ts`, `next/src/media.ts`, and `s3/src`.

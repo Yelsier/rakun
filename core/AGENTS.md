@@ -33,6 +33,9 @@ The core must not depend on React, Express, Next.js, Vite, or tRPC. Adapters tra
 - Keep input/output validated with Zod and derive types from existing contracts.
 - When adding or renaming an operation, review the registry/manifest in `src/api/operations` and manager clients.
 - Application errors should use the existing error/logging system when applicable.
+- When adding or changing an action, explicitly assess whether it is audit-relevant and belongs in the persistent event log. Record external side effects and meaningful lifecycle outcomes using the mail events (`mail.send.attempted`, `mail.send.succeeded`, and `mail.send.failed`) as the reference pattern; reserve `Logger` for diagnostic output.
+- Every API error must produce a persistent `api.operation.failed` event for the manager Logs screen. Cover expected 4xx errors and unexpected 5xx failures, deduplicate errors that cross core and adapter boundaries, and never persist request payloads, credentials, sensitive causes, or raw internal error messages.
+- All user-facing web/content text exposed by core must be declared through the Rakun literals catalog instead of being hardcoded.
 - Auth and permission logic live in utilities such as `getUser`, `checkPermissions`, and `checkOwnership`; do not duplicate rules inline when a helper already exists.
 
 ## Tests

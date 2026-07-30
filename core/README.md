@@ -809,6 +809,13 @@ context. Reading a shared event stream should be protected with the built-in
 `system.eventLog.read` permission. The built-in `manager.logs.list` operation and the
 manager Settings → Logs screen both enforce it.
 
+Failed API operations are persisted automatically as `api.operation.failed`
+events. This includes expected 4xx application errors and unexpected 5xx
+failures across the core operation wrapper and the Express, Next.js, and tRPC
+adapters. Events include the operation, status, method, kind, correlation ID,
+and authenticated actor when available. Request payloads, application error
+causes, and raw internal error messages are not persisted.
+
 ## Mail
 
 Mail providers receive normalized, already-rendered messages through
