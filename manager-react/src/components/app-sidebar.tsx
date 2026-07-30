@@ -275,7 +275,7 @@ export function AppSidebar({
             <SidebarMenuButton size="lg" asChild>
               <ManagerLink href={basePath}>
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <RakunLogoMark className="size-8 text-sidebar-foreground" />
+                  <RakunLogoMark className="size-8" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{t('brand.name')}</span>
