@@ -32,6 +32,8 @@ export const managerMessages = {
   'login.welcome': { defaultMessage: 'Welcome to Rakun Manager' },
   'login.email': { defaultMessage: 'Email' },
   'login.password': { defaultMessage: 'Password' },
+  'login.showPassword': { defaultMessage: 'Show password' },
+  'login.hidePassword': { defaultMessage: 'Hide password' },
   'login.submit': { defaultMessage: 'Login' },
   'login.or': { defaultMessage: 'Or' },
   'login.github': { defaultMessage: 'GitHub' },

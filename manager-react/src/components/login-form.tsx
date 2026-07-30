@@ -1,6 +1,8 @@
 'use client'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { instanceofAppErrorShape, loginInput, type LoginInput } from '@rakun-kit/core/client'
+import { Eye, EyeOff } from 'lucide-react'
+import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 
 import { cn } from '../lib/utils'
@@ -25,6 +27,7 @@ export function LoginForm({
   const navigation = useManagerNavigation()
   const { refreshAuth } = useManagerRuntimeAuth()
   const { mutate, isPending } = useManagerMutation('manager.auth.login')
+  const [passwordVisible, setPasswordVisible] = useState(false)
   const forgotPasswordHref = navigation.hrefPath?.('/forgot-password') ?? '/forgot-password'
 
   const form = useForm<LoginInput>({
@@ -139,14 +142,38 @@ export function LoginForm({
                     </a>
                   ) : null}
                 </div>
-                <Input
-                  {...field}
-                  id="password"
-                  type="password"
-                  required
-                  aria-invalid={fieldState.invalid}
-                  onChange={handleFieldChange(field.onChange)}
-                />
+                <div className="relative">
+                  <Input
+                    {...field}
+                    autoComplete="current-password"
+                    className="pr-10"
+                    id="password"
+                    type={passwordVisible ? 'text' : 'password'}
+                    required
+                    aria-invalid={fieldState.invalid}
+                    onChange={handleFieldChange(field.onChange)}
+                  />
+                  <Button
+                    aria-label={
+                      passwordVisible
+                        ? t('login.hidePassword')
+                        : t('login.showPassword')
+                    }
+                    aria-pressed={passwordVisible}
+                    className="absolute end-0 top-0"
+                    onClick={() => setPasswordVisible((visible) => !visible)}
+                    size="icon"
+                    title={
+                      passwordVisible
+                        ? t('login.hidePassword')
+                        : t('login.showPassword')
+                    }
+                    type="button"
+                    variant="ghost"
+                  >
+                    {passwordVisible ? <EyeOff /> : <Eye />}
+                  </Button>
+                </div>
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}

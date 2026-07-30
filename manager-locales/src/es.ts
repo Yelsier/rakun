@@ -22,6 +22,8 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'login.welcome': 'Bienvenido a Rakun Manager',
   'login.email': 'Email',
   'login.password': 'Contraseña',
+  'login.showPassword': 'Mostrar contraseña',
+  'login.hidePassword': 'Ocultar contraseña',
   'login.submit': 'Iniciar sesión',
   'login.or': 'O',
   'login.github': 'GitHub',
