@@ -19,8 +19,10 @@ import {
 } from '@rakun-kit/manager-react/plugins'
 import { ManagerRichTextBlockFormatItem } from '@rakun-kit/manager-react/rich-text'
 import {
+  $createParagraphNode,
   $getNodeByKey,
   $getSelection,
+  $isParagraphNode,
   $isRangeSelection,
   type LexicalNode,
 } from 'lexical'
@@ -136,14 +138,21 @@ export function FormatCodeBlock(_props: ManagerRichTextPluginProps) {
 
       if (selection.isCollapsed()) {
         $setBlocksType(selection, () => $createCodeNode())
-        return
+      } else {
+        const textContent = selection.getTextContent()
+        const codeNode = $createCodeNode()
+        selection.insertNodes([codeNode])
+        selection = $getSelection()
+        if ($isRangeSelection(selection)) selection.insertRawText(textContent)
       }
 
-      const textContent = selection.getTextContent()
-      const codeNode = $createCodeNode()
-      selection.insertNodes([codeNode])
-      selection = $getSelection()
-      if ($isRangeSelection(selection)) selection.insertRawText(textContent)
+      const codeNode = $getSelectedCodeNode()
+      if (!codeNode) return
+
+      const nextSibling = codeNode.getNextSibling()
+      if (!$isParagraphNode(nextSibling)) {
+        codeNode.insertAfter($createParagraphNode())
+      }
     })
   }
 
@@ -161,6 +170,15 @@ export function CodeHighlightPlugin(_props: ManagerRichTextPluginProps) {
   const [editor] = useLexicalComposerContext()
 
   useEffect(() => registerCodeHighlighting(editor), [editor])
+
+  // Keep an empty paragraph after every code block so the caret can move below it.
+  useEffect(() => {
+    return editor.registerNodeTransform(CodeNode, (node) => {
+      const nextSibling = node.getNextSibling()
+      if ($isParagraphNode(nextSibling)) return
+      node.insertAfter($createParagraphNode())
+    })
+  }, [editor])
 
   return null
 }

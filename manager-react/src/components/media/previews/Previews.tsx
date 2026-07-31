@@ -1,7 +1,14 @@
 'use client'
 
 import { Folder, FolderPlus, Upload, X } from 'lucide-react'
-import { startTransition, useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  startTransition,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { keepPreviousData, useQueryClient } from '@tanstack/react-query'
 import {
   createManagerQueryKey,
@@ -104,6 +111,9 @@ export default function Previews() {
   const [mediaTypeFilter, setMediaTypeFilter] = useState<'all' | 'image' | 'video' | 'document'>(
     'all'
   )
+  const [searchTerm, setSearchTerm] = useState('')
+  const deferredSearchTerm = useDeferredValue(searchTerm)
+  const trimmedSearch = deferredSearchTerm.trim()
   const effectiveMediaTypeFilter = forcedMediaTypeFilter ?? mediaTypeFilter
   const isMediaTypeFilterLocked = !!forcedMediaTypeFilter && forcedMediaTypeFilter !== 'all'
 
@@ -126,29 +136,54 @@ export default function Previews() {
 
   const getMediaQueryFilter = (
     folderId: string | null,
-    mediaType: 'all' | 'image' | 'video' | 'document'
+    mediaType: 'all' | 'image' | 'video' | 'document',
+    search: string
   ) => {
     const folderFilter = folderId ? { 'folder._id': folderId } : { folder: { $exists: false } }
 
+    let typeAndFolderFilter: Record<string, unknown>
     switch (mediaType) {
       case 'image':
-        return { ...folderFilter, mime: { $contains: 'image/' } }
+        typeAndFolderFilter = { ...folderFilter, mime: { $contains: 'image/' } }
+        break
       case 'video':
-        return { ...folderFilter, mime: { $contains: 'video/' } }
+        typeAndFolderFilter = { ...folderFilter, mime: { $contains: 'video/' } }
+        break
       case 'document':
-        return {
+        typeAndFolderFilter = {
           ...folderFilter,
           $or: [{ mime: { $contains: 'application/' } }, { mime: { $contains: 'text/' } }],
         }
+        break
       default:
-        return folderFilter
+        typeAndFolderFilter = folderFilter
+    }
+
+    if (!search) return typeAndFolderFilter
+
+    return {
+      $and: [
+        typeAndFolderFilter,
+        {
+          $or: [
+            { name: { $contains: search } },
+            { title: { $contains: search } },
+            { originalName: { $contains: search } },
+            { alt: { $contains: search } },
+          ],
+        },
+      ],
     }
   }
 
   const mediaListInput = {
     contentType: 'Media' as const,
     query: {
-      filter: getMediaQueryFilter(currentFolderId, effectiveMediaTypeFilter),
+      filter: getMediaQueryFilter(
+        currentFolderId,
+        effectiveMediaTypeFilter,
+        trimmedSearch
+      ),
       options: {
         limit: 'all' as const,
         sort: {
@@ -229,7 +264,7 @@ export default function Previews() {
   useEffect(() => {
     setSelectionMode(false)
     setBulkSelectedIds(new Set())
-  }, [currentFolderId, effectiveMediaTypeFilter])
+  }, [currentFolderId, effectiveMediaTypeFilter, trimmedSearch])
 
   useEffect(() => {
     setBulkSelectedIds((prev) => {
@@ -720,6 +755,8 @@ export default function Previews() {
       mediaTypeFilter: effectiveMediaTypeFilter,
       isMediaTypeFilterLocked,
       setMediaTypeFilter: handleMediaTypeFilterChange,
+      searchTerm,
+      setSearchTerm,
       viewMode,
       setViewMode: handleViewModeChange,
       isSelected: (id: string) => bulkSelectedIds.has(id) || (selectedMediaIds?.has(id) ?? false),
@@ -747,6 +784,7 @@ export default function Previews() {
       effectiveMediaTypeFilter,
       isMediaTypeFilterLocked,
       handleMediaTypeFilterChange,
+      searchTerm,
       viewMode,
       handleViewModeChange,
       selectionMode,
@@ -769,10 +807,10 @@ export default function Previews() {
   )
 
   return (
-    <div className="h-full min-h-0 w-full overflow-x-hidden overflow-y-auto">
+    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
       <MediaPreviewProvider value={mediaPreviewContextValue}>
         <div
-          className="mb-2 flex w-full flex-wrap gap-2 p-1 lg:sticky lg:top-0 lg:z-10 lg:bg-background"
+          className="mb-2 flex w-full shrink-0 flex-wrap gap-2 p-1"
           data-tour="media-folders"
         >
           <Button
@@ -824,34 +862,39 @@ export default function Previews() {
           onUpload={handleUpload}
           onFileReject={onFileReject}
           maxFiles={20}
-          className="relative w-full p-1"
+          className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden p-1"
           multiple
           disabled={isUploading}
         >
-          <PreviewsToolbar />
+          <div className="shrink-0 space-y-3">
+            <PreviewsToolbar />
 
-          <FileUploadList className="mb-3">
-            {files.map((file) => (
-              <FileUploadItem key={file.name + file.lastModified} value={file}>
-                <FileUploadItemPreview />
-                <div className="min-w-0 flex-1">
-                  <FileUploadItemMetadata />
-                  <FileUploadItemProgress className="mt-2" />
-                </div>
-                <FileUploadItemDelete className="rounded-md p-1 hover:bg-accent/40">
-                  <X className="size-4" />
-                </FileUploadItemDelete>
-              </FileUploadItem>
-            ))}
-          </FileUploadList>
+            <FileUploadList>
+              {files.map((file) => (
+                <FileUploadItem key={file.name + file.lastModified} value={file}>
+                  <FileUploadItemPreview />
+                  <div className="min-w-0 flex-1">
+                    <FileUploadItemMetadata />
+                    <FileUploadItemProgress className="mt-2" />
+                  </div>
+                  <FileUploadItemDelete className="rounded-md p-1 hover:bg-accent/40">
+                    <X className="size-4" />
+                  </FileUploadItemDelete>
+                </FileUploadItem>
+              ))}
+            </FileUploadList>
+          </div>
 
           <FileUploadDropzone
             asChild
             tabIndex={-1}
             onClick={(event) => event.preventDefault()}
-            className="group/dropzone relative w-full rounded-xl border border-transparent p-0 hover:bg-transparent! focus-visible:bg-transparent! data-dragging:border-primary/40 data-dragging:bg-transparent!"
+            className="group/dropzone relative min-h-0 w-full flex-1 overflow-hidden rounded-xl border border-transparent p-0 hover:bg-transparent! focus-visible:bg-transparent! data-dragging:border-primary/40 data-dragging:bg-transparent!"
           >
-            <div className="relative w-full" data-tour="media-grid">
+            <div
+              className="relative min-h-0 w-full overflow-x-hidden overflow-y-auto"
+              data-tour="media-grid"
+            >
               <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-background/50 opacity-0 backdrop-blur transition-opacity duration-200 ease-out group-data-dragging/dropzone:opacity-100">
                 <div className="flex flex-col items-center gap-1 text-center">
                   <div className="flex items-center justify-center rounded-full border p-2.5">
@@ -868,7 +911,9 @@ export default function Previews() {
 
               {!showMediaSkeleton && media.length === 0 ? (
                 <Card className="w-full p-8 text-center text-muted-foreground text-sm">
-                  {t('media.emptyFolder')}
+                  {trimmedSearch
+                    ? t('media.noSearchResults')
+                    : t('media.emptyFolder')}
                 </Card>
               ) : null}
 

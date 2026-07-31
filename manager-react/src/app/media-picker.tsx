@@ -28,13 +28,13 @@ function DefaultManagerMediaPicker({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
-      <DialogContent className="flex max-h-[95svh] w-screen max-w-[95vw]! flex-col gap-4 overflow-hidden p-4">
+      <DialogContent className="flex h-[min(95svh,920px)] max-h-[95svh] w-screen max-w-[95vw]! flex-col gap-4 overflow-hidden p-4">
         <DialogHeader className="shrink-0">
           <DialogTitle>{t('mediaPicker.title')}</DialogTitle>
           <DialogDescription>{t('mediaPicker.description')}</DialogDescription>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1">
+        <div className="min-h-0 flex-1 overflow-hidden">
           <MediaLibrary
             selectable
             isModal
