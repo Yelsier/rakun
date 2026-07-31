@@ -78,23 +78,20 @@ const highlightManagerPreviewTarget = (selectors: string[]) => {
 
     if (!target) return
 
-    const scrollArea = document.querySelector<HTMLElement>(
+    const scrollContainer = document.querySelector<HTMLElement>(
       '[data-rakun-manager-edit-scroll-area]',
     )
-    const viewport = scrollArea?.querySelector<HTMLElement>(
-      '[data-slot="scroll-area-viewport"]',
-    )
 
-    if (viewport?.contains(target)) {
-      const viewportRect = viewport.getBoundingClientRect()
+    if (scrollContainer?.contains(target)) {
+      const viewportRect = scrollContainer.getBoundingClientRect()
       const targetRect = target.getBoundingClientRect()
       const top =
-        viewport.scrollTop +
+        scrollContainer.scrollTop +
         targetRect.top -
         viewportRect.top -
-        (viewport.clientHeight - targetRect.height) / 2
+        (scrollContainer.clientHeight - targetRect.height) / 2
 
-      viewport.scrollTo({ top, behavior: 'smooth' })
+      scrollContainer.scrollTo({ top, behavior: 'smooth' })
     }
 
     target.classList.remove(managerPreviewSelectedClassName)
