@@ -614,7 +614,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
         )}
         {value.length > 0 && (
           <SortableContent className="max-h-full">
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 mt-4">
               {value.map((item, i) => {
                 const fieldConfig = props.fields.find((f) => f.name === item.name)
                 if (!fieldConfig) {
@@ -732,7 +732,9 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                           <Eye />
                                         </Button>
                                       </TooltipTrigger>
-                                      <TooltipContent side="top">{t('modules.moduleVisibility')}</TooltipContent>
+                                      <TooltipContent side="top">
+                                        {t('modules.moduleVisibility')}
+                                      </TooltipContent>
                                     </Tooltip>
                                   ) : null}
                                   {props.config.ui === 'Iterator' &&

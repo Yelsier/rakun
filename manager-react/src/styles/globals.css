@@ -202,7 +202,7 @@
 .rakun-manager-preview-selected {
   outline: 1px solid var(--primary);
   outline-offset: -1px;
-  border-radius: 1.5rem;
+  border-radius: calc(var(--radius) + 4px);
   animation: rakun-manager-preview-selected 2.2s ease-out;
 }
 

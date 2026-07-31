@@ -69,19 +69,20 @@ const revealAndScrollTo = (item: ModuleNavigationItem) => {
   })
 
   window.requestAnimationFrame(() => {
-    const scrollArea = document.querySelector<HTMLElement>('[data-rakun-manager-edit-scroll-area]')
-    const viewport = scrollArea?.querySelector<HTMLElement>('[data-slot="scroll-area-viewport"]')
+    const scrollContainer = document.querySelector<HTMLElement>(
+      '[data-rakun-manager-edit-scroll-area]'
+    )
 
-    if (viewport) {
-      const viewportRect = viewport.getBoundingClientRect()
+    if (scrollContainer) {
+      const viewportRect = scrollContainer.getBoundingClientRect()
       const itemRect = item.element.getBoundingClientRect()
       const top =
-        viewport.scrollTop +
+        scrollContainer.scrollTop +
         itemRect.top -
         viewportRect.top -
-        (viewport.clientHeight - itemRect.height) / 2
+        (scrollContainer.clientHeight - itemRect.height) / 2
 
-      viewport.scrollTo({ top, behavior: 'smooth' })
+      scrollContainer.scrollTo({ top, behavior: 'smooth' })
     }
 
     item.element.focus({ preventScroll: true })
