@@ -23,6 +23,10 @@ import { ElementFormatToolbarPlugin } from '@/components/editor/plugins/toolbar/
 import { FloatingLinkEditorPlugin } from '@/components/editor/plugins/toolbar/floating-link-editor-plugin'
 import { FontFormatToolbarPlugin } from '@/components/editor/plugins/toolbar/font-format-toolbar-plugin'
 import { HistoryToolbarPlugin } from '@/components/editor/plugins/toolbar/history-toolbar-plugin'
+import {
+  ImageToolbarPlugin,
+  ImagesPlugin,
+} from '@/components/editor/plugins/toolbar/image-toolbar-plugin'
 import { LinkPlugin } from '@/components/editor/plugins/toolbar/link-plugin'
 import { LinkToolbarPlugin } from '@/components/editor/plugins/toolbar/link-toolbar-plugin'
 import { ToolbarPlugin } from '@/components/editor/plugins/toolbar/toolbar-plugin'
@@ -163,6 +167,7 @@ export function Plugins({
             </BlockFormatDropDown>
             <Separator orientation="vertical" className="!h-7" />
             <LinkToolbarPlugin setIsLinkEditMode={setIsLinkEditMode} />
+            <ImageToolbarPlugin />
             <Separator orientation="vertical" className="!h-7" />
             <ClearFormattingToolbarPlugin />
             <Separator orientation="vertical" className="!h-7" />
@@ -203,6 +208,7 @@ export function Plugins({
         <ClickableLinkPlugin />
         <AutoLinkPlugin />
         <LinkPlugin />
+        <ImagesPlugin />
         <FloatingLinkEditorPlugin
           anchorElem={floatingAnchorElem}
           isLinkEditMode={isLinkEditMode}

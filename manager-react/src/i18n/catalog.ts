@@ -329,6 +329,8 @@ export const managerMessages = {
     params: { name: 'string' },
   },
   'media.searchFolders': { defaultMessage: 'Search folders...' },
+  'media.searchFiles': { defaultMessage: 'Search files by name...' },
+  'media.noSearchResults': { defaultMessage: 'No files match your search.' },
   'common.save': { defaultMessage: 'Save' },
   'common.close': { defaultMessage: 'Close' },
   'common.delete': { defaultMessage: 'Delete' },
@@ -672,6 +674,11 @@ export const managerMessages = {
   'contentEdit.invalidMediaFile': {
     defaultMessage: 'Selected file is not a valid {mediaType} media type',
     params: { mediaType: 'string' },
+  },
+
+  'richText.insertImage': { defaultMessage: 'Insert image from media library' },
+  'richText.insertImageError': {
+    defaultMessage: 'Could not insert image from media library',
   },
 
   'variants.nameThisVariant': { defaultMessage: 'Name this variant' },

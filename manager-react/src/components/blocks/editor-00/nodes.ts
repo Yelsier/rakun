@@ -3,6 +3,8 @@ import { ListItemNode, ListNode } from '@lexical/list'
 import { HeadingNode, QuoteNode } from '@lexical/rich-text'
 import { ParagraphNode, TextNode } from 'lexical'
 
+import { ImageNode } from '@/components/editor/nodes/ImageNode'
+
 export const nodes = [
   HeadingNode,
   ParagraphNode,
@@ -12,4 +14,5 @@ export const nodes = [
   ListItemNode,
   LinkNode,
   AutoLinkNode,
+  ImageNode,
 ]

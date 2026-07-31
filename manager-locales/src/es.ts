@@ -218,6 +218,8 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
     'Se produjo un error inesperado durante la subida. Inténtalo de nuevo.',
   'media.fileRejected': '"{name}" ha sido rechazado',
   'media.searchFolders': 'Buscar carpetas...',
+  'media.searchFiles': 'Buscar archivos por nombre...',
+  'media.noSearchResults': 'Ningún archivo coincide con tu búsqueda.',
   'common.save': 'Guardar',
   'common.close': 'Cerrar',
   'common.delete': 'Eliminar',
@@ -429,6 +431,9 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'contentEdit.invalidMediaFiles': 'Los archivos seleccionados no son medios {mediaType} válidos',
   'contentEdit.invalidMediaFile':
     'El archivo seleccionado no es un tipo de medio {mediaType} válido',
+  'richText.insertImage': 'Insertar imagen desde la biblioteca de medios',
+  'richText.insertImageError':
+    'No se pudo insertar la imagen desde la biblioteca de medios',
   'variants.nameThisVariant': 'Nombra esta variante',
   'variants.nameDescription':
     'Dale un nombre identificativo corto. Es independiente del título del contenido y se usará en la lista de variantes.',

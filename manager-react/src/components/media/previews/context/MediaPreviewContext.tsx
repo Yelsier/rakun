@@ -14,6 +14,8 @@ type MediaPreviewContextValue = {
   mediaTypeFilter: MediaTypeFilter
   isMediaTypeFilterLocked: boolean
   setMediaTypeFilter: (value: MediaTypeFilter) => void
+  searchTerm: string
+  setSearchTerm: (value: string) => void
   viewMode: ViewMode
   setViewMode: (value: ViewMode) => void
   isSelected: (id: string) => boolean

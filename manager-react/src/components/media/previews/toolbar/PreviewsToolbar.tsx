@@ -24,6 +24,7 @@ import { ToggleGroup, ToggleGroupItem } from '../../../ui/toggle-group'
 import { useMediaLibrary } from '../../contexts/MediaLibraryContext'
 import { useMediaPreview } from '../context/MediaPreviewContext'
 
+import { SearchInput } from '@/components/search-input'
 import { useTranslations } from '@/i18n'
 
 const OPTIMIZE_FORMATS = ['webp', 'jpeg', 'png', 'avif'] as const
@@ -36,6 +37,8 @@ export default function PreviewsToolbar() {
     mediaTypeFilter,
     isMediaTypeFilterLocked,
     setMediaTypeFilter,
+    searchTerm,
+    setSearchTerm,
     viewMode,
     setViewMode,
   } = useMediaPreview()
@@ -49,9 +52,18 @@ export default function PreviewsToolbar() {
 
   return (
     <div className="flex items-center justify-between gap-2 flex-wrap" data-tour="media-toolbar">
-      <p className="text-muted-foreground text-sm">
-        {t('media.fileCount', { count: mediaCount })}
-      </p>
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+        <p className="text-muted-foreground text-sm">
+          {t('media.fileCount', { count: mediaCount })}
+        </p>
+        <SearchInput
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          placeholder={t('media.searchFiles')}
+          className="max-w-xs"
+          data-tour="media-search"
+        />
+      </div>
       <div className="flex items-center gap-2 flex-wrap">
         <FileUploadTrigger asChild>
           <Button size={'sm'} variant={'outline'}>
