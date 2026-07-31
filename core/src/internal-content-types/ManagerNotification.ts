@@ -16,6 +16,7 @@ export const ManagerNotification = new ContentType({
       "review_approved",
       "review_changes_requested",
       "review_feedback",
+      "redirect_enable_requested",
     ]),
     reviewId: Fields.string().type("Id"),
     contentType: Fields.string().required(),

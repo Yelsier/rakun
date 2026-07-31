@@ -88,6 +88,17 @@ describe('review workflow', () => {
         read: false,
       }).success,
     ).toBe(true)
+    expect(
+      notificationItem.safeParse({
+        _id: 'notification',
+        kind: 'redirect_enable_requested',
+        contentType: 'Redirect',
+        documentId: 'redirect',
+        text: 'Enable redirect',
+        author: { _id: 'user', user: 'editor', avatar: null },
+        read: false,
+      }).success,
+    ).toBe(true)
     expect(getPermissionList()).toContain('review.policy.configure')
     expect(getPermissionList()).toContain('review.workflow.selfApprove')
   })

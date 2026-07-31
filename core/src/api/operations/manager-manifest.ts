@@ -31,6 +31,11 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/regenerateRoutes",
   },
+  "manager.routes.previewSlugRedirects": {
+    kind: "query",
+    method: "post",
+    path: "/manager/routes/previewSlugRedirects",
+  },
   "manager.create": {
     kind: "mutation",
     method: "post",

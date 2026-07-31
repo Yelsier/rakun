@@ -43,6 +43,7 @@ export const createContentVersionOutput = z.object({
 
 export const promoteContentVersionInput = contentVersionReferenceInput.extend({
   languageCodes: z.array(z.string()).optional(),
+  createPermanentRedirects: z.boolean().optional(),
 })
 
 export const promoteContentVersionOutput = z.object({

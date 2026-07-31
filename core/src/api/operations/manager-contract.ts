@@ -96,6 +96,8 @@ import {
   prepareUploadOutput,
   createPreviewInput,
   createPreviewOutput,
+  previewSlugRedirectsInput,
+  previewSlugRedirectsOutput,
   restoreBackupInput,
   restoreBackupOutput,
   restoreVersionInput,
@@ -166,6 +168,15 @@ export const createManagerOperationContracts = () =>
       kind: "mutation",
       description: "Regenerate all routes map",
       output: okOutput,
+      method: "post",
+    }),
+    "manager.routes.previewSlugRedirects": defineOperationContract({
+      access: "auth",
+      kind: "query",
+      description:
+        "Preview permanent redirects needed when a published slug/path would change",
+      input: previewSlugRedirectsInput,
+      output: previewSlugRedirectsOutput,
       method: "post",
     }),
     "manager.create": defineOperationContract({

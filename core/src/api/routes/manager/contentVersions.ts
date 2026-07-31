@@ -20,6 +20,8 @@ import {
 } from '../../utils/reviews'
 import { requireContentType } from '../../utils/requireContentType'
 import { updateSingleRouteMap } from '../../utils/routes/updateRoutesMap'
+import { createSlugChangeRedirects } from '../../utils/redirects/createSlugChangeRedirects'
+import { computeSlugPathChanges } from '../../utils/redirects/slugPathChanges'
 import {
   LOCALE_VARIANT_GROUP_FIELD,
   LOCALE_VARIANT_NAME_FIELD,
@@ -281,6 +283,13 @@ export const promoteContentVersionHandler = async ({
 
   let versions: ListContentVersionsOutput | undefined
   if (isRouteable && input.languageCodes) {
+    const pathChanges = await computeSlugPathChanges({
+      contentType: input.contentType,
+      documentId: input.documentId,
+      assumePublished: true,
+      languageCodes: input.languageCodes,
+    })
+
     await assignLocaleVariant({
       contentType: input.contentType,
       documentId: input.documentId,
@@ -291,6 +300,16 @@ export const promoteContentVersionHandler = async ({
       contentType: input.contentType,
       contentTypeId: input.documentId,
     })
+
+    if (pathChanges.length > 0) {
+      await createSlugChangeRedirects({
+        changes: pathChanges,
+        user,
+        sourceContentType: input.contentType,
+        sourceDocumentId: input.documentId,
+      })
+    }
+
     versions = await toContentVersions({ input })
   }
 

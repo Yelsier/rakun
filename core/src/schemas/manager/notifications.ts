@@ -20,6 +20,7 @@ export const notificationItem = z.object({
       "review_approved",
       "review_changes_requested",
       "review_feedback",
+      "redirect_enable_requested",
     ])
     .optional(),
   commentId: z.string().optional(),

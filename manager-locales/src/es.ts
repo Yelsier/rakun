@@ -201,6 +201,7 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'fields.intent': 'Intención',
   'fields.priorityNotes': 'Notas de prioridad',
   'dataTable.noResults': 'Sin resultados.',
+  'dataTable.resizeColumn': 'Redimensionar columna',
   'visibility.draft': 'Borrador',
   'visibility.hidden': 'Oculto',
   'visibility.published': 'Publicado',

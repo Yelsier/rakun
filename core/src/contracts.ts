@@ -21,6 +21,7 @@ export * from "./schemas/manager/reviews";
 export * from "./schemas/manager/routeLayout";
 export * from "./schemas/manager/translateDocument";
 export * from "./schemas/manager/preview";
+export * from "./schemas/manager/slugRedirects";
 export * from "./schemas/manager/updatePassword";
 export * from "./schemas/manager/literals/list";
 export * from "./schemas/manager/literals/upsert";

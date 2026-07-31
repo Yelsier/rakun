@@ -36,6 +36,8 @@ import {
   getRelationId,
   getReviewPolicyForRole,
 } from "../../utils/reviews";
+import { createSlugChangeRedirects } from "../../utils/redirects/createSlugChangeRedirects";
+import { computeSlugPathChanges } from "../../utils/redirects/slugPathChanges";
 
 export const updateHandler = async ({
   input,
@@ -248,11 +250,26 @@ export const updateHandler = async ({
     );
     Logger.addTrace("manager.update: db update success", { id: updated._id });
 
+    // Capture path diffs before route maps are rebuilt by revalidation.
+    const pathChanges = await computeSlugPathChanges({
+      contentType: contentType.name,
+      documentId: updated._id,
+    });
+
     await checkRevalidatePath({
       contentType: contentType.name,
       contentTypeId: updated._id,
       operation: "update",
     });
+
+    if (pathChanges.length > 0) {
+      await createSlugChangeRedirects({
+        changes: pathChanges,
+        user,
+        sourceContentType: contentType.name,
+        sourceDocumentId: updated._id,
+      });
+    }
 
     if (linkedIteratorChanged) {
       await revalidateContentTypePaths(contentType.name);
