@@ -32,8 +32,17 @@ export const applyManagerUserHooks = (
 
       return hashManagerPassword(record);
     },
-    beforeUpdate: ({ data }) => {
+    beforeUpdate: ({ data, context }) => {
       const record = { ...(data as Record<string, unknown>) };
+      if (
+        Object.prototype.hasOwnProperty.call(record, 'twoFactorEnabled') &&
+        context.requestContext &&
+        context.reason !== 'mfa-state-sync'
+      ) {
+        throwAppError('FORBIDDEN', {
+          reason: 'MFA state can only be changed by the MFA enrollment flow',
+        })
+      }
       const password = getPassword(record);
 
       if (password === undefined || password.trim() === "") {

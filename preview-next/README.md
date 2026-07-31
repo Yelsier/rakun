@@ -14,6 +14,7 @@ PREVIEW_ADMIN_NAME=Preview Admin
 PREVIEW_ADMIN_PASSWORD=admin1234
 RESEND_API_KEY=
 RAKUN_MAIL_FROM=
+RAKUN_MANAGER_URL=http://localhost:3000/backend
 ```
 
 Run the app:
@@ -136,6 +137,9 @@ operation. Preview and compatibility-check the same template with:
 bun run mail:preview
 bun run mail:check
 ```
+
+Those variables also enable manager account recovery. Password reset emails use
+`RAKUN_MANAGER_URL` as their public manager base URL.
 
 Mail attempts and results are persisted in the generic Rakun event log. Open
 `/backend/settings/logs` to inspect them through the built-in manager UI. Its

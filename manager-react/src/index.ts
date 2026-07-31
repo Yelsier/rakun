@@ -1,6 +1,7 @@
 export * from "./app/app-provider";
 export * from "./app/bootstrap";
 export * from "./components/login-form";
+export * from './components/rakun-logo'
 export * from "./client/http";
 export * from "./state/language";
 export * from "./state/users";

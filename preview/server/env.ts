@@ -31,4 +31,10 @@ export const env = {
   adminEmail: readEnv("PREVIEW_ADMIN_EMAIL", "admin@example.com"),
   adminPassword: readEnv("PREVIEW_ADMIN_PASSWORD", "admin123"),
   adminName: readEnv("PREVIEW_ADMIN_NAME", "Preview Admin"),
+  resendApiKey: process.env.RESEND_API_KEY?.trim(),
+  mailFrom: process.env.RAKUN_MAIL_FROM?.trim(),
+  managerPublicUrl: readEnv(
+    'RAKUN_MANAGER_URL',
+    `http://localhost:5173${readEnv('MANAGER_BASE_PATH', '/backend')}`,
+  ),
 };

@@ -3,6 +3,7 @@ import express from "express";
 import { defineOperation, rakunBootstrap } from "@rakun-kit/core";
 import { rakunExpress } from "@rakun-kit/express";
 import { createLocalMediaServiceConfig } from "@rakun-kit/express/media";
+import { createResendMailServiceConfig } from '@rakun-kit/resend'
 import { z } from "zod";
 
 import { Footer, Header, Page, previewContentTypes } from "./content-types";
@@ -43,6 +44,22 @@ rakunBootstrap({
     tokenSecret: env.mediaTokenSecret,
     defaultAccess: "private",
   }),
+  mail:
+    env.resendApiKey && env.mailFrom
+      ? createResendMailServiceConfig({
+          apiKey: env.resendApiKey,
+          defaultFrom: env.mailFrom,
+        })
+      : undefined,
+  accountRecovery:
+    env.resendApiKey && env.mailFrom
+      ? {
+          passwordReset: {
+            createUrl: (token) =>
+              `${env.managerPublicUrl.replace(/\/+$/, '')}/reset-password?token=${encodeURIComponent(token)}`,
+          },
+        }
+      : undefined,
   apiOperations: {
     "demo.helloWorld": defineOperation<
       { text: string },

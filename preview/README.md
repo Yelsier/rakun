@@ -51,6 +51,7 @@ PREVIEW_ADMIN_NAME=Preview Admin
 RESEND_API_KEY=
 RAKUN_MAIL_FROM=
 RAKUN_MAIL_TO=
+RAKUN_MANAGER_URL=http://localhost:5173/backend
 ```
 
 ## Scripts
@@ -91,3 +92,7 @@ bun run preview:mail:send
 
 This command is opt-in and is never executed by the normal preview or test
 scripts.
+
+When `RESEND_API_KEY` and `RAKUN_MAIL_FROM` are configured, the manager account
+recovery flow is also enabled. `RAKUN_MANAGER_URL` is used as the public base
+URL in password reset emails.

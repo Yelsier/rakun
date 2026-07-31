@@ -7,6 +7,10 @@ import { ManagerDashboardHomeScreen } from "../dashboard";
 import { ManagerLoginScreen } from "../login";
 import { ManagerMediaLibraryScreen } from "../dashboard/media";
 import { ManagerMfaScreen } from "../mfa";
+import {
+  ManagerForgotPasswordScreen,
+  ManagerResetPasswordScreen,
+} from '../password-recovery'
 import { ManagerSettingsLanguagesScreen } from "../dashboard/settings/languages";
 import { ManagerSettingsLiteralsScreen } from "../dashboard/settings/literals";
 import { ManagerSettingsRedirectsScreen } from "../dashboard/settings/redirects";
@@ -39,7 +43,33 @@ export const managerRouteDefinitions = [
     path: "/login",
     layout: "auth",
     parse: () => ({ kind: "login" }),
-    render: (_route, props) => props.renderLogin?.() ?? <ManagerLoginScreen />,
+    render: (_route, props) =>
+      props.renderLogin?.() ?? (
+        <ManagerLoginScreen
+          passwordRecoveryEnabled={props.passwordRecoveryEnabled}
+        />
+      ),
+  }),
+  defineManagerRoute({
+    kind: 'forgot-password',
+    path: '/forgot-password',
+    layout: 'auth',
+    parse: () => ({ kind: 'forgot-password' }),
+    render: (_route, props) =>
+      props.renderForgotPassword?.() ?? <ManagerForgotPasswordScreen />,
+  }),
+  defineManagerRoute({
+    kind: 'reset-password',
+    path: '/reset-password',
+    layout: 'auth',
+    parse: ({ searchParams }) => ({
+      kind: 'reset-password',
+      token: getSearchParam(searchParams, 'token'),
+    }),
+    render: (route, props) =>
+      props.renderResetPassword?.(route) ?? (
+        <ManagerResetPasswordScreen token={route.token} />
+      ),
   }),
   defineManagerRoute({
     kind: "mfa",

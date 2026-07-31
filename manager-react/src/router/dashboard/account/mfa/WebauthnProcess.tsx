@@ -12,15 +12,19 @@ import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { useTranslations } from '@/i18n'
+import { RecoveryCodes } from './RecoveryCodes'
 
 export const WebauthnProcess = ({
   closeDialog,
+  onCodesReady,
 }: {
   closeDialog: () => void
+  onCodesReady: () => void
 }) => {
   const t = useTranslations()
   const client = useManagerClient()
   const [loading, setLoading] = useState(false)
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null)
   const mutation = useManagerMutation('manager.auth.webauthn.register.verify')
 
   const form = useForm<Pick<WebauthnRegisterVerifyInput, 'deviceName'>>({
@@ -58,7 +62,12 @@ export const WebauthnProcess = ({
               toast.success(
                 t('account.mfa.deviceRegistered'),
               )
-              closeDialog()
+              if (result.recoveryCodes.length > 0) {
+                setRecoveryCodes(result.recoveryCodes)
+                onCodesReady()
+              } else {
+                closeDialog()
+              }
             } else {
               toast.error(t('account.mfa.registerDeviceFailed'))
               form.reset()
@@ -78,6 +87,10 @@ export const WebauthnProcess = ({
       toast.error(t('account.mfa.registerDeviceFailed'))
       form.reset()
     }
+  }
+
+  if (recoveryCodes) {
+    return <RecoveryCodes codes={recoveryCodes} onDone={closeDialog} />
   }
 
   return (

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   extendManagerLanguagePack,
+  ManagerUiLocalesOutputSchema,
   type ManagerLanguagePack,
 } from './uiLocales'
 
@@ -29,6 +30,22 @@ describe('extendManagerLanguagePack', () => {
     })
     expect(languagePack.messages).toEqual({
       existing: 'Original',
+    })
+  })
+
+  test('exposes password recovery availability as a required feature flag', () => {
+    expect(
+      ManagerUiLocalesOutputSchema.parse({
+        locales: [],
+        features: {
+          passwordRecovery: true,
+        },
+      }),
+    ).toEqual({
+      locales: [],
+      features: {
+        passwordRecovery: true,
+      },
     })
   })
 })

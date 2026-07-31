@@ -279,6 +279,11 @@ export const ensureRakunBootstrap = (options: RakunBootstrapOptions) => {
 };
 
 export type { RakunBootstrapOptions, ResolvedRakunBootstrapOptions };
+export type {
+  AccountRecoveryConfig,
+  PasswordResetMailProps,
+} from './auth/accountRecovery'
+export { passwordResetMailTemplate } from './auth/passwordResetMailTemplate'
 export {
   defineRakunPlugin,
   assertRakunPluginFieldsDeclared,

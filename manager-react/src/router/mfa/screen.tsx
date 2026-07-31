@@ -1,6 +1,6 @@
 "use client";
 
-import type { JSX } from "react";
+import { useState, type JSX } from "react";
 
 import { useManagerRuntimeAuth } from "@/app/runtime-auth";
 import { useManagerNavigation } from "@/state/navigation";
@@ -16,6 +16,7 @@ import { useTranslations } from "@/i18n";
 
 import TotpForm from "./totp";
 import WebauthnForm from "./webauthnn";
+import RecoveryCodeForm from './recovery-code'
 
 type ManagerMfaScreenProps = {
   challenge?: string;
@@ -31,6 +32,7 @@ export function ManagerMfaScreen({
   const t = useTranslations();
   const navigation = useManagerNavigation();
   const { refreshAuth } = useManagerRuntimeAuth();
+  const [useRecoveryCode, setUseRecoveryCode] = useState(false)
 
   const navigateToManagerRoot = () => {
     if (navigation.replacePath) {
@@ -87,8 +89,45 @@ export function ManagerMfaScreen({
       }
     : {};
 
+  if (challenge && useRecoveryCode) {
+    return (
+      <div className='space-y-3'>
+        <RecoveryCodeForm
+          challenge={challenge}
+          onExpired={goToLogin}
+          onSuccess={completeAuth}
+        />
+        <Button
+          className='w-full'
+          onClick={() => setUseRecoveryCode(false)}
+          type='button'
+          variant='link'
+        >
+          {t('mfa.usePrimaryMethod')}
+        </Button>
+      </div>
+    )
+  }
+
+  const primaryMethod = methodsMap[method ?? '']
+
   return (
-    methodsMap[method ?? ""] || (
+    primaryMethod ? (
+      <div className='space-y-3'>
+        {primaryMethod}
+        <Button
+          className='w-full'
+          onClick={() => setUseRecoveryCode(true)}
+          type='button'
+          variant='link'
+        >
+          {t('mfa.useRecoveryCode')}
+        </Button>
+        <p className='text-muted-foreground max-w-sm text-center text-xs'>
+          {t('mfa.noRecoveryAccess')}
+        </p>
+      </div>
+    ) : (
       <div>{t("mfa.unsupportedMethod")}</div>
     )
   );

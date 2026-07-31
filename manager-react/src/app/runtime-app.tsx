@@ -14,6 +14,7 @@ import { loadManagerBootstrap } from "@/app/bootstrap";
 import {
   createPathManagerNavigation,
   getManagerPathHref,
+  getManagerRelativePathname,
   ManagerNavigationProvider,
 } from "../state/navigation";
 import type { ManagerNavigation } from "../state/navigation";
@@ -24,7 +25,10 @@ import { SessionProvider } from "@/state/session";
 import { LanguageProvider } from "@/state/language";
 import { ManagerUsersProvider } from "@/state/users";
 import { ManagerRootProviders } from "@/app/root-providers";
-import { ManagerLoadingFallback } from "@/components/manager-loading-fallback";
+import {
+  ManagerAuthLoadingFallback,
+  ManagerLoadingFallback,
+} from "@/components/manager-loading-fallback";
 import { ManagerLinkProvider, type ManagerLinkComponent } from "@/link";
 import {
   ManagerRuntimeAuthProvider,
@@ -97,6 +101,13 @@ export type ManagerBrowserAppProps = Omit<
   overrides?: ManagerAppOverrides;
 };
 
+const authLoadingPaths = new Set([
+  '/forgot-password',
+  '/login',
+  '/mfa',
+  '/reset-password',
+])
+
 export const ManagerRuntimeApp = ({
   client,
   navigation,
@@ -114,6 +125,8 @@ export const ManagerRuntimeApp = ({
 }: ManagerRuntimeAppProps) => {
   const queryClient = useMemo(() => createManagerQueryClient(), []);
   const [localePacks, setLocalePacks] = useState<ManagerLocaleInputPack[]>([]);
+  const [managerUiLoaded, setManagerUiLoaded] = useState(false)
+  const [passwordRecoveryEnabled, setPasswordRecoveryEnabled] = useState(false)
   const scopedNavigation = useMemo<ManagerNavigation>(
     () => ({
       ...navigation,
@@ -136,20 +149,37 @@ export const ManagerRuntimeApp = ({
   );
   const [state, setState] = useState<BootstrapState>({ status: "loading" });
   const bootstrapRunRef = useRef(0);
+  const managerPathname = getManagerRelativePathname(pathname, { basePath })
+  const useAuthLoadingFallback = authLoadingPaths.has(
+    managerPathname.replace(/\/+$/, '') || '/',
+  )
 
   useEffect(() => {
     let cancelled = false
+    setManagerUiLoaded(false)
 
     void client
       .request('manager.uiLocales')
       .then((result) => {
         if (cancelled) return
-        const locales = (result as { locales?: ManagerLocaleInputPack[] }).locales
+        const uiConfig = result as {
+          locales?: ManagerLocaleInputPack[]
+          features?: {
+            passwordRecovery?: boolean
+          }
+        }
+        const locales = uiConfig.locales
         setLocalePacks(Array.isArray(locales) ? locales : [])
+        setPasswordRecoveryEnabled(
+          uiConfig.features?.passwordRecovery === true,
+        )
+        setManagerUiLoaded(true)
       })
       .catch(() => {
         if (cancelled) return
         setLocalePacks([])
+        setPasswordRecoveryEnabled(false)
+        setManagerUiLoaded(true)
       })
 
     return () => {
@@ -266,6 +296,8 @@ export const ManagerRuntimeApp = ({
     });
   }, [bootstrap, pathname, searchParams, state.status]);
 
+  const isLoading = state.status === 'loading' || !managerUiLoaded
+
   return (
     <ManagerRootProviders>
       <ManagerI18nProvider localePacks={localePacks}>
@@ -279,11 +311,18 @@ export const ManagerRuntimeApp = ({
                       renderMediaPicker ?? renderDefaultManagerMediaPicker
                     }
                   >
-                    {state.status === "loading" ? (
-                      <>{loadingFallback ?? <ManagerLoadingFallback />}</>
+                    {isLoading ? (
+                      <>
+                        {loadingFallback ??
+                          (useAuthLoadingFallback ? (
+                            <ManagerAuthLoadingFallback />
+                          ) : (
+                            <ManagerLoadingFallback />
+                          ))}
+                      </>
                     ) : null}
 
-                    {state.status === "error" ? (
+                    {!isLoading && state.status === "error" ? (
                       <>
                         {errorFallback?.(state.message) ?? (
                           <BootstrapFailedMessage message={state.message} />
@@ -291,13 +330,14 @@ export const ManagerRuntimeApp = ({
                       </>
                     ) : null}
 
-                    {state.status === "unauthenticated" ? (
+                    {!isLoading && state.status === "unauthenticated" ? (
                       <>
                         {unauthenticatedFallback ?? (
                           <ManagerApp
                             pathname={pathname}
                             basePath={basePath}
                             searchParams={searchParams}
+                            passwordRecoveryEnabled={passwordRecoveryEnabled}
                             preview={preview}
                             plugins={plugins}
                             {...overrides}
@@ -306,7 +346,7 @@ export const ManagerRuntimeApp = ({
                       </>
                     ) : null}
 
-                    {state.status === "ready" ? (
+                    {!isLoading && state.status === "ready" ? (
                       <SessionProvider
                         initialUser={state.user}
                         contentTypes={state.contentTypes}
@@ -322,6 +362,7 @@ export const ManagerRuntimeApp = ({
                               searchParams={searchParams}
                               contentTypes={state.contentTypes}
                               authenticated
+                              passwordRecoveryEnabled={passwordRecoveryEnabled}
                               preview={preview}
                               plugins={plugins}
                               {...overrides}

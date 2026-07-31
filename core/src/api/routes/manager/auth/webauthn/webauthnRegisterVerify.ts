@@ -13,6 +13,8 @@ import {
 import { throwAppError } from "../../../../../lib/errors";
 import { getMongoService } from "../../../../../orm";
 import { RakunRequestContext } from "../../../../context";
+import { generateRecoveryCodes } from '../../../../utils/recoveryCodes'
+import { recordAuthEvent } from '../../../../utils/authEvents'
 
 const toBase64URL = (buf: Buffer) => buf.toString("base64url");
 
@@ -85,24 +87,53 @@ export const webauthnRegisterVerifyHandler = async ({
   await db.update(WebAuthnRegChallenge, reg._id, { consumedAt: new Date() });
 
   let mfa = await db.find(UserMfa, { "user._id": user._id });
+  const wasMfaEnabled = Boolean(mfa?.enabled)
+  const recovery =
+    mfa?.recoveryCodeHashes?.length ? null : generateRecoveryCodes()
   if (!mfa) {
     mfa = await db.create(UserMfa, {
       user: { _id: user._id, contentType: ManagerUser.name, type: "existing" },
       enabled: true,
       preferredMethod: "webauthn",
+      recoveryCodeHashes: recovery?.hashes ?? [],
+      recoveryCodesGeneratedAt: new Date(),
       _type: "UserMfa",
-    });
+    }, { reason: 'mfa webauthn enabled' });
   } else {
     await db.update(UserMfa, mfa._id, {
       enabled: true,
       preferredMethod: "webauthn",
       totpSecretPending: null,
-    });
+      ...(recovery
+        ? {
+            recoveryCodeHashes: recovery.hashes,
+            recoveryCodesGeneratedAt: new Date(),
+          }
+        : {}),
+    }, { reason: 'mfa webauthn enabled' });
   }
 
   await db.update(ManagerUser, user._id, {
     twoFactorEnabled: true,
-  });
+  }, { reason: 'mfa-state-sync' });
 
-  return { ok: true };
+  await recordAuthEvent({
+    type: wasMfaEnabled
+      ? 'auth.mfa.method-registered'
+      : 'auth.mfa.enabled',
+    outcome: 'success',
+    ctx,
+    actor: { type: 'manager-user', id: String(user._id) },
+    resource: { type: 'ManagerUser', id: String(user._id) },
+    tags: ['mfa', 'webauthn'],
+    data: {
+      method: 'webauthn',
+      recoveryCodesGenerated: Boolean(recovery),
+    },
+  })
+
+  return {
+    ok: true as const,
+    recoveryCodes: recovery?.codes ?? [],
+  };
 };

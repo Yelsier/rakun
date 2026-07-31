@@ -15,6 +15,12 @@ export const MfaEnroller = ({ children }: { children: ReactNode }) => {
   const t = useTranslations()
   const { user } = useSession()
   const [open, setOpen] = useState(false)
+  const [codesPending, setCodesPending] = useState(false)
+
+  const closeDialog = () => {
+    setCodesPending(false)
+    setOpen(false)
+  }
 
   useEffect(() => {
     if (!user.twoFactorEnabled) {
@@ -37,10 +43,24 @@ export const MfaEnroller = ({ children }: { children: ReactNode }) => {
 
   return (
     <>
-      <div onClick={() => setOpen(true)}>{children}</div>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <div
+        onClick={() => {
+          setCodesPending(false)
+          setOpen(true)
+        }}
+      >
+        {children}
+      </div>
+      <Dialog
+        open={open}
+        onOpenChange={(value) => {
+          if (!value && codesPending) return
+          setOpen(value)
+        }}
+      >
         <DialogContent
           className='w-92'
+          showCloseButton={!codesPending}
           onInteractOutside={(event) => {
             event.preventDefault()
           }}
@@ -50,15 +70,21 @@ export const MfaEnroller = ({ children }: { children: ReactNode }) => {
           </DialogHeader>
 
           <Tabs defaultValue='totp' className='gap-4'>
-            <TabsList>
+            <TabsList className={codesPending ? 'pointer-events-none' : undefined}>
               <TabsTrigger value='totp'>{t('account.mfa.totp')}</TabsTrigger>
               <TabsTrigger value='webauthn'>{t('account.mfa.webauthn')}</TabsTrigger>
             </TabsList>
             <TabsContent value='totp'>
-              <TotpProcess closeDialog={() => setOpen(false)} />
+              <TotpProcess
+                closeDialog={closeDialog}
+                onCodesReady={() => setCodesPending(true)}
+              />
             </TabsContent>
             <TabsContent value='webauthn'>
-              <WebauthnProcess closeDialog={() => setOpen(false)} />
+              <WebauthnProcess
+                closeDialog={closeDialog}
+                onCodesReady={() => setCodesPending(true)}
+              />
             </TabsContent>
           </Tabs>
         </DialogContent>

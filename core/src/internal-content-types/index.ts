@@ -19,6 +19,7 @@ export * from "./MediaFolder";
 export * from "./Migration";
 export * from "./MigrationLock";
 export * from "./MfaChallenge";
+export * from './PasswordResetToken'
 export * from "./Route";
 export * from "./RouteLocaleVariant";
 export * from "./RouteLayoutModule";

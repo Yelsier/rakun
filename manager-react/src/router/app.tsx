@@ -13,7 +13,10 @@ import {
 } from '../plugins'
 
 const isAuthRoute = (route: ManagerResolvedRoute) =>
-  route.kind === "login" || route.kind === "mfa";
+  route.kind === "login" ||
+  route.kind === 'forgot-password' ||
+  route.kind === 'reset-password' ||
+  route.kind === "mfa";
 
 const ManagerAppContent = ({
   pathname,
@@ -32,7 +35,11 @@ const ManagerAppContent = ({
     contentTypes: props.contentTypes,
   });
   const managerPathname = getManagerRelativePathname(pathname, { basePath });
-  const shouldRedirectToLogin = !authenticated && !isAuthRoute(route);
+  const passwordRecoveryUnavailable =
+    !props.passwordRecoveryEnabled &&
+    (route.kind === 'forgot-password' || route.kind === 'reset-password')
+  const shouldRedirectToLogin =
+    passwordRecoveryUnavailable || (!authenticated && !isAuthRoute(route));
 
   useEffect(() => {
     if (!shouldRedirectToLogin) return;
@@ -48,6 +55,7 @@ const ManagerAppContent = ({
         route={{ kind: "login" }}
         pathname="/login"
         basePath={basePath}
+        passwordRecoveryEnabled={props.passwordRecoveryEnabled}
         {...props}
         searchParams={searchParams}
       />

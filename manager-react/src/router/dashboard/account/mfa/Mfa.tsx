@@ -5,6 +5,7 @@ import type { AccountInfoOutput } from '@rakun-kit/core/contracts'
 import { Button } from '@/components/ui/button'
 import { useTranslations } from '@/i18n'
 import { MfaEnroller } from './MfaEnroller'
+import { RecoveryCodesRegenerator } from './RecoveryCodesRegenerator'
 
 export default function Mfa(props: AccountInfoOutput) {
   const t = useTranslations()
@@ -15,15 +16,27 @@ export default function Mfa(props: AccountInfoOutput) {
           <h2 className='mb-4 text-xl font-bold'>{t('account.mfa.title')}</h2>
           <p className='mb-4'>
             {props.has2FA
-              ? `You have 2FA enabled using ${props.method2FA.toUpperCase()}.`
-              : 'You do not have 2FA enabled.'}
+              ? t('account.mfa.enabledWithMethod', {
+                  method: props.method2FA.toUpperCase(),
+                })
+              : t('account.mfa.notEnabled')}
           </p>
+          {props.has2FA ? (
+            <p className='text-muted-foreground max-w-xl text-sm'>
+              {t('account.mfa.noBypassWarning')}
+            </p>
+          ) : null}
         </div>
-        <MfaEnroller>
-          <Button variant='outline'>
-            {props.has2FA ? 'Update 2FA' : 'Set up 2FA'}
-          </Button>
-        </MfaEnroller>
+        <div className='flex flex-wrap justify-end gap-2'>
+          {props.has2FA ? <RecoveryCodesRegenerator /> : null}
+          <MfaEnroller>
+            <Button variant='outline'>
+              {props.has2FA
+                ? t('account.mfa.updateAction')
+                : t('account.mfa.setupAction')}
+            </Button>
+          </MfaEnroller>
+        </div>
       </div>
     </div>
   )

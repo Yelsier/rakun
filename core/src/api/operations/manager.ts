@@ -66,6 +66,12 @@ import { updateAccountHandler } from "../routes/manager/auth/updateAccount";
 import { updateTutorialPreferencesHandler } from "../routes/manager/auth/updateTutorialPreferences";
 import { markTourSeenHandler } from "../routes/manager/auth/markTourSeen";
 import { deleteSessionHandler } from "../routes/manager/auth/deleteSession";
+import {
+  requestPasswordResetHandler,
+  resetPasswordHandler,
+} from '../routes/manager/auth/passwordRecovery'
+import { verifyRecoveryCodeHandler } from '../routes/manager/auth/mfa/verifyRecoveryCode'
+import { regenerateRecoveryCodesHandler } from '../routes/manager/auth/mfa/regenerateRecoveryCodes'
 import { prepareUploadHandler } from "../routes/manager/media/prepareUpload";
 import { finalizeUploadHandler } from "../routes/manager/media/finalizeUpload";
 import { getMediaUrlHandler } from "../routes/manager/media/getMediaUrl";
@@ -299,6 +305,12 @@ export const createManagerOperationDefinitions = () => {
     "manager.auth.updatePassword": {
       resolve: updatePasswordHandler,
     },
+    'manager.auth.password.requestReset': {
+      resolve: requestPasswordResetHandler,
+    },
+    'manager.auth.password.reset': {
+      resolve: resetPasswordHandler,
+    },
     "manager.auth.login": {
       resolve: loginHandler,
       onSuccess: ({ ctx, result }) => {
@@ -348,6 +360,19 @@ export const createManagerOperationDefinitions = () => {
           });
         }
       },
+    },
+    'manager.auth.mfa.verifyRecoveryCode': {
+      resolve: verifyRecoveryCodeHandler,
+      onSuccess: ({ ctx, result }) => {
+        if ('token' in result) {
+          setSessionCookie(ctx, result.token, {
+            maxAge: Math.max(0, Date.parse(result.expiresAt) - Date.now()),
+          })
+        }
+      },
+    },
+    'manager.auth.mfa.regenerateRecoveryCodes': {
+      resolve: regenerateRecoveryCodesHandler,
     },
     "manager.auth.webauthn.register.options": {
       resolve: webauthnRegisterOptionsHandler,

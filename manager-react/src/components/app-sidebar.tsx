@@ -1,12 +1,4 @@
-import {
-  Command,
-  HelpCircle,
-  Images,
-  Network,
-  Settings,
-  User,
-  type LucideIcon,
-} from 'lucide-react'
+import { HelpCircle, Images, Network, Settings, User, type LucideIcon } from 'lucide-react'
 import type { EncodedContentType, Permission } from '@rakun-kit/core/client'
 import * as React from 'react'
 
@@ -25,6 +17,7 @@ import { resolveLucideIcon } from '@/helpers/resolve-lucide-icon'
 import { useManagerPlugins } from '@/plugins'
 import { getEncodedContentPermissions } from '@/state/permissions'
 import { useSession } from '@/state/session'
+import { RakunLogoMark } from './rakun-logo'
 import {
   Sidebar,
   SidebarContent,
@@ -52,11 +45,7 @@ const cleanPathname = (path: string) => {
   return pathname.replace(/\/+$/, '') || '/'
 }
 
-const isActiveHref = (
-  href: string,
-  pathname: string | undefined,
-  basePath: string,
-) => {
+const isActiveHref = (href: string, pathname: string | undefined, basePath: string) => {
   if (!pathname || !href) return false
 
   const currentPath = cleanPathname(pathname)
@@ -71,7 +60,7 @@ const isActiveHref = (
 
 const getDefaultSecondaryNavItems = (
   basePath: string,
-  t: (key: ManagerMessageKey) => string,
+  t: (key: ManagerMessageKey) => string
 ): ManagerSidebarItem[] => [
   {
     title: t('sidebar.mediaLibrary'),
@@ -121,7 +110,7 @@ const getContentTypeNavItems = (
   basePath: string,
   hasAnyPermission: (permissions: Permission[]) => boolean,
   t: (key: string) => string,
-  pathname?: string,
+  pathname?: string
 ): ManagerSidebarItem[] => {
   const items: ManagerSidebarItem[] = []
   const categories = new Map<string, ManagerSidebarItem>()
@@ -129,10 +118,7 @@ const getContentTypeNavItems = (
   for (const type of contentTypes) {
     if (!type.menu) continue
 
-    const readPermissions = getEncodedContentPermissions(type, [
-      'own',
-      'readAny',
-    ])
+    const readPermissions = getEncodedContentPermissions(type, ['own', 'readAny'])
     if (readPermissions.length > 0 && !hasAnyPermission(readPermissions)) {
       continue
     }
@@ -144,7 +130,7 @@ const getContentTypeNavItems = (
           name: 'content.list',
           contentType: type.name,
         },
-        { basePath },
+        { basePath }
       ),
       icon: resolveLucideIcon(type.menu.icon),
       isActive: false,
@@ -180,29 +166,21 @@ const getContentTypeNavItems = (
 const filterSidebarItems = (
   items: ManagerSidebarItem[],
   hasPermissions: (permissions: Permission[]) => boolean,
-  hasAnyPermission: (permissions: Permission[]) => boolean,
+  hasAnyPermission: (permissions: Permission[]) => boolean
 ): ManagerSidebarItem[] =>
   items.flatMap((item) => {
     const permissions = [...(item.permissions ?? [])]
     const allowed =
       permissions.length === 0 ||
-      (item.permissionMode === 'any'
-        ? hasAnyPermission(permissions)
-        : hasPermissions(permissions))
+      (item.permissionMode === 'any' ? hasAnyPermission(permissions) : hasPermissions(permissions))
 
     if (!allowed) return []
 
     if (!item.items) return [item]
 
-    const visibleItems = filterSidebarItems(
-      item.items,
-      hasPermissions,
-      hasAnyPermission,
-    )
+    const visibleItems = filterSidebarItems(item.items, hasPermissions, hasAnyPermission)
 
-    return visibleItems.length > 0
-      ? [{ ...item, items: visibleItems }]
-      : []
+    return visibleItems.length > 0 ? [{ ...item, items: visibleItems }] : []
   })
 
 export function AppSidebar({
@@ -221,14 +199,13 @@ export function AppSidebar({
   const { hasCurrentTour, startCurrentTour } = useManagerHelp()
   const pluginRegistry = useManagerPlugins()
   const { hasPermissions, hasAnyPermission } = useSession()
-  const resolvedSecondaryItems =
-    secondaryItems ?? getDefaultSecondaryNavItems(basePath, t)
+  const resolvedSecondaryItems = secondaryItems ?? getDefaultSecondaryNavItems(basePath, t)
   const contentTypeItems = getContentTypeNavItems(
     contentTypes,
     basePath,
     hasAnyPermission,
     t,
-    pathname,
+    pathname
   )
   const helpItem: ManagerSidebarItem = {
     title: t('sidebar.help'),
@@ -244,29 +221,24 @@ export function AppSidebar({
         : undefined
       if (item.routeId && !route) {
         throw new Error(
-          `Rakun manager sidebar item "${item.pluginId}:${item.id}" references unknown route "${item.routeId}".`,
+          `Rakun manager sidebar item "${item.pluginId}:${item.id}" references unknown route "${item.routeId}".`
         )
       }
       if (route?.path.includes(':')) {
         throw new Error(
-          `Rakun manager sidebar item "${item.pluginId}:${item.id}" cannot target parameterized route "${route.path}".`,
+          `Rakun manager sidebar item "${item.pluginId}:${item.id}" cannot target parameterized route "${route.path}".`
         )
       }
 
       const rawHref = route?.path ?? item.href
       if (!rawHref) {
         throw new Error(
-          `Rakun manager sidebar item "${item.pluginId}:${item.id}" must define href or routeId.`,
+          `Rakun manager sidebar item "${item.pluginId}:${item.id}" must define href or routeId.`
         )
       }
       const external = /^(?:[a-z]+:|#)/i.test(rawHref)
-      const url = external
-        ? rawHref
-        : getManagerPathHref(rawHref, { basePath })
-      const permissions = [
-        ...(route?.permissions ?? []),
-        ...(item.permissions ?? []),
-      ]
+      const url = external ? rawHref : getManagerPathHref(rawHref, { basePath })
+      const permissions = [...(route?.permissions ?? []), ...(item.permissions ?? [])]
 
       if (permissions.length > 0 && !hasPermissions(permissions)) {
         return []
@@ -292,22 +264,22 @@ export function AppSidebar({
       return groups
     }, new Map<string, typeof pluginItems>())
   const secondaryPluginItems = pluginItems.filter(
-    (item) => (item.position ?? 'secondary') === 'secondary',
+    (item) => (item.position ?? 'secondary') === 'secondary'
   )
 
   return (
-    <Sidebar variant='inset' data-tour="manager-sidebar" {...props}>
+    <Sidebar variant="inset" data-tour="manager-sidebar" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size='lg' asChild>
+            <SidebarMenuButton size="lg" asChild>
               <ManagerLink href={basePath}>
-                <div className='bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg'>
-                  <Command className='size-4' />
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <RakunLogoMark className="size-8 text-sidebar-foreground" />
                 </div>
-                <div className='grid flex-1 text-left text-sm leading-tight'>
-                  <span className='truncate font-medium'>{t('brand.name')}</span>
-                  <span className='truncate text-xs'>{t('brand.tagline')}</span>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-medium">{t('brand.name')}</span>
+                  <span className="truncate text-xs">{t('brand.tagline')}</span>
                 </div>
               </ManagerLink>
             </SidebarMenuButton>
@@ -316,9 +288,7 @@ export function AppSidebar({
       </SidebarHeader>
 
       <SidebarContent>
-        {contentTypeItems.length > 0 ? (
-          <NavMain items={contentTypeItems} />
-        ) : null}
+        {contentTypeItems.length > 0 ? <NavMain items={contentTypeItems} /> : null}
         {Array.from(primaryPluginGroups, ([label, items]) => (
           <NavMain key={label} label={label} items={items} />
         ))}
@@ -326,7 +296,7 @@ export function AppSidebar({
           items={filterSidebarItems(
             [...resolvedSecondaryItems, ...secondaryPluginItems, helpItem],
             hasPermissions,
-            hasAnyPermission,
+            hasAnyPermission
           ).map((item) => ({
             ...item,
             isActive:
@@ -334,7 +304,7 @@ export function AppSidebar({
                 ? false
                 : isActiveHref(item.url, pathname, basePath),
           }))}
-          className='mt-auto'
+          className="mt-auto"
         />
       </SidebarContent>
       <SidebarFooter data-tour="manager-user">

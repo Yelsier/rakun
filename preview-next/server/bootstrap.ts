@@ -109,6 +109,19 @@ export const createPreviewBootstrap = () =>
             defaultFrom: process.env.RAKUN_MAIL_FROM,
           })
         : undefined,
+    accountRecovery:
+      process.env.RESEND_API_KEY?.trim() && process.env.RAKUN_MAIL_FROM?.trim()
+        ? {
+            passwordReset: {
+              createUrl: (token) => {
+                const managerUrl =
+                  process.env.RAKUN_MANAGER_URL?.replace(/\/+$/, '') ??
+                  'http://localhost:3000/backend'
+                return `${managerUrl}/reset-password?token=${encodeURIComponent(token)}`
+              },
+            },
+          }
+        : undefined,
     apiOperations,
     logger: {
       level: 'info',

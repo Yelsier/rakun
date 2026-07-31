@@ -67,8 +67,53 @@ Options:
 - `mongo`: MongoDB connection. Required before serving Rakun requests.
 - `media`: media adapter/configuration. Optional.
 - `mail`: outbound mail adapter and default sender configuration. Optional.
+- `accountRecovery`: password-reset URL builder, expiry, and optional custom
+  mail template. Requires `mail`; core provides the default template.
 - `logger`: logger configuration. If omitted, an `info` logger with `prettify` is created.
 - `syncRoutes`: syncs configured routes during initialization. Enabled by default.
+
+## Account recovery and MFA recovery
+
+Password recovery is enabled when both `mail` and `accountRecovery` are
+configured. The reset URL must point to the manager's public
+`/reset-password` screen and preserve the token as the `token` query parameter:
+
+```ts
+import { rakunBootstrap } from '@rakun-kit/core'
+import { createResendMailServiceConfig } from '@rakun-kit/resend'
+
+rakunBootstrap({
+  // ...
+  mail: createResendMailServiceConfig({
+    apiKey: process.env.RESEND_API_KEY!,
+    defaultFrom: process.env.RAKUN_MAIL_FROM!,
+  }),
+  accountRecovery: {
+    passwordReset: {
+      expiresInMs: 60 * 60 * 1000,
+      createUrl: (token) =>
+        `https://cms.example.com/backend/reset-password?token=${encodeURIComponent(token)}`,
+    },
+  },
+})
+```
+
+Core uses its branded HTML and plain-text password-reset template by default.
+Pass `accountRecovery.passwordReset.template` only when the application needs
+to replace it with custom branding or copy.
+
+Reset tokens are random, stored only as SHA-256 hashes, expire, and are consumed
+once. A successful reset closes every existing session but never disables MFA.
+The request endpoint always returns the same result for known and unknown email
+addresses.
+
+Enabling TOTP or the first WebAuthn device returns one-time recovery codes to
+the manager UI. Only their hashes are persisted, each code is consumed after
+one login, and users can replace the entire set from their account after
+confirming their current password. MFA state cannot be disabled through generic
+manager content operations. If a user loses all MFA methods and recovery codes,
+recovery must be handled by an authorized person through a channel outside the
+CMS.
 
 Content types can define lifecycle `hooks` and opt into manager-selected
 `dynamicData` sources.

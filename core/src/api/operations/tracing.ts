@@ -16,7 +16,18 @@ type TraceableOperation = AnyRakunOperation & {
 }
 
 const sensitiveTraceKeyPattern =
-  /(authorization|challenge|cookie|credential|password|secret|session|token|totp|webauthn)/i
+  /(authorization|challenge|cookie|credential|password|recovery|secret|session|token|totp|webauthn)/i
+const sensitiveTraceKeys = new Set([
+  'authenticatorData',
+  'clientDataJSON',
+  'code',
+  'rawId',
+  'response',
+  'signature',
+])
+
+const isSensitiveTraceKey = (key: string) =>
+  sensitiveTraceKeys.has(key) || sensitiveTraceKeyPattern.test(key)
 
 const sanitizeTraceValue = (value: unknown, depth = 0, seen = new WeakSet<object>()): unknown => {
   if (value === null || value === undefined) {
@@ -66,7 +77,7 @@ const sanitizeTraceValue = (value: unknown, depth = 0, seen = new WeakSet<object
   return Object.fromEntries(
     Object.entries(value as Record<string, unknown>).map(([key, item]) => [
       key,
-      sensitiveTraceKeyPattern.test(key)
+      isSensitiveTraceKey(key)
         ? REDACTED_TRACE_VALUE
         : sanitizeTraceValue(item, depth + 1, seen),
     ])
