@@ -224,6 +224,24 @@ export const runWithRakunRequestTrace = <T>(
 };
 
 export const rakunBootstrap = (options: RakunBootstrapOptions) => {
+  if (options.login?.password === false && !options.login.adapters?.length) {
+    throw new Error(
+      "At least one login adapter is required when password login is disabled.",
+    );
+  }
+  const loginAdapterIds = new Set<string>();
+  for (const adapter of options.login?.adapters ?? []) {
+    if (!/^[a-z0-9][a-z0-9_-]*$/.test(adapter.id)) {
+      throw new Error(
+        `Invalid login adapter id "${adapter.id}". Use lowercase letters, numbers, underscores, and hyphens.`,
+      );
+    }
+    if (loginAdapterIds.has(adapter.id)) {
+      throw new Error(`Duplicate login adapter id "${adapter.id}".`);
+    }
+    loginAdapterIds.add(adapter.id);
+  }
+
   const contributions = resolveRakunPluginContributions(options);
   const resolvedOptions: ResolvedRakunBootstrapOptions = {
     ...options,
@@ -282,8 +300,23 @@ export type { RakunBootstrapOptions, ResolvedRakunBootstrapOptions };
 export type {
   AccountRecoveryConfig,
   PasswordResetMailProps,
-} from './auth/accountRecovery'
-export { passwordResetMailTemplate } from './auth/passwordResetMailTemplate'
+} from "./auth/accountRecovery";
+export { passwordResetMailTemplate } from "./auth/passwordResetMailTemplate";
+export {
+  createGitHubLoginAdapter,
+  createGoogleLoginAdapter,
+  createMicrosoftLoginAdapter,
+  defineLoginAdapter,
+  type GitHubLoginAdapterConfig,
+  type GoogleLoginAdapterConfig,
+  type LoginAdapter,
+  type LoginAdapterAuthorizationInput,
+  type LoginAdapterCallbackInput,
+  type LoginAdapterIcon,
+  type LoginAdapterIdentity,
+  type LoginConfig,
+  type MicrosoftLoginAdapterConfig,
+} from "./auth/loginAdapters";
 export {
   defineRakunPlugin,
   assertRakunPluginFieldsDeclared,

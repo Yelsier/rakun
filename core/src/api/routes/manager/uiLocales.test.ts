@@ -9,9 +9,10 @@ describe('resolveManagerUiFeatures', () => {
         accountRecovery: {
           passwordReset: {},
         },
-      }),
+      })
     ).toEqual({
       passwordRecovery: false,
+      login: { password: true, adapters: [] },
     })
   })
 
@@ -19,9 +20,10 @@ describe('resolveManagerUiFeatures', () => {
     expect(
       resolveManagerUiFeatures({
         mail: {},
-      }),
+      })
     ).toEqual({
       passwordRecovery: false,
+      login: { password: true, adapters: [] },
     })
   })
 
@@ -32,9 +34,33 @@ describe('resolveManagerUiFeatures', () => {
         accountRecovery: {
           passwordReset: {},
         },
-      }),
+      })
     ).toEqual({
       passwordRecovery: true,
+      login: { password: true, adapters: [] },
+    })
+  })
+
+  test('exposes only safe login adapter metadata', () => {
+    expect(
+      resolveManagerUiFeatures({
+        login: {
+          password: false,
+          adapters: [
+            {
+              id: 'github',
+              label: 'GitHub Enterprise',
+              icon: 'github',
+            },
+          ],
+        },
+      })
+    ).toEqual({
+      passwordRecovery: false,
+      login: {
+        password: false,
+        adapters: [{ id: 'github', label: 'GitHub Enterprise', icon: 'github' }],
+      },
     })
   })
 })

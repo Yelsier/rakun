@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { loginAdapterMetadata } from './auth/externalLogin'
+
 export const ManagerLanguagePackSchema = z.object({
   code: z.string().min(1),
   name: z.string().min(1),
@@ -10,7 +12,7 @@ export type ManagerLanguagePack = z.infer<typeof ManagerLanguagePackSchema>
 
 export const extendManagerLanguagePack = (
   languagePack: ManagerLanguagePack,
-  extraMessages: Readonly<Record<string, string>>,
+  extraMessages: Readonly<Record<string, string>>
 ): ManagerLanguagePack => ({
   ...languagePack,
   messages: {
@@ -23,6 +25,10 @@ export const ManagerUiLocalesOutputSchema = z.object({
   locales: z.array(ManagerLanguagePackSchema),
   features: z.object({
     passwordRecovery: z.boolean(),
+    login: z.object({
+      password: z.boolean(),
+      adapters: z.array(loginAdapterMetadata),
+    }),
   }),
 })
 

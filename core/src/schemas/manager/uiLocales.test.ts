@@ -33,18 +33,26 @@ describe('extendManagerLanguagePack', () => {
     })
   })
 
-  test('exposes password recovery availability as a required feature flag', () => {
+  test('exposes manager feature flags and login methods', () => {
     expect(
       ManagerUiLocalesOutputSchema.parse({
         locales: [],
         features: {
           passwordRecovery: true,
+          login: {
+            password: true,
+            adapters: [],
+          },
         },
-      }),
+      })
     ).toEqual({
       locales: [],
       features: {
         passwordRecovery: true,
+        login: {
+          password: true,
+          adapters: [],
+        },
       },
     })
   })

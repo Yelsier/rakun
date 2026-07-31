@@ -336,20 +336,30 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/auth/updatePassword",
   },
-  'manager.auth.password.requestReset': {
-    kind: 'mutation',
-    method: 'post',
-    path: '/manager/auth/password/requestReset',
+  "manager.auth.password.requestReset": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/auth/password/requestReset",
   },
-  'manager.auth.password.reset': {
-    kind: 'mutation',
-    method: 'post',
-    path: '/manager/auth/password/reset',
+  "manager.auth.password.reset": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/auth/password/reset",
   },
   "manager.auth.login": {
     kind: "mutation",
     method: "post",
     path: "/manager/auth/login",
+  },
+  "manager.auth.external.start": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/auth/external/start",
+  },
+  "manager.auth.external.complete": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/auth/external/complete",
   },
   "manager.auth.logout": {
     kind: "mutation",
@@ -401,15 +411,15 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/auth/totp/verify",
   },
-  'manager.auth.mfa.verifyRecoveryCode': {
-    kind: 'mutation',
-    method: 'post',
-    path: '/manager/auth/mfa/verifyRecoveryCode',
+  "manager.auth.mfa.verifyRecoveryCode": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/auth/mfa/verifyRecoveryCode",
   },
-  'manager.auth.mfa.regenerateRecoveryCodes': {
-    kind: 'mutation',
-    method: 'post',
-    path: '/manager/auth/mfa/regenerateRecoveryCodes',
+  "manager.auth.mfa.regenerateRecoveryCodes": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/auth/mfa/regenerateRecoveryCodes",
   },
   "manager.auth.webauthn.register.options": {
     kind: "query",

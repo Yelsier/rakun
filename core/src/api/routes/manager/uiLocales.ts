@@ -6,10 +6,24 @@ export const resolveManagerUiFeatures = (options?: {
   accountRecovery?: {
     passwordReset?: unknown
   }
+  login?: {
+    password?: boolean
+    adapters?: readonly {
+      id: string
+      label: string
+      icon?: 'github' | 'google' | 'microsoft' | 'generic'
+    }[]
+  }
 }): ManagerUiLocalesOutput['features'] => ({
-  passwordRecovery: Boolean(
-    options?.mail && options.accountRecovery?.passwordReset,
-  ),
+  passwordRecovery: Boolean(options?.mail && options.accountRecovery?.passwordReset),
+  login: {
+    password: options?.login?.password !== false,
+    adapters: (options?.login?.adapters ?? []).map((adapter) => ({
+      id: adapter.id,
+      label: adapter.label,
+      icon: adapter.icon ?? 'generic',
+    })),
+  },
 })
 
 export const uiLocalesHandler = async (): Promise<ManagerUiLocalesOutput> => {

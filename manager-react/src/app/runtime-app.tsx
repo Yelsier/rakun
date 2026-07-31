@@ -1,5 +1,8 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import type { EncodedContentType } from "@rakun-kit/core/client";
+import type {
+  EncodedContentType,
+  LoginAdapterMetadata,
+} from "@rakun-kit/core/client";
 import {
   useCallback,
   useEffect,
@@ -41,22 +44,21 @@ import {
 } from "@/media";
 import type { ManagerAppOverrides } from "../router";
 import type { ManagerPreviewConfig } from "../router";
-import type { RakunManagerPluginDefinition } from '../plugins'
+import type { RakunManagerPluginDefinition } from "../plugins";
 import {
   ManagerI18nProvider,
   useTranslations,
   type ManagerLocaleInputPack,
-} from '@/i18n'
-
+} from "@/i18n";
 
 const BootstrapFailedMessage = ({ message }: { message: string }) => {
-  const t = useTranslations()
+  const t = useTranslations();
   return (
     <div className="p-6">
       {t("common.bootstrapFailed")} {message}
     </div>
-  )
-}
+  );
+};
 
 type BootstrapState =
   | { status: "loading" }
@@ -102,11 +104,12 @@ export type ManagerBrowserAppProps = Omit<
 };
 
 const authLoadingPaths = new Set([
-  '/forgot-password',
-  '/login',
-  '/mfa',
-  '/reset-password',
-])
+  "/forgot-password",
+  "/login",
+  "/login/callback",
+  "/mfa",
+  "/reset-password",
+]);
 
 export const ManagerRuntimeApp = ({
   client,
@@ -125,8 +128,12 @@ export const ManagerRuntimeApp = ({
 }: ManagerRuntimeAppProps) => {
   const queryClient = useMemo(() => createManagerQueryClient(), []);
   const [localePacks, setLocalePacks] = useState<ManagerLocaleInputPack[]>([]);
-  const [managerUiLoaded, setManagerUiLoaded] = useState(false)
-  const [passwordRecoveryEnabled, setPasswordRecoveryEnabled] = useState(false)
+  const [managerUiLoaded, setManagerUiLoaded] = useState(false);
+  const [passwordRecoveryEnabled, setPasswordRecoveryEnabled] = useState(false);
+  const [login, setLogin] = useState<{
+    password: boolean;
+    adapters: LoginAdapterMetadata[];
+  }>({ password: true, adapters: [] });
   const scopedNavigation = useMemo<ManagerNavigation>(
     () => ({
       ...navigation,
@@ -149,43 +156,54 @@ export const ManagerRuntimeApp = ({
   );
   const [state, setState] = useState<BootstrapState>({ status: "loading" });
   const bootstrapRunRef = useRef(0);
-  const managerPathname = getManagerRelativePathname(pathname, { basePath })
+  const managerPathname = getManagerRelativePathname(pathname, { basePath });
   const useAuthLoadingFallback = authLoadingPaths.has(
-    managerPathname.replace(/\/+$/, '') || '/',
-  )
+    managerPathname.replace(/\/+$/, "") || "/",
+  );
 
   useEffect(() => {
-    let cancelled = false
-    setManagerUiLoaded(false)
+    let cancelled = false;
+    setManagerUiLoaded(false);
 
     void client
-      .request('manager.uiLocales')
+      .request("manager.uiLocales")
       .then((result) => {
-        if (cancelled) return
+        if (cancelled) return;
         const uiConfig = result as {
-          locales?: ManagerLocaleInputPack[]
+          locales?: ManagerLocaleInputPack[];
           features?: {
-            passwordRecovery?: boolean
-          }
-        }
-        const locales = uiConfig.locales
-        setLocalePacks(Array.isArray(locales) ? locales : [])
+            passwordRecovery?: boolean;
+            login?: {
+              password?: boolean;
+              adapters?: LoginAdapterMetadata[];
+            };
+          };
+        };
+        const locales = uiConfig.locales;
+        setLocalePacks(Array.isArray(locales) ? locales : []);
         setPasswordRecoveryEnabled(
           uiConfig.features?.passwordRecovery === true,
-        )
-        setManagerUiLoaded(true)
+        );
+        setLogin({
+          password: uiConfig.features?.login?.password !== false,
+          adapters: Array.isArray(uiConfig.features?.login?.adapters)
+            ? uiConfig.features.login.adapters
+            : [],
+        });
+        setManagerUiLoaded(true);
       })
       .catch(() => {
-        if (cancelled) return
-        setLocalePacks([])
-        setPasswordRecoveryEnabled(false)
-        setManagerUiLoaded(true)
-      })
+        if (cancelled) return;
+        setLocalePacks([]);
+        setPasswordRecoveryEnabled(false);
+        setLogin({ password: true, adapters: [] });
+        setManagerUiLoaded(true);
+      });
 
     return () => {
-      cancelled = true
-    }
-  }, [client])
+      cancelled = true;
+    };
+  }, [client]);
 
   const bootstrap = useCallback(async (): Promise<boolean> => {
     const run = bootstrapRunRef.current + 1;
@@ -296,7 +314,7 @@ export const ManagerRuntimeApp = ({
     });
   }, [bootstrap, pathname, searchParams, state.status]);
 
-  const isLoading = state.status === 'loading' || !managerUiLoaded
+  const isLoading = state.status === "loading" || !managerUiLoaded;
 
   return (
     <ManagerRootProviders>
@@ -338,6 +356,7 @@ export const ManagerRuntimeApp = ({
                             basePath={basePath}
                             searchParams={searchParams}
                             passwordRecoveryEnabled={passwordRecoveryEnabled}
+                            login={login}
                             preview={preview}
                             plugins={plugins}
                             {...overrides}
@@ -363,6 +382,7 @@ export const ManagerRuntimeApp = ({
                               contentTypes={state.contentTypes}
                               authenticated
                               passwordRecoveryEnabled={passwordRecoveryEnabled}
+                              login={login}
                               preview={preview}
                               plugins={plugins}
                               {...overrides}

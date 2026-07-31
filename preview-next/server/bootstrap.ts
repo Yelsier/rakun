@@ -1,4 +1,8 @@
-import { createLocalMediaServiceConfig, type RakunBootstrapOptions } from '@rakun-kit/next'
+import {
+  createGitHubLoginAdapter,
+  createLocalMediaServiceConfig,
+  type RakunBootstrapOptions,
+} from '@rakun-kit/next'
 import {
   Category,
   Footer,
@@ -114,15 +118,22 @@ export const createPreviewBootstrap = () =>
         ? {
             passwordReset: {
               createUrl: (token) => {
-                const managerUrl =
-                  process.env.RAKUN_MANAGER_URL?.replace(/\/+$/, '') ??
-                  'http://localhost:3000/backend'
-                return `${managerUrl}/reset-password?token=${encodeURIComponent(token)}`
+                return `http://localhost:3000/backend/reset-password?token=${encodeURIComponent(token)}`
               },
             },
           }
         : undefined,
     apiOperations,
+    login: {
+      password: true,
+      adapters: [
+        createGitHubLoginAdapter({
+          clientId: process.env.GITHUB_CLIENT_ID!,
+          clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+          redirectUri: 'http://localhost:3000/backend/login/callback',
+        }),
+      ],
+    },
     logger: {
       level: 'info',
       prettify: true,

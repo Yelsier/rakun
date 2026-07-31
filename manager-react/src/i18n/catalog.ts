@@ -49,6 +49,11 @@ export const managerMessages = {
   'login.error': {
     defaultMessage: 'Login could not be completed. Please try again.',
   },
+  'login.externalCompleting': { defaultMessage: 'Completing login…' },
+  'login.externalError': {
+    defaultMessage: 'External login could not be completed. Please try again.',
+  },
+  'login.back': { defaultMessage: 'Back to login' },
 
   'passwordRecovery.forgotTitle': { defaultMessage: 'Recover your account' },
   'passwordRecovery.forgotDescription': {
@@ -1170,7 +1175,8 @@ export const managerMessages = {
   'mfa.usePrimaryMethod': { defaultMessage: 'Use my primary MFA method' },
   'mfa.recoveryCodeTitle': { defaultMessage: 'Enter a recovery code' },
   'mfa.recoveryCodeDescription': {
-    defaultMessage: 'Recovery codes are single-use and replace your usual MFA method for this login.',
+    defaultMessage:
+      'Recovery codes are single-use and replace your usual MFA method for this login.',
   },
   'mfa.recoveryCodeLabel': { defaultMessage: 'Recovery code' },
   'mfa.invalidRecoveryCode': {

@@ -69,8 +69,57 @@ Options:
 - `mail`: outbound mail adapter and default sender configuration. Optional.
 - `accountRecovery`: password-reset URL builder, expiry, and optional custom
   mail template. Requires `mail`; core provides the default template.
+- `login`: manager password-login toggle and external login adapters.
 - `logger`: logger configuration. If omitted, an `info` logger with `prettify` is created.
 - `syncRoutes`: syncs configured routes during initialization. Enabled by default.
+
+## External manager login
+
+Configure external login methods in `rakunBootstrap`. The callback URL is the
+manager's public `/login/callback` route.
+
+```ts
+import {
+  createGitHubLoginAdapter,
+  createGoogleLoginAdapter,
+  createMicrosoftLoginAdapter,
+  rakunBootstrap,
+} from "@rakun-kit/core";
+
+const callbackUrl = "https://cms.example.com/backend/login/callback";
+
+rakunBootstrap({
+  // ...
+  login: {
+    password: true,
+    adapters: [
+      createGitHubLoginAdapter({
+        clientId: process.env.GITHUB_CLIENT_ID!,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+        redirectUri: callbackUrl,
+      }),
+      createGoogleLoginAdapter({
+        clientId: process.env.GOOGLE_CLIENT_ID!,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+        redirectUri: callbackUrl,
+      }),
+      createMicrosoftLoginAdapter({
+        clientId: process.env.MICROSOFT_CLIENT_ID!,
+        clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
+        redirectUri: callbackUrl,
+        tenant: "common",
+      }),
+    ],
+  },
+});
+```
+
+Register the exact callback URL in each provider console. External identities
+must return a verified email matching an
+existing manager user. Rakun does not create manager accounts automatically.
+The flow uses an HttpOnly state cookie and PKCE and preserves the existing MFA
+step. Set `password: false` only when at least one adapter is configured.
+Custom providers can be implemented with `defineLoginAdapter`.
 
 ## Account recovery and MFA recovery
 
@@ -79,8 +128,8 @@ configured. The reset URL must point to the manager's public
 `/reset-password` screen and preserve the token as the `token` query parameter:
 
 ```ts
-import { rakunBootstrap } from '@rakun-kit/core'
-import { createResendMailServiceConfig } from '@rakun-kit/resend'
+import { rakunBootstrap } from "@rakun-kit/core";
+import { createResendMailServiceConfig } from "@rakun-kit/resend";
 
 rakunBootstrap({
   // ...
@@ -95,7 +144,7 @@ rakunBootstrap({
         `https://cms.example.com/backend/reset-password?token=${encodeURIComponent(token)}`,
     },
   },
-})
+});
 ```
 
 Core uses its branded HTML and plain-text password-reset template by default.
@@ -188,12 +237,12 @@ the public `manager.uiLocales` operation returns configured packs to the
 manager client:
 
 ```ts
-import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'
+import { esManagerLocalePack } from "@rakun-kit/manager-locales/es";
 
 rakunBootstrap({
   // ...
   managerLanguages: [esManagerLocalePack],
-})
+});
 ```
 
 `managerLanguages` may also extend locales with arbitrary project keys. This is
@@ -201,28 +250,28 @@ useful for translatable content-type titles and categories without adding host
 keys to the manager's static `ManagerMessageKey` union:
 
 ```ts
-import { extendManagerLanguagePack } from '@rakun-kit/core/contracts'
-import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'
+import { extendManagerLanguagePack } from "@rakun-kit/core/contracts";
+import { esManagerLocalePack } from "@rakun-kit/manager-locales/es";
 
 rakunBootstrap({
   // ...
   managerLanguages: [
     {
-      code: 'en',
-      name: 'English',
+      code: "en",
+      name: "English",
       messages: {
-        'field.title': 'Title',
-        'layoutModule.header': 'Header',
-        'project.contentTypes.article.menu': 'Articles',
+        "field.title": "Title",
+        "layoutModule.header": "Header",
+        "project.contentTypes.article.menu": "Articles",
       },
     },
     extendManagerLanguagePack(esManagerLocalePack, {
-      'field.title': 'Título',
-      'layoutModule.header': 'Cabecera',
-      'project.contentTypes.article.menu': 'Artículos',
+      "field.title": "Título",
+      "layoutModule.header": "Cabecera",
+      "project.contentTypes.article.menu": "Artículos",
     }),
   ],
-})
+});
 ```
 
 Content-type field labels automatically use `field.<fieldName>` from these
@@ -238,26 +287,26 @@ Trusted server plugins contribute to the same bootstrap registry without couplin
 core to React:
 
 ```ts
-import { defineRakunPlugin, rakunBootstrap } from '@rakun-kit/core'
+import { defineRakunPlugin, rakunBootstrap } from "@rakun-kit/core";
 
 export const analyticsPlugin = defineRakunPlugin({
-  id: '@acme/rakun-analytics',
+  id: "@acme/rakun-analytics",
   contentTypes: [AnalyticsEvent],
   routes: analyticsRoutes,
   apiOperations: analyticsOperations,
-  permissions: ['plugin.analytics.view'],
+  permissions: ["plugin.analytics.view"],
   literals: {},
   initialize: async ({ db }) => {
     // Services and migrations are ready here. Keep initialization idempotent.
   },
-})
+});
 
 rakunBootstrap({
   plugins: [analyticsPlugin],
   contentTypes: [],
   literals: {},
   mongo,
-})
+});
 ```
 
 Plugin ids and contributed content types, routes, operations, literals, and
@@ -722,10 +771,7 @@ converted to JSON Schema for display.
 `@rakun-kit/core/web` exposes a small typed HTTP client for operation maps:
 
 ```ts
-import {
-  createRakunApiClient,
-  type GetClient,
-} from "@rakun-kit/core/web";
+import { createRakunApiClient, type GetClient } from "@rakun-kit/core/web";
 import type { apiOperations } from "./server/api-operations";
 
 type ApiClient = GetClient<typeof apiOperations>;
@@ -875,42 +921,42 @@ Mail providers receive normalized, already-rendered messages through
 engine:
 
 ```ts
-import type { MailAdapter } from '@rakun-kit/core'
+import type { MailAdapter } from "@rakun-kit/core";
 
 const adapter: MailAdapter = {
   async send(message) {
-    const result = await provider.send(message)
-    return { id: result.id }
+    const result = await provider.send(message);
+    return { id: result.id };
   },
-}
+};
 
 rakunBootstrap({
   // ...
   mail: {
     adapter,
-    defaultFrom: 'hello@example.com',
-    defaultReplyTo: 'support@example.com',
+    defaultFrom: "hello@example.com",
+    defaultReplyTo: "support@example.com",
   },
-})
+});
 ```
 
 Send rendered content directly:
 
 ```ts
-import { sendMail } from '@rakun-kit/core'
+import { sendMail } from "@rakun-kit/core";
 
 await sendMail({
-  to: 'ada@example.com',
-  subject: 'Welcome',
-  html: '<p>Hello Ada</p>',
-  text: 'Hello Ada',
-})
+  to: "ada@example.com",
+  subject: "Welcome",
+  html: "<p>Hello Ada</p>",
+  text: "Hello Ada",
+});
 ```
 
 Or create a typed application template registry:
 
 ```ts
-import { createMailSender, defineMailTemplate } from '@rakun-kit/core'
+import { createMailSender, defineMailTemplate } from "@rakun-kit/core";
 
 const mail = createMailSender({
   templates: {
@@ -922,13 +968,13 @@ const mail = createMailSender({
       }),
     }),
   },
-})
+});
 
 await mail.send({
-  template: 'welcome',
-  props: { name: 'Ada' },
-  to: 'ada@example.com',
-})
+  template: "welcome",
+  props: { name: "Ada" },
+  to: "ada@example.com",
+});
 ```
 
 The common contract supports To/CC/BCC/Reply-To, custom headers and in-memory
@@ -950,7 +996,6 @@ Bootstrap receives `literals`. Related utilities:
 - `getTranslation`: resolves translatable values.
 - `translateObject`: translates objects with translatable fields.
 - Manager schemas for listing/upserting website literals (not manager UI chrome).
-
 
 Translatable values use this shape:
 

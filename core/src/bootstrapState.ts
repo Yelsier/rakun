@@ -14,7 +14,8 @@ import type {
   RakunResolvedPluginContributions,
 } from "./plugins";
 import type { ManagerLanguagePack } from "./schemas/manager/uiLocales";
-import type { AccountRecoveryConfig } from './auth/accountRecovery'
+import type { AccountRecoveryConfig } from "./auth/accountRecovery";
+import type { LoginConfig } from "./auth/loginAdapters";
 
 export interface RakunBootstrapOptions {
   literals: LiteralCatalogInput;
@@ -39,6 +40,8 @@ export interface RakunBootstrapOptions {
    * Requires `mail`; core provides the default template.
    */
   accountRecovery?: AccountRecoveryConfig;
+  /** Manager login methods. Password login is enabled by default. */
+  login?: LoginConfig;
   /**
    * Persistent business event log. Defaults to the built-in MongoDB adapter.
    */

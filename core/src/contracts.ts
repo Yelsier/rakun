@@ -30,10 +30,11 @@ export * from "./schemas/manager/uiLocales";
 export * from "./schemas/manager/auth/accountInfo";
 export * from "./schemas/manager/auth/tutorials";
 export * from "./schemas/manager/auth/login";
+export * from "./schemas/manager/auth/externalLogin";
 export * from "./schemas/manager/auth/logout";
 export * from "./schemas/manager/auth/deleteSession";
-export * from './schemas/manager/auth/passwordRecovery'
-export * from './schemas/manager/auth/mfa/recoveryCode'
+export * from "./schemas/manager/auth/passwordRecovery";
+export * from "./schemas/manager/auth/mfa/recoveryCode";
 export * from "./schemas/manager/auth/totp/enrollTotp";
 export * from "./schemas/manager/auth/totp/confirmTotp";
 export * from "./schemas/manager/auth/totp/verifyTotp";

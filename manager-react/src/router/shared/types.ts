@@ -1,13 +1,23 @@
-import type { EncodedContentType } from "@rakun-kit/core/client";
+import type {
+  EncodedContentType,
+  LoginAdapterMetadata,
+} from "@rakun-kit/core/client";
 import type { ReactNode } from "react";
 
 import type { ManagerLayoutRendererProps } from "../../layouts";
-import type { RakunManagerPluginDefinition } from '../../plugins'
+import type { RakunManagerPluginDefinition } from "../../plugins";
 
 export type ManagerResolvedRoute =
   | { kind: "login" }
-  | { kind: 'forgot-password' }
-  | { kind: 'reset-password'; token?: string }
+  | {
+      kind: "login-callback";
+      provider?: string;
+      code?: string;
+      state?: string;
+      error?: string;
+    }
+  | { kind: "forgot-password" }
+  | { kind: "reset-password"; token?: string }
   | { kind: "mfa"; challenge?: string; method?: string; expiresAt?: string }
   | { kind: "dashboard-home" }
   | { kind: "account" }
@@ -32,16 +42,16 @@ export type ManagerResolvedRoute =
   | { kind: "content-create"; contentType: string }
   | { kind: "content-edit"; contentType: string; id: string }
   | {
-      kind: 'plugin'
-      pluginId: string
-      routeId: string
-      params: Record<string, string>
+      kind: "plugin";
+      pluginId: string;
+      routeId: string;
+      params: Record<string, string>;
     }
   | { kind: "unknown"; pathname: string };
 
 export type ManagerResolvedRouteKind = Exclude<
   ManagerResolvedRoute["kind"],
-  "unknown" | 'plugin'
+  "unknown" | "plugin"
 >;
 
 export type ManagerSearchParams =
@@ -54,9 +64,15 @@ export type ManagerPreviewConfig = {
   tokenParam?: string;
 };
 
+export type ManagerLoginConfig = {
+  password: boolean;
+  adapters: LoginAdapterMetadata[];
+};
+
 export type ManagerRouteRendererProps = {
   authenticated?: boolean;
-  passwordRecoveryEnabled?: boolean
+  passwordRecoveryEnabled?: boolean;
+  login?: ManagerLoginConfig;
   route: ManagerResolvedRoute;
   contentTypes?: EncodedContentType[];
   pathname?: string;
@@ -65,10 +81,13 @@ export type ManagerRouteRendererProps = {
   plugins?: readonly RakunManagerPluginDefinition[];
   searchParams?: ManagerSearchParams;
   renderLogin?: () => ReactNode;
-  renderForgotPassword?: () => ReactNode
+  renderLoginCallback?: (
+    route: Extract<ManagerResolvedRoute, { kind: "login-callback" }>,
+  ) => ReactNode;
+  renderForgotPassword?: () => ReactNode;
   renderResetPassword?: (
-    route: Extract<ManagerResolvedRoute, { kind: 'reset-password' }>,
-  ) => ReactNode
+    route: Extract<ManagerResolvedRoute, { kind: "reset-password" }>,
+  ) => ReactNode;
   renderMfa?: (
     route: Extract<ManagerResolvedRoute, { kind: "mfa" }>,
   ) => ReactNode;
@@ -95,7 +114,7 @@ export type ManagerRouteRendererProps = {
 
 export type ManagerAppOverrides = Omit<
   ManagerRouteRendererProps,
-  "route" | "pathname" | "contentTypes" | "preview" | 'plugins'
+  "route" | "pathname" | "contentTypes" | "preview" | "plugins"
 >;
 
 export type ManagerAppProps = Omit<ManagerRouteRendererProps, "route"> & {

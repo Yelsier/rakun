@@ -31,10 +31,11 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'login.forgotPassword': '¿Has olvidado tu contraseña?',
   'login.emailPlaceholder': 'tu@ejemplo.com',
   'login.invalidCredentials': 'El email o la contraseña no son correctos.',
-  'login.rateLimited':
-    'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.',
-  'login.error':
-    'No se pudo completar el inicio de sesión. Inténtalo de nuevo.',
+  'login.rateLimited': 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.',
+  'login.error': 'No se pudo completar el inicio de sesión. Inténtalo de nuevo.',
+  'login.externalCompleting': 'Completando el inicio de sesión…',
+  'login.externalError': 'No se pudo completar el inicio de sesión externo. Inténtalo de nuevo.',
+  'login.back': 'Volver al inicio de sesión',
   'passwordRecovery.forgotTitle': 'Recupera tu cuenta',
   'passwordRecovery.forgotDescription':
     'Introduce tu email y te enviaremos un enlace de restablecimiento con caducidad.',
@@ -42,16 +43,14 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'passwordRecovery.emailSentTitle': 'Revisa tu correo',
   'passwordRecovery.emailSentDescription':
     'Si existe una cuenta con ese email, recibirás en breve un enlace para restablecer la contraseña.',
-  'passwordRecovery.requestError':
-    'No se pudo completar la solicitud. Inténtalo de nuevo.',
+  'passwordRecovery.requestError': 'No se pudo completar la solicitud. Inténtalo de nuevo.',
   'passwordRecovery.invalidEmail': 'Introduce una dirección de email válida.',
   'passwordRecovery.backToLogin': 'Volver al inicio de sesión',
   'passwordRecovery.resetTitle': 'Elige una contraseña nueva',
   'passwordRecovery.resetDescription':
     'Usa al menos 8 caracteres. Este enlace solo se puede usar una vez.',
   'passwordRecovery.newPassword': 'Contraseña nueva',
-  'passwordRecovery.passwordRequirements':
-    'La contraseña debe tener al menos 8 caracteres.',
+  'passwordRecovery.passwordRequirements': 'La contraseña debe tener al menos 8 caracteres.',
   'passwordRecovery.confirmPassword': 'Confirmar contraseña nueva',
   'passwordRecovery.passwordsDoNotMatch': 'Las contraseñas no coinciden.',
   'passwordRecovery.resetAction': 'Restablecer contraseña',
@@ -432,8 +431,7 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'contentEdit.invalidMediaFile':
     'El archivo seleccionado no es un tipo de medio {mediaType} válido',
   'richText.insertImage': 'Insertar imagen desde la biblioteca de medios',
-  'richText.insertImageError':
-    'No se pudo insertar la imagen desde la biblioteca de medios',
+  'richText.insertImageError': 'No se pudo insertar la imagen desde la biblioteca de medios',
   'variants.nameThisVariant': 'Nombra esta variante',
   'variants.nameDescription':
     'Dale un nombre identificativo corto. Es independiente del título del contenido y se usará en la lista de variantes.',
@@ -692,8 +690,7 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'account.mfa.currentPassword': 'Contraseña actual',
   'account.mfa.currentPasswordInvalid': 'La contraseña actual no es válida.',
   'account.mfa.regenerateAction': 'Generar códigos nuevos',
-  'account.mfa.regenerateFailed':
-    'No se pudieron reemplazar los códigos de recuperación.',
+  'account.mfa.regenerateFailed': 'No se pudieron reemplazar los códigos de recuperación.',
   'account.sessions.title': 'Sesiones activas',
   'account.sessions.current': 'Sesión actual',
   'account.sessions.createdAt': 'Creada el',
@@ -724,10 +721,8 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'mfa.recoveryCodeDescription':
     'Los códigos son de un solo uso y sustituyen tu método MFA habitual para este inicio de sesión.',
   'mfa.recoveryCodeLabel': 'Código de recuperación',
-  'mfa.invalidRecoveryCode':
-    'Este código no es válido o ya se ha utilizado.',
-  'mfa.recoveryCodeError':
-    'No se pudo verificar el código de recuperación.',
+  'mfa.invalidRecoveryCode': 'Este código no es válido o ya se ha utilizado.',
+  'mfa.recoveryCodeError': 'No se pudo verificar el código de recuperación.',
   'mfa.noRecoveryAccess':
     'Si no puedes acceder al MFA ni a un código de recuperación, contacta con una persona autorizada fuera del CMS.',
   'users.twoFactorEnabled': '2FA activado',

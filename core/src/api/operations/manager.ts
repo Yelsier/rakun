@@ -52,6 +52,10 @@ import { previewSlugRedirectsHandler } from "../routes/manager/previewSlugRedire
 import { setDefaultLanguageHandler } from "../routes/manager/setDefaultLanguage";
 import { updateHandler } from "../routes/manager/update";
 import { loginHandler } from "../routes/manager/auth/login";
+import {
+  externalLoginCompleteHandler,
+  externalLoginStartHandler,
+} from "../routes/manager/auth/externalLogin";
 import { enrollTotpHandler } from "../routes/manager/auth/totp/enrollTotp";
 import { logoutHandler } from "../routes/manager/auth/logout";
 import { updatePasswordHandler } from "../routes/manager/auth/updatePassword";
@@ -70,9 +74,9 @@ import { deleteSessionHandler } from "../routes/manager/auth/deleteSession";
 import {
   requestPasswordResetHandler,
   resetPasswordHandler,
-} from '../routes/manager/auth/passwordRecovery'
-import { verifyRecoveryCodeHandler } from '../routes/manager/auth/mfa/verifyRecoveryCode'
-import { regenerateRecoveryCodesHandler } from '../routes/manager/auth/mfa/regenerateRecoveryCodes'
+} from "../routes/manager/auth/passwordRecovery";
+import { verifyRecoveryCodeHandler } from "../routes/manager/auth/mfa/verifyRecoveryCode";
+import { regenerateRecoveryCodesHandler } from "../routes/manager/auth/mfa/regenerateRecoveryCodes";
 import { prepareUploadHandler } from "../routes/manager/media/prepareUpload";
 import { finalizeUploadHandler } from "../routes/manager/media/finalizeUpload";
 import { getMediaUrlHandler } from "../routes/manager/media/getMediaUrl";
@@ -280,7 +284,8 @@ export const createManagerOperationDefinitions = () => {
       resolve: createPreviewHandler,
     },
     "manager.apiOperations": {
-      resolve: ({ ctx }) => apiOperationsHandler({ contracts, implementations, ctx }),
+      resolve: ({ ctx }) =>
+        apiOperationsHandler({ contracts, implementations, ctx }),
     },
     "manager.media.prepareUpload": {
       resolve: prepareUploadHandler,
@@ -309,14 +314,27 @@ export const createManagerOperationDefinitions = () => {
     "manager.auth.updatePassword": {
       resolve: updatePasswordHandler,
     },
-    'manager.auth.password.requestReset': {
+    "manager.auth.password.requestReset": {
       resolve: requestPasswordResetHandler,
     },
-    'manager.auth.password.reset': {
+    "manager.auth.password.reset": {
       resolve: resetPasswordHandler,
     },
     "manager.auth.login": {
       resolve: loginHandler,
+      onSuccess: ({ ctx, result }) => {
+        if ("token" in result) {
+          setSessionCookie(ctx, result.token, {
+            maxAge: Math.max(0, Date.parse(result.expiresAt) - Date.now()),
+          });
+        }
+      },
+    },
+    "manager.auth.external.start": {
+      resolve: externalLoginStartHandler,
+    },
+    "manager.auth.external.complete": {
+      resolve: externalLoginCompleteHandler,
       onSuccess: ({ ctx, result }) => {
         if ("token" in result) {
           setSessionCookie(ctx, result.token, {
@@ -365,17 +383,17 @@ export const createManagerOperationDefinitions = () => {
         }
       },
     },
-    'manager.auth.mfa.verifyRecoveryCode': {
+    "manager.auth.mfa.verifyRecoveryCode": {
       resolve: verifyRecoveryCodeHandler,
       onSuccess: ({ ctx, result }) => {
-        if ('token' in result) {
+        if ("token" in result) {
           setSessionCookie(ctx, result.token, {
             maxAge: Math.max(0, Date.parse(result.expiresAt) - Date.now()),
-          })
+          });
         }
       },
     },
-    'manager.auth.mfa.regenerateRecoveryCodes': {
+    "manager.auth.mfa.regenerateRecoveryCodes": {
       resolve: regenerateRecoveryCodesHandler,
     },
     "manager.auth.webauthn.register.options": {

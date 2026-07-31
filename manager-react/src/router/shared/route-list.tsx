@@ -5,12 +5,13 @@ import { ManagerContentTypeEditScreen } from "../dashboard/[contentType]/[edit]"
 import { ManagerContentTypeCreateScreen } from "../dashboard/[contentType]/create";
 import { ManagerDashboardHomeScreen } from "../dashboard";
 import { ManagerLoginScreen } from "../login";
+import { ManagerLoginCallbackScreen } from "../login/callback";
 import { ManagerMediaLibraryScreen } from "../dashboard/media";
 import { ManagerMfaScreen } from "../mfa";
 import {
   ManagerForgotPasswordScreen,
   ManagerResetPasswordScreen,
-} from '../password-recovery'
+} from "../password-recovery";
 import { ManagerSettingsLanguagesScreen } from "../dashboard/settings/languages";
 import { ManagerSettingsLiteralsScreen } from "../dashboard/settings/literals";
 import { ManagerSettingsRedirectsScreen } from "../dashboard/settings/redirects";
@@ -46,25 +47,46 @@ export const managerRouteDefinitions = [
     render: (_route, props) =>
       props.renderLogin?.() ?? (
         <ManagerLoginScreen
+          login={props.login}
           passwordRecoveryEnabled={props.passwordRecoveryEnabled}
         />
       ),
   }),
   defineManagerRoute({
-    kind: 'forgot-password',
-    path: '/forgot-password',
-    layout: 'auth',
-    parse: () => ({ kind: 'forgot-password' }),
+    kind: "login-callback",
+    path: "/login/callback",
+    layout: "auth",
+    parse: ({ searchParams }) => {
+      const state = getSearchParam(searchParams, "state");
+      return {
+        kind: "login-callback",
+        provider:
+          getSearchParam(searchParams, "provider") ?? state?.split(".")[0],
+        code: getSearchParam(searchParams, "code"),
+        state,
+        error: getSearchParam(searchParams, "error"),
+      };
+    },
+    render: (route, props) =>
+      props.renderLoginCallback?.(route) ?? (
+        <ManagerLoginCallbackScreen {...route} />
+      ),
+  }),
+  defineManagerRoute({
+    kind: "forgot-password",
+    path: "/forgot-password",
+    layout: "auth",
+    parse: () => ({ kind: "forgot-password" }),
     render: (_route, props) =>
       props.renderForgotPassword?.() ?? <ManagerForgotPasswordScreen />,
   }),
   defineManagerRoute({
-    kind: 'reset-password',
-    path: '/reset-password',
-    layout: 'auth',
+    kind: "reset-password",
+    path: "/reset-password",
+    layout: "auth",
     parse: ({ searchParams }) => ({
-      kind: 'reset-password',
-      token: getSearchParam(searchParams, 'token'),
+      kind: "reset-password",
+      token: getSearchParam(searchParams, "token"),
     }),
     render: (route, props) =>
       props.renderResetPassword?.(route) ?? (
@@ -236,12 +258,13 @@ export const managerRouteDefinitions = [
       kind: "content-create",
       contentType: params.contentType ?? "",
     }),
-    headerEnd: () => (
-      <LanguageSelector className="w-36 border-0 shadow-none" />
-    ),
+    headerEnd: () => <LanguageSelector className="w-36 border-0 shadow-none" />,
     render: (route, props, contentType) =>
       props.renderContentCreate?.(route, contentType) ?? (
-        <ManagerContentTypeCreateScreen contentType={contentType} preview={props.preview} />
+        <ManagerContentTypeCreateScreen
+          contentType={contentType}
+          preview={props.preview}
+        />
       ),
   }),
   defineManagerRoute({
@@ -280,9 +303,7 @@ export const managerRouteDefinitions = [
       kind: "content-list",
       contentType: params.contentType ?? "",
     }),
-    headerEnd: () => (
-      <LanguageSelector className="w-36 border-0 shadow-none" />
-    ),
+    headerEnd: () => <LanguageSelector className="w-36 border-0 shadow-none" />,
     render: (route, _props, contentType) => (
       <ManagerContentTypeListScreen
         title={contentType?.name ?? route.contentType}

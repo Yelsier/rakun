@@ -93,6 +93,10 @@ import {
   listOutput,
   loginInput,
   loginOutput,
+  externalLoginStartInput,
+  externalLoginStartOutput,
+  externalLoginCompleteInput,
+  externalLoginCompleteOutput,
   logoutOutput,
   prepareUploadInput,
   prepareUploadOutput,
@@ -265,7 +269,8 @@ export const createManagerOperationContracts = () =>
     "manager.favorites.toggle": defineOperationContract({
       access: "auth",
       kind: "mutation",
-      description: "Add or remove a favorite content document for the current user",
+      description:
+        "Add or remove a favorite content document for the current user",
       input: toggleFavoriteInput,
       output: toggleFavoriteOutput,
       method: "post",
@@ -360,7 +365,8 @@ export const createManagerOperationContracts = () =>
     "manager.routeLayout.setOverride": defineOperationContract({
       access: "auth",
       kind: "mutation",
-      description: "Set or clear a route layout override for a content document",
+      description:
+        "Set or clear a route layout override for a content document",
       input: setRouteLayoutOverrideInput,
       output: setRouteLayoutOverrideOutput,
       method: "post",
@@ -665,21 +671,21 @@ export const createManagerOperationContracts = () =>
       output: okOutput,
       method: "post",
     }),
-    'manager.auth.password.requestReset': defineOperationContract({
-      access: 'public',
-      kind: 'mutation',
-      description: 'Request a password reset email',
+    "manager.auth.password.requestReset": defineOperationContract({
+      access: "public",
+      kind: "mutation",
+      description: "Request a password reset email",
       input: requestPasswordResetInput,
       output: requestPasswordResetOutput,
-      method: 'post',
+      method: "post",
     }),
-    'manager.auth.password.reset': defineOperationContract({
-      access: 'public',
-      kind: 'mutation',
-      description: 'Set a new password using a one-time reset token',
+    "manager.auth.password.reset": defineOperationContract({
+      access: "public",
+      kind: "mutation",
+      description: "Set a new password using a one-time reset token",
       input: resetPasswordInput,
       output: resetPasswordOutput,
-      method: 'post',
+      method: "post",
     }),
     "manager.auth.login": defineOperationContract({
       access: "public",
@@ -687,6 +693,22 @@ export const createManagerOperationContracts = () =>
       description: "Login to the manager",
       input: loginInput,
       output: loginOutput,
+      method: "post",
+    }),
+    "manager.auth.external.start": defineOperationContract({
+      access: "public",
+      kind: "mutation",
+      description: "Start an external manager login flow",
+      input: externalLoginStartInput,
+      output: externalLoginStartOutput,
+      method: "post",
+    }),
+    "manager.auth.external.complete": defineOperationContract({
+      access: "public",
+      kind: "mutation",
+      description: "Complete an external manager login flow",
+      input: externalLoginCompleteInput,
+      output: externalLoginCompleteOutput,
       method: "post",
     }),
     "manager.auth.logout": defineOperationContract({
@@ -721,7 +743,8 @@ export const createManagerOperationContracts = () =>
     "manager.auth.updateTutorialPreferences": defineOperationContract({
       access: "auth",
       kind: "mutation",
-      description: "Update tutorial onboarding preferences for the current user",
+      description:
+        "Update tutorial onboarding preferences for the current user",
       input: updateTutorialPreferencesInput,
       output: ManagerUser.getOutputSchema(),
       method: "post",
@@ -765,21 +788,21 @@ export const createManagerOperationContracts = () =>
       output: verifyTotpOutput,
       method: "post",
     }),
-    'manager.auth.mfa.verifyRecoveryCode': defineOperationContract({
-      access: 'public',
-      kind: 'mutation',
-      description: 'Complete an MFA challenge with a one-time recovery code',
+    "manager.auth.mfa.verifyRecoveryCode": defineOperationContract({
+      access: "public",
+      kind: "mutation",
+      description: "Complete an MFA challenge with a one-time recovery code",
       input: verifyRecoveryCodeInput,
       output: verifyRecoveryCodeOutput,
-      method: 'post',
+      method: "post",
     }),
-    'manager.auth.mfa.regenerateRecoveryCodes': defineOperationContract({
-      access: 'auth',
-      kind: 'mutation',
-      description: 'Replace all MFA recovery codes for the current user',
+    "manager.auth.mfa.regenerateRecoveryCodes": defineOperationContract({
+      access: "auth",
+      kind: "mutation",
+      description: "Replace all MFA recovery codes for the current user",
       input: regenerateRecoveryCodesInput,
       output: mfaEnrollmentOutput,
-      method: 'post',
+      method: "post",
     }),
     "manager.auth.webauthn.register.options": defineOperationContract({
       access: "auth",

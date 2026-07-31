@@ -7,15 +7,13 @@ import {
   getManagerRelativePathname,
   useManagerNavigation,
 } from "../state/navigation";
-import {
-  ManagerPluginProvider,
-  useManagerPlugins,
-} from '../plugins'
+import { ManagerPluginProvider, useManagerPlugins } from "../plugins";
 
 const isAuthRoute = (route: ManagerResolvedRoute) =>
   route.kind === "login" ||
-  route.kind === 'forgot-password' ||
-  route.kind === 'reset-password' ||
+  route.kind === "login-callback" ||
+  route.kind === "forgot-password" ||
+  route.kind === "reset-password" ||
   route.kind === "mfa";
 
 const ManagerAppContent = ({
@@ -26,7 +24,7 @@ const ManagerAppContent = ({
   ...props
 }: ManagerAppProps) => {
   const navigation = useManagerNavigation();
-  const pluginRegistry = useManagerPlugins()
+  const pluginRegistry = useManagerPlugins();
   const route = resolveManagerPath({
     pathname,
     basePath,
@@ -37,7 +35,7 @@ const ManagerAppContent = ({
   const managerPathname = getManagerRelativePathname(pathname, { basePath });
   const passwordRecoveryUnavailable =
     !props.passwordRecoveryEnabled &&
-    (route.kind === 'forgot-password' || route.kind === 'reset-password')
+    (route.kind === "forgot-password" || route.kind === "reset-password");
   const shouldRedirectToLogin =
     passwordRecoveryUnavailable || (!authenticated && !isAuthRoute(route));
 
@@ -77,4 +75,4 @@ export const ManagerApp = ({ plugins, ...props }: ManagerAppProps) => (
   <ManagerPluginProvider plugins={plugins}>
     <ManagerAppContent {...props} plugins={plugins} />
   </ManagerPluginProvider>
-)
+);

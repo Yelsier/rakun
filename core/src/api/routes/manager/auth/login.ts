@@ -1,11 +1,6 @@
-import { randomBytes } from "crypto";
-
-import {
-  ManagerUser,
-  UserMfa,
-  MfaChallenge,
-  Session,
-} from "../../../../internal-content-types";
+import { completePrimaryAuthentication } from "../../../../auth/completePrimaryAuthentication";
+import { getRakunBootstrapOptions } from "../../../../bootstrapState";
+import { ManagerUser } from "../../../../internal-content-types";
 import { throwAppError } from "../../../../lib/errors";
 import { getMongoService } from "../../../../orm";
 import {
@@ -13,7 +8,6 @@ import {
   LoginOutput,
 } from "../../../../schemas/manager/auth/login";
 import type { RakunRequestContext } from "../../../context";
-import { SESSION_MAX_AGE_MS } from "../../../sessionCookie";
 import {
   assertAuthRateLimit,
   getRequestRateLimitIdentifier,
@@ -28,6 +22,10 @@ export const loginHandler = async ({
   input: LoginInput;
   ctx?: RakunRequestContext;
 }): Promise<LoginOutput> => {
+  if (getRakunBootstrapOptions()?.login?.password === false) {
+    throwAppError("FORBIDDEN", { reason: "LOGIN_METHOD_DISABLED" });
+  }
+
   const { username, password } = input;
   const db = await getMongoService();
   const rateLimitKey = `login:${getRequestRateLimitIdentifier(ctx)}:${username.toLowerCase()}`;
@@ -57,48 +55,5 @@ export const loginHandler = async ({
   }
   resetAuthRateLimit(rateLimitKey);
 
-  const mfa = await db.find(UserMfa, { "user._id": user._id });
-  if (mfa?.enabled) {
-    const challenge = randomBytes(32).toString("hex");
-
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 5); // 5 minutes
-
-    await db.create(MfaChallenge, {
-      token: challenge,
-      user: {
-        _id: user._id,
-        contentType: ManagerUser.name,
-        type: "existing",
-      },
-      method: mfa.preferredMethod ?? "totp",
-      expiresAt,
-      attempts: 0,
-      _type: "MfaChallenge",
-    });
-
-    return {
-      challenge,
-      method: mfa.preferredMethod ?? "totp",
-      expiresAt: expiresAt.toISOString(),
-    };
-  }
-
-  const token = crypto.randomUUID();
-  const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_MS);
-
-  await db.create(Session, {
-    token,
-    user: {
-      _id: user._id,
-      contentType: ManagerUser.name,
-      type: "existing",
-    },
-    expiresAt,
-    _type: "Session",
-  });
-
-  return {
-    token,
-    expiresAt: expiresAt.toISOString(),
-  };
+  return completePrimaryAuthentication(user._id);
 };
