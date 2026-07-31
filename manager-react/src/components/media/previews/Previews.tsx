@@ -466,7 +466,7 @@ export default function Previews() {
             queryKey: createManagerQueryKey('manager.list', {
               contentType: 'Media',
               query: {
-                filter: getMediaQueryFilter(folderId, mediaType),
+                filter: getMediaQueryFilter(folderId, mediaType, ''),
                 options: {
                   limit: 'all',
                   sort: {
