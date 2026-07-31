@@ -9,6 +9,7 @@ export * from "./ContentReviewPolicy";
 export * from "./ContentVersion";
 export * from "./Language";
 export * from "./LiteralTranslation";
+export * from './LoginIpBlock'
 export * from "./LinkedIteratorTemplate";
 export * from "./ManagerRole";
 export * from "./ManagerFavorite";

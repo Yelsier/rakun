@@ -1,4 +1,5 @@
 export {
+  AUTH_IP_BLOCK_MANAGE_PERMISSION,
   getPermissionList,
   hasPermissions,
   mapPermissions,

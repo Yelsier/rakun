@@ -39,6 +39,7 @@ const createContext = async (req: Request, res: Response) => {
   return await createRequestContext({
     headers: req.headers,
     cookies: parseCookieHeader(req.headers.cookie),
+    ip: req.ip || req.socket.remoteAddress,
     res,
   });
 };

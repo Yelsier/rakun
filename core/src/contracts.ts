@@ -31,6 +31,7 @@ export * from "./schemas/manager/auth/accountInfo";
 export * from "./schemas/manager/auth/tutorials";
 export * from "./schemas/manager/auth/login";
 export * from "./schemas/manager/auth/externalLogin";
+export * from './schemas/manager/auth/passwordIpBlocks'
 export * from "./schemas/manager/auth/logout";
 export * from "./schemas/manager/auth/deleteSession";
 export * from "./schemas/manager/auth/passwordRecovery";

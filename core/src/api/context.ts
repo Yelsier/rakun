@@ -16,6 +16,7 @@ export type RakunRequestContext = {
   req?: {
     headers?: Record<string, string | string[] | undefined>;
     cookies?: Record<string, string>;
+    ip?: string;
   };
   res?: {
     setHeader: (name: string, value: string | string[]) => void;
@@ -28,6 +29,7 @@ export type RakunRequestContext = {
 export type RakunRequestContextInput = {
   headers?: Record<string, string | string[] | undefined>;
   cookies?: Record<string, string>;
+  ip?: string;
   res: {
     setHeader: (name: string, value: string | string[]) => void;
     cookie?: (name: string, value: string, options?: CookieOptions) => void;
@@ -41,6 +43,7 @@ export const createRequestContext = async (
     req: {
       headers: input.headers,
       cookies: input.cookies ?? {},
+      ip: input.ip,
     },
     res: input.res,
     getUser() {

@@ -1,6 +1,12 @@
 import { completePrimaryAuthentication } from "../../../../auth/completePrimaryAuthentication";
+import {
+  assertPasswordIpAllowed,
+  clearPasswordFailures,
+  recordPasswordFailure,
+  resolvePasswordLoginIp,
+} from '../../../../auth/passwordFail2ban'
 import { getRakunBootstrapOptions } from "../../../../bootstrapState";
-import { ManagerUser } from "../../../../internal-content-types";
+import { LoginIpBlock, ManagerUser } from "../../../../internal-content-types";
 import { throwAppError } from "../../../../lib/errors";
 import { getMongoService } from "../../../../orm";
 import {
@@ -8,11 +14,7 @@ import {
   LoginOutput,
 } from "../../../../schemas/manager/auth/login";
 import type { RakunRequestContext } from "../../../context";
-import {
-  assertAuthRateLimit,
-  getRequestRateLimitIdentifier,
-  resetAuthRateLimit,
-} from "../../../utils/authRateLimit";
+import { recordAuthEvent } from '../../../utils/authEvents'
 import { hashPassword, verifyStoredPassword } from "../../../utils/passwords";
 
 export const loginHandler = async ({
@@ -28,32 +30,43 @@ export const loginHandler = async ({
 
   const { username, password } = input;
   const db = await getMongoService();
-  const rateLimitKey = `login:${getRequestRateLimitIdentifier(ctx)}:${username.toLowerCase()}`;
+  const ip = resolvePasswordLoginIp(ctx)
+  await assertPasswordIpAllowed(ip)
 
-  assertAuthRateLimit({
-    key: rateLimitKey,
-    limit: 8,
-    windowMs: 15 * 60 * 1000,
-  });
+  const rejectInvalidCredentials = async (): Promise<never> => {
+    const failure = await recordPasswordFailure(ip)
+    if (failure.newlyBlocked) {
+      await recordAuthEvent({
+        type: 'auth.password.ip-blocked',
+        outcome: 'failure',
+        severity: 'warning',
+        ctx,
+        actor: { type: 'anonymous' },
+        resource: failure.recordId
+          ? { type: LoginIpBlock.name, id: failure.recordId }
+          : { type: LoginIpBlock.name },
+        tags: ['password-login', 'ip-block'],
+        data: { failedAttempts: failure.failedAttempts ?? 0 },
+      })
+    }
+
+    throwAppError("FORBIDDEN", {
+      reason: failure.blocked ? 'IP_BLOCKED' : "INVALID_CREDENTIALS",
+    });
+  }
 
   const user = await db.find(ManagerUser, { email: username });
-  if (!user)
-    throwAppError("FORBIDDEN", {
-      reason: "INVALID_CREDENTIALS",
-    });
+  if (!user) return rejectInvalidCredentials()
 
   const passwordCheck = verifyStoredPassword(password, user.password);
-  if (!passwordCheck.valid)
-    throwAppError("FORBIDDEN", {
-      reason: "INVALID_CREDENTIALS",
-    });
+  if (!passwordCheck.valid) return rejectInvalidCredentials()
 
   if (passwordCheck.needsRehash) {
     await db.update(ManagerUser, user._id, {
       password: hashPassword(password),
     });
   }
-  resetAuthRateLimit(rateLimitKey);
+  await clearPasswordFailures(ip)
 
   return completePrimaryAuthentication(user._id);
 };

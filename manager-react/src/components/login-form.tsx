@@ -90,6 +90,8 @@ export function LoginForm({
             message:
               reason === 'INVALID_CREDENTIALS'
                 ? t('login.invalidCredentials')
+                : reason === 'IP_BLOCKED'
+                  ? t('login.ipBlocked')
                 : reason === 'RATE_LIMITED'
                   ? t('login.rateLimited')
                   : t('login.error'),

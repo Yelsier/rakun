@@ -126,6 +126,9 @@ export const createPreviewBootstrap = () =>
     apiOperations,
     login: {
       password: true,
+      fail2ban: {
+        maxAttempts: 5,
+      },
       adapters: [
         createGitHubLoginAdapter({
           clientId: process.env.GITHUB_CLIENT_ID!,

@@ -56,6 +56,10 @@ import {
   externalLoginCompleteHandler,
   externalLoginStartHandler,
 } from "../routes/manager/auth/externalLogin";
+import {
+  listPasswordIpBlocksHandler,
+  unblockPasswordIpHandler,
+} from '../routes/manager/auth/passwordIpBlocks'
 import { enrollTotpHandler } from "../routes/manager/auth/totp/enrollTotp";
 import { logoutHandler } from "../routes/manager/auth/logout";
 import { updatePasswordHandler } from "../routes/manager/auth/updatePassword";
@@ -342,6 +346,12 @@ export const createManagerOperationDefinitions = () => {
           });
         }
       },
+    },
+    "manager.auth.ipBlocks.list": {
+      resolve: listPasswordIpBlocksHandler,
+    },
+    "manager.auth.ipBlocks.unblock": {
+      resolve: unblockPasswordIpHandler,
     },
     "manager.auth.logout": {
       resolve: logoutHandler,

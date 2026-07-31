@@ -361,6 +361,16 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/auth/external/complete",
   },
+  "manager.auth.ipBlocks.list": {
+    kind: "query",
+    method: "get",
+    path: "/manager/auth/ipBlocks/list",
+  },
+  "manager.auth.ipBlocks.unblock": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/auth/ipBlocks/unblock",
+  },
   "manager.auth.logout": {
     kind: "mutation",
     method: "post",

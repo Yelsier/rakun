@@ -229,6 +229,18 @@ export const rakunBootstrap = (options: RakunBootstrapOptions) => {
       "At least one login adapter is required when password login is disabled.",
     );
   }
+  const fail2banMaxAttempts =
+    options.login?.fail2ban === false
+      ? undefined
+      : options.login?.fail2ban?.maxAttempts
+  if (
+    fail2banMaxAttempts !== undefined &&
+    (!Number.isInteger(fail2banMaxAttempts) ||
+      fail2banMaxAttempts < 1 ||
+      fail2banMaxAttempts > 100)
+  ) {
+    throw new Error('login.fail2ban.maxAttempts must be an integer from 1 to 100.')
+  }
   const loginAdapterIds = new Set<string>();
   for (const adapter of options.login?.adapters ?? []) {
     if (!/^[a-z0-9][a-z0-9_-]*$/.test(adapter.id)) {
@@ -316,6 +328,7 @@ export {
   type LoginAdapterIdentity,
   type LoginConfig,
   type MicrosoftLoginAdapterConfig,
+  type PasswordFail2banConfig,
 } from "./auth/loginAdapters";
 export {
   defineRakunPlugin,
@@ -425,6 +438,7 @@ export {
 } from "./api/routes/manager/media/uploadBinary";
 export { parseCookieHeader } from "./lib/utils/parseCookieHeader";
 export {
+  AUTH_IP_BLOCK_MANAGE_PERMISSION,
   getPermissionList,
   hasPermissions,
   mapPermissions,

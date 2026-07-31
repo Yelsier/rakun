@@ -21,9 +21,11 @@ export const getRequestRateLimitIdentifier = (ctx?: RakunRequestContext) => {
   const headers = ctx?.req?.headers ?? {};
   const forwardedFor = headers["x-forwarded-for"];
   const realIp = headers["x-real-ip"];
-  const value = Array.isArray(forwardedFor)
-    ? forwardedFor[0]
-    : forwardedFor || (Array.isArray(realIp) ? realIp[0] : realIp);
+  const value =
+    ctx?.req?.ip ||
+    (Array.isArray(forwardedFor)
+      ? forwardedFor[0]
+      : forwardedFor || (Array.isArray(realIp) ? realIp[0] : realIp));
 
   return String(value || "unknown").split(",")[0]?.trim() || "unknown";
 };

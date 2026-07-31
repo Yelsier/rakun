@@ -49,6 +49,9 @@ export const managerMessages = {
   'login.error': {
     defaultMessage: 'Login could not be completed. Please try again.',
   },
+  'login.ipBlocked': {
+    defaultMessage: 'This IP address is blocked. Ask an administrator to unblock it.',
+  },
   'login.externalCompleting': { defaultMessage: 'Completing login…' },
   'login.externalError': {
     defaultMessage: 'External login could not be completed. Please try again.',
@@ -119,6 +122,25 @@ export const managerMessages = {
   'settings.languages': { defaultMessage: 'Languages' },
   'settings.routes': { defaultMessage: 'Routes' },
   'settings.system': { defaultMessage: 'System' },
+  'settings.security': { defaultMessage: 'Security' },
+  'settings.security.title': { defaultMessage: 'Blocked login IPs' },
+  'settings.security.description': {
+    defaultMessage:
+      'An IP is blocked permanently after {count, plural, one {# failed attempt} other {# failed attempts}}.',
+  },
+  'settings.security.disabled': { defaultMessage: 'Password IP blocking is disabled.' },
+  'settings.security.noBlockedIps': { defaultMessage: 'There are no blocked IP addresses.' },
+  'settings.security.loadError': { defaultMessage: 'Blocked IP addresses could not be loaded.' },
+  'settings.security.ip': { defaultMessage: 'IP address' },
+  'settings.security.attempts': { defaultMessage: 'Failed attempts' },
+  'settings.security.lastFailedAt': { defaultMessage: 'Last failed attempt' },
+  'settings.security.blockedAt': { defaultMessage: 'Blocked at' },
+  'settings.security.actions': { defaultMessage: 'Actions' },
+  'settings.security.unblock': { defaultMessage: 'Unblock' },
+  'settings.security.unblocked': { defaultMessage: 'The IP address was unblocked.' },
+  'settings.security.unblockError': {
+    defaultMessage: 'The IP address could not be unblocked.',
+  },
   'settings.userRoles': { defaultMessage: 'User Roles' },
   'settings.literals': { defaultMessage: 'Literals' },
   'settings.redirects': { defaultMessage: 'Redirects' },

@@ -121,6 +121,33 @@ The flow uses an HttpOnly state cookie and PKCE and preserves the existing MFA
 step. Set `password: false` only when at least one adapter is configured.
 Custom providers can be implemented with `defineLoginAdapter`.
 
+### Persistent password-login IP blocking
+
+Password login enables persistent fail2ban-style IP blocking by default. Five
+failed attempts block the IP indefinitely; a successful login before reaching
+the limit clears its failed-attempt counter. Configure or disable it through
+`login.fail2ban`:
+
+```ts
+rakunBootstrap({
+  // ...
+  login: {
+    password: true,
+    fail2ban: {
+      maxAttempts: 5,
+      // Optional when the deployment uses a custom trusted proxy:
+      // resolveIp: (ctx) => ctx.req?.headers?.['your-trusted-ip-header'] as string,
+    },
+  },
+})
+```
+
+Users with the `auth.ipBlocks.manage` permission can inspect and remove blocks
+under Manager Settings → Security. Admin roles receive this built-in permission
+automatically. A block can also be removed directly from MongoDB by deleting
+the matching document from the `LoginIpBlock` collection. Set `fail2ban: false`
+to disable this behavior. External login adapters are not affected.
+
 ## Account recovery and MFA recovery
 
 Password recovery is enabled when both `mail` and `accountRecovery` are

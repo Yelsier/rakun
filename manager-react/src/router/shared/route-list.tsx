@@ -21,6 +21,7 @@ import { ManagerSettingsRoutePathsScreen } from "../dashboard/settings/routes/pa
 import { ManagerSettingsRoutesScreen } from "../dashboard/settings/routes";
 import { ManagerSettingsHomeScreen } from "../dashboard/settings";
 import { ManagerSettingsSystemScreen } from "../dashboard/settings/system";
+import { ManagerSettingsSecurityScreen } from '../dashboard/settings/security'
 import { ManagerSettingsLogsScreen } from "../dashboard/settings/logs";
 import { ManagerSettingsReviewPoliciesScreen } from "../dashboard/settings/review-policies";
 import {
@@ -162,6 +163,13 @@ export const managerRouteDefinitions = [
     layout: "dashboard",
     parse: () => ({ kind: "settings-system" }),
     render: () => <ManagerSettingsSystemScreen />,
+  }),
+  defineManagerRoute({
+    kind: 'settings-security',
+    path: '/settings/security',
+    layout: 'dashboard',
+    parse: () => ({ kind: 'settings-security' }),
+    render: () => <ManagerSettingsSecurityScreen />,
   }),
   defineManagerRoute({
     kind: "settings-logs",

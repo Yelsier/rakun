@@ -18,11 +18,13 @@ export type Permission = string;
 
 export const REVIEW_POLICY_CONFIGURE_PERMISSION = "review.policy.configure";
 export const REVIEW_SELF_APPROVE_PERMISSION = "review.workflow.selfApprove";
+export const AUTH_IP_BLOCK_MANAGE_PERMISSION = 'auth.ipBlocks.manage'
 
 const builtInPermissions: Permission[] = [
   REVIEW_POLICY_CONFIGURE_PERMISSION,
   REVIEW_SELF_APPROVE_PERMISSION,
   EVENT_LOG_READ_PERMISSION,
+  AUTH_IP_BLOCK_MANAGE_PERMISSION,
 ];
 
 const getContentPermissionConfig = (contentType: ContentType) => {

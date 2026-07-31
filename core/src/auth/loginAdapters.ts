@@ -25,9 +25,20 @@ export type LoginAdapter = {
   authenticate: (input: LoginAdapterCallbackInput) => Promise<LoginAdapterIdentity>
 }
 
+export type PasswordFail2banConfig = {
+  /** Failed attempts before the IP is blocked. Defaults to 5. */
+  maxAttempts?: number
+  /** Override IP resolution when running behind a custom proxy. */
+  resolveIp?: (
+    context: import('../api/context').RakunRequestContext,
+  ) => string | undefined
+}
+
 export type LoginConfig = {
   /** Enable the built-in email/password form. Defaults to true. */
   password?: boolean
+  /** Persistent IP blocking for failed password logins. Enabled by default. */
+  fail2ban?: false | PasswordFail2banConfig
   adapters?: readonly LoginAdapter[]
 }
 
