@@ -10,6 +10,7 @@ import {
   Star,
   StarOff,
   UserRound,
+  Waypoints,
 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -197,13 +198,19 @@ const NotificationCard = ({
   title: string
 }) => {
   const t = useTranslations()
+  const isRedirectNotification =
+    notification.kind === 'redirect_enable_requested'
   const isReviewNotification = Boolean(
-    notification.kind && notification.kind !== 'comment_mention',
+    notification.kind &&
+      notification.kind !== 'comment_mention' &&
+      !isRedirectNotification,
   )
   const NotificationIcon = notification.read
-    ? isReviewNotification
-      ? GitPullRequestArrow
-      : MessageCircle
+    ? isRedirectNotification
+      ? Waypoints
+      : isReviewNotification
+        ? GitPullRequestArrow
+        : MessageCircle
     : BellRing
   const author = notification.author.name?.trim() || notification.author.user
   const authorAction =
@@ -215,7 +222,14 @@ const NotificationCard = ({
           ? 'Review requested by'
           : notification.kind === 'review_feedback'
             ? 'Feedback from'
-            : 'Mentioned by'
+            : notification.kind === 'redirect_enable_requested'
+              ? 'Redirect enable requested by'
+              : 'Mentioned by'
+  const href = isRedirectNotification
+    ? '/settings/redirects'
+    : `/${notification.contentType}/${notification.documentId}?${
+        isReviewNotification ? 'review' : 'comments'
+      }=open`
 
   return (
     <Card
@@ -226,9 +240,7 @@ const NotificationCard = ({
       }
     >
       <ManagerLink
-        href={`/${notification.contentType}/${notification.documentId}?${
-          isReviewNotification ? 'review' : 'comments'
-        }=open`}
+        href={href}
         className='absolute inset-0 z-0 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring'
       >
         <span className='sr-only'>

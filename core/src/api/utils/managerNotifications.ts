@@ -11,6 +11,7 @@ export type ManagerNotificationKind =
   | 'review_approved'
   | 'review_changes_requested'
   | 'review_feedback'
+  | 'redirect_enable_requested'
 
 export const createManagerNotification = async ({
   userId,

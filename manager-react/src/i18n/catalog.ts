@@ -379,6 +379,7 @@ export const managerMessages = {
   'fields.priorityNotes': { defaultMessage: 'Priority notes' },
 
   'dataTable.noResults': { defaultMessage: 'No results.' },
+  'dataTable.resizeColumn': { defaultMessage: 'Resize column' },
 
   'visibility.draft': { defaultMessage: 'Draft' },
   'visibility.hidden': { defaultMessage: 'Hidden' },

@@ -48,6 +48,7 @@ import { listMigrationsHandler } from "../routes/manager/migrations/list";
 import { listEventLogsHandler } from "../routes/manager/logs/list";
 import { permissionsHandler } from "../routes/manager/permissions";
 import { regenerateRoutesHandler } from "../routes/manager/regenerateRoutes";
+import { previewSlugRedirectsHandler } from "../routes/manager/previewSlugRedirects";
 import { setDefaultLanguageHandler } from "../routes/manager/setDefaultLanguage";
 import { updateHandler } from "../routes/manager/update";
 import { loginHandler } from "../routes/manager/auth/login";
@@ -124,6 +125,9 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.regenerateRoutes": {
       resolve: regenerateRoutesHandler,
+    },
+    "manager.routes.previewSlugRedirects": {
+      resolve: previewSlugRedirectsHandler,
     },
     "manager.create": {
       resolve: createHandler,

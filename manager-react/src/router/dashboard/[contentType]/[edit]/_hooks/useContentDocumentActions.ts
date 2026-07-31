@@ -1,10 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query'
-import type { EncodedContentType, EncodedFieldUnknown } from '@rakun-kit/core/client'
-import { useState } from 'react'
 import type {
+  EncodedContentType,
+  EncodedFieldUnknown,
   LinkedIteratorAction,
   LinkedIteratorControl,
 } from '@rakun-kit/core/client'
+import { useState } from 'react'
 import { toast } from 'sonner'
 
 import type {
@@ -289,13 +290,15 @@ export const useContentDocumentActions = ({
     try {
       const assignedLanguageCodes =
         currentVersion?.assignedLanguages.map((language) => language.code) ?? []
+      const languageCodes = assignedLanguageCodes.length
+        ? assignedLanguageCodes
+        : [languageCode]
+
       await promoteContentVersionMutation.mutateAsync({
         contentType: contentTypeName,
         documentId: contentTypeId,
         routeKey: routeableVersionRoute.key,
-        languageCodes: assignedLanguageCodes.length
-          ? assignedLanguageCodes
-          : [languageCode],
+        languageCodes,
       })
       setVisibility('published')
       await Promise.all([

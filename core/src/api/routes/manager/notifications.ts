@@ -30,7 +30,8 @@ type StoredNotification = {
     | "review_requested"
     | "review_approved"
     | "review_changes_requested"
-    | "review_feedback";
+    | "review_feedback"
+    | "redirect_enable_requested";
   reviewId?: string;
   contentType: string;
   documentId: string;
@@ -105,7 +106,10 @@ const resolveNotification = async ({
       ctx,
       contentType,
       id: notification.documentId,
-      permission: "readAny",
+      permission:
+        notification.kind === "redirect_enable_requested"
+          ? "updateAny"
+          : "readAny",
     });
 
     const titleField = contentType.listFields?.[0];

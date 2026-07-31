@@ -6,6 +6,7 @@ export const updateInput = z.object({
   id: z.string(),
   data: z.any(),
   linkedIterator: linkedIteratorControl.optional(),
+  createPermanentRedirects: z.boolean().optional(),
 })
 
 export type UpdateInput = z.infer<typeof updateInput>
