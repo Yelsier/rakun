@@ -78,6 +78,7 @@ const buildMongoFilter = (input: EventLogQuery): Filter<Document> => {
   addListFilter(filter, 'severity', input.severities)
   addListFilter(filter, 'outcome', input.outcomes)
   addListFilter(filter, 'source', input.sources)
+  addListFilter(filter, 'data.operation', input.operations)
 
   if (input.correlationId) filter.correlationId = input.correlationId
   if (input.tags?.length) filter.tags = { $all: input.tags }
@@ -136,5 +137,13 @@ export const createMongoEventLogAdapter = (db: Db): EventLogAdapter => ({
         ? { nextCursor: encodeCursor(items[items.length - 1]!) }
         : {}),
     }
+  },
+
+  async deleteBefore(before) {
+    const result = await db.collection(EVENT_LOG_COLLECTION).deleteMany({
+      occurredAt: { $lt: before },
+    })
+
+    return result.deletedCount
   },
 })

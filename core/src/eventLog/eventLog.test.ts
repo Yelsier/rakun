@@ -4,6 +4,7 @@ import { ObjectId, type Db, type Document } from 'mongodb'
 import { createMongoEventLogAdapter, EVENT_LOG_COLLECTION } from './mongo'
 import {
   EventLogInvalidDataError,
+  EventLogDeleteError,
   EventLogQueryError,
   EventLogWriteError,
   createEventLogServiceFromAdapter,
@@ -84,12 +85,14 @@ describe('event log service', () => {
     await service.query({
       categories: [' mail ', 'mail'],
       outcomes: ['success'],
+      operations: [' manager.auth.login ', 'manager.auth.login'],
       limit: 25,
     })
 
     expect(queries[0]).toMatchObject({
       categories: ['mail'],
       outcomes: ['success'],
+      operations: ['manager.auth.login'],
       limit: 25,
     })
   })
@@ -110,6 +113,41 @@ describe('event log service', () => {
       EventLogWriteError
     )
     await expect(service.query()).rejects.toBeInstanceOf(EventLogQueryError)
+    await expect(service.deleteBefore(new Date())).rejects.toBeInstanceOf(EventLogDeleteError)
+  })
+
+  test('normalizes cleanup dates and wraps adapter failures', async () => {
+    const deletedBefore: Date[] = []
+    const before = new Date('2026-06-01T00:00:00.000Z')
+    const service = createEventLogServiceFromAdapter({
+      adapter: {
+        append: async (event) => ({ id: 'event-1', ...event }),
+        query: async () => ({ items: [] }),
+        deleteBefore: async (value) => {
+          deletedBefore.push(value)
+          return 12
+        },
+      },
+    })
+
+    await expect(service.deleteBefore(before)).resolves.toBe(12)
+    expect(deletedBefore[0]).toEqual(before)
+    expect(deletedBefore[0]).not.toBe(before)
+    await expect(service.deleteBefore(new Date('invalid'))).rejects.toBeInstanceOf(
+      EventLogInvalidDataError
+    )
+
+    const failingService = createEventLogServiceFromAdapter({
+      adapter: {
+        append: async (event) => ({ id: 'event-1', ...event }),
+        query: async () => ({ items: [] }),
+        deleteBefore: async () => {
+          throw new Error('delete unavailable')
+        },
+      },
+    })
+
+    await expect(failingService.deleteBefore(before)).rejects.toBeInstanceOf(EventLogDeleteError)
   })
 })
 
@@ -226,6 +264,7 @@ describe('Mongo event log adapter', () => {
     const adapter = createMongoEventLogAdapter(db)
     const firstPage = await adapter.query({
       categories: ['mail'],
+      operations: ['manager.auth.login'],
       outcomes: ['success', 'failure'],
       tags: ['mail'],
       from: new Date('2026-01-01T00:00:00.000Z'),
@@ -235,6 +274,7 @@ describe('Mongo event log adapter', () => {
     expect(collectionNames).toEqual([EVENT_LOG_COLLECTION])
     expect(filters[0]).toMatchObject({
       category: 'mail',
+      'data.operation': 'manager.auth.login',
       outcome: { $in: ['success', 'failure'] },
       tags: { $all: ['mail'] },
       occurredAt: { $gte: new Date('2026-01-01T00:00:00.000Z') },
@@ -249,5 +289,25 @@ describe('Mongo event log adapter', () => {
     })
 
     expect(filters[1]).toHaveProperty('$and')
+  })
+
+  test('deletes only events strictly older than the cutoff', async () => {
+    const filters: Document[] = []
+    const db = {
+      collection(name: string) {
+        expect(name).toBe(EVENT_LOG_COLLECTION)
+        return {
+          deleteMany: async (filter: Document) => {
+            filters.push(filter)
+            return { deletedCount: 7 }
+          },
+        }
+      },
+    } as unknown as Db
+    const before = new Date('2026-07-01T00:00:00.000Z')
+    const adapter = createMongoEventLogAdapter(db)
+
+    await expect(adapter.deleteBefore!(before)).resolves.toBe(7)
+    expect(filters).toEqual([{ occurredAt: { $lt: before } }])
   })
 })

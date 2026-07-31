@@ -32,6 +32,8 @@ export const recordEvent = (input: EventLogInput) => getEventLogService().record
 
 export const queryEvents = (input?: EventLogQuery) => getEventLogService().query(input)
 
+export const deleteEventsBefore = (before: Date) => getEventLogService().deleteBefore(before)
+
 export * from './mongo'
 export * from './service'
 export * from './types'

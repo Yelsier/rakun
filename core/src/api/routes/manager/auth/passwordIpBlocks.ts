@@ -1,5 +1,6 @@
 import { getPasswordFail2banConfig } from '../../../../auth/passwordFail2ban'
 import { LoginIpBlock } from '../../../../internal-content-types'
+import { getEventLogService } from '../../../../eventLog'
 import { throwAppError } from '../../../../lib/errors'
 import { AUTH_IP_BLOCK_MANAGE_PERMISSION } from '../../../../lib/Permissions'
 import { getMongoService } from '../../../../orm'
@@ -25,10 +26,17 @@ export const listPasswordIpBlocksHandler = async ({
 }): Promise<ListPasswordIpBlocksOutput> => {
   requireManagePermission(ctx)
   const db = await getMongoService()
-  const result = await db.list(LoginIpBlock, {
-    filter: { blockedAt: { $exists: true } } as never,
-    options: { limit: 'all', sort: { blockedAt: 'desc' } as never },
-  })
+  const [result, recentFailures] = await Promise.all([
+    db.list(LoginIpBlock, {
+      filter: { blockedAt: { $exists: true } } as never,
+      options: { limit: 'all', sort: { blockedAt: 'desc' } as never },
+    }),
+    getEventLogService().query({
+      types: ['api.operation.failed'],
+      operations: ['manager.auth.login'],
+      limit: 25,
+    }),
+  ])
 
   return {
     maxAttempts: getPasswordFail2banConfig()?.maxAttempts ?? 0,
@@ -45,6 +53,30 @@ export const listPasswordIpBlocksHandler = async ({
           ]
         : [],
     ),
+    recentFailures: recentFailures.items.map((event) => {
+      const context = event.data?.context
+      const passwordLogin =
+        context && typeof context === 'object' && !Array.isArray(context)
+          ? context.passwordLogin
+          : undefined
+      const details =
+        passwordLogin &&
+        typeof passwordLogin === 'object' &&
+        !Array.isArray(passwordLogin)
+          ? passwordLogin
+          : undefined
+
+      return {
+        id: event.id,
+        occurredAt: event.occurredAt.toISOString(),
+        ip: typeof details?.ip === 'string' ? details.ip : undefined,
+        failedAttempts:
+          typeof details?.failedAttempts === 'number'
+            ? details.failedAttempts
+            : 0,
+        blocked: details?.blocked === true,
+      }
+    }),
   }
 }
 

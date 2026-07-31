@@ -11,6 +11,15 @@ export const passwordIpBlockRecord = z.object({
 export const listPasswordIpBlocksOutput = z.object({
   maxAttempts: z.number().int().nonnegative(),
   items: z.array(passwordIpBlockRecord),
+  recentFailures: z.array(
+    z.object({
+      id: z.string(),
+      occurredAt: z.string(),
+      ip: z.string().optional(),
+      failedAttempts: z.number().int().nonnegative(),
+      blocked: z.boolean(),
+    }),
+  ),
 })
 
 export const unblockPasswordIpInput = z.object({

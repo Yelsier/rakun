@@ -3,7 +3,10 @@ import { isAdminRole } from "./ManagerRolePolicy";
 import type ContentType from "./ContentType";
 import { getContentTypes } from "./Registry";
 import { getRakunBootstrapOptions } from "../bootstrapState";
-import { EVENT_LOG_READ_PERMISSION } from "../eventLog/types";
+import {
+  EVENT_LOG_MANAGE_PERMISSION,
+  EVENT_LOG_READ_PERMISSION,
+} from "../eventLog/types";
 
 type ContentPermissionAction = "own" | "readAny" | "updateAny" | "deleteAny";
 
@@ -24,6 +27,7 @@ const builtInPermissions: Permission[] = [
   REVIEW_POLICY_CONFIGURE_PERMISSION,
   REVIEW_SELF_APPROVE_PERMISSION,
   EVENT_LOG_READ_PERMISSION,
+  EVENT_LOG_MANAGE_PERMISSION,
   AUTH_IP_BLOCK_MANAGE_PERMISSION,
 ];
 

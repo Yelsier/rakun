@@ -1,7 +1,7 @@
 import { completePrimaryAuthentication } from "../../../../auth/completePrimaryAuthentication";
 import {
-  assertPasswordIpAllowed,
   clearPasswordFailures,
+  getBlockedPasswordIp,
   recordPasswordFailure,
   resolvePasswordLoginIp,
 } from '../../../../auth/passwordFail2ban'
@@ -15,6 +15,7 @@ import {
 } from "../../../../schemas/manager/auth/login";
 import type { RakunRequestContext } from "../../../context";
 import { recordAuthEvent } from '../../../utils/authEvents'
+import { setApiErrorEventData } from '../../../operations/apiEventLog'
 import { hashPassword, verifyStoredPassword } from "../../../utils/passwords";
 
 export const loginHandler = async ({
@@ -31,10 +32,27 @@ export const loginHandler = async ({
   const { username, password } = input;
   const db = await getMongoService();
   const ip = resolvePasswordLoginIp(ctx)
-  await assertPasswordIpAllowed(ip)
+  const existingBlock = await getBlockedPasswordIp(ip)
+  if (existingBlock) {
+    setApiErrorEventData(ctx, {
+      passwordLogin: {
+        ip: ip ?? null,
+        failedAttempts: existingBlock.failedAttempts,
+        blocked: true,
+      },
+    })
+    throwAppError('FORBIDDEN', { reason: 'IP_BLOCKED' })
+  }
 
   const rejectInvalidCredentials = async (): Promise<never> => {
     const failure = await recordPasswordFailure(ip)
+    setApiErrorEventData(ctx, {
+      passwordLogin: {
+        ip: ip ?? null,
+        failedAttempts: failure.failedAttempts ?? 0,
+        blocked: failure.blocked,
+      },
+    })
     if (failure.newlyBlocked) {
       await recordAuthEvent({
         type: 'auth.password.ip-blocked',

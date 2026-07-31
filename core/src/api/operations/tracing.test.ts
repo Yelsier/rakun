@@ -7,7 +7,11 @@ import { AppError } from '../../lib/errors'
 import { createLogger, Logger } from '../../lib/Logger'
 import type { RakunRequestContext } from '../context'
 
-import { recordApiError } from './apiEventLog'
+import {
+  recordApiError,
+  setApiErrorEventData,
+  setApiSuccessEventData,
+} from './apiEventLog'
 import { traceOperationMap } from './tracing'
 import { defineOperation } from './types'
 
@@ -70,6 +74,13 @@ describe('API operation error logging', () => {
       }),
     })
     const ctx = createContext()
+    setApiErrorEventData(ctx, {
+      passwordLogin: {
+        ip: '203.0.113.8',
+        failedAttempts: 3,
+        blocked: false,
+      },
+    })
 
     await expect(
       operations['manager.test.failure'].resolve({
@@ -101,6 +112,13 @@ describe('API operation error logging', () => {
         kind: 'mutation',
         method: 'post',
         errorKey: 'FORBIDDEN',
+        context: {
+          passwordLogin: {
+            ip: '203.0.113.8',
+            failedAttempts: 3,
+            blocked: false,
+          },
+        },
       },
     })
     expect(JSON.stringify(events[0])).not.toContain('sensitive authorization detail')
@@ -177,6 +195,13 @@ describe('API operation error logging', () => {
 
     expect(events).toHaveLength(0)
 
+    setApiSuccessEventData(ctx, {
+      eventLogCleanup: {
+        before: '2026-07-01T00:00:00.000Z',
+        deletedCount: 9,
+      },
+    })
+
     await operations['manager.test.update'].onSuccess?.({
       ctx,
       result,
@@ -203,6 +228,12 @@ describe('API operation error logging', () => {
         operation: 'manager.test.update',
         kind: 'mutation',
         method: 'post',
+        context: {
+          eventLogCleanup: {
+            before: '2026-07-01T00:00:00.000Z',
+            deletedCount: 9,
+          },
+        },
       },
     })
     expect(JSON.stringify(events[0])).not.toContain('sensitive-input-password')

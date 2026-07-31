@@ -32,6 +32,7 @@ export const listEventLogsInput = z.object({
   severities: z.array(eventLogSeverity).max(5).optional(),
   outcomes: z.array(eventLogOutcome).max(4).optional(),
   sources: z.array(z.string().trim().min(1)).max(20).optional(),
+  operations: z.array(z.string().trim().min(1)).max(20).optional(),
   correlationId: z.string().trim().min(1).optional(),
   tags: z.array(z.string().trim().min(1)).max(20).optional(),
   from: z.iso.datetime().optional(),
@@ -45,6 +46,16 @@ export const listEventLogsOutput = z.object({
   nextCursor: z.string().optional(),
 })
 
+export const cleanupEventLogsInput = z.object({
+  before: z.iso.datetime(),
+})
+
+export const cleanupEventLogsOutput = z.object({
+  deletedCount: z.number().int().nonnegative(),
+})
+
 export type EventLogRecordOutput = z.infer<typeof eventLogRecord>
 export type ListEventLogsInput = z.infer<typeof listEventLogsInput>
 export type ListEventLogsOutput = z.infer<typeof listEventLogsOutput>
+export type CleanupEventLogsInput = z.infer<typeof cleanupEventLogsInput>
+export type CleanupEventLogsOutput = z.infer<typeof cleanupEventLogsOutput>

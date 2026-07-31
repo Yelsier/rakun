@@ -39,6 +39,13 @@ export class EventLogQueryError extends EventLogError {
   }
 }
 
+export class EventLogDeleteError extends EventLogError {
+  constructor(message: string, details?: unknown) {
+    super(message, details)
+    this.name = 'EventLogDeleteError'
+  }
+}
+
 const normalizeRequiredString = (value: string, field: string): string => {
   const normalized = value?.trim()
 
@@ -153,6 +160,7 @@ const normalizeQuery = (input: EventLogQuery): EventLogQuery => {
     severities: input.severities ? Array.from(new Set(input.severities)) : undefined,
     outcomes: input.outcomes ? Array.from(new Set(input.outcomes)) : undefined,
     sources: normalizeStringList(input.sources, 'sources'),
+    operations: normalizeStringList(input.operations, 'operations'),
     correlationId: normalizeOptionalString(input.correlationId, 'correlationId'),
     tags: normalizeStringList(input.tags, 'tags'),
     from,
@@ -204,6 +212,21 @@ export const createEventLogServiceFromAdapter = (
     } catch (error) {
       if (error instanceof EventLogError) throw error
       throw new EventLogQueryError('Failed to query event logs', error)
+    }
+  },
+
+  async deleteBefore(before) {
+    const normalizedBefore = normalizeDate(before, 'before')!
+
+    if (!config.adapter.deleteBefore) {
+      throw new EventLogDeleteError('Event log adapter does not support cleanup')
+    }
+
+    try {
+      return await config.adapter.deleteBefore(normalizedBefore)
+    } catch (error) {
+      if (error instanceof EventLogError) throw error
+      throw new EventLogDeleteError('Failed to delete event logs', error)
     }
   },
 })

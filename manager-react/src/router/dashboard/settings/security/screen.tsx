@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { useManagerMutation, useManagerQuery } from '@/client/react'
 import Loading from '@/components/loading'
 import UnauthorizedMessage from '@/components/unauthorized'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -58,7 +59,7 @@ export const ManagerSettingsSecurityScreen = () => {
   const data = query.data
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="container mx-auto flex flex-col gap-6 py-10">
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -101,6 +102,46 @@ export const ManagerSettingsSecurityScreen = () => {
                       >
                         {t('settings.security.unblock')}
                       </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('settings.security.recentFailures')}</CardTitle>
+          <CardDescription>{t('settings.security.recentFailuresDescription')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!data?.recentFailures.length ? (
+            <p className="text-muted-foreground">{t('settings.security.noRecentFailures')}</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('settings.security.occurredAt')}</TableHead>
+                  <TableHead>{t('settings.security.ip')}</TableHead>
+                  <TableHead>{t('settings.security.attempts')}</TableHead>
+                  <TableHead>{t('settings.security.result')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.recentFailures.map((failure) => (
+                  <TableRow key={failure.id}>
+                    <TableCell>{formatDateTime(failure.occurredAt)}</TableCell>
+                    <TableCell className="font-mono">
+                      {failure.ip ?? t('settings.security.unknownIp')}
+                    </TableCell>
+                    <TableCell>{failure.failedAttempts}</TableCell>
+                    <TableCell>
+                      <Badge variant={failure.blocked ? 'destructive' : 'outline'}>
+                        {failure.blocked
+                          ? t('settings.security.blocked')
+                          : t('settings.security.failed')}
+                      </Badge>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -871,7 +871,7 @@ The service supports prepare/finalize upload, URL generation, folders, and image
 ## Persistent Event Log
 
 Rakun keeps business/audit events separate from its technical console logger.
-The event log uses an append-only adapter and defaults to a MongoDB collection
+The event log keeps events immutable and defaults to a MongoDB collection
 with indexes for time, type, category, outcome, severity, correlation and tags:
 
 ```ts
@@ -914,6 +914,9 @@ const adapter: EventLogAdapter = {
   async query(filters) {
     return customStore.query(filters);
   },
+  async deleteBefore(before) {
+    return customStore.deleteBefore(before);
+  },
 };
 
 rakunBootstrap({
@@ -926,6 +929,11 @@ Plugins receive the resolved `eventLog` service in their initialization
 context. Reading a shared event stream should be protected with the built-in
 `system.eventLog.read` permission. The built-in `manager.logs.list` operation and the
 manager Settings → Logs screen both enforce it.
+
+Retention cleanup is available from the manager Logs screen to users with the
+built-in `system.eventLog.manage` permission. It deletes events strictly older
+than the selected cutoff. Custom adapters must implement `deleteBefore` to
+support this action. The cleanup mutation itself is logged after deletion.
 
 Failed API operations are persisted automatically as `api.operation.failed`
 events. This includes expected 4xx application errors and unexpected 5xx

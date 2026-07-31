@@ -1,15 +1,24 @@
 'use client'
 
 import type { ManagerOperationOutput } from '@rakun-kit/core/manager'
-import { Eye, Filter, RotateCcw, XIcon } from 'lucide-react'
+import { Eye, Filter, RotateCcw, Trash2, XIcon } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
+import { toast } from 'sonner'
 
-import { useManagerQuery } from '@/client/react'
+import { useManagerMutation, useManagerQuery } from '@/client/react'
 import Loading from '@/components/loading'
 import UnauthorizedMessage from '@/components/unauthorized'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Drawer,
   DrawerClose,
@@ -35,6 +44,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useTranslations } from '@/i18n'
+import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { useSession } from '@/state/session'
 
 type EventLogPage = ManagerOperationOutput<'manager.logs.list'>
@@ -75,6 +85,15 @@ const splitValues = (value: string) => {
 
 const toIsoDate = (value: string) => (value ? new Date(value).toISOString() : undefined)
 
+const toDateTimeLocalValue = (date: Date) =>
+  new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
+
+const getDefaultCleanupDate = () => {
+  const date = new Date()
+  date.setDate(date.getDate() - 30)
+  return toDateTimeLocalValue(date)
+}
+
 const formatDateTime = (value: string) =>
   new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
@@ -88,11 +107,14 @@ export const ManagerSettingsLogsScreen = () => {
   const t = useTranslations()
   const { hasPermissions } = useSession()
   const canReadLogs = hasPermissions(['system.eventLog.read'])
+  const canManageLogs = hasPermissions(['system.eventLog.manage'])
   const [draftFilters, setDraftFilters] = useState<LogFilters>(emptyFilters)
   const [filters, setFilters] = useState<LogFilters>(emptyFilters)
   const [cursor, setCursor] = useState<string>()
   const [previousCursors, setPreviousCursors] = useState<Array<string | undefined>>([])
   const [selectedEvent, setSelectedEvent] = useState<EventLogRecord | null>(null)
+  const [cleanupOpen, setCleanupOpen] = useState(false)
+  const [cleanupBefore, setCleanupBefore] = useState('')
 
   const input = useMemo(
     () => ({
@@ -116,6 +138,7 @@ export const ManagerSettingsLogsScreen = () => {
     input,
     enabled: canReadLogs,
   })
+  const cleanupLogs = useManagerMutation('manager.logs.cleanup')
 
   if (!canReadLogs) {
     return <UnauthorizedMessage neededPermission={['system.eventLog.read']} />
@@ -147,11 +170,40 @@ export const ManagerSettingsLogsScreen = () => {
     setCursor(previous)
   }
 
+  const openCleanupDialog = () => {
+    setCleanupBefore(getDefaultCleanupDate())
+    setCleanupOpen(true)
+  }
+
+  const confirmCleanup = async () => {
+    const before = toIsoDate(cleanupBefore)
+    if (!before) return
+
+    try {
+      const result = await cleanupLogs.mutateAsync({ before })
+      setCleanupOpen(false)
+      setCursor(undefined)
+      setPreviousCursors([])
+      if (!cursor) await logsQuery.refetch()
+      toast.success(t('settings.logs.cleanupSuccess', { count: result.deletedCount }))
+    } catch (error) {
+      toast.error(getActionErrorMessage(error, t('settings.logs.cleanupError')))
+    }
+  }
+
   return (
     <div className="container mx-auto flex flex-col gap-6 py-10">
-      <div>
-        <h1 className="text-2xl font-semibold">{t('settings.logs')}</h1>
-        <p className="text-muted-foreground mt-1 text-sm">{t('settings.logs.description')}</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">{t('settings.logs')}</h1>
+          <p className="text-muted-foreground mt-1 text-sm">{t('settings.logs.description')}</p>
+        </div>
+        {canManageLogs ? (
+          <Button type="button" variant="destructive" onClick={openCleanupDialog}>
+            <Trash2 />
+            {t('settings.logs.cleanup')}
+          </Button>
+        ) : null}
       </div>
 
       <Card>
@@ -196,10 +248,10 @@ export const ManagerSettingsLogsScreen = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('settings.logs.all')}</SelectItem>
-                  <SelectItem value="pending">pending</SelectItem>
-                  <SelectItem value="success">success</SelectItem>
-                  <SelectItem value="failure">failure</SelectItem>
-                  <SelectItem value="neutral">neutral</SelectItem>
+                  <SelectItem value="pending">{t('settings.logs.outcome.pending')}</SelectItem>
+                  <SelectItem value="success">{t('settings.logs.outcome.success')}</SelectItem>
+                  <SelectItem value="failure">{t('settings.logs.outcome.failure')}</SelectItem>
+                  <SelectItem value="neutral">{t('settings.logs.outcome.neutral')}</SelectItem>
                 </SelectContent>
               </Select>
             </label>
@@ -216,11 +268,11 @@ export const ManagerSettingsLogsScreen = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t('settings.logs.all')}</SelectItem>
-                  <SelectItem value="debug">debug</SelectItem>
-                  <SelectItem value="info">info</SelectItem>
-                  <SelectItem value="warning">warning</SelectItem>
-                  <SelectItem value="error">error</SelectItem>
-                  <SelectItem value="critical">critical</SelectItem>
+                  <SelectItem value="debug">{t('settings.logs.severity.debug')}</SelectItem>
+                  <SelectItem value="info">{t('settings.logs.severity.info')}</SelectItem>
+                  <SelectItem value="warning">{t('settings.logs.severity.warning')}</SelectItem>
+                  <SelectItem value="error">{t('settings.logs.severity.error')}</SelectItem>
+                  <SelectItem value="critical">{t('settings.logs.severity.critical')}</SelectItem>
                 </SelectContent>
               </Select>
             </label>
@@ -497,6 +549,55 @@ export const ManagerSettingsLogsScreen = () => {
           ) : null}
         </DrawerContent>
       </Drawer>
+
+      <Dialog
+        open={cleanupOpen}
+        onOpenChange={(open) => {
+          if (!cleanupLogs.isPending) setCleanupOpen(open)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('settings.logs.cleanupTitle')}</DialogTitle>
+            <DialogDescription>{t('settings.logs.cleanupDescription')}</DialogDescription>
+          </DialogHeader>
+          <label className="grid gap-1 text-sm">
+            <span>{t('settings.logs.cleanupBefore')}</span>
+            <Input
+              type="datetime-local"
+              value={cleanupBefore}
+              max={toDateTimeLocalValue(new Date())}
+              onChange={(event) => setCleanupBefore(event.target.value)}
+            />
+          </label>
+          {cleanupBefore ? (
+            <p className="text-muted-foreground text-sm">
+              {t('settings.logs.cleanupConfirmation', {
+                date: formatDateTime(toIsoDate(cleanupBefore)!),
+              })}
+            </p>
+          ) : null}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={cleanupLogs.isPending}
+              onClick={() => setCleanupOpen(false)}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              loading={cleanupLogs.isPending}
+              disabled={!cleanupBefore}
+              onClick={() => void confirmCleanup()}
+            >
+              {t('settings.logs.cleanupConfirm')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

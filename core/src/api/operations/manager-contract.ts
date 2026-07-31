@@ -77,6 +77,8 @@ import {
   decideReviewOutput,
   cancelReviewInput,
   cancelReviewOutput,
+  cleanupEventLogsInput,
+  cleanupEventLogsOutput,
   routeLayoutReferenceInput,
   routeLayoutStateOutput,
   setRouteLayoutOverrideInput,
@@ -523,6 +525,14 @@ export const createManagerOperationContracts = () =>
         "List persistent Rakun events using filters and cursor pagination",
       input: listEventLogsInput,
       output: listEventLogsOutput,
+      method: "post",
+    }),
+    "manager.logs.cleanup": defineOperationContract({
+      access: "auth",
+      kind: "mutation",
+      description: "Delete persistent Rakun events older than a cutoff date",
+      input: cleanupEventLogsInput,
+      output: cleanupEventLogsOutput,
       method: "post",
     }),
     "manager.backups.list": defineOperationContract({

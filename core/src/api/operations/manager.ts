@@ -46,6 +46,7 @@ import { languagesHandler } from "../routes/manager/languages";
 import { uiLocalesHandler } from "../routes/manager/uiLocales";
 import { listMigrationsHandler } from "../routes/manager/migrations/list";
 import { listEventLogsHandler } from "../routes/manager/logs/list";
+import { cleanupEventLogsHandler } from "../routes/manager/logs/cleanup";
 import { permissionsHandler } from "../routes/manager/permissions";
 import { regenerateRoutesHandler } from "../routes/manager/regenerateRoutes";
 import { previewSlugRedirectsHandler } from "../routes/manager/previewSlugRedirects";
@@ -259,6 +260,9 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.logs.list": {
       resolve: listEventLogsHandler,
+    },
+    "manager.logs.cleanup": {
+      resolve: cleanupEventLogsHandler,
     },
     "manager.backups.list": {
       resolve: listBackupsHandler,

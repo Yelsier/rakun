@@ -3,7 +3,6 @@ import type { Db } from 'mongodb'
 
 import { getRakunBootstrapOptions } from '../bootstrapState'
 import { LoginIpBlock } from '../internal-content-types'
-import { throwAppError } from '../lib/errors'
 import { getMongoService } from '../orm'
 import type { RakunRequestContext } from '../api/context'
 import { getRequestRateLimitIdentifier } from '../api/utils/authRateLimit'
@@ -49,14 +48,17 @@ export const resolvePasswordLoginIp = (
   )
 }
 
-export const assertPasswordIpAllowed = async (ip?: string) => {
-  if (!ip) return
+export const getBlockedPasswordIp = async (ip?: string) => {
+  if (!ip) return null
   const db = await getMongoService()
   const record = await db.find(LoginIpBlock, { ip })
 
-  if (record?.blockedAt) {
-    throwAppError('FORBIDDEN', { reason: 'IP_BLOCKED' })
-  }
+  return record?.blockedAt
+    ? {
+        recordId: record._id,
+        failedAttempts: record.failedAttempts,
+      }
+    : null
 }
 
 export const recordPasswordFailure = async (

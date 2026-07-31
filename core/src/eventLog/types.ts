@@ -3,6 +3,7 @@ export type EventLogSeverity = 'debug' | 'info' | 'warning' | 'error' | 'critica
 export type EventLogOutcome = 'pending' | 'success' | 'failure' | 'neutral'
 
 export const EVENT_LOG_READ_PERMISSION = 'system.eventLog.read'
+export const EVENT_LOG_MANAGE_PERMISSION = 'system.eventLog.manage'
 
 export type EventLogJsonValue =
   | string
@@ -56,6 +57,7 @@ export type EventLogQuery = {
   severities?: readonly EventLogSeverity[]
   outcomes?: readonly EventLogOutcome[]
   sources?: readonly string[]
+  operations?: readonly string[]
   correlationId?: string
   tags?: readonly string[]
   from?: Date
@@ -72,6 +74,7 @@ export type EventLogPage = {
 export interface EventLogAdapter {
   append(event: EventLogWrite): Promise<EventLogRecord>
   query(input: EventLogQuery): Promise<EventLogPage>
+  deleteBefore?(before: Date): Promise<number>
 }
 
 export type EventLogServiceConfig = {
@@ -82,4 +85,5 @@ export interface EventLogService {
   rawAdapter: EventLogAdapter
   record(input: EventLogInput): Promise<EventLogRecord>
   query(input?: EventLogQuery): Promise<EventLogPage>
+  deleteBefore(before: Date): Promise<number>
 }

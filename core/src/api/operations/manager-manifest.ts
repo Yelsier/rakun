@@ -241,6 +241,11 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/logs/list",
   },
+  "manager.logs.cleanup": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/logs/cleanup",
+  },
   "manager.backups.list": {
     kind: "query",
     method: "get",

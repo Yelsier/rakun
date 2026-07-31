@@ -1,11 +1,34 @@
 import { getEventLogService, hasEventLogService } from '../../eventLog'
 import { getAppErrorShape, getAppErrorStatusCode } from '../../lib/errors'
 import { Logger } from '../../lib/Logger'
+import type { EventLogJsonValue } from '../../eventLog'
 import type { RakunRequestContext } from '../context'
 
 import type { AnyRakunOperation } from './types'
 
 const loggedApiErrors = new WeakSet<object>()
+const apiErrorEventData = new WeakMap<
+  RakunRequestContext,
+  Record<string, EventLogJsonValue>
+>()
+const apiSuccessEventData = new WeakMap<
+  RakunRequestContext,
+  Record<string, EventLogJsonValue>
+>()
+
+export const setApiErrorEventData = (
+  ctx: RakunRequestContext | undefined,
+  data: Record<string, EventLogJsonValue>,
+) => {
+  if (ctx) apiErrorEventData.set(ctx, data)
+}
+
+export const setApiSuccessEventData = (
+  ctx: RakunRequestContext,
+  data: Record<string, EventLogJsonValue>
+) => {
+  apiSuccessEventData.set(ctx, data)
+}
 
 const getHeaderValue = (
   headers: Record<string, string | string[] | undefined> | undefined,
@@ -68,6 +91,8 @@ export const recordApiError = async ({
   const appError = getAppErrorShape(error)
   const resolvedStatusCode = statusCode ?? getAppErrorStatusCode(error) ?? 500
   const errorName = appError ? undefined : getErrorName(error)
+  const contextualData = ctx ? apiErrorEventData.get(ctx) : undefined
+  if (ctx) apiErrorEventData.delete(ctx)
 
   if (!hasEventLogService()) {
     Logger?.error?.('API error could not be persisted because the event log is not initialized', {
@@ -94,6 +119,7 @@ export const recordApiError = async ({
         ...(operation ? { kind: operation.kind, method: operation.method } : {}),
         ...(appError ? { errorKey: appError.key } : {}),
         ...(errorName ? { errorName } : {}),
+        ...(contextualData ? { context: contextualData } : {}),
       },
     })
 
@@ -124,6 +150,9 @@ export const recordApiOperationSuccess = async ({
     return
   }
 
+  const contextualData = apiSuccessEventData.get(ctx)
+  apiSuccessEventData.delete(ctx)
+
   if (!hasEventLogService()) {
     Logger?.error?.(
       'API mutation success could not be persisted because the event log is not initialized',
@@ -149,6 +178,7 @@ export const recordApiOperationSuccess = async ({
         operation: name,
         kind: operation.kind,
         method: operation.method,
+        ...(contextualData ? { context: contextualData } : {}),
       },
     })
   } catch (error) {
