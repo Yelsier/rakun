@@ -16,6 +16,9 @@
         "../core/dist/esm/internal-content-types/index.d.ts"
       ],
       "@rakun-kit/manager-react": ["../manager-react/dist/esm/index.d.ts"],
+      "@rakun-kit/manager-react/seo": [
+        "../manager-react/dist/esm/seo/index.d.ts"
+      ],
       "@rakun-kit/manager-react/client/http": [
         "../manager-react/dist/esm/client/http.d.ts"
       ],
@@ -27,6 +30,9 @@
       ],
       "@rakun-kit/manager-react/state/navigation": [
         "../manager-react/dist/esm/state/navigation.d.ts"
+      ],
+      "@rakun-kit/manager-react/state/theme-script": [
+        "../manager-react/dist/esm/state/theme-script.d.ts"
       ],
       "@rakun-kit/manager-react/styles.css": [
         "../manager-react/dist/styles.css.d.ts"

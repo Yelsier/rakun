@@ -30,6 +30,7 @@
         "../core/src/internal-content-types/index.ts"
       ],
       "@rakun-kit/manager-react": ["../manager-react/src/index.ts"],
+      "@rakun-kit/manager-react/seo": ["../manager-react/src/seo/index.ts"],
       "@rakun-kit/manager-react/client/http": [
         "../manager-react/src/client/http.ts"
       ],
@@ -38,6 +39,9 @@
       ],
       "@rakun-kit/manager-react/app/runtime-app": [
         "../manager-react/src/app/runtime-app.tsx"
+      ],
+      "@rakun-kit/manager-react/state/theme-script": [
+        "../manager-react/src/state/theme-script.tsx"
       ],
       "@rakun-kit/manager-react/styles.css": [
         "../manager-react/styles.css.d.ts"

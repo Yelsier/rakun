@@ -4,7 +4,10 @@ import type { ManagerLocalePack } from '@rakun-kit/manager-react/i18n'
 export const esManagerMessages: ManagerLocalePack['messages'] = {
   'brand.name': 'Rakun',
   'brand.tagline': 'Manager',
+  'seo.title': 'Rakun Manager',
+  'seo.description': 'Sistema de gestión de contenidos Rakun.',
   'navUser.account': 'Cuenta',
+
   'navUser.logOut': 'Cerrar sesión',
   'navUser.language': 'Idiomas',
   'navUser.theme.light': 'Claro',

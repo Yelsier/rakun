@@ -164,6 +164,12 @@
       "require": "./dist/cjs/state/theme.js",
       "default": "./dist/esm/state/theme.js"
     },
+    "./state/theme-script": {
+      "types": "./dist/esm/state/theme-script.d.ts",
+      "import": "./dist/esm/state/theme-script.js",
+      "require": "./dist/cjs/state/theme-script.js",
+      "default": "./dist/esm/state/theme-script.js"
+    },
     "./link": {
       "types": "./dist/esm/link.d.ts",
       "import": "./dist/esm/link.js",
@@ -181,6 +187,12 @@
       "import": "./dist/esm/i18n/index.js",
       "require": "./dist/cjs/i18n/index.js",
       "default": "./dist/esm/i18n/index.js"
+    },
+    "./seo": {
+      "types": "./dist/esm/seo/index.d.ts",
+      "import": "./dist/esm/seo/index.js",
+      "require": "./dist/cjs/seo/index.js",
+      "default": "./dist/esm/seo/index.js"
     },
     "./rich-text": {
       "types": "./dist/esm/rich-text.d.ts",
