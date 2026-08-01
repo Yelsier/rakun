@@ -81,6 +81,14 @@ const navigation = createPathManagerNavigation({
 });
 ```
 
+## Link fields
+
+The `f.link()` editor is a single link input. Users can paste or type a direct
+URL, choose the home page, or browse configured page-route types and select one
+of their entries. Route types use their content type's manager icon. Internal
+selections remain route references so localized paths can resolve at render
+time; direct URLs are stored as strings.
+
 ## Styles
 
 Import the package stylesheet once:

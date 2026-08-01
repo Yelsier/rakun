@@ -13,10 +13,12 @@ import {
 } from "./Field";
 import { Id } from "../utils/id";
 
-const linkInputSchema = z.object({
+const internalLinkInputSchema = z.object({
   routeId: Id,
   contentTypeId: Id,
 });
+
+const linkInputSchema = z.union([z.string().min(1), internalLinkInputSchema]);
 
 const linkOutputSchema = z.string();
 

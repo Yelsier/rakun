@@ -5,7 +5,7 @@ export type ManagerMessageDefinition = {
   params?: Record<string, ManagerMessageParamSpec>
 }
 
-export const MANAGER_CATALOG_VERSION = 1
+export const MANAGER_CATALOG_VERSION = 2
 
 export const managerMessages = {
   'brand.name': { defaultMessage: 'Rakun' },
@@ -707,6 +707,26 @@ export const managerMessages = {
   },
   'contentEdit.route': { defaultMessage: 'Route' },
   'contentEdit.routes': { defaultMessage: 'Routes' },
+  'linkPicker.placeholder': {
+    defaultMessage: 'Paste a URL or choose a destination',
+  },
+  'linkPicker.chooseDestination': { defaultMessage: 'Choose a destination' },
+  'linkPicker.directHint': {
+    defaultMessage: 'You can also type a web address directly in the field.',
+  },
+  'linkPicker.homepage': { defaultMessage: 'Home page' },
+  'linkPicker.routeTypes': { defaultMessage: 'Page types' },
+  'linkPicker.noRoutes': { defaultMessage: 'No page routes are configured.' },
+  'linkPicker.search': { defaultMessage: 'Search items...' },
+  'linkPicker.noResults': { defaultMessage: 'No matching items.' },
+  'linkPicker.back': { defaultMessage: 'Back to destinations' },
+  'linkPicker.clear': { defaultMessage: 'Clear link' },
+  'linkPicker.selected': { defaultMessage: 'Selected internal link' },
+  'linkPicker.loadError': {
+    defaultMessage: 'Could not load link destinations.',
+  },
+  'linkPicker.routeRequired': { defaultMessage: 'Choose a page type.' },
+  'linkPicker.itemRequired': { defaultMessage: 'Choose an item.' },
   'contentEdit.addExisting': { defaultMessage: 'Add existing' },
   'contentEdit.addNew': { defaultMessage: 'Add new' },
   'contentEdit.createQuoted': {

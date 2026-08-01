@@ -214,6 +214,29 @@ describe("populateLinks", () => {
     });
   });
 
+  it("keeps direct URLs without querying route maps", async () => {
+    const list = setRouteMaps([]);
+
+    const result = await populateLinks({
+      _id: "page-id",
+      _type: "TestPage",
+      primaryLink: "https://example.com/docs",
+      nested: {
+        link: "/contact/",
+      },
+    } as DBOutput<ContentType>);
+
+    expect(result).toEqual({
+      _id: "page-id",
+      _type: "TestPage",
+      primaryLink: "https://example.com/docs",
+      nested: {
+        link: "/contact/",
+      },
+    });
+    expect(list).not.toHaveBeenCalled();
+  });
+
   it("resolves links through locale variant groups", async () => {
     const list = setRouteMaps([
       makeRouteMap({

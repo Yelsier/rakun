@@ -637,6 +637,9 @@ Notable fields:
 - `NumberField`: supports `.min()` and `.max()`.
 - `RelationField`: relation to another `ContentType`; accepts existing references or inline creation. `f.relation(Post, "existing")` restricts to existing records; `"new"` restricts to new records. `.multiple()` returns a homogeneous array of relations.
 - `ContentReferenceField`: reference by content type name.
+- `LinkField`: `f.link()` stores either a direct URL string or an internal
+  `{ routeId, contentTypeId }` reference. Internal references resolve to localized
+  paths in web output; direct URLs pass through unchanged.
 - `FileField`: integrates media and optimization options.
 - `f.blocks(...)`: heterogeneous ordered list. Each item stores a `name` and a `value`, and the value can match one of the named field shapes. Use it for block-like content where different item types can appear in the same list.
 - `f.array(...)`: homogeneous ordered list. Every item uses the same field shape. Multi-value fields such as relation `.multiple()` use this backing model.

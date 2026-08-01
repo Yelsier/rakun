@@ -1826,8 +1826,8 @@ export const seedPreviewData = async ({
         { _id: footer._id },
         {
           $set: {
-            internalLinkLabel: "Contact",
-            internalLink: pageLink(route, contactPage),
+            internalLinkLabel: "Rakun on GitHub",
+            internalLink: "https://github.com/Yelsier/rakun",
             updatedAt: now(),
           },
         },

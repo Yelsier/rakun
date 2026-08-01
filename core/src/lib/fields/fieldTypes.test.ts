@@ -51,6 +51,24 @@ describe("field type inference", () => {
     ).toEqual(_singleWrappedSlug);
   });
 
+  it("accepts direct URLs and internal route references in link fields", () => {
+    const link = Fields.link().required();
+
+    expect(link.getInputSchema().parse("https://example.com/docs")).toBe(
+      "https://example.com/docs",
+    );
+    expect(
+      link.getInputSchema().parse({
+        routeId: "64f0c0000000000000000001",
+        contentTypeId: "64f0c0000000000000000002",
+      }),
+    ).toEqual({
+      routeId: "64f0c0000000000000000001",
+      contentTypeId: "64f0c0000000000000000002",
+    });
+    expect(link.getInputSchema().safeParse("").success).toBe(false);
+  });
+
   it("adds iterator fields from content type params", () => {
     const IteratorParamCT = new ContentType({
       name: "IteratorParam",

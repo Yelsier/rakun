@@ -109,6 +109,10 @@ blocks and array/list forms. Chain field modifiers such as `.required()`,
 Special manager editors are selected with `.type(...)`, for example `Slug`,
 `RichText`, `Email`, `Password` and `Image`.
 
+`f.link()` accepts either a direct URL string or an internal
+`{ routeId, contentTypeId }` reference. Internal references resolve to localized
+paths in web output; direct URLs pass through unchanged.
+
 Use `iterator` for ordered page modules. Rakun stores it as the reserved
 `_iterator` field. `linkedIterator: true` shares a canonical module structure
 between documents while allowing a document to be explicitly unlinked.

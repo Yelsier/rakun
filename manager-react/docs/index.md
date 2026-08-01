@@ -41,6 +41,14 @@ navigation. Use `ManagerRuntimeApp` when the host supplies navigation.
 Use operation names and payloads from Rakun contracts; do not recreate endpoint
 types in host code. Keep `baseUrl` (API) distinct from `basePath` (manager UI).
 
+## Link field picker
+
+The `f.link()` editor uses one input for direct and internal destinations. A
+typed or pasted URL is stored as a string. Opening the picker exposes the home
+page and configured page-route types with their content type icons; selecting a
+type opens its searchable entry list. Internal selections are stored as
+`{ routeId, contentTypeId }` so core can resolve localized paths.
+
 ## Manager plugins
 
 ```tsx
