@@ -252,9 +252,12 @@ Render the manager from a Next App Router page with `@rakun-kit/next/manager`:
 ```tsx
 // app/backend/[[...slug]]/page.tsx
 import {
+  createRakunManagerMetadata,
   RakunManagerPage,
   type RakunManagerPageProps,
 } from "@rakun-kit/next/manager";
+
+export const metadata = createRakunManagerMetadata();
 
 export default function Page(props: RakunManagerPageProps) {
   return (
@@ -266,6 +269,25 @@ export default function Page(props: RakunManagerPageProps) {
   );
 }
 ```
+
+Manager SEO belongs on the host page via framework metadata (Next
+`export const metadata`, Vite `index.html`, etc.).
+`createRakunManagerMetadata()` is server-safe and sets a default title,
+description, and `noindex` robots.
+
+Pass a locale pack (or just the SEO keys) to translate the copy:
+
+```tsx
+import { esManagerMessages } from "@rakun-kit/manager-locales/es";
+import { createRakunManagerMetadata } from "@rakun-kit/next/manager";
+
+export const metadata = createRakunManagerMetadata({
+  messages: esManagerMessages,
+});
+```
+
+Shared helpers also live at `@rakun-kit/manager-react/seo` for non-Next hosts.
+Message keys: `seo.title`, `seo.description`.
 
 `RakunManagerPage` expects Next's Promise-based `params` and `searchParams`
 props.
@@ -331,7 +353,7 @@ When this config is detected, `rakunNext` serves:
 - `@rakun-kit/next`: `rakunNext`, `rakunNextCrud`, local media helpers, and shared route utilities.
 - `@rakun-kit/next/trpc`: `rakunNextTrpc`.
 - `@rakun-kit/next/media`: `LocalAdapter`, local media config, and local HTTP handlers.
-- `@rakun-kit/next/manager`: `RakunManagerPage` and manager page types.
+- `@rakun-kit/next/manager`: `RakunManagerPage`, `createRakunManagerMetadata`, and manager page types.
 - `@rakun-kit/next/web`: `getRakunPage`, `RakunPageRenderer`, and page path helpers.
 - `@rakun-kit/next/web/client`: Rakun React renderers and typed API client helpers for client components.
 

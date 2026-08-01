@@ -1,6 +1,12 @@
-import { RakunManagerPage, type RakunManagerPageProps } from '@rakun-kit/next/manager'
+import {
+  createRakunManagerMetadata,
+  RakunManagerPage,
+  type RakunManagerPageProps,
+} from '@rakun-kit/next/manager'
 
 import { PreviewManager } from './preview-manager'
+
+export const metadata = createRakunManagerMetadata()
 
 export default function BackendPage(props: RakunManagerPageProps) {
   return (

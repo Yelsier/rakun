@@ -3,10 +3,14 @@ import type { ManagerClient } from "@rakun-kit/manager-react/client/request";
 import type { ManagerPreviewConfig } from "@rakun-kit/manager-react";
 
 import { RakunManagerClientPage } from "./manager-client";
-import type { RakunManagerClientPageProps } from './manager-client'
+import type { RakunManagerClientPageProps } from "./manager-client";
 
 export type { RakunManagerClientPageProps } from "./manager-client";
 export { RakunManagerClientPage } from "./manager-client";
+export {
+  createRakunManagerMetadata,
+  type CreateRakunManagerMetadataOptions,
+} from "./manager-metadata";
 
 export type RakunManagerPageSearchParams = Record<
   string,

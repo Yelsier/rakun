@@ -182,6 +182,12 @@
       "require": "./dist/cjs/i18n/index.js",
       "default": "./dist/esm/i18n/index.js"
     },
+    "./seo": {
+      "types": "./dist/esm/seo/index.d.ts",
+      "import": "./dist/esm/seo/index.js",
+      "require": "./dist/cjs/seo/index.js",
+      "default": "./dist/esm/seo/index.js"
+    },
     "./rich-text": {
       "types": "./dist/esm/rich-text.d.ts",
       "import": "./dist/esm/rich-text.js",
