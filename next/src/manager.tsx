@@ -1,6 +1,7 @@
 import type { ComponentType, ReactNode } from "react";
 import type { ManagerClient } from "@rakun-kit/manager-react/client/request";
 import type { ManagerPreviewConfig } from "@rakun-kit/manager-react";
+import { ManagerThemeScript } from "@rakun-kit/manager-react/state/theme-script";
 
 import { RakunManagerClientPage } from "./manager-client";
 import type { RakunManagerClientPageProps } from "./manager-client";
@@ -112,16 +113,19 @@ export async function RakunManagerPage({
     : undefined;
 
   return (
-    <ManagerComponent
-      apiBaseUrl={apiBaseUrl}
-      managerClient={managerClient}
-      basePath={basePath}
-      paramKey={paramKey}
-      initialPathname={initialPathname}
-      initialSearchParams={initialSearchParams}
-      loadingFallback={loadingFallback}
-      unauthenticatedFallback={unauthenticatedFallback}
-      preview={normalizedPreview}
-    />
+    <>
+      <ManagerThemeScript />
+      <ManagerComponent
+        apiBaseUrl={apiBaseUrl}
+        managerClient={managerClient}
+        basePath={basePath}
+        paramKey={paramKey}
+        initialPathname={initialPathname}
+        initialSearchParams={initialSearchParams}
+        loadingFallback={loadingFallback}
+        unauthenticatedFallback={unauthenticatedFallback}
+        preview={normalizedPreview}
+      />
+    </>
   );
 }

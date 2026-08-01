@@ -1,3 +1,4 @@
+import { mkdirSync, symlinkSync, existsSync, lstatSync, readlinkSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -16,6 +17,56 @@ const rakunServerPackages = [
   '@rakun-kit/openai',
   '@rakun-kit/resend',
 ] as const
+
+/** Bun only links workspaces into consuming packages; Turbopack with
+ *  `root: repoRoot` resolves from the monorepo root and misses them. */
+const ensureRootWorkspaceLinks = () => {
+  const scopeDir = path.join(repoRoot, 'node_modules', '@rakun-kit')
+  mkdirSync(scopeDir, { recursive: true })
+
+  const packages: Array<[string, string]> = [
+    ['core', 'core'],
+    ['express', 'express'],
+    ['jsx-email', 'jsx-email'],
+    ['manager-locales', 'manager-locales'],
+    ['manager-react', 'manager-react'],
+    ['next', 'next'],
+    ['openai', 'openai'],
+    ['plugin-code-editor', 'plugin-code-editor'],
+    ['react', 'react'],
+    ['resend', 'resend'],
+    ['s3', 's3'],
+    ['smtp', 'smtp'],
+    ['trpc', 'trpc'],
+  ]
+
+  for (const [linkName, packageDir] of packages) {
+    const linkPath = path.join(scopeDir, linkName)
+    const targetPath = path.resolve(repoRoot, packageDir)
+    const relativeTarget = path.relative(scopeDir, targetPath)
+
+    if (existsSync(linkPath)) {
+      try {
+        if (
+          lstatSync(linkPath).isSymbolicLink() &&
+          path.resolve(scopeDir, readlinkSync(linkPath)) === targetPath
+        ) {
+          continue
+        }
+      } catch {
+        // recreate below
+      }
+    }
+
+    try {
+      symlinkSync(relativeTarget, linkPath, 'dir')
+    } catch {
+      // Another process may have created it; ignore races.
+    }
+  }
+}
+
+ensureRootWorkspaceLinks()
 
 const isRakunServerPackage = (request: string) =>
   request !== '@rakun-kit/next/manager' &&

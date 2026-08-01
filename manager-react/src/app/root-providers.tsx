@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react'
 
 import { Toaster } from '@/components/ui/sonner'
-import { ManagerThemeProvider, ManagerThemeScript } from '@/state/theme'
+import { ManagerThemeProvider } from '@/state/theme'
 
 export type ManagerRootProvidersProps = {
   children: ReactNode
@@ -14,7 +14,6 @@ export const ManagerRootProviders = ({
 }: ManagerRootProvidersProps) => {
   return (
     <ManagerThemeProvider>
-      <ManagerThemeScript />
       <Toaster richColors />
       {children}
     </ManagerThemeProvider>
