@@ -36,10 +36,12 @@ available.
 Then use the regular RichText field:
 
 ```ts
+import { ContentType, f } from '@rakun-kit/core'
+
 const Article = new ContentType({
   name: 'Article',
   fields: {
-    body: Fields.string().type('RichText'),
+    body: f.string().type('RichText'),
   },
 })
 ```

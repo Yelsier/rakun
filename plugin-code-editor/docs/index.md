@@ -27,9 +27,11 @@ const plugin = createCodeEditorManagerPlugin({
 Use it with the standard field definition:
 
 ```ts
+import { ContentType, f } from '@rakun-kit/core'
+
 const Article = new ContentType({
   name: 'Article',
-  fields: { body: Fields.string().type('RichText') },
+  fields: { body: f.string().type('RichText') },
 })
 ```
 

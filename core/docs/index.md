@@ -58,15 +58,15 @@ packages.
 ## Bootstrap
 
 ```ts
-import { ContentType, Fields, rakunBootstrap } from '@rakun-kit/core'
+import { ContentType, f, rakunBootstrap } from '@rakun-kit/core'
 
 const Article = new ContentType({
   name: 'Article',
   menu: { title: 'Articles', icon: 'newspaper', category: 'Content' },
   fields: {
-    title: Fields.string().required(),
-    slug: Fields.string().type('Slug').required(),
-    body: Fields.string().type('RichText'),
+    title: f.string().required(),
+    slug: f.string().type('Slug').required(),
+    body: f.string().type('RichText'),
   },
   uniques: [['slug']],
   listFields: ['title', 'slug'],
@@ -99,7 +99,9 @@ Do not import React, Next, Express, Vite or tRPC into core configuration modules
 ## Content types and fields
 
 `ContentType` describes a collection and derives its validation and TypeScript
-shapes. Use `Fields` factories rather than handwritten storage schemas.
+shapes. Use `f` factories rather than handwritten storage schemas.
+`Fields` remains available as a backward-compatible alias and references the
+same object, but new code and examples should prefer `f`.
 
 Common factories include string, number, boolean, date, object, relation, file,
 blocks and array/list forms. Chain field modifiers such as `.required()`,
@@ -115,8 +117,8 @@ between documents while allowing a document to be explicitly unlinked.
 const Page = new ContentType({
   name: 'Page',
   fields: {
-    title: Fields.string().required(),
-    slug: Fields.string().type('Slug').required(),
+    title: f.string().required(),
+    slug: f.string().type('Slug').required(),
   },
   iterator: [{ contentType: Hero, type: 'new' }],
   linkedIterator: true,

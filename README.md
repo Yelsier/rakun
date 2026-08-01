@@ -65,7 +65,7 @@ each Rakun package involved in the change.
 Define content types in application code:
 
 ```ts
-import { ContentType, Fields } from '@rakun-kit/core'
+import { ContentType, f } from '@rakun-kit/core'
 
 export const Post = new ContentType({
   name: 'Post',
@@ -75,10 +75,10 @@ export const Post = new ContentType({
     category: 'Content',
   },
   fields: {
-    title: Fields.string().required(),
-    slug: Fields.string().type('Slug').required(),
-    body: Fields.string().type('RichText'),
-    published: Fields.boolean(),
+    title: f.string().required(),
+    slug: f.string().type('Slug').required(),
+    body: f.string().type('RichText'),
+    published: f.boolean(),
   },
   uniques: [['slug']],
   listFields: ['title', 'slug', 'published'],
