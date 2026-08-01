@@ -11,6 +11,7 @@ import { z } from 'zod'
 import { columns, type RobotsRuleManager } from './columns'
 
 import { useManagerMutation, useManagerQuery } from '@/client/react'
+import { confirm } from '@/components/confirm'
 import Loading from '@/components/loading'
 import { PaginationController } from '@/components/PaginationController'
 import UnauthorizedMessage from '@/components/unauthorized'
@@ -92,7 +93,6 @@ export const ManagerSettingsRobotsScreen = () => {
   const [page, setPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [editing, setEditing] = useState<RobotsRuleManager | null>(null)
-  const [deleting, setDeleting] = useState<RobotsRuleManager | null>(null)
 
   const listQuery = useManagerQuery({
     name: 'manager.list',
@@ -180,19 +180,28 @@ export const ManagerSettingsRobotsScreen = () => {
     }
   }
 
-  const handleDelete = async () => {
-    if (!deleting) return
-    try {
-      await deleteMutation.mutateAsync({
-        contentType: 'RobotsRule',
-        id: deleting._id,
-      })
-      toast.success(t('settings.robots.deleted'))
-      await listQuery.refetch()
-      setDeleting(null)
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('settings.robots.deleteError'))
-    }
+  const handleDelete = async (rule: RobotsRuleManager) => {
+    await confirm({
+      title: t('settings.robots.deleteTitle'),
+      description: t('common.deleteNamedConfirm', { name: rule.name }),
+      confirmLabel: t('common.delete'),
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          await deleteMutation.mutateAsync({
+            contentType: 'RobotsRule',
+            id: rule._id,
+          })
+          toast.success(t('settings.robots.deleted'))
+          await listQuery.refetch()
+        } catch (error) {
+          toast.error(
+            error instanceof Error ? error.message : t('settings.robots.deleteError'),
+          )
+          throw error
+        }
+      },
+    })
   }
 
   if (!hasPermissions(['content.RobotsRule.readAny' as Permission])) {
@@ -226,7 +235,9 @@ export const ManagerSettingsRobotsScreen = () => {
       <DataTable
         columns={columns({
           onEdit: openForEdit,
-          onDelete: setDeleting,
+          onDelete: (rule) => {
+            void handleDelete(rule)
+          },
           canEditItem,
           canDeleteItem,
           t,
@@ -419,25 +430,6 @@ export const ManagerSettingsRobotsScreen = () => {
               </DialogFooter>
             </form>
           </Form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!deleting} onOpenChange={(value) => !value && setDeleting(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('settings.robots.deleteTitle')}</DialogTitle>
-            <DialogDescription>
-              {t('common.deleteNamedConfirm', { name: deleting?.name ?? '' })}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button type='button' variant='ghost' onClick={() => setDeleting(null)}>
-              {t('common.cancel')}
-            </Button>
-            <Button variant='destructive' loading={deleteMutation.isPending} onClick={() => void handleDelete()}>
-              {t('common.delete')}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -1,4 +1,4 @@
-import { HelpCircle, Images, Network, Settings, User, type LucideIcon } from 'lucide-react'
+import { Bug, HelpCircle, Images, Settings, User, type LucideIcon } from 'lucide-react'
 import type { EncodedContentType, Permission } from '@rakun-kit/core/client'
 import * as React from 'react'
 
@@ -76,10 +76,15 @@ const getDefaultSecondaryNavItems = (
     permissions: ['content.ManagerUser.readAny'],
   },
   {
-    title: t('sidebar.apiRoutes'),
-    url: getManagerPathHref('/api-routes', { basePath }),
-    icon: Network,
-    permissions: ['content.ApiOperation.readAny'],
+    title: t('sidebar.debugging'),
+    url: getManagerPathHref('/debugging', { basePath }),
+    icon: Bug,
+    permissions: [
+      'content.ApiOperation.readAny',
+      'system.eventLog.read',
+      'auth.ipBlocks.manage',
+    ],
+    permissionMode: 'any',
   },
   {
     title: t('sidebar.settings'),
@@ -99,7 +104,6 @@ const getDefaultSecondaryNavItems = (
       'content.Redirect.readAny',
       'content.RobotsRule.readAny',
       'content.SeoSettings.readAny',
-      'system.eventLog.read',
     ],
     permissionMode: 'any',
   },

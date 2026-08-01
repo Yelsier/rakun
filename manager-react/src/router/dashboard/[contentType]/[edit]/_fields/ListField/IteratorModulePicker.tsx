@@ -21,6 +21,7 @@ import {
   useManagerClient,
   useManagerMutation,
 } from '@/client/react'
+import { confirm } from '@/components/confirm'
 import { SearchInput } from '@/components/search-input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -35,7 +36,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -265,8 +265,6 @@ export const IteratorModulePickerDialog = ({
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORIES)
-  const [deleteTarget, setDeleteTarget] =
-    useState<ExistingIteratorModule | null>(null)
   const options = useMemo(
     () => fields.map(getIteratorModuleDisplay).sort(sortModules),
     [fields]
@@ -413,20 +411,28 @@ export const IteratorModulePickerDialog = ({
     handleOpenChange(false)
   }
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return
-
-    try {
-      await deleteModule.mutateAsync({
-        contentType: deleteTarget.contentTypeName,
-        id: deleteTarget.id,
-      })
-      await Promise.allSettled(existingModuleQueries.map((query) => query.refetch()))
-      toast.success(t('modules.deleted', { title: deleteTarget.title }))
-      setDeleteTarget(null)
-    } catch (error) {
-      toast.error(getActionErrorMessage(error, t('modules.couldNotDelete')))
-    }
+  const handleDelete = async (module: ExistingIteratorModule) => {
+    await confirm({
+      title: t('modules.deleteSavedModule'),
+      description: t('modules.deleteSavedConfirm', { title: module.title }),
+      confirmLabel: t('contentList.deletePermanently'),
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          await deleteModule.mutateAsync({
+            contentType: module.contentTypeName,
+            id: module.id,
+          })
+          await Promise.allSettled(
+            existingModuleQueries.map((query) => query.refetch()),
+          )
+          toast.success(t('modules.deleted', { title: module.title }))
+        } catch (error) {
+          toast.error(getActionErrorMessage(error, t('modules.couldNotDelete')))
+          throw error
+        }
+      },
+    })
   }
 
   return (
@@ -543,7 +549,9 @@ export const IteratorModulePickerDialog = ({
                           <ContextMenuItem
                             variant="destructive"
                             disabled={!module.canDelete}
-                            onSelect={() => setDeleteTarget(module)}
+                            onSelect={() => {
+                              void handleDelete(module)
+                            }}
                           >
                             <Trash2 />
                             {t('common.delete')}
@@ -621,35 +629,6 @@ export const IteratorModulePickerDialog = ({
               </div>
             </ScrollArea>
           </div>
-        </DialogContent>
-      </Dialog>
-      <Dialog
-        open={Boolean(deleteTarget)}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen) setDeleteTarget(null)
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('modules.deleteSavedModule')}</DialogTitle>
-            <DialogDescription>
-              {deleteTarget
-                ? t('modules.deleteSavedConfirm', { title: deleteTarget.title })
-                : t('modules.deleteSavedConfirmGeneric')}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              loading={deleteModule.isPending}
-              onClick={() => void handleDelete()}
-            >
-              {t('contentList.deletePermanently')}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

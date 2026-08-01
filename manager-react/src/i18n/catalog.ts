@@ -26,6 +26,7 @@ export const managerMessages = {
   'sidebar.mediaLibrary': { defaultMessage: 'Media Library' },
   'sidebar.users': { defaultMessage: 'Users' },
   'sidebar.apiRoutes': { defaultMessage: 'API Routes' },
+  'sidebar.debugging': { defaultMessage: 'Debugging' },
   'sidebar.settings': { defaultMessage: 'Settings' },
   'sidebar.help': { defaultMessage: 'Help' },
   'sidebar.plugins': { defaultMessage: 'Plugins' },
@@ -227,6 +228,7 @@ export const managerMessages = {
   'settings.logs.cleanupError': { defaultMessage: 'Could not delete old logs.' },
 
   'common.cancel': { defaultMessage: 'Cancel' },
+  'common.confirm': { defaultMessage: 'Confirm' },
   'common.edit': { defaultMessage: 'Edit' },
   'common.restore': { defaultMessage: 'Restore' },
   'common.duplicate': { defaultMessage: 'Duplicate' },
@@ -792,6 +794,13 @@ export const managerMessages = {
     params: { label: 'string' },
   },
   'variants.moveVariantToTrash': { defaultMessage: 'Move variant to trash' },
+  'variants.moveNamedToTrash': {
+    defaultMessage: 'Move {label} to trash',
+    params: { label: 'string' },
+  },
+  'variants.promote': { defaultMessage: 'Promote' },
+  'variants.moveLocale': { defaultMessage: 'Move locale' },
+  'variants.reviewRequired': { defaultMessage: 'Review required' },
   'variants.deletePermanentlyTitle': {
     defaultMessage: 'Delete variant permanently?',
   },

@@ -6,7 +6,6 @@ import { EditTabPanels } from './_components/EditTabPanels'
 import { EditToolbar } from './_components/EditToolbar'
 import { PreviewPanel } from './_components/PreviewPanel'
 import { ModuleNavigation } from './_components/ModuleNavigation'
-import { TrashDialogs } from './_components/TrashDialogs'
 import { EditPageProvider, useEditPageContext } from './_context/EditPageContext'
 import type { EditPageProps } from './edit.types'
 
@@ -40,7 +39,6 @@ const EditPageContent = () => {
     <div className="container mx-auto h-full min-h-0 px-4 pt-5 pb-4">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full min-h-0 w-full">
         <EditToolbar />
-        <TrashDialogs />
         {previewOpen && canResizePreview ? (
           <ResizablePanelGroup className="min-h-0 w-full flex-1" orientation="horizontal">
             <ResizablePanel style={{ overflow: 'hidden' }} defaultSize={50} minSize={350}>

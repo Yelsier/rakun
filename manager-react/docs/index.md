@@ -96,6 +96,34 @@ Built-in manager copy must use the static manager translation catalog. Project
 labels may use arbitrary project keys. Fields resolve `field.<fieldName>` and
 layout slots resolve `layoutModule.<layoutKey>` with fallbacks.
 
+## Confirmations
+
+Use the shared async confirm API instead of ad-hoc yes/no dialogs:
+
+```tsx
+import { confirm, useConfirm } from '@rakun-kit/manager-react'
+
+const result = await confirm({
+  title: 'Delete item',
+  description: 'This cannot be undone.',
+  confirmLabel: 'Delete',
+  variant: 'destructive',
+  onConfirm: async () => {
+    await deleteItem()
+  },
+})
+
+// 'confirmed' | 'cancelled' | 'dismissed'
+if (result !== 'confirmed') return
+
+// Or boolean helper:
+if (!(await confirm.yes({ title: 'Continue?' }))) return
+```
+
+`ConfirmProvider` is mounted by `ManagerRuntimeApp` / `ManagerBrowserApp`.
+`onConfirm` keeps the dialog open with a loading button until the promise
+settles; thrown errors leave it open.
+
 ## Public entrypoints
 
 - `@rakun-kit/manager-react`: manager apps, providers and common helpers.
@@ -104,6 +132,7 @@ layout slots resolve `layoutModule.<layoutKey>` with fallbacks.
 - `/state/navigation`, `/state/theme`, `/link`: host integration primitives.
 - `/plugins`, `/rich-text`: plugin and RichText extension contracts.
 - `/i18n`: locale runtime, catalog and locale types.
+- `confirm` / `useConfirm` / `ConfirmProvider`: shared async confirmation dialogs.
 - `/styles.css`: required bundled styles.
 
 ## Agent constraints

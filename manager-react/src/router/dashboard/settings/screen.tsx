@@ -8,8 +8,6 @@ import {
   GitPullRequestArrow,
   WholeWord,
   Waypoints,
-  ScrollText,
-  ShieldCheck,
 } from 'lucide-react'
 import type { Permission } from '@rakun-kit/core/client'
 import type { ReactNode } from 'react'
@@ -47,23 +45,10 @@ const cards: Array<{
     tour: 'settings-link-routes',
   },
   {
-    titleKey: 'settings.logs',
-    icon: <ScrollText size="80" />,
-    link: '/settings/logs',
-    tour: 'settings-link-logs',
-  },
-  {
     titleKey: 'settings.system',
     icon: <Database size="80" />,
     link: '/settings/system',
     tour: 'settings-link-system',
-  },
-  {
-    titleKey: 'settings.security',
-    icon: <ShieldCheck size="80" />,
-    link: '/settings/security',
-    tour: 'settings-link-security',
-    permission: 'auth.ipBlocks.manage',
   },
   {
     titleKey: 'settings.userRoles',

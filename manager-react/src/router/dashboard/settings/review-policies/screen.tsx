@@ -5,20 +5,13 @@ import { CheckIcon, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useManagerMutation, useManagerQuery } from '@/client/react'
+import { confirm } from '@/components/confirm'
 import UnauthorizedMessage from '@/components/unauthorized'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -103,7 +96,6 @@ export const ManagerSettingsReviewPoliciesScreen = () => {
   const [contentTypes, setContentTypes] = useState<string[]>([])
   const [reviewerRoleIds, setReviewerRoleIds] = useState<string[]>([])
   const [requiredApprovals, setRequiredApprovals] = useState(1)
-  const [deletingPolicyId, setDeletingPolicyId] = useState<string | null>(null)
   const data = policiesQuery.data
   const roleNames = new Map((data?.roles ?? []).map((role) => [role._id, role.name]))
 
@@ -146,15 +138,25 @@ export const ManagerSettingsReviewPoliciesScreen = () => {
   }
 
   const remove = async (id: string) => {
-    try {
-      await deleteMutation.mutateAsync({ id })
-      await policiesQuery.refetch()
-      if (editingId === id) reset()
-      setDeletingPolicyId(null)
-      toast.success(t('settings.reviewPolicies.deleted'))
-    } catch (error) {
-      toast.error(getActionErrorMessage(error, t('settings.reviewPolicies.deleteError')))
-    }
+    await confirm({
+      title: t('settings.reviewPolicies.deleteTitle'),
+      description: t('settings.reviewPolicies.deleteDescription'),
+      confirmLabel: t('common.delete'),
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          await deleteMutation.mutateAsync({ id })
+          await policiesQuery.refetch()
+          if (editingId === id) reset()
+          toast.success(t('settings.reviewPolicies.deleted'))
+        } catch (error) {
+          toast.error(
+            getActionErrorMessage(error, t('settings.reviewPolicies.deleteError')),
+          )
+          throw error
+        }
+      },
+    })
   }
 
   return (
@@ -265,8 +267,7 @@ export const ManagerSettingsReviewPoliciesScreen = () => {
                 <Button
                   variant="destructive"
                   size="sm"
-                  loading={deleteMutation.isPending}
-                  onClick={() => setDeletingPolicyId(policy._id)}
+                  onClick={() => void remove(policy._id)}
                 >
                   <Trash2 />
                   {t('common.delete')}
@@ -279,35 +280,6 @@ export const ManagerSettingsReviewPoliciesScreen = () => {
           <p className="text-sm text-muted-foreground">{t('settings.reviewPolicies.empty')}</p>
         ) : null}
       </div>
-      <Dialog
-        open={Boolean(deletingPolicyId)}
-        onOpenChange={(open) => {
-          if (!open) setDeletingPolicyId(null)
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('settings.reviewPolicies.deleteTitle')}</DialogTitle>
-            <DialogDescription>
-              {t('settings.reviewPolicies.deleteDescription')}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setDeletingPolicyId(null)}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              loading={deleteMutation.isPending}
-              onClick={() => {
-                if (deletingPolicyId) void remove(deletingPolicyId)
-              }}
-            >
-              {t('common.delete')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

@@ -22,14 +22,6 @@ import { Button } from '../../ui/button'
 import { Card } from '../../ui/card'
 import { ContextMenu, ContextMenuTrigger } from '../../ui/context-menu'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '../../ui/dialog'
-import {
   FileUpload,
   FileUploadDropzone,
   FileUploadItem,
@@ -61,6 +53,7 @@ import PreviewsViewLoader from './views/PreviewsViewLoader'
 
 import type { MediaRecord } from '@/lib/media'
 import type { FolderItem } from '@/components/media/contexts/MediaLibraryContext'
+import { confirm } from '@/components/confirm'
 import { useTranslations } from '@/i18n'
 import { useMedia } from '@/media'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
@@ -130,7 +123,6 @@ export default function Previews() {
   const [destinationFolderId, setDestinationFolderId] = useState('')
   const [selectionMode, setSelectionMode] = useState(false)
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(() => new Set())
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
 
@@ -689,41 +681,51 @@ export default function Previews() {
   const handleConfirmBulkDelete = async () => {
     if (bulkSelectedIdsList.length === 0) return
 
-    setIsBulkDeleting(true)
-    let successCount = 0
-    let failedCount = 0
-    let lastError: unknown
+    await confirm({
+      title: t('media.bulkDeleteTitle'),
+      description: t('media.bulkDeleteDescription', { count: bulkSelectedCount }),
+      confirmLabel: t('common.delete'),
+      variant: 'destructive',
+      onConfirm: async () => {
+        setIsBulkDeleting(true)
+        let successCount = 0
+        let failedCount = 0
+        let lastError: unknown
 
-    for (const id of bulkSelectedIdsList) {
-      try {
-        await deleteMutation.mutateAsync({
-          contentType: 'Media',
-          id,
-        })
-        successCount += 1
-      } catch (error) {
-        failedCount += 1
-        lastError = error
-      }
-    }
+        try {
+          for (const id of bulkSelectedIdsList) {
+            try {
+              await deleteMutation.mutateAsync({
+                contentType: 'Media',
+                id,
+              })
+              successCount += 1
+            } catch (error) {
+              failedCount += 1
+              lastError = error
+            }
+          }
 
-    if (successCount > 0) {
-      await Promise.all([refetch(), refetchChildFolders(), refetchFoldersTree()])
-      setBulkDeleteOpen(false)
-      clearBulkSelection()
-      toast.success(t('media.filesDeletedCount', { count: successCount }))
-    }
+          if (successCount > 0) {
+            await Promise.all([refetch(), refetchChildFolders(), refetchFoldersTree()])
+            clearBulkSelection()
+            toast.success(t('media.filesDeletedCount', { count: successCount }))
+          }
 
-    if (failedCount > 0) {
-      toast.error(
-        t('media.filesFailed', {
-          count: failedCount,
-          reason: getActionErrorMessage(lastError),
-        }),
-      )
-    }
-
-    setIsBulkDeleting(false)
+          if (failedCount > 0) {
+            toast.error(
+              t('media.filesFailed', {
+                count: failedCount,
+                reason: getActionErrorMessage(lastError),
+              }),
+            )
+            throw new Error('bulk media delete partial failure')
+          }
+        } finally {
+          setIsBulkDeleting(false)
+        }
+      },
+    })
   }
 
   const ViewComponent =
@@ -768,7 +770,9 @@ export default function Previews() {
       onToggleBulkSelection: toggleBulkSelection,
       onSelectVisible: selectVisible,
       onRequestSelect,
-      onRequestBulkDelete: () => setBulkDeleteOpen(true),
+      onRequestBulkDelete: () => {
+        void handleConfirmBulkDelete()
+      },
       onRequestBulkMove,
       onClearSelection: clearBulkSelection,
       onRequestEdit,
@@ -963,29 +967,6 @@ export default function Previews() {
           onSave={handleSaveImageEdit}
         />
 
-        <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t('media.bulkDeleteTitle')}</DialogTitle>
-              <DialogDescription>
-                {t('media.bulkDeleteDescription', { count: bulkSelectedCount })}
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="ghost" onClick={() => setBulkDeleteOpen(false)}>
-                {t('common.cancel')}
-              </Button>
-              <Button
-                variant="destructive"
-                loading={isBulkDeleting}
-                disabled={bulkSelectedCount === 0}
-                onClick={() => void handleConfirmBulkDelete()}
-              >
-                {t('common.delete')}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
         <MediaCreateFolderDialog
           open={isCreateFolderDialogOpen}

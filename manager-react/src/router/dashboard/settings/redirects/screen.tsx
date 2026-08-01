@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { columns, type RedirectManager } from './columns'
 
 import { useManagerMutation, useManagerQuery } from '@/client/react'
+import { confirm } from '@/components/confirm'
 import Loading from '@/components/loading'
 import { PaginationController } from '@/components/PaginationController'
 import { Button } from '@/components/ui/button'
@@ -189,7 +190,6 @@ export const ManagerSettingsRedirectsScreen = () => {
   const [page, setPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [editing, setEditing] = useState<RedirectManager | null>(null)
-  const [deleting, setDeleting] = useState<RedirectManager | null>(null)
   const [samplePath, setSamplePath] = useState('/old/hello-world')
 
   const listQuery = useManagerQuery({
@@ -294,20 +294,28 @@ export const ManagerSettingsRedirectsScreen = () => {
     }
   }
 
-  const handleDelete = async () => {
-    if (!deleting) return
-
-    try {
-      await deleteMutation.mutateAsync({
-        contentType: 'Redirect',
-        id: deleting._id,
-      })
-      toast.success(t('settings.redirects.deleted'))
-      await listQuery.refetch()
-      setDeleting(null)
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('settings.redirects.deleteError'))
-    }
+  const handleDelete = async (redirect: RedirectManager) => {
+    await confirm({
+      title: t('settings.redirects.deleteTitle'),
+      description: t('common.deleteNamedConfirm', { name: redirect.name }),
+      confirmLabel: t('common.delete'),
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          await deleteMutation.mutateAsync({
+            contentType: 'Redirect',
+            id: redirect._id,
+          })
+          toast.success(t('settings.redirects.deleted'))
+          await listQuery.refetch()
+        } catch (error) {
+          toast.error(
+            error instanceof Error ? error.message : t('settings.redirects.deleteError'),
+          )
+          throw error
+        }
+      },
+    })
   }
 
   if (!hasPermissions(['content.Redirect.readAny' as Permission])) {
@@ -344,7 +352,9 @@ export const ManagerSettingsRedirectsScreen = () => {
         <DataTable
           columns={columns({
             onEdit: openForEdit,
-            onDelete: setDeleting,
+            onDelete: (redirect) => {
+              void handleDelete(redirect)
+            },
             canEditItem,
             canDeleteItem,
             t,
@@ -732,29 +742,6 @@ export const ManagerSettingsRedirectsScreen = () => {
               </DialogFooter>
             </form>
           </Form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!deleting} onOpenChange={(value) => !value && setDeleting(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('settings.redirects.deleteTitle')}</DialogTitle>
-            <DialogDescription>
-              {t('common.deleteNamedConfirm', { name: deleting?.name ?? '' })}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => setDeleting(null)}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              loading={deleteMutation.isPending}
-              onClick={() => void handleDelete()}
-            >
-              {t('common.delete')}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -49,6 +49,7 @@ import { useLanguage } from '@/state/language'
 import { useTRPC } from '@/components/trpc-provider'
 import { useSession } from '@/state/session'
 import { useManagerMutation } from '@/client/react'
+import { confirm } from '@/components/confirm'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { useManagerUsers } from '@/state/users'
 
@@ -231,8 +232,6 @@ const ListContents: React.FC<{
   const [restoreItem, setRestoreItem] = useState<Record<string, unknown> | null>(null)
   const [duplicatingItemId, setDuplicatingItemId] = useState<string | null>(null)
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
-  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [bulkTranslationOpen, setBulkTranslationOpen] = useState(false)
   const [isBulkTranslating, setIsBulkTranslating] = useState(false)
   const { getTranslation, language, languageList } = useLanguage()
@@ -421,44 +420,54 @@ const ListContents: React.FC<{
   const bulkDeleteItems = async () => {
     if (selectedIds.length === 0) return
 
-    setIsBulkDeleting(true)
+    await confirm({
+      title: isTrash
+        ? t('contentList.deleteSelectedTitle')
+        : t('contentList.moveSelectedTitle'),
+      description: isTrash
+        ? t('contentList.deleteSelectedDescription', { count: selectedCount })
+        : t('contentList.moveSelectedDescription', { count: selectedCount }),
+      confirmLabel: isTrash
+        ? t('contentList.deletePermanently')
+        : t('contentList.moveToTrash'),
+      variant: 'destructive',
+      onConfirm: async () => {
+        const mutation = isTrash ? permanentDeleteMutation : trashMutation
+        let successCount = 0
+        let failedCount = 0
+        let lastError: unknown
 
-    const mutation = isTrash ? permanentDeleteMutation : trashMutation
-    let successCount = 0
-    let failedCount = 0
-    let lastError: unknown
+        for (const id of selectedIds) {
+          try {
+            await mutation.mutateAsync({ contentType, id })
+            successCount += 1
+          } catch (error) {
+            failedCount += 1
+            lastError = error
+          }
+        }
 
-    for (const id of selectedIds) {
-      try {
-        await mutation.mutateAsync({ contentType, id })
-        successCount += 1
-      } catch (error) {
-        failedCount += 1
-        lastError = error
-      }
-    }
+        if (successCount > 0) {
+          await refetch()
+          setRowSelection({})
+          toast.success(
+            isTrash
+              ? t('contentList.bulkDeleted', { count: successCount })
+              : t('contentList.bulkMoved', { count: successCount }),
+          )
+        }
 
-    if (successCount > 0) {
-      await refetch()
-      setRowSelection({})
-      setBulkDeleteOpen(false)
-      toast.success(
-        isTrash
-          ? t('contentList.bulkDeleted', { count: successCount })
-          : t('contentList.bulkMoved', { count: successCount })
-      )
-    }
-
-    if (failedCount > 0) {
-      toast.error(
-        t('contentList.bulkFailed', {
-          count: failedCount,
-          reason: getActionErrorMessage(lastError),
-        })
-      )
-    }
-
-    setIsBulkDeleting(false)
+        if (failedCount > 0) {
+          toast.error(
+            t('contentList.bulkFailed', {
+              count: failedCount,
+              reason: getActionErrorMessage(lastError),
+            }),
+          )
+          throw new Error('bulk delete partial failure')
+        }
+      },
+    })
   }
 
   const bulkTranslateItems = async () => {
@@ -697,44 +706,16 @@ const ListContents: React.FC<{
                 </Dialog>
               ) : null}
               {canBulkDelete ? (
-                <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
-                      <Trash />
-                      {isTrash
-                        ? t('contentList.deletePermanently')
-                        : t('contentList.moveToTrash')}
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>
-                        {isTrash
-                          ? t('contentList.deleteSelectedTitle')
-                          : t('contentList.moveSelectedTitle')}
-                      </DialogTitle>
-                      <DialogDescription>
-                        {isTrash
-                          ? t('contentList.deleteSelectedDescription', { count: selectedCount })
-                          : t('contentList.moveSelectedDescription', { count: selectedCount })}
-                      </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setBulkDeleteOpen(false)}>
-                        {t('common.cancel')}
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        loading={isBulkDeleting}
-                        onClick={() => void bulkDeleteItems()}
-                      >
-                        {isTrash
-                          ? t('contentList.deletePermanently')
-                          : t('contentList.moveToTrash')}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => void bulkDeleteItems()}
+                >
+                  <Trash />
+                  {isTrash
+                    ? t('contentList.deletePermanently')
+                    : t('contentList.moveToTrash')}
+                </Button>
               ) : null}
             </div>
           </div>

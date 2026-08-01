@@ -5,7 +5,8 @@ import { managerContentListTour } from '@/router/dashboard/[contentType]/(list)/
 import { managerContentCreateTour } from '@/router/dashboard/[contentType]/create/tour'
 import { managerContentEditTour } from '@/router/dashboard/[contentType]/[edit]/tour'
 import { managerAccountTour } from '@/router/dashboard/account/tour'
-import { managerApiRoutesTour } from '@/router/dashboard/api-routes/tour'
+import { managerApiRoutesTour } from '@/router/dashboard/debugging/api-routes/tour'
+import { managerDebuggingTour } from '@/router/dashboard/debugging/tour'
 import { managerDashboardTour } from '@/router/dashboard/tour'
 import { managerMediaTour } from '@/router/dashboard/media/tour'
 import { managerSettingsTour } from '@/router/dashboard/settings/tour'
@@ -25,6 +26,7 @@ export const managerTours = [
   managerUsersTour,
   managerAccountTour,
   managerApiRoutesTour,
+  managerDebuggingTour,
   managerSettingsTour,
   managerSettingsRoutesTour,
   managerSettingsRoutePathsTour,

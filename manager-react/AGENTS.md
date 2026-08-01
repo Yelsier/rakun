@@ -41,6 +41,8 @@ It must remain usable from external adapters. Do not assume it always runs insid
 - Show loading, empty, and error states when a screen needs them.
 - Respect permissions through `useSession().hasPermissions(...)` and show `UnauthorizedMessage` when applicable.
 - Use confirmation dialogs for destructive actions and `toast` for feedback.
+- Prefer the shared `confirm()` / `useConfirm()` API for yes/no permission
+  prompts so dialogs stay consistent across the manager.
 - Use `lucide-react` icons when a suitable icon exists.
 - Keep manager screens dense, clear, and functional; avoid landing-page composition.
 

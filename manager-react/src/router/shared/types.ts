@@ -24,10 +24,11 @@ export type ManagerResolvedRoute =
   | { kind: "media-library" }
   | { kind: "api-routes" }
   | { kind: "users" }
+  | { kind: "debugging-home" }
+  | { kind: "debugging-logs" }
+  | { kind: "debugging-security" }
   | { kind: "settings-home" }
   | { kind: "settings-system" }
-  | { kind: 'settings-security' }
-  | { kind: "settings-logs" }
   | { kind: "settings-review-policies" }
   | { kind: "settings-languages" }
   | { kind: "settings-routes" }

@@ -21,4 +21,5 @@ export * from "./client/trpc";
 export * from "./link";
 export * from './plugins'
 export * from './i18n'
+export * from './components/confirm'
 
