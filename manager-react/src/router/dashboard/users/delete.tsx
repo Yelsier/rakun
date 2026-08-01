@@ -1,20 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 
 import type { ManagerUserRecord } from './columns'
 
 import { useManagerMutation } from '@/client/react'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { confirm } from '@/components/confirm'
 import { useTranslations } from '@/i18n'
 
 export default function DeleteUser({
@@ -27,58 +19,45 @@ export default function DeleteUser({
   setDeleteUser: (user: null) => void
 }) {
   const t = useTranslations()
-  const [open, setOpen] = useState(false)
   const mutation = useManagerMutation('manager.delete')
+  const askedForRef = useRef<string | null>(null)
 
   useEffect(() => {
-    setOpen(Boolean(user))
-  }, [user])
-
-  useEffect(() => {
-    if (!open) {
-      setDeleteUser(null)
+    if (!user) {
+      askedForRef.current = null
+      return
     }
-  }, [open, setDeleteUser])
 
-  const handleDelete = async () => {
-    if (!user) return
+    if (askedForRef.current === user._id) return
+    askedForRef.current = user._id
 
-    try {
-      await mutation.mutateAsync({
-        contentType: 'ManagerUser',
-        id: user._id,
+    const target = user
+
+    void (async () => {
+      await confirm({
+        title: t('users.deleteTitle'),
+        description: t('users.deleteConfirm'),
+        confirmLabel: t('common.delete'),
+        variant: 'destructive',
+        onConfirm: async () => {
+          try {
+            await mutation.mutateAsync({
+              contentType: 'ManagerUser',
+              id: target._id,
+            })
+            refetch()
+            toast.success(t('users.deleted'))
+          } catch (error) {
+            toast.error(
+              error instanceof Error ? error.message : t('users.deleteError'),
+            )
+            throw error
+          }
+        },
       })
-      refetch()
-      setOpen(false)
       setDeleteUser(null)
-      toast.success(t('users.deleted'))
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('users.deleteError'))
-    }
-  }
+    })()
+  }, [mutation, refetch, setDeleteUser, t, user])
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent aria-describedby='Delete a user'>
-        <DialogHeader>
-          <DialogTitle>{t('users.deleteTitle')}</DialogTitle>
-        </DialogHeader>
-        <DialogDescription>
-          {t('users.deleteConfirm')}
-        </DialogDescription>
-        <DialogFooter>
-          <Button onClick={() => setOpen(false)} variant='ghost'>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            loading={mutation.isPending}
-            onClick={() => void handleDelete()}
-            variant='destructive'
-          >
-            {t('common.delete')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
+  return null
 }

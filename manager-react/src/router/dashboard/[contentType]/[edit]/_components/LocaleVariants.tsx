@@ -16,6 +16,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import type { ListContentVersionsOutput } from '@rakun-kit/core/client'
+import { confirm } from '@/components/confirm'
 import { useTranslations } from '@/i18n'
 
 import { useEditPageContext } from '../_context/EditPageContext'
@@ -25,14 +26,6 @@ import { createManagerQueryKey, useManagerMutation, useManagerQuery } from '@/cl
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import {
   Tags,
   TagsContent,
@@ -119,14 +112,6 @@ export const ContentVariants = () => {
   const queryClient = useQueryClient()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [showTrashed, setShowTrashed] = useState(false)
-  const [variantToTrash, setVariantToTrash] = useState<{
-    documentId: string
-    label: string
-  } | null>(null)
-  const [variantToDelete, setVariantToDelete] = useState<{
-    documentId: string
-    label: string
-  } | null>(null)
   const [localesByDocument, setLocalesByDocument] = useState<Record<string, string[]>>({})
   const listInput =
     contentTypeId && localeVariantRoute
@@ -288,29 +273,37 @@ export const ContentVariants = () => {
     }
   }
 
-  const trashVariant = async () => {
-    if (!variantToTrash || !localeVariantRoute) return
-    try {
-      const documentId = variantToTrash.documentId
-      const result = await trashVariantMutation.mutateAsync({
-        contentType: contentTypeName,
-        documentId,
-        routeKey: localeVariantRoute.key,
-      })
-      setVariantToTrash(null)
-      await invalidate()
-      toast.success(t('variants.movedToTrash'))
+  const trashVariant = async (variant: { documentId: string; label: string }) => {
+    if (!localeVariantRoute) return
 
-      if (documentId === contentTypeId) {
-        navigation.replace?.({
-          name: 'content.edit',
-          contentType: contentTypeName,
-          id: result.primaryDocumentId,
-        })
-      }
-    } catch (error) {
-      toast.error(getActionErrorMessage(error, t('variants.couldNotMoveToTrash')))
-    }
+    await confirm({
+      title: t('variants.moveToTrashTitle'),
+      description: t('variants.moveToTrashConfirm', { label: variant.label }),
+      confirmLabel: t('variants.moveVariantToTrash'),
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          const result = await trashVariantMutation.mutateAsync({
+            contentType: contentTypeName,
+            documentId: variant.documentId,
+            routeKey: localeVariantRoute.key,
+          })
+          await invalidate()
+          toast.success(t('variants.movedToTrash'))
+
+          if (variant.documentId === contentTypeId) {
+            navigation.replace?.({
+              name: 'content.edit',
+              contentType: contentTypeName,
+              id: result.primaryDocumentId,
+            })
+          }
+        } catch (error) {
+          toast.error(getActionErrorMessage(error, t('variants.couldNotMoveToTrash')))
+          throw error
+        }
+      },
+    })
   }
 
   const restoreVariant = async (documentId: string) => {
@@ -328,21 +321,29 @@ export const ContentVariants = () => {
     }
   }
 
-  const deleteVariantPermanently = async () => {
-    if (!variantToDelete) return
-    try {
-      await deleteVariantMutation.mutateAsync({
-        contentType: contentTypeName,
-        id: variantToDelete.documentId,
-      })
-      setVariantToDelete(null)
-      await invalidate()
-      toast.success(t('variants.permanentlyDeleted'))
-    } catch (error) {
-      toast.error(
-        getActionErrorMessage(error, t('variants.couldNotDelete'))
-      )
-    }
+  const deleteVariantPermanently = async (variant: {
+    documentId: string
+    label: string
+  }) => {
+    await confirm({
+      title: t('variants.deletePermanentlyTitle'),
+      description: t('variants.deletePermanentlyConfirm', { label: variant.label }),
+      confirmLabel: t('contentList.deletePermanently'),
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          await deleteVariantMutation.mutateAsync({
+            contentType: contentTypeName,
+            id: variant.documentId,
+          })
+          await invalidate()
+          toast.success(t('variants.permanentlyDeleted'))
+        } catch (error) {
+          toast.error(getActionErrorMessage(error, t('variants.couldNotDelete')))
+          throw error
+        }
+      },
+    })
   }
 
   if (!contentTypeId || !localeVariantRoute) {
@@ -364,78 +365,6 @@ export const ContentVariants = () => {
         onOpenChange={setCreateDialogOpen}
         onConfirm={createVersion}
       />
-      <Dialog
-        open={Boolean(variantToTrash)}
-        onOpenChange={(open) => {
-          if (!open && !trashVariantMutation.isPending) {
-            setVariantToTrash(null)
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('variants.moveToTrashTitle')}</DialogTitle>
-            <DialogDescription>
-              {variantToTrash
-                ? t('variants.moveToTrashConfirm', { label: variantToTrash.label })
-                : null}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              disabled={trashVariantMutation.isPending}
-              onClick={() => setVariantToTrash(null)}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              loading={trashVariantMutation.isPending}
-              onClick={() => void trashVariant()}
-            >
-              <Trash2 />
-              {t('variants.moveVariantToTrash')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog
-        open={Boolean(variantToDelete)}
-        onOpenChange={(open) => {
-          if (!open && !deleteVariantMutation.isPending) {
-            setVariantToDelete(null)
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('variants.deletePermanentlyTitle')}</DialogTitle>
-            <DialogDescription>
-              {variantToDelete
-                ? t('variants.deletePermanentlyConfirm', { label: variantToDelete.label })
-                : null}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              disabled={deleteVariantMutation.isPending}
-              onClick={() => setVariantToDelete(null)}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              loading={deleteVariantMutation.isPending}
-              onClick={() => void deleteVariantPermanently()}
-            >
-              <Trash2 />
-              {t('contentList.deletePermanently')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       <div className="flex flex-wrap gap-2">
         <Button loading={createMutation.isPending} onClick={() => setCreateDialogOpen(true)}>
           <GitBranchPlus />
@@ -537,7 +466,7 @@ export const ContentVariants = () => {
                           deleteVariantMutation.isPending
                         }
                         onClick={() =>
-                          setVariantToDelete({
+                          void deleteVariantPermanently({
                             documentId: document.documentId,
                             label: document.label,
                           })
@@ -563,13 +492,17 @@ export const ContentVariants = () => {
                         {t('variants.setAsPrimary')}
                       </Button>
                       <Button
-                        aria-label={`Move ${document.label} to trash`}
-                        title={`Move ${document.label} to trash`}
+                        aria-label={t('variants.moveNamedToTrash', {
+                          label: document.label,
+                        })}
+                        title={t('variants.moveNamedToTrash', {
+                          label: document.label,
+                        })}
                         variant="destructive"
                         size="sm"
                         disabled={setPrimaryMutation.isPending || trashVariantMutation.isPending}
                         onClick={() =>
-                          setVariantToTrash({
+                          void trashVariant({
                             documentId: document.documentId,
                             label: document.label,
                           })
@@ -675,11 +608,11 @@ export const ContentVariants = () => {
                         {approved ? <Rocket /> : <Plus />}
                         {approved
                           ? initialPublication
-                            ? 'Publish page'
-                            : 'Promote'
+                            ? t('review.publishPage')
+                            : t('variants.promote')
                           : reviewBlocked
-                            ? 'Review required'
-                            : 'Move locale'}
+                            ? t('variants.reviewRequired')
+                            : t('variants.moveLocale')}
                       </Button>
                     </div>
                   </>

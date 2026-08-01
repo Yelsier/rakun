@@ -108,8 +108,6 @@ const createDraftCopyData = (
 }
 
 type UseContentDocumentActionsParams = {
-  closeMoveToTrashDialog: () => void
-  closePermanentDeleteDialog: () => void
   contentType: EncodedContentType
   contentTypeId?: string
   contentTypeName: string
@@ -129,8 +127,6 @@ type UseContentDocumentActionsParams = {
 }
 
 export const useContentDocumentActions = ({
-  closeMoveToTrashDialog,
-  closePermanentDeleteDialog,
   contentType,
   contentTypeId,
   contentTypeName,
@@ -501,12 +497,12 @@ export const useContentDocumentActions = ({
         contentType: contentTypeName,
         id: contentTypeId,
       })
-      closeMoveToTrashDialog()
       await invalidateContentListQueries()
       await onAfterRestore?.()
       toast.success(t('contentEdit.movedToTrash'))
     } catch (error) {
       toast.error(getActionErrorMessage(error, t('contentEdit.couldNotMoveToTrash')))
+      throw error
     }
   }
 
@@ -518,7 +514,6 @@ export const useContentDocumentActions = ({
         contentType: contentTypeName,
         id: contentTypeId,
       })
-      closePermanentDeleteDialog()
       await invalidateContentListQueries()
       navigation.push?.({
         name: 'content.list',
@@ -527,6 +522,7 @@ export const useContentDocumentActions = ({
       toast.success(t('contentEdit.deletedPermanently'))
     } catch (error) {
       toast.error(getActionErrorMessage(error, t('contentEdit.couldNotDeleteItem')))
+      throw error
     }
   }
 

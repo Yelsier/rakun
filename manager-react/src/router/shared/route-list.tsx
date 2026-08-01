@@ -1,5 +1,8 @@
 import { ManagerAccountScreen } from "../dashboard/account";
-import { ManagerApiRoutesScreen } from "../dashboard/api-routes";
+import { ManagerApiRoutesScreen } from "../dashboard/debugging/api-routes";
+import { ManagerDebuggingHomeScreen } from "../dashboard/debugging";
+import { ManagerSettingsSecurityScreen } from "../dashboard/debugging/security";
+import { ManagerSettingsLogsScreen } from "../dashboard/debugging/logs";
 import { ManagerContentTypeListScreen } from "../dashboard/[contentType]/(list)";
 import { ManagerContentTypeEditScreen } from "../dashboard/[contentType]/[edit]";
 import { ManagerContentTypeCreateScreen } from "../dashboard/[contentType]/create";
@@ -21,8 +24,6 @@ import { ManagerSettingsRoutePathsScreen } from "../dashboard/settings/routes/pa
 import { ManagerSettingsRoutesScreen } from "../dashboard/settings/routes";
 import { ManagerSettingsHomeScreen } from "../dashboard/settings";
 import { ManagerSettingsSystemScreen } from "../dashboard/settings/system";
-import { ManagerSettingsSecurityScreen } from '../dashboard/settings/security'
-import { ManagerSettingsLogsScreen } from "../dashboard/settings/logs";
 import { ManagerSettingsReviewPoliciesScreen } from "../dashboard/settings/review-policies";
 import {
   ManagerSettingsUserRoleCreateScreen,
@@ -129,11 +130,56 @@ export const managerRouteDefinitions = [
     render: () => <ManagerAccountScreen />,
   }),
   defineManagerRoute({
+    kind: "debugging-home",
+    path: "/debugging",
+    layout: "dashboard",
+    parse: () => ({ kind: "debugging-home" }),
+    render: () => <ManagerDebuggingHomeScreen />,
+  }),
+  defineManagerRoute({
+    kind: "api-routes",
+    path: "/debugging/api-routes",
+    layout: "dashboard",
+    parse: () => ({ kind: "api-routes" }),
+    render: () => <ManagerApiRoutesScreen />,
+  }),
+  // Legacy alias for bookmarks
+  defineManagerRoute({
     kind: "api-routes",
     path: "/api-routes",
     layout: "dashboard",
     parse: () => ({ kind: "api-routes" }),
     render: () => <ManagerApiRoutesScreen />,
+  }),
+  defineManagerRoute({
+    kind: "debugging-logs",
+    path: "/debugging/logs",
+    layout: "dashboard",
+    parse: () => ({ kind: "debugging-logs" }),
+    render: () => <ManagerSettingsLogsScreen />,
+  }),
+  // Legacy alias for bookmarks
+  defineManagerRoute({
+    kind: "debugging-logs",
+    path: "/settings/logs",
+    layout: "dashboard",
+    parse: () => ({ kind: "debugging-logs" }),
+    render: () => <ManagerSettingsLogsScreen />,
+  }),
+  defineManagerRoute({
+    kind: "debugging-security",
+    path: "/debugging/security",
+    layout: "dashboard",
+    parse: () => ({ kind: "debugging-security" }),
+    render: () => <ManagerSettingsSecurityScreen />,
+  }),
+  // Legacy alias for bookmarks
+  defineManagerRoute({
+    kind: "debugging-security",
+    path: "/settings/security",
+    layout: "dashboard",
+    parse: () => ({ kind: "debugging-security" }),
+    render: () => <ManagerSettingsSecurityScreen />,
   }),
   defineManagerRoute({
     kind: "media-library",
@@ -163,20 +209,6 @@ export const managerRouteDefinitions = [
     layout: "dashboard",
     parse: () => ({ kind: "settings-system" }),
     render: () => <ManagerSettingsSystemScreen />,
-  }),
-  defineManagerRoute({
-    kind: 'settings-security',
-    path: '/settings/security',
-    layout: 'dashboard',
-    parse: () => ({ kind: 'settings-security' }),
-    render: () => <ManagerSettingsSecurityScreen />,
-  }),
-  defineManagerRoute({
-    kind: "settings-logs",
-    path: "/settings/logs",
-    layout: "dashboard",
-    parse: () => ({ kind: "settings-logs" }),
-    render: () => <ManagerSettingsLogsScreen />,
   }),
   defineManagerRoute({
     kind: "settings-review-policies",

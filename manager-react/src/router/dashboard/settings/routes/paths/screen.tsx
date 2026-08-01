@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { columns, type RouteMapRecord } from './columns'
 
 import { useManagerMutation, useManagerQuery } from '@/client/react'
+import { confirm } from '@/components/confirm'
 import { transformSortingState } from '@/helpers/transform-sorting-state'
 import Loading from '@/components/loading'
 import { PaginationController } from '@/components/PaginationController'
@@ -14,14 +15,6 @@ import UnauthorizedMessage from '@/components/unauthorized'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
 import { SearchInput } from '@/components/search-input'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { useTranslations } from '@/i18n'
 import { useSession } from '@/state/session'
 
@@ -33,7 +26,6 @@ export const ManagerSettingsRoutePathsScreen = () => {
   const [sorting, setSorting] = useState<SortingState>([])
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [confirmOpen, setConfirmOpen] = useState(false)
   const canReadRoutes = hasPermissions(['content.Route.readAny'])
   const canUpdateRoutes = hasPermissions(['content.Route.updateAny'])
   const trimmedSearch = debouncedSearch.trim()
@@ -81,18 +73,27 @@ export const ManagerSettingsRoutePathsScreen = () => {
   }
 
   const handleRegenerate = async () => {
-    try {
-      const result = await regenerateMutation.mutateAsync(undefined)
-      if (!result.ok) {
-        toast.error(t('settings.routes.regenerateError'))
-      } else {
-        toast.success(t('settings.routes.regenerated'))
-      }
-      await listQuery.refetch()
-      setConfirmOpen(false)
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('settings.routes.regenerateError'))
-    }
+    await confirm({
+      title: t('settings.routes.regenerateTitle'),
+      description: t('settings.routes.regenerateDescription'),
+      confirmLabel: t('settings.routes.regenerateConfirm'),
+      variant: 'destructive',
+      onConfirm: async () => {
+        try {
+          const result = await regenerateMutation.mutateAsync(undefined)
+          if (!result.ok) {
+            toast.error(t('settings.routes.regenerateError'))
+            throw new Error('regenerate failed')
+          }
+          toast.success(t('settings.routes.regenerated'))
+          await listQuery.refetch()
+        } catch (error) {
+          if (error instanceof Error && error.message === 'regenerate failed') throw error
+          toast.error(error instanceof Error ? error.message : t('settings.routes.regenerateError'))
+          throw error
+        }
+      },
+    })
   }
 
   return (
@@ -106,7 +107,7 @@ export const ManagerSettingsRoutePathsScreen = () => {
         />
         {canUpdateRoutes ? (
           <div data-tour="route-paths-regenerate">
-            <Button onClick={() => setConfirmOpen(true)}>{t('settings.routes.regenerate')}</Button>
+            <Button onClick={() => void handleRegenerate()}>{t('settings.routes.regenerate')}</Button>
           </div>
         ) : null}
       </div>
@@ -125,28 +126,6 @@ export const ManagerSettingsRoutePathsScreen = () => {
         itemsPerPage={itemsPerPage}
         setItemsPerPage={setItemsPerPage}
       />
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent aria-describedby="Confirm action">
-          <DialogHeader>
-            <DialogTitle>{t('settings.routes.regenerateTitle')}</DialogTitle>
-          </DialogHeader>
-          <DialogDescription>
-{t('settings.routes.regenerateDescription')}
-          </DialogDescription>
-          <DialogFooter className="flex w-full justify-between gap-2">
-            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              loading={regenerateMutation.isPending}
-              variant="destructive"
-              onClick={() => void handleRegenerate()}
-            >
-              {t('settings.routes.regenerateConfirm')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

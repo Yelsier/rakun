@@ -1,21 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 
 import type { ManagerLanguageRecord } from './columns'
 
 import { useLanguage } from '@/state/language'
 import { useManagerMutation } from '@/client/react'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { confirm } from '@/components/confirm'
 import { useTranslations } from '@/i18n'
 
 export const DeleteLanguage = ({
@@ -28,60 +20,49 @@ export const DeleteLanguage = ({
   setDeleteLanguage: (language: null) => void
 }) => {
   const t = useTranslations()
-  const [open, setOpen] = useState(false)
   const deleteMutation = useManagerMutation('manager.delete')
   const { refetch: refetchLanguages } = useLanguage()
+  const askedForRef = useRef<string | null>(null)
 
   useEffect(() => {
-    setOpen(Boolean(language))
-  }, [language])
-
-  useEffect(() => {
-    if (!open) {
-      setDeleteLanguage(null)
+    if (!language) {
+      askedForRef.current = null
+      return
     }
-  }, [open, setDeleteLanguage])
 
-  const handleDelete = async () => {
-    if (!language) return
+    if (askedForRef.current === language._id) return
+    askedForRef.current = language._id
 
-    try {
-      await deleteMutation.mutateAsync({
-        contentType: 'Language',
-        id: language._id,
+    const target = language
+
+    void (async () => {
+      await confirm({
+        title: t('settings.languages.deleteTitle'),
+        description: t('settings.languages.deleteConfirm'),
+        confirmLabel: t('common.delete'),
+        variant: 'destructive',
+        onConfirm: async () => {
+          try {
+            await deleteMutation.mutateAsync({
+              contentType: 'Language',
+              id: target._id,
+            })
+            refetch()
+            refetchLanguages()
+            toast.success(t('settings.languages.deleted'))
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : t('settings.languages.deleteError'),
+            )
+            throw error
+          }
+        },
       })
-      refetch()
-      refetchLanguages()
-      setOpen(false)
       setDeleteLanguage(null)
-      toast.success(t('settings.languages.deleted'))
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('settings.languages.deleteError'))
-    }
-  }
+    })()
+  }, [deleteMutation, language, refetch, refetchLanguages, setDeleteLanguage, t])
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent aria-describedby='Delete a language'>
-        <DialogHeader>
-          <DialogTitle>{t('settings.languages.deleteTitle')}</DialogTitle>
-        </DialogHeader>
-        <DialogDescription>
-          {t('settings.languages.deleteConfirm')}
-        </DialogDescription>
-        <DialogFooter>
-          <Button onClick={() => setOpen(false)} variant='ghost'>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            loading={deleteMutation.isPending}
-            onClick={handleDelete}
-            variant='destructive'
-          >
-            {t('common.delete')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
+  return null
 }

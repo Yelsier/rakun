@@ -15,6 +15,7 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'sidebar.mediaLibrary': 'Biblioteca de medios',
   'sidebar.users': 'Usuarios',
   'sidebar.apiRoutes': 'Rutas API',
+  'sidebar.debugging': 'Depuración',
   'sidebar.settings': 'Ajustes',
   'sidebar.help': 'Ayuda',
   'sidebar.plugins': 'Plugins',
@@ -156,6 +157,7 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
     '{count, plural, one {# evento eliminado} other {# eventos eliminados}}.',
   'settings.logs.cleanupError': 'No se pudieron eliminar los logs antiguos.',
   'common.cancel': 'Cancelar',
+  'common.confirm': 'Confirmar',
   'common.edit': 'Editar',
   'common.restore': 'Restaurar',
   'common.duplicate': 'Duplicar',
@@ -494,6 +496,10 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'variants.moveToTrashConfirm':
     '“{label}” se eliminará de este grupo de páginas y se borrarán sus asignaciones de idioma. Las demás variantes no se verán afectadas.',
   'variants.moveVariantToTrash': 'Mover variante a la papelera',
+  'variants.moveNamedToTrash': 'Mover {label} a la papelera',
+  'variants.promote': 'Promover',
+  'variants.moveLocale': 'Mover idioma',
+  'variants.reviewRequired': 'Revisión requerida',
   'variants.deletePermanentlyTitle': '¿Eliminar variante permanentemente?',
   'variants.deletePermanentlyConfirm':
     '“{label}” se eliminará permanentemente. Esta acción no se puede deshacer.',

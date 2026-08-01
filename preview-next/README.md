@@ -142,7 +142,7 @@ Those variables also enable manager account recovery. Password reset emails use
 `RAKUN_MANAGER_URL` as their public manager base URL.
 
 Mail attempts and results are persisted in the generic Rakun event log. Open
-`/backend/settings/logs` to inspect them through the built-in manager UI. Its
+`/backend/debugging/logs` to inspect them through the built-in manager UI. Its
 native `manager.logs.list` operation requires an authenticated session with the
 `system.eventLog.read` permission and supports cursor pagination and composable
 filters. Stored mail events contain operational metadata only; email content

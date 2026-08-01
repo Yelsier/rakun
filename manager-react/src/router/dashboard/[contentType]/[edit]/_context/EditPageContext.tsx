@@ -43,7 +43,9 @@ import { useOptionalManagerNavigation } from '@/state/navigation'
 import { useLanguage } from '@/state/language'
 import { useSession } from '@/state/session'
 import { useManagerQuery } from '@/client/react'
+import { confirm } from '@/components/confirm'
 import { deepEqual } from '@/helpers/deepEqual'
+import { useTranslations } from '@/i18n'
 
 const getDefaultVisibility = (defaultData?: Record<string, FieldValue>) =>
   ((defaultData as { _visibility?: DocumentVisibility } | undefined)?._visibility ??
@@ -144,18 +146,14 @@ type EditPageContextValue = {
   onAfterRestore?: () => Promise<unknown> | unknown
   openMoveToTrashDialog: () => void
   openPermanentDeleteDialog: () => void
-  permanentDeleteOpen: boolean
   previewState: ReturnType<typeof useContentPreview>
   localeVariantRoute?: ContentTypeRouteMeta
   routeLayout: ReturnType<typeof useRouteLayoutData>
   sections: ReturnType<typeof useContentTypeSections>
-  setMoveToTrashOpen: (open: boolean) => void
-  setPermanentDeleteOpen: (open: boolean) => void
   showSaveErrorTooltip: boolean
   tabErrors: ReturnType<typeof useEditTabErrors>
   translation: ReturnType<typeof useTranslationDialogState>
   translationEnabled: boolean
-  moveToTrashOpen: boolean
   linkedIterator: {
     enabled: boolean
     state?: LinkedIteratorStateOutput
@@ -217,6 +215,7 @@ export const EditPageProvider = ({
   preview,
   onAfterRestore,
 }: PropsWithChildren<EditPageProps>) => {
+  const t = useTranslations()
   const { language, languageList } = useLanguage()
   const { hasPermissions } = useSession()
   const navigation = useOptionalManagerNavigation()
@@ -262,8 +261,6 @@ export const EditPageProvider = ({
   ) as EditableDocumentVisibility
   const [activeTab, setActiveTab] = useState<EditPageTab>(() => getInitialTab(sections))
   const [showSaveErrorTooltip, setShowSaveErrorTooltip] = useState(false)
-  const [moveToTrashOpen, setMoveToTrashOpen] = useState(false)
-  const [permanentDeleteOpen, setPermanentDeleteOpen] = useState(false)
   const form = useEditFormController({
     defaultData: effectiveDefaultData,
     hasVisibility,
@@ -272,8 +269,6 @@ export const EditPageProvider = ({
   })
   const saveFormState = form.saveState
   const documentActions = useContentDocumentActions({
-    closeMoveToTrashDialog: () => setMoveToTrashOpen(false),
-    closePermanentDeleteDialog: () => setPermanentDeleteOpen(false),
     contentType,
     contentTypeId,
     contentTypeName: contentType.name,
@@ -468,6 +463,8 @@ export const EditPageProvider = ({
     setLinkedIteratorMode('linked')
   }
 
+  const hasLocaleVariants = Boolean(contentTypeId && localeVariantRoute && !isTrashed)
+
   return (
     <EditPageContext.Provider
       value={{
@@ -483,7 +480,7 @@ export const EditPageProvider = ({
         handleTabChange,
         handleVisibilityChange,
         hasVersioning,
-        hasLocaleVariants: Boolean(contentTypeId && localeVariantRoute && !isTrashed),
+        hasLocaleVariants,
         hasVisibility,
         isTrashed,
         languageCode: language.code,
@@ -495,17 +492,31 @@ export const EditPageProvider = ({
           setMode: setLinkedIteratorMode,
           adoptShared: adoptSharedIterator,
         },
-        moveToTrashOpen,
         onAfterRestore,
-        openMoveToTrashDialog: () => setMoveToTrashOpen(true),
-        openPermanentDeleteDialog: () => setPermanentDeleteOpen(true),
-        permanentDeleteOpen,
+        openMoveToTrashDialog: () => {
+          void confirm({
+            title: t('contentEdit.moveItemToTrash'),
+            description: hasLocaleVariants
+              ? t('contentEdit.moveToTrashGroupDescription')
+              : t('contentEdit.moveToTrashDescription'),
+            confirmLabel: t('contentList.moveToTrash'),
+            variant: 'destructive',
+            onConfirm: () => documentActions.handleMoveToTrash(),
+          })
+        },
+        openPermanentDeleteDialog: () => {
+          void confirm({
+            title: t('contentEdit.deleteItemPermanently'),
+            description: t('contentEdit.deletePermanentlyDescription'),
+            confirmLabel: t('contentList.deletePermanently'),
+            variant: 'destructive',
+            onConfirm: () => documentActions.handlePermanentDelete(),
+          })
+        },
         previewState,
         localeVariantRoute,
         routeLayout,
         sections,
-        setMoveToTrashOpen,
-        setPermanentDeleteOpen,
         showSaveErrorTooltip,
         tabErrors,
         translation,

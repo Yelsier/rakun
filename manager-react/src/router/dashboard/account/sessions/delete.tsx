@@ -1,19 +1,11 @@
 'use client'
 
 import type { AccountInfoOutput } from '@rakun-kit/core/contracts'
-import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
+import { useEffect, useRef, type Dispatch, type SetStateAction } from 'react'
 import { toast } from 'sonner'
 
 import { useManagerMutation } from '@/client/react'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { confirm } from '@/components/confirm'
 import { useTranslations } from '@/i18n'
 
 export default function DeleteSession({
@@ -26,67 +18,46 @@ export default function DeleteSession({
   setDeleteSession: (session: null) => void
 }) {
   const t = useTranslations()
-  const [open, setOpen] = useState(false)
   const mutation = useManagerMutation('manager.auth.deleteSession')
+  const askedForRef = useRef<string | null>(null)
 
   useEffect(() => {
-    setOpen(Boolean(session))
-  }, [session])
-
-  useEffect(() => {
-    if (!open) {
-      setDeleteSession(null)
+    if (!session) {
+      askedForRef.current = null
+      return
     }
-  }, [open, setDeleteSession])
 
-  const handleDelete = () => {
-    if (!session) return
+    if (askedForRef.current === session) return
+    askedForRef.current = session
 
-    mutation.mutate(
-      {
-        token: session,
-      },
-      {
-        onSuccess: () => {
-          setSessions((sessions: AccountInfoOutput['sessions']) =>
-            sessions.filter(
-              (item: AccountInfoOutput['sessions'][number]) =>
-                item.token !== session,
-            ),
-          )
-          setOpen(false)
-          setDeleteSession(null)
-          toast.success(t('account.sessions.deleted'))
+    const token = session
+
+    void (async () => {
+      await confirm({
+        title: t('account.sessions.delete'),
+        description: t('account.sessions.deleteConfirm'),
+        confirmLabel: t('common.delete'),
+        variant: 'destructive',
+        onConfirm: async () => {
+          try {
+            await mutation.mutateAsync({ token })
+            setSessions((sessions) =>
+              sessions.filter((item) => item.token !== token),
+            )
+            toast.success(t('account.sessions.deleted'))
+          } catch (error) {
+            toast.error(
+              t('account.sessions.deleteError', {
+                reason: error instanceof Error ? error.message : String(error),
+              }),
+            )
+            throw error
+          }
         },
-        onError: (error) => {
-          toast.error(t('account.sessions.deleteError', { reason: error.message }))
-        },
-      },
-    )
-  }
+      })
+      setDeleteSession(null)
+    })()
+  }, [mutation, session, setDeleteSession, setSessions, t])
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent aria-describedby='Delete session'>
-        <DialogHeader>
-          <DialogTitle>{t('account.sessions.delete')}</DialogTitle>
-        </DialogHeader>
-        <DialogDescription>
-          {t('account.sessions.deleteConfirm')}
-        </DialogDescription>
-        <DialogFooter>
-          <Button onClick={() => setOpen(false)} variant='ghost'>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            loading={mutation.isPending}
-            onClick={handleDelete}
-            variant='destructive'
-          >
-            {t('common.delete')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
+  return null
 }

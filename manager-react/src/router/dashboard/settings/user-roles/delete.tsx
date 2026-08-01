@@ -1,20 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 
 import type { ManagerRoleRecord } from './columns'
 
 import { useManagerMutation } from '@/client/react'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { confirm } from '@/components/confirm'
 import { useTranslations } from '@/i18n'
 
 export const DeleteRole = ({
@@ -27,59 +19,45 @@ export const DeleteRole = ({
   setDelete: (role: null) => void
 }) => {
   const t = useTranslations()
-  const [open, setOpen] = useState(false)
   const mutation = useManagerMutation('manager.delete')
+  const askedForRef = useRef<string | null>(null)
 
   useEffect(() => {
-    setOpen(Boolean(role))
-  }, [role])
-
-  useEffect(() => {
-    if (!open) {
-      setDelete(null)
+    if (!role) {
+      askedForRef.current = null
+      return
     }
-  }, [open, setDelete])
 
-  const handleDelete = async () => {
-    if (!role) return
+    if (askedForRef.current === role._id) return
+    askedForRef.current = role._id
 
-    try {
-      await mutation.mutateAsync({
-        contentType: 'ManagerRole',
-        id: role._id,
+    const target = role
+
+    void (async () => {
+      await confirm({
+        title: t('settings.roles.deleteTitle'),
+        description: t('settings.roles.deleteConfirm'),
+        confirmLabel: t('common.delete'),
+        variant: 'destructive',
+        onConfirm: async () => {
+          try {
+            await mutation.mutateAsync({
+              contentType: 'ManagerRole',
+              id: target._id,
+            })
+            refetch()
+            toast.success(t('settings.roles.deleted'))
+          } catch (error) {
+            toast.error(
+              error instanceof Error ? error.message : t('settings.roles.deleteError'),
+            )
+            throw error
+          }
+        },
       })
-      refetch()
-      setOpen(false)
       setDelete(null)
-      toast.success(t('settings.roles.deleted'))
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('settings.roles.deleteError'))
-    }
-  }
+    })()
+  }, [mutation, refetch, role, setDelete, t])
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent aria-describedby='Delete a role'>
-        <DialogHeader>
-          <DialogTitle>{t('settings.roles.deleteTitle')}</DialogTitle>
-        </DialogHeader>
-        <DialogDescription>
-          {t('settings.roles.deleteConfirm')}
-        </DialogDescription>
-        <DialogFooter>
-          <Button onClick={() => setOpen(false)} variant='ghost'>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            loading={mutation.isPending}
-            onClick={() => void handleDelete()}
-            variant='destructive'
-          >
-            {t('common.delete')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
+  return null
 }
-

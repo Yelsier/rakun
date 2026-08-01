@@ -50,6 +50,7 @@ import {
   useTranslations,
   type ManagerLocaleInputPack,
 } from "@/i18n";
+import { ConfirmProvider } from "@/components/confirm";
 
 const BootstrapFailedMessage = ({ message }: { message: string }) => {
   const t = useTranslations();
@@ -319,84 +320,86 @@ export const ManagerRuntimeApp = ({
   return (
     <ManagerRootProviders>
       <ManagerI18nProvider localePacks={localePacks}>
-        <QueryClientProvider client={queryClient}>
-          <ManagerProvider client={client}>
-            <ManagerRuntimeAuthProvider value={runtimeAuth}>
-              <ManagerNavigationProvider navigation={scopedNavigation}>
-                <ManagerLinkProvider component={linkComponent}>
-                  <ManagerMediaProvider
-                    renderPicker={
-                      renderMediaPicker ?? renderDefaultManagerMediaPicker
-                    }
-                  >
-                    {isLoading ? (
-                      <>
-                        {loadingFallback ??
-                          (useAuthLoadingFallback ? (
-                            <ManagerAuthLoadingFallback />
-                          ) : (
-                            <ManagerLoadingFallback />
-                          ))}
-                      </>
-                    ) : null}
+        <ConfirmProvider>
+          <QueryClientProvider client={queryClient}>
+            <ManagerProvider client={client}>
+              <ManagerRuntimeAuthProvider value={runtimeAuth}>
+                <ManagerNavigationProvider navigation={scopedNavigation}>
+                  <ManagerLinkProvider component={linkComponent}>
+                    <ManagerMediaProvider
+                      renderPicker={
+                        renderMediaPicker ?? renderDefaultManagerMediaPicker
+                      }
+                    >
+                      {isLoading ? (
+                        <>
+                          {loadingFallback ??
+                            (useAuthLoadingFallback ? (
+                              <ManagerAuthLoadingFallback />
+                            ) : (
+                              <ManagerLoadingFallback />
+                            ))}
+                        </>
+                      ) : null}
 
-                    {!isLoading && state.status === "error" ? (
-                      <>
-                        {errorFallback?.(state.message) ?? (
-                          <BootstrapFailedMessage message={state.message} />
-                        )}
-                      </>
-                    ) : null}
+                      {!isLoading && state.status === "error" ? (
+                        <>
+                          {errorFallback?.(state.message) ?? (
+                            <BootstrapFailedMessage message={state.message} />
+                          )}
+                        </>
+                      ) : null}
 
-                    {!isLoading && state.status === "unauthenticated" ? (
-                      <>
-                        {unauthenticatedFallback ?? (
-                          <ManagerApp
-                            pathname={pathname}
-                            basePath={basePath}
-                            searchParams={searchParams}
-                            passwordRecoveryEnabled={passwordRecoveryEnabled}
-                            login={login}
-                            preview={preview}
-                            plugins={plugins}
-                            {...overrides}
-                          />
-                        )}
-                      </>
-                    ) : null}
-
-                    {!isLoading && state.status === "ready" ? (
-                      <SessionProvider
-                        initialUser={state.user}
-                        contentTypes={state.contentTypes}
-                      >
-                        <ManagerUsersProvider>
-                          <LanguageProvider
-                            languages={state.languages}
-                            initialLanguage={state.initialLanguage}
-                          >
+                      {!isLoading && state.status === "unauthenticated" ? (
+                        <>
+                          {unauthenticatedFallback ?? (
                             <ManagerApp
                               pathname={pathname}
                               basePath={basePath}
                               searchParams={searchParams}
-                              contentTypes={state.contentTypes}
-                              authenticated
                               passwordRecoveryEnabled={passwordRecoveryEnabled}
                               login={login}
                               preview={preview}
                               plugins={plugins}
                               {...overrides}
                             />
-                          </LanguageProvider>
-                        </ManagerUsersProvider>
-                      </SessionProvider>
-                    ) : null}
-                  </ManagerMediaProvider>
-                </ManagerLinkProvider>
-              </ManagerNavigationProvider>
-            </ManagerRuntimeAuthProvider>
-          </ManagerProvider>
-        </QueryClientProvider>
+                          )}
+                        </>
+                      ) : null}
+
+                      {!isLoading && state.status === "ready" ? (
+                        <SessionProvider
+                          initialUser={state.user}
+                          contentTypes={state.contentTypes}
+                        >
+                          <ManagerUsersProvider>
+                            <LanguageProvider
+                              languages={state.languages}
+                              initialLanguage={state.initialLanguage}
+                            >
+                              <ManagerApp
+                                pathname={pathname}
+                                basePath={basePath}
+                                searchParams={searchParams}
+                                contentTypes={state.contentTypes}
+                                authenticated
+                                passwordRecoveryEnabled={passwordRecoveryEnabled}
+                                login={login}
+                                preview={preview}
+                                plugins={plugins}
+                                {...overrides}
+                              />
+                            </LanguageProvider>
+                          </ManagerUsersProvider>
+                        </SessionProvider>
+                      ) : null}
+                    </ManagerMediaProvider>
+                  </ManagerLinkProvider>
+                </ManagerNavigationProvider>
+              </ManagerRuntimeAuthProvider>
+            </ManagerProvider>
+          </QueryClientProvider>
+        </ConfirmProvider>
       </ManagerI18nProvider>
     </ManagerRootProviders>
   );
