@@ -11,7 +11,7 @@ import {
   ITERATOR_UNLINKED_FIELD_NAME,
   SEO_FIELD_NAME,
 } from "../systemFields";
-import { Fields } from "./index";
+import { Fields, f } from "./index";
 import type { DataInput } from "../types";
 
 const TypeRegressionCT = new ContentType({
@@ -38,6 +38,10 @@ const _nestedSlugIsRejected: TypeRegressionInput["slug"] = {
 };
 
 describe("field type inference", () => {
+  it("exports f as the concise Fields alias", () => {
+    expect(f).toBe(Fields);
+  });
+
   it("keeps translatable string fields runtime-compatible", () => {
     expect(
       TypeRegressionCT.getInputSchema().parse({

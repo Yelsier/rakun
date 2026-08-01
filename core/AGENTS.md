@@ -22,7 +22,7 @@ The core must not depend on React, Express, Next.js, Vite, or tRPC. Adapters tra
 
 ## Internal Content Types
 
-- Define them with `new ContentType({ ... })` and `Fields`.
+- Define them with `new ContentType({ ... })` and `f`.
 - Export each type from `src/internal-content-types/index.ts`.
 - If an internal content type should be usable externally, review `core/package.json` `exports`.
 - If the content type appears in the manager, review permissions, list fields, uniques, and related screens in `manager-react`.

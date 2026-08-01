@@ -14,7 +14,11 @@ Main packages:
 - `trpc`: tRPC router built on top of Rakun operations.
 - `react`: React helpers for rendering web modules.
 - `s3`: S3 media storage adapter.
+- `smtp`: SMTP mail adapter.
+- `resend`: Resend mail adapter.
+- `jsx-email`: JSX Email template renderer.
 - `openai`: automatic translation adapter using OpenAI.
+- `plugin-code-editor`: manager plugin for code blocks in RichText fields.
 - `preview`: local Vite + Express development app.
 - `preview-next`: local Next.js app; it has its own `AGENTS.md`.
 
@@ -40,7 +44,9 @@ Main packages:
 ## Recommended AI Workflow
 
 - Start with `rg`/`rg --files` to find nearby patterns.
-- Read the package `README.md` before changing a public API.
+- Read `core/docs/index.md` for the package map and the affected package's `docs/index.md` before changing how consumers use Rakun. Read its `README.md` as well before changing a public API.
+- For every change, assess whether it affects how a consumer or coding agent installs, imports, configures, combines, or operates a published package. When it does, update that package's `docs/index.md` in the same change. If package availability, responsibilities, or relationships change, also update `core/docs/index.md`, which is the installed documentation index. Do not postpone documentation updates to a later change.
+- Keep AI manuals accurate against public exports and supported behavior. Package builds copy `docs/` to `dist/docs/`; edit the source manuals only, never generated `dist` files.
 - For every new or changed action, use judgment to decide whether it must be recorded in the persistent event log. Audit-relevant operations, external side effects, and important lifecycle transitions should be logged with enough outcome context; mail delivery (`attempted`, `succeeded`, and `failed`) is the reference pattern. Do not confuse persistent business events with diagnostic `Logger` output.
 - Every API error must be recorded in the persistent event log displayed by the manager, including expected 4xx application errors and unexpected 5xx failures. Never persist request payloads, credentials, sensitive causes, or raw internal error messages.
 - Successful API mutations are logged automatically with an operation-specific `<operation>.succeeded` event. Add explicit domain events as well when an action has meaningful phases or outcomes that the generic mutation event cannot express; do not log successful read-only queries by default.

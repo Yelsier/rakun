@@ -1,5 +1,5 @@
 import { DataFront } from '@rakun-kit/core/types'
-import { ContentType, Fields } from '@rakun-kit/next'
+import { ContentType, f } from '@rakun-kit/next'
 import { HelloWorld } from '@rakun-kit/next/internal-content-types'
 
 export const Header = new ContentType({
@@ -10,11 +10,11 @@ export const Header = new ContentType({
     category: 'preview.contentTypes.category.layout',
   },
   fields: {
-    brand: Fields.string().required(),
-    primaryLinkLabel: Fields.string(),
-    primaryLinkHref: Fields.string().type('Url'),
-    internalLinkLabel: Fields.string(),
-    internalLink: Fields.link(),
+    brand: f.string().required(),
+    primaryLinkLabel: f.string(),
+    primaryLinkHref: f.string().type('Url'),
+    internalLinkLabel: f.string(),
+    internalLink: f.link(),
   },
   listFields: ['brand', 'primaryLinkLabel', 'internalLinkLabel'],
 })
@@ -27,12 +27,12 @@ export const Footer = new ContentType({
     category: 'preview.contentTypes.category.layout',
   },
   fields: {
-    brand: Fields.string().required(),
-    copyright: Fields.string(),
-    primaryLinkLabel: Fields.string(),
-    primaryLinkHref: Fields.string().type('Url'),
-    internalLinkLabel: Fields.string(),
-    internalLink: Fields.link(),
+    brand: f.string().required(),
+    copyright: f.string(),
+    primaryLinkLabel: f.string(),
+    primaryLinkHref: f.string().type('Url'),
+    internalLinkLabel: f.string(),
+    internalLink: f.link(),
   },
   listFields: ['brand', 'copyright', 'internalLinkLabel'],
 })
@@ -45,8 +45,8 @@ export const PageSection = new ContentType({
     category: 'preview.contentTypes.category.blocks',
   },
   fields: {
-    title: Fields.string().required().translatable(),
-    body: Fields.string().type('RichText').translatable(),
+    title: f.string().required().translatable(),
+    body: f.string().type('RichText').translatable(),
   },
   listFields: ['title'],
 })
@@ -66,8 +66,8 @@ export const Category = new ContentType({
     },
   ],
   fields: {
-    title: Fields.string().required(),
-    slug: Fields.string().type('Slug').required(),
+    title: f.string().required(),
+    slug: f.string().type('Slug').required(),
   },
   linkedIterator: true,
   uniques: [['slug']],
@@ -77,8 +77,8 @@ export const Category = new ContentType({
 export const LinkItem = new ContentType({
   name: 'LinkItem',
   fields: {
-    title: Fields.string().translatable().required(),
-    link: Fields.link().required(),
+    title: f.string().translatable().required(),
+    link: f.link().required(),
   },
   listFields: ['title'],
 })
@@ -86,14 +86,14 @@ export const LinkItem = new ContentType({
 export const ProjectHeader = new ContentType({
   name: 'ProjectHeader',
   fields: {
-    title: Fields.string().translatable().required(),
-    categories: Fields.blocks([
+    title: f.string().translatable().required(),
+    categories: f.blocks([
       {
         name: 'Category',
-        field: Fields.relation(LinkItem, 'new'),
+        field: f.relation(LinkItem, 'new'),
       },
     ]).required(),
-    company: Fields.string().translatable().required(),
+    company: f.string().translatable().required(),
   },
 })
 
@@ -106,13 +106,13 @@ export const Project = new ContentType({
     category: 'preview.contentTypes.category.dynamicData',
   },
   fields: {
-    title: Fields.string().required(),
-    slug: Fields.string().type('Slug').required(),
-    excerpt: Fields.string().type('Textarea'),
-    featured: Fields.boolean(),
-    category: Fields.relation(Category, 'existing').required(),
-    categories: Fields.relation(Category, 'existing').multiple(),
-    images: Fields.file().type('Image').multiple(),
+    title: f.string().required(),
+    slug: f.string().type('Slug').required(),
+    excerpt: f.string().type('Textarea'),
+    featured: f.boolean(),
+    category: f.relation(Category, 'existing').required(),
+    categories: f.relation(Category, 'existing').multiple(),
+    images: f.file().type('Image').multiple(),
   },
   iterator: [
     {
@@ -127,9 +127,9 @@ export const Project = new ContentType({
 export const FeatureCarouselItem = new ContentType({
   name: 'FeatureCarouselItem',
   fields: {
-    title: Fields.string().required(),
-    summary: Fields.string().type('Textarea'),
-    href: Fields.string(),
+    title: f.string().required(),
+    summary: f.string().type('Textarea'),
+    href: f.string(),
   },
 }).hideFromManager()
 
@@ -144,12 +144,12 @@ export const FeatureCarousel = new ContentType({
     preview: '/dynamic-data/aurora.svg',
   },
   fields: {
-    eyebrow: Fields.string(),
-    title: Fields.string().required(),
-    items: Fields.blocks([
+    eyebrow: f.string(),
+    title: f.string().required(),
+    items: f.blocks([
       {
         name: FeatureCarouselItem.name,
-        field: Fields.relation(FeatureCarouselItem, 'new').required(),
+        field: f.relation(FeatureCarouselItem, 'new').required(),
       },
     ]),
   },
@@ -159,9 +159,9 @@ export const FeatureCarousel = new ContentType({
 export const CategoriesGalleryItem = new ContentType({
   name: 'CategoriesGalleryItem',
   fields: {
-    title: Fields.string().required(),
-    href: Fields.link().required(),
-    images: Fields.file().type('Image').multiple().required(),
+    title: f.string().required(),
+    href: f.link().required(),
+    images: f.file().type('Image').multiple().required(),
   },
 }).hideFromManager()
 
@@ -173,12 +173,12 @@ export const CategoriesGallery = new ContentType({
     category: 'preview.contentTypes.category.dynamicData',
   },
   fields: {
-    eyebrow: Fields.string(),
-    title: Fields.string().required(),
-    items: Fields.blocks([
+    eyebrow: f.string(),
+    title: f.string().required(),
+    items: f.blocks([
       {
         name: CategoriesGalleryItem.name,
-        field: Fields.relation(CategoriesGalleryItem, 'new').required(),
+        field: f.relation(CategoriesGalleryItem, 'new').required(),
       },
     ]),
   },
@@ -189,8 +189,8 @@ export const PreviewPage = new ContentType({
   name: 'Page',
   permissions: 'Page',
   fields: {
-    title: Fields.string().translatable().required(),
-    slug: Fields.string().type('Slug').required().translatable(),
+    title: f.string().translatable().required(),
+    slug: f.string().type('Slug').required().translatable(),
   },
   iterator: [
     {
@@ -224,9 +224,9 @@ export const Author = new ContentType({
     category: 'preview.contentTypes.category.editorial',
   },
   fields: {
-    name: Fields.string().required(),
-    email: Fields.string().type('Email'),
-    bio: Fields.string().type('Textarea'),
+    name: f.string().required(),
+    email: f.string().type('Email'),
+    bio: f.string().type('Textarea'),
   },
   listFields: ['name', 'email'],
 })
@@ -239,13 +239,13 @@ export const Article = new ContentType({
     category: 'preview.contentTypes.category.editorial',
   },
   fields: {
-    title: Fields.string().required(),
-    slug: Fields.string().type('Slug').required(),
-    excerpt: Fields.string().type('Textarea'),
-    published: Fields.boolean(),
-    author: Fields.relation(Author),
-    body: Fields.string().type('RichText'),
-    tags: Fields.array(Fields.string()),
+    title: f.string().required(),
+    slug: f.string().type('Slug').required(),
+    excerpt: f.string().type('Textarea'),
+    published: f.boolean(),
+    author: f.relation(Author),
+    body: f.string().type('RichText'),
+    tags: f.array(f.string()),
   },
   uniques: [['slug']],
   listFields: ['title', 'slug', 'published', 'author.name'],
@@ -254,10 +254,10 @@ export const Article = new ContentType({
 export const RelationLevel3 = new ContentType({
   name: 'RelationLevel3',
   fields: {
-    title: Fields.string().required(),
-    existingArticle: Fields.relation(Article, 'existing'),
-    flexibleArticle: Fields.relation(Article),
-    authors: Fields.relation(Author, 'existing').multiple(),
+    title: f.string().required(),
+    existingArticle: f.relation(Article, 'existing'),
+    flexibleArticle: f.relation(Article),
+    authors: f.relation(Author, 'existing').multiple(),
   },
   listFields: ['title', 'existingArticle.title', 'flexibleArticle.title'],
 }).hideFromManager()
@@ -270,12 +270,12 @@ export const RelationLevel2 = new ContentType({
     category: 'preview.contentTypes.category.development',
   },
   fields: {
-    title: Fields.string().required(),
-    existingArticle: Fields.relation(Article, 'existing').required(),
-    flexibleArticle: Fields.relation(Article),
-    existingArticles: Fields.relation(Article, 'existing').multiple(),
-    self: Fields.selfRelation(),
-    inlineItems: Fields.relation(RelationLevel3, 'new').multiple(),
+    title: f.string().required(),
+    existingArticle: f.relation(Article, 'existing').required(),
+    flexibleArticle: f.relation(Article),
+    existingArticles: f.relation(Article, 'existing').multiple(),
+    self: f.selfRelation(),
+    inlineItems: f.relation(RelationLevel3, 'new').multiple(),
   },
   listFields: ['title', 'existingArticle.title', 'flexibleArticle.title'],
 })
@@ -288,25 +288,25 @@ export const RelationPlayground = new ContentType({
     category: 'preview.contentTypes.category.development',
   },
   fields: {
-    title: Fields.string().required(),
-    slug: Fields.string().type('Slug').required(),
-    existingAuthor: Fields.relation(Author, 'existing').required(),
-    flexibleArticle: Fields.relation(Article),
-    existingLevel2: Fields.relation(RelationLevel2, 'existing'),
-    existingLevel2List: Fields.relation(RelationLevel2, 'existing').multiple(),
-    inlineLevel3: Fields.relation(RelationLevel3, 'new'),
-    sections: Fields.blocks([
+    title: f.string().required(),
+    slug: f.string().type('Slug').required(),
+    existingAuthor: f.relation(Author, 'existing').required(),
+    flexibleArticle: f.relation(Article),
+    existingLevel2: f.relation(RelationLevel2, 'existing'),
+    existingLevel2List: f.relation(RelationLevel2, 'existing').multiple(),
+    inlineLevel3: f.relation(RelationLevel3, 'new'),
+    sections: f.blocks([
       {
         name: 'level2',
-        field: Fields.relation(RelationLevel2, 'existing'),
+        field: f.relation(RelationLevel2, 'existing'),
       },
       {
         name: 'article',
-        field: Fields.relation(Article, 'existing'),
+        field: f.relation(Article, 'existing'),
       },
       {
         name: 'level3',
-        field: Fields.relation(RelationLevel3, 'new'),
+        field: f.relation(RelationLevel3, 'new'),
       },
     ]),
   },
@@ -322,9 +322,9 @@ export const ImagePlayground = new ContentType({
     category: 'preview.contentTypes.category.development',
   },
   fields: {
-    title: Fields.string().required(),
-    singleImage: Fields.file().type('Image'),
-    multipleImages: Fields.file().type('Image').multiple(),
+    title: f.string().required(),
+    singleImage: f.file().type('Image'),
+    multipleImages: f.file().type('Image').multiple(),
   },
   listFields: ['title'],
 })
@@ -337,23 +337,23 @@ export const ConditionalDemo = new ContentType({
     category: 'preview.contentTypes.category.development',
   },
   fields: {
-    title: Fields.string().required(),
-    intent: Fields.select(['basic', 'advanced', 'experimental'] as const).required(),
-    advancedEnabled: Fields.boolean().condition({
+    title: f.string().required(),
+    intent: f.select(['basic', 'advanced', 'experimental'] as const).required(),
+    advancedEnabled: f.boolean().condition({
       field: 'intent',
       equals: 'advanced',
     }),
-    priority: Fields.number(),
-    priorityNotes: Fields.string().type('Textarea').condition({
+    priority: f.number(),
+    priorityNotes: f.string().type('Textarea').condition({
       field: 'priority',
       gte: 5,
     }),
-    flags: Fields.select(['featured', 'sponsored', 'archived'] as const).multiple(),
-    featuredLabel: Fields.string().condition({
+    flags: f.select(['featured', 'sponsored', 'archived'] as const).multiple(),
+    featuredLabel: f.string().condition({
       field: 'flags',
       includes: 'featured',
     }),
-    multiFlagSummary: Fields.string()
+    multiFlagSummary: f.string()
       .type('Textarea')
       .condition({
         field: 'flags',
@@ -371,15 +371,15 @@ export const TranslationPlayground = new ContentType({
     category: 'preview.contentTypes.category.development',
   },
   fields: {
-    title: Fields.string().required().translatable(),
-    slug: Fields.string().type('Slug').required().translatable(),
-    subtitle: Fields.string().translatable(),
-    excerpt: Fields.string().type('Textarea').translatable(),
-    body: Fields.string().type('RichText').translatable(),
-    callToActionLabel: Fields.string().translatable(),
-    callToActionUrl: Fields.string().type('Url').translatable(),
-    metaTitle: Fields.string().translatable(),
-    metaDescription: Fields.string().type('Textarea').translatable(),
+    title: f.string().required().translatable(),
+    slug: f.string().type('Slug').required().translatable(),
+    subtitle: f.string().translatable(),
+    excerpt: f.string().type('Textarea').translatable(),
+    body: f.string().type('RichText').translatable(),
+    callToActionLabel: f.string().translatable(),
+    callToActionUrl: f.string().type('Url').translatable(),
+    metaTitle: f.string().translatable(),
+    metaDescription: f.string().type('Textarea').translatable(),
   },
   uniques: [['slug']],
   listFields: ['title', 'slug', 'subtitle'],

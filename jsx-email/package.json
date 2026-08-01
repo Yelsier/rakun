@@ -21,7 +21,7 @@
   "module": "./dist/esm/index.js",
   "types": "./dist/esm/index.d.ts",
   "scripts": {
-    "build": "rm -rf dist && bun run build:esm",
+    "build": "rm -rf dist && bun run build:esm && node ../scripts/copy-package-docs.mjs",
     "build:esm": "tsc -p tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
     "test": "bun test"
   },

@@ -64,7 +64,7 @@ The API route seeds preview data on first request when `SEED_PREVIEW` is not
 - an `ImagePlayground` record with 18 selected images (three distinct media
   records for each of the six SVGs) for testing compact previews and
   dialog-based reordering
-- populated `Fields.link()` examples in header and footer modules
+- populated `f.link()` examples in header and footer modules
 - `Author` and `Article`
 - `RouteLocaleVariant` assignments and route maps for `/`, `/es/`,
   `/es-MX/`, `/about/`, `/es/sobre/`, `/es-MX/sobre-mexico/`,

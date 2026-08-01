@@ -23,7 +23,7 @@ export {
   DynamicQueryCurrentValueSchema,
   isDynamicDataSourceContentTypeAllowed,
 } from "./lib/dynamicData";
-export { Fields } from "./lib/fields";
+export { Fields, f } from "./lib/fields";
 export * from "./lib/fields/Boolean";
 export * from "./lib/fields/ContentReference";
 export * from "./lib/fields/Date";

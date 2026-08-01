@@ -30,6 +30,7 @@
         "../core/src/internal-content-types/index.ts"
       ],
       "@rakun-kit/manager-react": ["../manager-react/src/index.ts"],
+      "@rakun-kit/manager-react/seo": ["../manager-react/src/seo/index.ts"],
       "@rakun-kit/manager-react/client/http": [
         "../manager-react/src/client/http.ts"
       ],

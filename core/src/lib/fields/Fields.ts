@@ -27,3 +27,5 @@ export const Fields = {
   blocks: listField,
   array: simpleListField,
 };
+
+export const f = Fields;

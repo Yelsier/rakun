@@ -21,7 +21,7 @@
   "module": "./dist/esm/index.js",
   "types": "./dist/esm/index.d.ts",
   "scripts": {
-    "build": "rm -rf dist && bun run build:esm && bun run build:cjs && bun run build:css",
+    "build": "rm -rf dist && bun run build:esm && bun run build:cjs && bun run build:css && node ../scripts/copy-package-docs.mjs",
     "build:css": "node ./scripts/build-css.mjs",
     "build:css:watch": "node ./scripts/build-css.mjs --watch",
     "build:esm": "tsc -b --force tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
@@ -187,6 +187,12 @@
       "import": "./dist/esm/i18n/index.js",
       "require": "./dist/cjs/i18n/index.js",
       "default": "./dist/esm/i18n/index.js"
+    },
+    "./seo": {
+      "types": "./dist/esm/seo/index.d.ts",
+      "import": "./dist/esm/seo/index.js",
+      "require": "./dist/cjs/seo/index.js",
+      "default": "./dist/esm/seo/index.js"
     },
     "./rich-text": {
       "types": "./dist/esm/rich-text.d.ts",

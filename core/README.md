@@ -9,7 +9,7 @@ Typical imports:
 ```ts
 import {
   ContentType,
-  Fields,
+  f,
   rakunBootstrap,
   ensureRakunInitialized,
 } from "@rakun-kit/core";
@@ -239,7 +239,7 @@ const Hero = new ContentType({
     keywords: ["banner", "cover"],
   },
   fields: {
-    title: Fields.string().required(),
+    title: f.string().required(),
   },
 });
 ```
@@ -358,10 +358,10 @@ const Post = new ContentType({
     category: "Content",
   },
   fields: {
-    title: Fields.string().required(),
-    slug: Fields.string().type("Slug").required(),
-    body: Fields.string().type("RichText"),
-    published: Fields.boolean(),
+    title: f.string().required(),
+    slug: f.string().type("Slug").required(),
+    body: f.string().type("RichText"),
+    published: f.boolean(),
   },
   uniques: [["slug"]],
   listFields: ["title", "slug", "published"],
@@ -375,8 +375,8 @@ Page-like content types can define ordered page modules with `iterator` outside
 const Page = new ContentType({
   name: "Page",
   fields: {
-    title: Fields.string().required(),
-    slug: Fields.string().type("Slug").required(),
+    title: f.string().required(),
+    slug: f.string().type("Slug").required(),
   },
   iterator: [{ contentType: PageSection, type: "existing" }],
   linkedIterator: true,
@@ -434,8 +434,8 @@ Hooks run around DB mutations and public output resolution:
 const User = new ContentType({
   name: "User",
   fields: {
-    email: Fields.string().type("Email").required(),
-    password: Fields.string().type("Password").required().managerOnly(),
+    email: f.string().type("Email").required(),
+    password: f.string().type("Password").required().managerOnly(),
   },
 }).withHooks({
   beforeInsert: ({ data }) => ({
@@ -470,20 +470,20 @@ const Project = new ContentType({
   name: "Project",
   dynamicDataSource: true,
   fields: {
-    title: Fields.string().required(),
-    slug: Fields.string().type("Slug").required(),
+    title: f.string().required(),
+    slug: f.string().type("Slug").required(),
   },
 });
 
 const Carousel = new ContentType({
   name: "Carousel",
   fields: {
-    title: Fields.string().required(),
-    internalNote: Fields.string().noDynamic(),
-    items: Fields.blocks([
+    title: f.string().required(),
+    internalNote: f.string().noDynamic(),
+    items: f.blocks([
       {
         name: "CarouselItem",
-        field: Fields.relation(CarouselItem, "new"),
+        field: f.relation(CarouselItem, "new"),
       },
     ]),
   },
@@ -549,7 +549,7 @@ const Category = new ContentType({
   name: "Category",
   dynamicDataSource: true,
   fields: {
-    title: Fields.string().required(),
+    title: f.string().required(),
   },
 });
 
@@ -557,8 +557,8 @@ const Project = new ContentType({
   name: "Project",
   dynamicDataSource: true,
   fields: {
-    category: Fields.relation(Category, "existing").required(),
-    images: Fields.file().type("Image").multiple().required(),
+    category: f.relation(Category, "existing").required(),
+    images: f.file().type("Image").multiple().required(),
   },
 });
 
@@ -604,21 +604,24 @@ The registry lives in `lib/Registry`:
 
 ## Fields
 
-Main factory:
+Use the concise `f` namespace for field factories. `Fields` remains exported as
+a backward-compatible alias and references the same object.
+
+Main factories:
 
 ```ts
-Fields.string();
-Fields.number();
-Fields.boolean();
-Fields.date();
-Fields.select(["draft", "published"]);
-Fields.relation(Post);
-Fields.contentReference("Post");
-Fields.selfRelation();
-Fields.blocks([{ name: "title", field: Fields.string() }]);
-Fields.array(Fields.string());
-Fields.link();
-Fields.file();
+f.string();
+f.number();
+f.boolean();
+f.date();
+f.select(["draft", "published"]);
+f.relation(Post);
+f.contentReference("Post");
+f.selfRelation();
+f.blocks([{ name: "title", field: f.string() }]);
+f.array(f.string());
+f.link();
+f.file();
 ```
 
 Common modifiers:
@@ -632,11 +635,11 @@ Notable fields:
 
 - `StringField`: UI `Text`, `Textarea`, `RichText`, `Email`, `Slug`, `Password`, `Id`, `Url`; supports `.min()` and `.max()`.
 - `NumberField`: supports `.min()` and `.max()`.
-- `RelationField`: relation to another `ContentType`; accepts existing references or inline creation. `Fields.relation(Post, "existing")` restricts to existing records; `"new"` restricts to new records. `.multiple()` returns a homogeneous array of relations.
+- `RelationField`: relation to another `ContentType`; accepts existing references or inline creation. `f.relation(Post, "existing")` restricts to existing records; `"new"` restricts to new records. `.multiple()` returns a homogeneous array of relations.
 - `ContentReferenceField`: reference by content type name.
 - `FileField`: integrates media and optimization options.
-- `Fields.blocks(...)`: heterogeneous ordered list. Each item stores a `name` and a `value`, and the value can match one of the named field shapes. Use it for block-like content where different item types can appear in the same list.
-- `Fields.array(...)`: homogeneous ordered list. Every item uses the same field shape. Multi-value fields such as relation `.multiple()` use this backing model.
+- `f.blocks(...)`: heterogeneous ordered list. Each item stores a `name` and a `value`, and the value can match one of the named field shapes. Use it for block-like content where different item types can appear in the same list.
+- `f.array(...)`: homogeneous ordered list. Every item uses the same field shape. Multi-value fields such as relation `.multiple()` use this backing model.
 - `IteratorField`: repeatable structure based on content type entries.
 
 ## Derived Types
@@ -1073,7 +1076,7 @@ Database errors live in `orm/dbService`:
 
 ## Runtime Flow
 
-1. The app defines content types with `ContentType` and `Fields`.
+1. The app defines content types with `ContentType` and `f`.
 2. The app calls `rakunBootstrap(options)`.
 3. The HTTP adapter calls `ensureRakunInitialized()` before serving Rakun routes.
 4. `ensureRakunInitialized()` configures logger, MongoDB, the persistent event
