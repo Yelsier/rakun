@@ -5,7 +5,7 @@ export type ManagerMessageDefinition = {
   params?: Record<string, ManagerMessageParamSpec>
 }
 
-export const MANAGER_CATALOG_VERSION = 4
+export const MANAGER_CATALOG_VERSION = 1
 
 export const managerMessages = {
   'brand.name': { defaultMessage: 'Rakun' },
