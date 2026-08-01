@@ -7,7 +7,7 @@ import process from 'node:process'
 import { createInterface } from 'node:readline/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-const VERSION = '0.1.0'
+const VERSION = '0.1.1'
 const DEFAULT_PROJECT_DIRECTORY = 'my-rakun-app'
 const templates = [
   {

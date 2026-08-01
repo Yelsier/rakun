@@ -50,6 +50,7 @@ describe('create-rakun-app', () => {
     )
 
     expect(packageJson.name).toBe('my-rakun-site')
+    expect(packageJson.type).toBe('module')
     expect(packageJson.dependencies.next).toBe(resolvedVersions.next)
     expect(packageJson.dependencies['@rakun-kit/core']).toBe(resolvedVersions['@rakun-kit/core'])
     expect(packageJson.dependencies['@rakun-kit/next']).toBe(resolvedVersions['@rakun-kit/next'])

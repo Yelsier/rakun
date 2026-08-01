@@ -38,6 +38,10 @@ workspace versions.
 - `server/seed.ts` creates or updates the initial administrator from local env.
 - `AGENTS.md` points agents to the installed Rakun and Next.js manuals.
 
+The generated package is ESM (`"type": "module"`). Keep that setting because
+the TypeScript seed script uses top-level `await` and server modules use ESM
+imports.
+
 The CLI creates `.env.local` from `.env.example`. The app requires a reachable
 MongoDB database. Run the seed before signing into the manager.
 
