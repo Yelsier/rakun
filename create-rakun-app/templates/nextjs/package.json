@@ -1,0 +1,31 @@
+{
+  "name": "__PROJECT_NAME__",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "seed": "tsx server/seed.ts"
+  },
+  "dependencies": {
+    "@rakun-kit/core": "__VERSION_RAKUN_CORE__",
+    "@rakun-kit/manager-react": "__VERSION_RAKUN_MANAGER_REACT__",
+    "@rakun-kit/next": "__VERSION_RAKUN_NEXT__",
+    "bcrypt": "__VERSION_BCRYPT__",
+    "dotenv": "__VERSION_DOTENV__",
+    "mongodb": "__VERSION_MONGODB__",
+    "next": "__VERSION_NEXT__",
+    "react": "__VERSION_REACT__",
+    "react-dom": "__VERSION_REACT_DOM__",
+    "sharp": "__VERSION_SHARP__"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "__VERSION_TYPES_BCRYPT__",
+    "@types/node": "__VERSION_TYPES_NODE__",
+    "@types/react": "__VERSION_TYPES_REACT__",
+    "@types/react-dom": "__VERSION_TYPES_REACT_DOM__",
+    "tsx": "__VERSION_TSX__",
+    "typescript": "__VERSION_TYPESCRIPT__"
+  }
+}

@@ -42,6 +42,7 @@ with Express and Next.js integrations available.
 | `@rakun-kit/jsx-email`          | ESM JSX Email renderer for typed React mail templates.                                                                          |
 | `@rakun-kit/openai`             | OpenAI automatic translation adapter.                                                                                           |
 | `@rakun-kit/plugin-code-editor` | Manager plugin for code blocks in RichText fields.                                                                              |
+| `create-rakun-app`              | CLI that scaffolds Rakun applications from maintained framework templates.                                                      |
 | `@rakun-kit/preview`            | Local development app, not intended for publication.                                                                            |
 
 ## AI Documentation
@@ -59,6 +60,18 @@ Before writing or changing Rakun code, read
 `node_modules/@rakun-kit/core/dist/docs/index.md` and the installed manual for
 each Rakun package involved in the change.
 ```
+
+## Create an app
+
+Start a minimal Next.js project with the official generator:
+
+```sh
+npx create-rakun-app@latest my-site --template nextjs
+```
+
+Omit `--template` to choose a framework interactively. The generator resolves
+the newest Next.js, React, and Rakun releases from npm, then records their exact
+numeric versions in the new project's `package.json`.
 
 ## Basic Shape
 

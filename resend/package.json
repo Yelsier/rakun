@@ -33,7 +33,7 @@
     "resend": "^6.18.1"
   },
   "peerDependencies": {
-    "@rakun-kit/core": "^1.4.0"
+    "@rakun-kit/core": "^1.5.0"
   },
   "exports": {
     ".": {

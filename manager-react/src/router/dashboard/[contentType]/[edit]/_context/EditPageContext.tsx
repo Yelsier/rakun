@@ -647,8 +647,6 @@ export const EditPageProvider = ({
     setLinkedIteratorMode('linked')
   }
 
-  const hasLocaleVariants = Boolean(contentTypeId && localeVariantRoute && !isTrashed)
-
   return (
     <EditPageContext.Provider
       value={{

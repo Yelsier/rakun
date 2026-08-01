@@ -1,0 +1,36 @@
+:root {
+  color: #18181b;
+  background: #fafafa;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+}
+
+.hero {
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+  gap: 1rem;
+  padding: 3rem;
+  text-align: center;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(2.5rem, 7vw, 5rem);
+}
+
+.hero p {
+  max-width: 42rem;
+  margin: 0 auto;
+  color: #52525b;
+  font-size: 1.125rem;
+  line-height: 1.7;
+}

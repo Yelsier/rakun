@@ -1,0 +1,33 @@
+{
+  "name": "create-rakun-app",
+  "version": "0.1.0",
+  "description": "Create a Rakun application from an official starter template.",
+  "license": "MIT",
+  "author": {
+    "name": "Yago Claros",
+    "url": "https://github.com/Yelsier"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yelsier/rakun.git",
+    "directory": "create-rakun-app"
+  },
+  "bugs": {
+    "url": "https://github.com/Yelsier/rakun/issues"
+  },
+  "homepage": "https://github.com/Yelsier/rakun/tree/main/create-rakun-app#readme",
+  "type": "module",
+  "bin": {
+    "create-rakun-app": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs && node ../scripts/copy-package-docs.mjs",
+    "test": "bun test"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.12.0"
+  }
+}

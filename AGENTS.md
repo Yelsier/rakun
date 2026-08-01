@@ -21,6 +21,8 @@ Main packages:
 - `plugin-code-editor`: manager plugin for code blocks in RichText fields.
 - `preview`: local Vite + Express development app.
 - `preview-next`: local Next.js app; it has its own `AGENTS.md`.
+- `create-rakun-app`: project generator with official starter templates; its
+  Next.js template is kept intentionally smaller than `preview-next`.
 
 ## Commands
 
@@ -29,6 +31,7 @@ Main packages:
 - Build everything: `bun run build`
 - Build one package: `bun run build:core`, `bun run build:manager-react`, etc.
 - Build manager locales: `bun run build:manager-locales`
+- Build the project generator: `bun run build:create-rakun-app`
 - Vite/Express preview: `bun run preview`, `bun run preview:api`, `bun run preview:web`
 - Next preview: `bun run preview:next`
 

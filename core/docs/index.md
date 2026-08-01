@@ -26,6 +26,7 @@ same `dist/docs/index.md` location.
 | `@rakun-kit/jsx-email`          | Typed JSX Email template rendering                                                  | `node_modules/@rakun-kit/jsx-email/dist/docs/index.md`          |
 | `@rakun-kit/openai`             | OpenAI-backed automatic content translation                                         | `node_modules/@rakun-kit/openai/dist/docs/index.md`             |
 | `@rakun-kit/plugin-code-editor` | Code blocks in manager RichText fields                                              | `node_modules/@rakun-kit/plugin-code-editor/dist/docs/index.md` |
+| `create-rakun-app`              | Official project generator and framework starter templates                          | `node_modules/create-rakun-app/dist/docs/index.md`              |
 
 Choose one server adapter (`next` or `express`). Add `trpc` only if the host
 wants tRPC, one media adapter if uploads are required, and one mail adapter if

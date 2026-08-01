@@ -29,7 +29,7 @@
     "dist"
   ],
   "peerDependencies": {
-    "@rakun-kit/core": "^1.4.0",
+    "@rakun-kit/core": "^1.5.0",
     "jsx-email": "^3.2.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

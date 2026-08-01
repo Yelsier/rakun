@@ -267,7 +267,7 @@ export function DataTable<TData, TValue>({
     const resizable = leafColumns.filter(
       (column) => column.getCanResize() && !isFixedWidthColumn(column.id),
     )
-    return resizable.at(-1)?.id
+    return resizable[resizable.length - 1]?.id
   }, [leafColumns])
   const isResizingColumn = table.getState().columnSizingInfo.isResizingColumn
   const { scrollRef, leftFadeRef, rightFadeRef } = useHorizontalScrollOverflow(

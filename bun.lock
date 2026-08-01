@@ -40,6 +40,13 @@
         "sharp": "^0.34.5",
       },
     },
+    "create-rakun-app": {
+      "name": "create-rakun-app",
+      "version": "0.1.0",
+      "bin": {
+        "create-rakun-app": "./dist/index.js",
+      },
+    },
     "express": {
       "name": "@rakun-kit/express",
       "version": "1.0.0",
@@ -1497,6 +1504,8 @@
     "cookie-signature": ["cookie-signature@1.2.2", "", {}, "sha512-D76uU73ulSXrD1UXF4KE2TMxVVwhsnCgfAyTg9k8P6KGZjlXKrOLe4dJQKI3Bxi5wjesZoFXJWElNWBjPZMbhg=="],
 
     "copy-anything": ["copy-anything@4.0.5", "", { "dependencies": { "is-what": "^5.2.0" } }, "sha512-7Vv6asjS4gMOuILabD3l739tsaxFQmC+a7pLZm02zyvs8p977bL3zEgq3yDk5rn9B0PbYgIv++jmHcuUab4RhA=="],
+
+    "create-rakun-app": ["create-rakun-app@workspace:create-rakun-app"],
 
     "cross-spawn": ["cross-spawn@7.0.6", "", { "dependencies": { "path-key": "^3.1.0", "shebang-command": "^2.0.0", "which": "^2.0.1" } }, "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA=="],
 
