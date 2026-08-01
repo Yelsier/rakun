@@ -18,7 +18,7 @@ import {
   Star,
   Trash,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
@@ -63,6 +63,77 @@ const visibilityIcons = {
 
 const tabErrorClassName =
   '!text-destructive data-[state=active]:!text-destructive after:bg-destructive'
+
+const tabsFadeVisibleClassName = 'opacity-100'
+
+const TabsScrollArea = ({
+  children,
+  contentKey,
+}: {
+  children: ReactNode
+  contentKey: string
+}) => {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const leftFadeRef = useRef<HTMLDivElement>(null)
+  const rightFadeRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const element = scrollRef.current
+    const content = contentRef.current
+    const leftFade = leftFadeRef.current
+    const rightFade = rightFadeRef.current
+    if (!element || !content || !leftFade || !rightFade) return
+
+    const updateOverflow = () => {
+      const { clientWidth, scrollLeft, scrollWidth } = element
+      const maxScrollLeft = scrollWidth - clientWidth
+
+      leftFade.classList.toggle(tabsFadeVisibleClassName, scrollLeft > 1)
+      rightFade.classList.toggle(
+        tabsFadeVisibleClassName,
+        maxScrollLeft > 1 && scrollLeft < maxScrollLeft - 1,
+      )
+    }
+
+    updateOverflow()
+
+    element.addEventListener('scroll', updateOverflow, { passive: true })
+    const resizeObserver = new ResizeObserver(updateOverflow)
+    resizeObserver.observe(element)
+    resizeObserver.observe(content)
+    window.addEventListener('resize', updateOverflow)
+
+    return () => {
+      element.removeEventListener('scroll', updateOverflow)
+      resizeObserver.disconnect()
+      window.removeEventListener('resize', updateOverflow)
+    }
+  }, [contentKey])
+
+  return (
+    <div className="relative min-w-0 flex-1">
+      <div
+        ref={scrollRef}
+        className="min-w-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <div ref={contentRef} className="w-max min-w-full">
+          {children}
+        </div>
+      </div>
+      <div
+        ref={leftFadeRef}
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-background to-transparent opacity-0 transition-opacity duration-150"
+      />
+      <div
+        ref={rightFadeRef}
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-background to-transparent opacity-0 transition-opacity duration-150"
+      />
+    </div>
+  )
+}
 
 const TabErrorText = () => {
   const t = useTranslations()
@@ -196,7 +267,17 @@ export const EditToolbar = () => {
 
   return (
     <div className="sticky top-0 z-50 mb-3 flex flex-col gap-2 border-b bg-background pb-3 md:flex-row md:items-center md:justify-between md:gap-2">
-      <div className="min-w-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <TabsScrollArea
+        contentKey={[
+          sections.hasNonIterables,
+          sections.hasIterables,
+          sections.hasSeo,
+          hasLocaleVariants,
+          hasVersioning,
+          contentTypeId,
+          routeLayout.routeLayoutModules.map((module) => module._id).join(','),
+        ].join(':')}
+      >
         <TabsList variant="line" data-tour="content-edit-tabs">
           {sections.hasNonIterables ? (
             <TabsTrigger value="info" className={cn(tabErrors.info && tabErrorClassName)}>
@@ -242,7 +323,7 @@ export const EditToolbar = () => {
             </TabsTrigger>
           ) : null}
         </TabsList>
-      </div>
+      </TabsScrollArea>
       <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
         {hasVisibility && !isTrashed ? (
           <div data-tour="content-edit-visibility" className="min-w-0">

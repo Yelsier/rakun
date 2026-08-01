@@ -50,7 +50,7 @@ import { getEncodedContentPermissions } from '@/state/permissions'
 import { useSession } from '@/state/session'
 
 const ALL_CATEGORIES = '__all__'
-const FALLBACK_CATEGORY = 'Other'
+const FALLBACK_CATEGORY = 'modules.otherCategory'
 
 type IteratorModuleDisplay = {
   category: string
@@ -482,7 +482,7 @@ export const IteratorModulePickerDialog = ({
                       variant={selectedCategory === category ? 'default' : 'outline'}
                       onClick={() => setSelectedCategory(category)}
                     >
-                      {category}
+                      {t(category)}
                     </Button>
                   ))}
                 </div>
@@ -511,13 +511,13 @@ export const IteratorModulePickerDialog = ({
                                     {module.title}
                                   </span>
                                   <span className="truncate text-xs text-muted-foreground">
-                                    {module.moduleTitle}
+                                    {t(module.moduleTitle)}
                                   </span>
                                 </div>
                               </div>
                               <div className="flex min-w-0 flex-wrap gap-1.5">
                                 <Badge variant="secondary">{t('common.global')}</Badge>
-                                <Badge variant="outline">{module.category}</Badge>
+                                <Badge variant="outline">{t(module.category)}</Badge>
                               </div>
                             </div>
                           </button>
@@ -579,16 +579,16 @@ export const IteratorModulePickerDialog = ({
                             <ModuleIcon icon={option.icon} />
                             <div className="grid min-w-0 gap-1">
                               <span className="wrap-break-word text-sm font-medium leading-5">
-                                {option.title}
+                                {t(option.title)}
                               </span>
                               <span className="truncate text-xs text-muted-foreground">
-                                {option.category}
+                                {t(option.category)}
                               </span>
                             </div>
                           </div>
                           {option.description ? (
                             <p className="wrap-break-word text-sm leading-5 text-muted-foreground">
-                              {option.description}
+                              {t(option.description)}
                             </p>
                           ) : null}
                           {option.props.length > 0 ? (

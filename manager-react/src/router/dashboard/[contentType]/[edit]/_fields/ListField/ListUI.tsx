@@ -34,12 +34,42 @@ import {
 import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
 import { getIteratorModuleDisplay, IteratorModulePickerDialog } from './IteratorModulePicker'
 import { IteratorVisibilityDialog } from './IteratorVisibilityDialog'
+import {
+  getModuleDistinguishingLabel,
+  resolveModuleItemTitle,
+} from './moduleItemLabel'
+import {
+  REORDER_MODULES_EVENT,
+  type ReorderModulesDetail,
+} from '../../_components/module-navigation-reorder'
+import {
+  captureModuleCardPositions,
+  MODULE_REORDER_FLIP_MS,
+  playModuleCardFlip,
+  reorderModuleCardElements,
+} from '../../_components/module-reorder-animation'
 import { useSession } from '@/state/session'
 import { getEncodedContentPermissions } from '@/state/permissions'
 import { cn } from '@/lib/utils'
 import { useTranslations } from '@/i18n'
 
 type ListFieldValues = (ListFieldValueItem<FieldValue> & { uid: string })[]
+
+const reconcileListValueRef = (
+  current: ListFieldValues,
+  incoming: ListFieldValues,
+): ListFieldValues => {
+  if (
+    current.length === incoming.length &&
+    current.length > 0 &&
+    current.every((item) => incoming.some((other) => other.uid === item.uid))
+  ) {
+    const byUid = new Map(incoming.map((item) => [item.uid, item] as const))
+    return current.map((item) => byUid.get(item.uid) ?? item)
+  }
+
+  return incoming
+}
 
 type RelationExistingValue = Extract<RelationFieldValue, { type: 'existing' }>
 type RelationNewValue = Extract<RelationFieldValue, { type: 'new' }>
@@ -169,15 +199,23 @@ const getApiOnlyNewRelationValue = (field: EncodedRelationField): RelationNewVal
 })
 
 const AddListButtons = React.memo(
-  ({ fields, onAdd }: { fields: ListPropsRef['fields']; onAdd: (fieldName: string) => void }) => (
-    <div className="flex flex-wrap gap-2">
-      {fields.map((field) => (
-        <Button onClick={() => onAdd(field.name)} variant="outline" key={field.name}>
-          <Plus /> {field.name}
-        </Button>
-      ))}
-    </div>
-  )
+  ({ fields, onAdd }: { fields: ListPropsRef['fields']; onAdd: (fieldName: string) => void }) => {
+    const t = useTranslations()
+
+    return (
+      <div className="flex flex-wrap gap-2">
+        {fields.map((field) => {
+          const label = t(getIteratorModuleDisplay(field).title)
+
+          return (
+            <Button onClick={() => onAdd(field.name)} variant="outline" key={field.name}>
+              <Plus /> {label}
+            </Button>
+          )
+        })}
+      </div>
+    )
+  }
 )
 
 AddListButtons.displayName = 'AddListButtons'
@@ -196,7 +234,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
     },
     []
   )
-  const { language } = useLanguage()
+  const { language, getTranslation } = useLanguage()
   const conditionFieldState = useConditionFieldState()
   const { hasAnyPermission } = useSession()
   const queryClient = useQueryClient()
@@ -220,16 +258,17 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
       const values = value.map((item) => refs.current[item.uid]?.getValue())
 
       if (values.some((v) => typeof v === 'object' && v && '_error' in v)) {
-        return 'Please fix the errors above'
+        return t('contentEdit.fixFixErrors')
       }
 
       return null
     },
   })
 
-  useEffect(() => {
-    valueRef.current = value
-  }, [value])
+  // Keep valueRef ordered ahead of React during DOM-first nav reorders. Same
+  // membership refreshes payloads without resetting that optimistic order.
+  valueRef.current = reconcileListValueRef(valueRef.current, value)
+  const listItems = valueRef.current
 
   useEffect(() => {
     if (!addedModuleUid) return
@@ -321,7 +360,13 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
       return values
     }
 
-    return (values as ListFieldValues)
+    // Prefer valueRef order so a deferred DOM reorder stays consistent if save
+    // happens before React commits.
+    const ordered = valueRef.current.length
+      ? valueRef.current
+      : (values as ListFieldValues)
+
+    return ordered
       .map((field) => {
         const nestedValue = refs.current[field.uid]?.getValue()
 
@@ -336,11 +381,9 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
   }
 
   const getStateWithNested = () => {
-    const states = getState()
+    if (!getState()) return getState()
 
-    if (!states) return states
-
-    return (states as ListFieldValues).map((field) => ({
+    return valueRef.current.map((field) => ({
       name: field.name,
       value: getItemStateValue(field),
       uid: field.uid,
@@ -350,17 +393,60 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
 
   const handleSort = useCallback(
     (items: ListFieldValues) => {
-      onValueChange(
-        items.map((item) => ({
-          name: item.name,
-          value: getItemStateValue(item),
-          uid: item.uid,
-          visibleWhen: item.visibleWhen,
-        }))
-      )
+      // Reorder only — keep existing value refs so we don't walk every nested
+      // module form via getState() just to change order.
+      const next = items.map((item) => ({
+        name: item.name,
+        value: item.value,
+        uid: item.uid,
+        visibleWhen: item.visibleWhen,
+      }))
+      valueRef.current = next
+      onValueChange(next)
     },
-    [getItemStateValue, onValueChange]
+    [onValueChange]
   )
+
+  useEffect(() => {
+    let commitTimer = 0
+
+    const onReorder = (event: Event) => {
+      const detail = (event as CustomEvent<ReorderModulesDetail>).detail
+      if (!detail || detail.fieldId !== id) return
+
+      const byUid = new Map(valueRef.current.map((item) => [item.uid, item]))
+      const next = detail.orderedUids
+        .map((uid) => byUid.get(uid))
+        .filter((item): item is ListFieldValues[number] => Boolean(item))
+
+      if (next.length !== valueRef.current.length) return
+
+      const orderChanged = next.some((item, index) => item.uid !== valueRef.current[index]?.uid)
+      if (!orderChanged) return
+
+      // 1) Mutate ref + DOM immediately (no React render).
+      valueRef.current = next
+      const first = captureModuleCardPositions(document, id)
+      const moved = reorderModuleCardElements(id, detail.orderedUids)
+
+      // 2) Animate the already-moved DOM.
+      if (moved) {
+        playModuleCardFlip(first, document, id)
+      }
+
+      // 3) Commit React state after the flip so reconciliation doesn't interrupt it.
+      window.clearTimeout(commitTimer)
+      commitTimer = window.setTimeout(() => {
+        onValueChange(next)
+      }, MODULE_REORDER_FLIP_MS)
+    }
+
+    window.addEventListener(REORDER_MODULES_EVENT, onReorder)
+    return () => {
+      window.clearTimeout(commitTimer)
+      window.removeEventListener(REORDER_MODULES_EVENT, onReorder)
+    }
+  }, [id, onValueChange])
 
   const handleDelete = useCallback(
     (uid: string) => {
@@ -589,17 +675,19 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
   }, [language.code])
 
   const visibilityItem = visibilityUid
-    ? value.find((item) => item.uid === visibilityUid)
+    ? listItems.find((item) => item.uid === visibilityUid)
     : undefined
   const visibilityField = visibilityItem
     ? props.fields.find((field) => field.name === visibilityItem.name)
     : undefined
   const visibilityModuleTitle = visibilityField
-    ? (getIteratorModuleDisplay(visibilityField)?.title ?? visibilityItem?.name)
-    : visibilityItem?.name
+    ? t(getIteratorModuleDisplay(visibilityField).title)
+    : visibilityItem
+      ? t(visibilityItem.name)
+      : undefined
 
   return (
-    <Sortable value={value} onValueChange={handleSort} getItemValue={(item) => item.uid}>
+    <Sortable value={listItems} onValueChange={handleSort} getItemValue={(item) => item.uid}>
       <FieldWrapper
         id={id}
         errors={errors}
@@ -612,10 +700,10 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
         ) : (
           <AddListButtons fields={props.fields} onAdd={handleAddItem} />
         )}
-        {value.length > 0 && (
+        {listItems.length > 0 && (
           <SortableContent className="max-h-full">
             <div className="flex flex-col gap-4 mt-4">
-              {value.map((item, i) => {
+              {listItems.map((item, i) => {
                 const fieldConfig = props.fields.find((f) => f.name === item.name)
                 if (!fieldConfig) {
                   return null
@@ -635,15 +723,45 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                     canUsePermissions(createPermissions, hasAnyPermission)
                   : false
                 const moduleId = getModuleId(item)
-                const moduleDisplay =
-                  props.config.ui === 'Iterator' ? getIteratorModuleDisplay(fieldConfig) : undefined
-                const ModuleIcon = moduleDisplay?.icon ?? Box
-                const moduleTitle = moduleDisplay?.title ?? item.name
+                const moduleDisplay = getIteratorModuleDisplay(fieldConfig)
+                const ModuleIcon = moduleDisplay.icon ?? Box
+                const typeTitle = t(moduleDisplay.title)
+                const distinguishingLabel = getModuleDistinguishingLabel(
+                  fieldConfig.field,
+                  item.value,
+                  getTranslation,
+                )
+                const moduleTitle = resolveModuleItemTitle({
+                  typeTitle,
+                  distinguishingLabel,
+                })
                 const fieldKey = `${item.uid}:${relationValue?.type ?? 'empty'}`
                 const isVisibleForCurrentDocument = isIteratorItemVisible(
                   item,
                   conditionFieldState?.fieldState ?? {}
                 )
+                const showIteratorChrome = props.config.ui === 'Iterator'
+
+                const syncModuleTitleFromInput = (root: HTMLElement) => {
+                  const liveValue =
+                    (refs.current[item.uid]?.getState() as FieldValue | undefined) ?? item.value
+                  const nextLabel = getModuleDistinguishingLabel(
+                    fieldConfig.field,
+                    liveValue,
+                    getTranslation,
+                  )
+                  const nextTitle = resolveModuleItemTitle({
+                    typeTitle,
+                    distinguishingLabel: nextLabel,
+                  })
+                  root.dataset.rakunManagerModuleTitle = nextTitle
+                  const titleText = root.querySelector<HTMLElement>(
+                    '[data-rakun-manager-module-title-text]',
+                  )
+                  if (titleText && titleText.textContent !== nextTitle) {
+                    titleText.textContent = nextTitle
+                  }
+                }
 
                 return (
                   <SortableItem key={item.uid} value={item.uid} asChild>
@@ -651,11 +769,14 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                       tabIndex={-1}
                       className="flex gap-2"
                       data-rakun-manager-field-id={id}
+                      data-rakun-manager-list-field-id={id}
+                      data-rakun-manager-list-item-uid={item.uid}
                       data-rakun-manager-module-id={moduleId}
                       data-rakun-manager-module-index={i}
                       data-rakun-manager-module-item=""
                       data-rakun-manager-module-navigation-id={`${id}.${item.uid}`}
                       data-rakun-manager-module-title={moduleTitle}
+                      onInput={(event) => syncModuleTitleFromInput(event.currentTarget)}
                     >
                       <Collapsible defaultOpen={!noModulesToRender} className="w-full">
                         <Card
@@ -675,7 +796,12 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                 <CardTitle className="flex min-w-0 items-center gap-2">
                                   <div className="flex shrink-0 items-center gap-2">
                                     <SortableItemHandle asChild>
-                                      <Button variant="ghost" size="icon" className="size-8">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="size-8"
+                                        aria-label={t('modules.reorder')}
+                                      >
                                         <GripVertical className="h-4 w-4" />
                                       </Button>
                                     </SortableItemHandle>
@@ -693,37 +819,47 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                       </Button>
                                     ) : null}
                                   </div>
-                                  {moduleDisplay ? (
-                                    <div className="flex min-w-0 items-center gap-2">
-                                      <ModuleIcon className="size-4 shrink-0 text-muted-foreground" />
-                                      <span className="truncate">{moduleTitle}</span>
-                                      {isSavedModule ? (
-                                        <Badge variant="secondary" className="shrink-0">
-                                          {t('common.global')}
-                                        </Badge>
-                                      ) : null}
-                                      {item.visibleWhen ? (
-                                        <Badge variant="outline" className="shrink-0">
-                                          {isVisibleForCurrentDocument
-                                            ? 'Conditional'
-                                            : `Hidden for this ${
-                                                props.parentContentType?.name ?? 'document'
-                                              }`}
-                                        </Badge>
-                                      ) : null}
-                                    </div>
-                                  ) : (
-                                    item.name
-                                  )}
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    <ModuleIcon className="size-4 shrink-0 text-muted-foreground" />
+                                    <span
+                                      className="truncate"
+                                      data-rakun-manager-module-title-text=""
+                                    >
+                                      {moduleTitle}
+                                    </span>
+                                    {distinguishingLabel && distinguishingLabel !== typeTitle ? (
+                                      <span className="hidden truncate text-xs font-normal text-muted-foreground sm:inline">
+                                        {typeTitle}
+                                      </span>
+                                    ) : null}
+                                    {isSavedModule ? (
+                                      <Badge variant="secondary" className="shrink-0">
+                                        {t('common.global')}
+                                      </Badge>
+                                    ) : null}
+                                    {item.visibleWhen ? (
+                                      <Badge variant="outline" className="shrink-0">
+                                        {isVisibleForCurrentDocument
+                                          ? t('modules.conditional')
+                                          : t('modules.hiddenForDocument', {
+                                              contentType:
+                                                props.parentContentType?.name ??
+                                                t('modules.documentFallback'),
+                                            })}
+                                      </Badge>
+                                    ) : null}
+                                  </div>
                                 </CardTitle>
                                 <div className="flex shrink-0 items-center gap-2">
-                                  {props.config.ui === 'Iterator' ? (
+                                  {showIteratorChrome ? (
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Button
                                           size="icon"
                                           variant="outline"
-                                          aria-label={`Change ${moduleTitle} visibility`}
+                                          aria-label={t('modules.changeVisibility', {
+                                            title: moduleTitle,
+                                          })}
                                           onClick={(event) => {
                                             event.stopPropagation()
                                             setVisibilityUid(item.uid)
@@ -737,13 +873,13 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                       </TooltipContent>
                                     </Tooltip>
                                   ) : null}
-                                  {props.config.ui === 'Iterator' &&
+                                  {showIteratorChrome &&
                                   !isSavedModule &&
                                   canSaveGlobal ? (
                                     <Button
                                       size="icon"
                                       variant="outline"
-                                      aria-label={`Save ${moduleTitle}`}
+                                      aria-label={t('modules.saveModule', { title: moduleTitle })}
                                       disabled={savingUid === item.uid}
                                       onClick={(event) => {
                                         event.stopPropagation()
@@ -753,13 +889,15 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                       <Save />
                                     </Button>
                                   ) : null}
-                                  {props.config.ui === 'Iterator' && isSavedModule ? (
+                                  {showIteratorChrome && isSavedModule ? (
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Button
                                           size="icon"
                                           variant="outline"
-                                          aria-label={`Unlink ${moduleTitle}`}
+                                          aria-label={t('modules.unlinkModule', {
+                                            title: moduleTitle,
+                                          })}
                                           disabled={unlinkingUid === item.uid}
                                           onClick={(event) => {
                                             event.stopPropagation()
@@ -796,7 +934,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                   id={`${id}.${item.uid}.${fieldConfig.name}`}
                                   ref={setRef(item.uid)}
                                   collapsible
-                                  defaultData={value[i]?.value}
+                                  defaultData={listItems[i]?.value}
                                   parentContentType={props.parentContentType}
                                   {...fieldConfig.field}
                                 />
@@ -816,7 +954,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
           open={visibilityItem !== undefined}
           condition={visibilityItem?.visibleWhen}
           contentType={props.parentContentType}
-          moduleTitle={visibilityModuleTitle ?? 'Module'}
+          moduleTitle={visibilityModuleTitle ?? t('modules.fallbackTitle')}
           onOpenChange={(open) => {
             if (!open) setVisibilityUid(null)
           }}
