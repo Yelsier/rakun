@@ -16,6 +16,9 @@
         "../core/dist/esm/internal-content-types/index.d.ts"
       ],
       "@rakun-kit/manager-react": ["../manager-react/dist/esm/index.d.ts"],
+      "@rakun-kit/manager-react/seo": [
+        "../manager-react/dist/esm/seo/index.d.ts"
+      ],
       "@rakun-kit/manager-react/client/http": [
         "../manager-react/dist/esm/client/http.d.ts"
       ],

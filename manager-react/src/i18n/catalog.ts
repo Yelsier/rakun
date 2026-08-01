@@ -5,13 +5,19 @@ export type ManagerMessageDefinition = {
   params?: Record<string, ManagerMessageParamSpec>
 }
 
-export const MANAGER_CATALOG_VERSION = 1
+export const MANAGER_CATALOG_VERSION = 4
 
 export const managerMessages = {
   'brand.name': { defaultMessage: 'Rakun' },
   'brand.tagline': { defaultMessage: 'Manager' },
 
+  'seo.title': { defaultMessage: 'Rakun Manager' },
+  'seo.description': {
+    defaultMessage: 'Rakun content management system.',
+  },
+
   'navUser.account': { defaultMessage: 'Account' },
+
   'navUser.logOut': { defaultMessage: 'Log out' },
   'navUser.language': { defaultMessage: 'Languages' },
   'navUser.theme.light': { defaultMessage: 'Light' },
