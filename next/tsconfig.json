@@ -39,6 +39,9 @@
       "@rakun-kit/manager-react/app/runtime-app": [
         "../manager-react/src/app/runtime-app.tsx"
       ],
+      "@rakun-kit/manager-react/state/theme-script": [
+        "../manager-react/src/state/theme-script.tsx"
+      ],
       "@rakun-kit/manager-react/styles.css": [
         "../manager-react/styles.css.d.ts"
       ],

@@ -889,10 +889,10 @@ export default function Previews() {
             asChild
             tabIndex={-1}
             onClick={(event) => event.preventDefault()}
-            className="group/dropzone relative min-h-0 w-full flex-1 overflow-hidden rounded-xl border border-transparent p-0 hover:bg-transparent! focus-visible:bg-transparent! data-dragging:border-primary/40 data-dragging:bg-transparent!"
+            className="group/dropzone relative min-h-0 w-full flex-1 items-stretch justify-start gap-0 overflow-hidden rounded-xl border border-transparent p-0 hover:bg-transparent! focus-visible:bg-transparent! data-dragging:border-primary/40 data-dragging:bg-transparent!"
           >
             <div
-              className="relative min-h-0 w-full overflow-x-hidden overflow-y-auto"
+              className="relative min-h-0 w-full items-stretch justify-start overflow-x-hidden overflow-y-auto overscroll-contain p-1"
               data-tour="media-grid"
             >
               <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-background/50 opacity-0 backdrop-blur transition-opacity duration-200 ease-out group-data-dragging/dropzone:opacity-100">

@@ -76,6 +76,27 @@ const getDefaultColumnSize = (columnId: string | undefined) => {
 const isFixedWidthColumn = (columnId: string | undefined) =>
   columnId === 'select' || columnId === 'actions' || columnId === 'view'
 
+/** Fixed columns keep exact px widths; the flex column absorbs leftover space so
+ *  the table can stay full-width without other columns shifting on resize. */
+const getColumnLayoutStyle = (
+  columnId: string,
+  size: number,
+  flexColumnId: string | undefined,
+): CSSProperties => {
+  if (flexColumnId && columnId === flexColumnId) {
+    return {
+      width: 'auto',
+      minWidth: size,
+    }
+  }
+
+  return {
+    width: size,
+    minWidth: size,
+    maxWidth: size,
+  }
+}
+
 const withResizableDefaults = <TData, TValue>(
   columns: ColumnDef<TData, TValue>[],
 ): ColumnDef<TData, TValue>[] =>
@@ -140,10 +161,12 @@ const DataTableBody = <TData, TValue>({
   table,
   columnCount,
   emptyLabel,
+  flexColumnId,
 }: {
   table: TanStackTable<TData>
   columnCount: number
   emptyLabel: string
+  flexColumnId: string | undefined
 }) => {
   const rows = table.getRowModel().rows
 
@@ -167,10 +190,11 @@ const DataTableBody = <TData, TValue>({
             <TableCell
               key={cell.id}
               className='overflow-hidden'
-              style={{
-                width: `calc(var(--col-${cell.column.id}-size) * 1px)`,
-                minWidth: `calc(var(--col-${cell.column.id}-size) * 1px)`,
-              }}
+              style={getColumnLayoutStyle(
+                cell.column.id,
+                cell.column.getSize(),
+                flexColumnId,
+              )}
             >
               {flexRender(cell.column.columnDef.cell, cell.getContext())}
             </TableCell>
@@ -183,7 +207,9 @@ const DataTableBody = <TData, TValue>({
 
 const MemoizedDataTableBody = memo(
   DataTableBody,
-  (prev, next) => prev.table.options.data === next.table.options.data,
+  (prev, next) =>
+    prev.table.options.data === next.table.options.data &&
+    prev.flexColumnId === next.flexColumnId,
 ) as typeof DataTableBody
 
 export function DataTable<TData, TValue>({
@@ -237,9 +263,15 @@ export function DataTable<TData, TValue>({
 
   const tableWidth = table.getTotalSize()
   const leafColumns = table.getAllLeafColumns()
+  const flexColumnId = useMemo(() => {
+    const resizable = leafColumns.filter(
+      (column) => column.getCanResize() && !isFixedWidthColumn(column.id),
+    )
+    return resizable.at(-1)?.id
+  }, [leafColumns])
   const isResizingColumn = table.getState().columnSizingInfo.isResizingColumn
   const { scrollRef, leftFadeRef, rightFadeRef } = useHorizontalScrollOverflow(
-    `${tableWidth}:${leafColumns.length}:${data.length}`,
+    `${tableWidth}:${leafColumns.length}:${data.length}:${flexColumnId ?? ''}`,
   )
 
   const tableStyle = {
@@ -263,10 +295,11 @@ export function DataTable<TData, TValue>({
               {leafColumns.map((column) => (
                 <col
                   key={column.id}
-                  style={{
-                    width: `calc(var(--col-${column.id}-size) * 1px)`,
-                    minWidth: `calc(var(--col-${column.id}-size) * 1px)`,
-                  }}
+                  style={getColumnLayoutStyle(
+                    column.id,
+                    column.getSize(),
+                    flexColumnId,
+                  )}
                 />
               ))}
             </colgroup>
@@ -277,10 +310,11 @@ export function DataTable<TData, TValue>({
                     <TableHead
                       key={header.id}
                       className='relative overflow-hidden'
-                      style={{
-                        width: `calc(var(--header-${header.id}-size) * 1px)`,
-                        minWidth: `calc(var(--header-${header.id}-size) * 1px)`,
-                      }}
+                      style={getColumnLayoutStyle(
+                        header.column.id,
+                        header.getSize(),
+                        flexColumnId,
+                      )}
                     >
                       {header.isPlaceholder
                         ? null
@@ -322,12 +356,14 @@ export function DataTable<TData, TValue>({
                 table={table}
                 columnCount={columns.length}
                 emptyLabel={t('dataTable.noResults')}
+                flexColumnId={flexColumnId}
               />
             ) : (
               <DataTableBody
                 table={table}
                 columnCount={columns.length}
                 emptyLabel={t('dataTable.noResults')}
+                flexColumnId={flexColumnId}
               />
             )}
           </Table>

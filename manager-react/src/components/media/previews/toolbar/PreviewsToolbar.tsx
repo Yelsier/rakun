@@ -51,27 +51,25 @@ export default function PreviewsToolbar() {
   } = useMediaLibrary()
 
   return (
-    <div className="flex items-center justify-between gap-2 flex-wrap" data-tour="media-toolbar">
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-        <p className="text-muted-foreground text-sm">
-          {t('media.fileCount', { count: mediaCount })}
-        </p>
+    <div className="space-y-2" data-tour="media-toolbar">
+      <p className="text-muted-foreground text-sm">
+        {t('media.fileCount', { count: mediaCount })}
+      </p>
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
         <SearchInput
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
           placeholder={t('media.searchFiles')}
-          className="max-w-xs"
+          className="h-8 min-w-56 max-w-xs flex-1 basis-56"
           data-tour="media-search"
         />
-      </div>
-      <div className="flex items-center gap-2 flex-wrap">
         <FileUploadTrigger asChild>
-          <Button size={'sm'} variant={'outline'}>
+          <Button size="sm" variant="outline">
             <Upload className="size-4" />
             {t('common.upload')}
           </Button>
         </FileUploadTrigger>
-        <FileUploadClear className="inline-flex items-center rounded-md border px-3 py-1.5 font-medium text-sm hover:bg-accent/40">
+        <FileUploadClear className="inline-flex h-8 items-center rounded-md border px-3 font-medium text-sm hover:bg-accent/40">
           {t('common.clear')}
         </FileUploadClear>
         <Popover>
@@ -162,6 +160,7 @@ export default function PreviewsToolbar() {
         {!isMediaTypeFilterLocked ? (
           <ToggleGroup
             type="single"
+            size="sm"
             value={mediaTypeFilter}
             onValueChange={(value) => {
               if (value) setMediaTypeFilter(value as 'all' | 'image' | 'video' | 'document')
@@ -205,6 +204,7 @@ export default function PreviewsToolbar() {
 
         <ToggleGroup
           type="single"
+          size="sm"
           value={viewMode}
           onValueChange={(value) => {
             if (value) setViewMode(value as 'list' | 'grid-sm' | 'grid-lg')
