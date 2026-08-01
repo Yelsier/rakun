@@ -1,6 +1,8 @@
 const DEFAULT_DURATION_MS = 220
 const DEFAULT_EASING = 'cubic-bezier(0.2, 0, 0, 1)'
 
+export const MODULE_REORDER_FLIP_MS = DEFAULT_DURATION_MS
+
 export const capturePositions = (
   elements: Iterable<HTMLElement>,
   getKey: (element: HTMLElement) => string | undefined,
@@ -28,7 +30,7 @@ export const playFlip = (
   const easing = options?.easing ?? DEFAULT_EASING
 
   for (const el of elements) {
-    if (typeof el.animate !== 'function') return
+    if (typeof el.animate !== 'function') continue
 
     const key = getKey(el)
     if (!key) continue
@@ -56,21 +58,64 @@ export const playFlip = (
   }
 }
 
-export const captureModuleCardPositions = (root: ParentNode = document) =>
+const escapeCssValue = (value: string) =>
+  typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+    ? CSS.escape(value)
+    : value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+
+const moduleCardSelector = (fieldId?: string) =>
+  fieldId
+    ? `[data-rakun-manager-list-field-id="${escapeCssValue(fieldId)}"][data-rakun-manager-module-item]`
+    : '[data-rakun-manager-module-item]'
+
+export const captureModuleCardPositions = (
+  root: ParentNode = document,
+  fieldId?: string,
+) =>
   capturePositions(
-    root.querySelectorAll<HTMLElement>('[data-rakun-manager-module-item]'),
+    root.querySelectorAll<HTMLElement>(moduleCardSelector(fieldId)),
     (element) => element.dataset.rakunManagerListItemUid,
   )
 
 export const playModuleCardFlip = (
   first: Map<string, DOMRect>,
   root: ParentNode = document,
+  fieldId?: string,
 ) =>
   playFlip(
     first,
-    root.querySelectorAll<HTMLElement>('[data-rakun-manager-module-item]'),
+    root.querySelectorAll<HTMLElement>(moduleCardSelector(fieldId)),
     (element) => element.dataset.rakunManagerListItemUid,
   )
+
+/** Reorder module card DOM nodes in place (no React). Returns the parent if moved. */
+export const reorderModuleCardElements = (
+  fieldId: string,
+  orderedUids: readonly string[],
+) => {
+  const nodes = orderedUids
+    .map((uid) =>
+      document.querySelector<HTMLElement>(
+        `[data-rakun-manager-list-field-id="${escapeCssValue(fieldId)}"][data-rakun-manager-list-item-uid="${escapeCssValue(uid)}"]`,
+      ),
+    )
+    .filter((node): node is HTMLElement => Boolean(node))
+
+  if (nodes.length !== orderedUids.length) return null
+
+  const parent = nodes[0]?.parentElement
+  if (!parent) return null
+
+  for (const node of nodes) {
+    parent.appendChild(node)
+  }
+
+  nodes.forEach((node, index) => {
+    node.dataset.rakunManagerModuleIndex = String(index)
+  })
+
+  return parent
+}
 
 export const captureModuleNavPositions = (root: ParentNode = document) =>
   capturePositions(
@@ -87,3 +132,26 @@ export const playModuleNavFlip = (
     root.querySelectorAll<HTMLElement>('[data-rakun-manager-module-nav-item]'),
     (element) => element.dataset.rakunManagerModuleNavItem,
   )
+
+/** Reorder module nav sibling `<li>` nodes in place (no React). */
+export const reorderModuleNavElements = (orderedUids: readonly string[]) => {
+  const nodes = orderedUids
+    .map((uid) =>
+      document.querySelector<HTMLElement>(
+        `[data-rakun-manager-module-nav-item="${escapeCssValue(uid)}"]`,
+      ),
+    )
+    .filter((node): node is HTMLElement => Boolean(node))
+
+  if (nodes.length !== orderedUids.length) return null
+
+  const parent = nodes[0]?.parentElement
+  if (!parent) return null
+  if (nodes.some((node) => node.parentElement !== parent)) return null
+
+  for (const node of nodes) {
+    parent.appendChild(node)
+  }
+
+  return parent
+}

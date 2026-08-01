@@ -49,7 +49,7 @@ const getDefaultVisibility = (defaultData?: Record<string, FieldValue>) =>
   ((defaultData as { _visibility?: DocumentVisibility } | undefined)?._visibility ??
     'draft') as DocumentVisibility
 
-const getInitialTab = ({
+const getDefaultTab = ({
   hasIterables,
   hasNonIterables,
   hasSeo,
@@ -59,6 +59,95 @@ const getInitialTab = ({
   hasSeo: boolean
 }): EditPageTab =>
   hasNonIterables ? 'info' : hasIterables ? 'content' : hasSeo ? 'seo' : 'history'
+
+const EDIT_TAB_SEARCH_PARAM = 'tab'
+
+const isEditPageTabAvailable = (
+  tab: string,
+  options: {
+    hasIterables: boolean
+    hasNonIterables: boolean
+    hasSeo: boolean
+    hasLocaleVariants: boolean
+    hasVersioning: boolean
+    hasDocumentId: boolean
+    layoutModuleIds: ReadonlySet<string>
+  },
+): tab is EditPageTab => {
+  if (tab === 'info') return options.hasNonIterables
+  if (tab === 'content') return options.hasIterables
+  if (tab === 'seo') return options.hasSeo
+  if (tab === 'variants') return options.hasLocaleVariants
+  if (tab === 'history') return options.hasVersioning && options.hasDocumentId
+  if (tab.startsWith('layout:')) {
+    return options.layoutModuleIds.has(tab.slice('layout:'.length))
+  }
+  return false
+}
+
+const readTabFromSearch = (): string | null => {
+  if (typeof window === 'undefined') return null
+  return new URLSearchParams(window.location.search).get(EDIT_TAB_SEARCH_PARAM)
+}
+
+const writeTabToSearch = (
+  tab: EditPageTab,
+  replacePath?: (href: string) => void,
+) => {
+  if (typeof window === 'undefined') return
+
+  const url = new URL(window.location.href)
+  if (url.searchParams.get(EDIT_TAB_SEARCH_PARAM) === tab) return
+
+  url.searchParams.set(EDIT_TAB_SEARCH_PARAM, tab)
+  const next = `${url.pathname}${url.search}${url.hash}`
+  if (replacePath) {
+    replacePath(next)
+    return
+  }
+
+  window.history.replaceState(window.history.state, '', next)
+}
+
+const getInitialTab = ({
+  hasIterables,
+  hasNonIterables,
+  hasSeo,
+  hasLocaleVariants,
+  hasVersioning,
+  hasDocumentId,
+}: {
+  hasIterables: boolean
+  hasNonIterables: boolean
+  hasSeo: boolean
+  hasLocaleVariants: boolean
+  hasVersioning: boolean
+  hasDocumentId: boolean
+}): EditPageTab => {
+  const fromSearch = readTabFromSearch()
+  if (
+    fromSearch &&
+    isEditPageTabAvailable(fromSearch, {
+      hasIterables,
+      hasNonIterables,
+      hasSeo,
+      hasLocaleVariants,
+      hasVersioning,
+      hasDocumentId,
+      layoutModuleIds: new Set(),
+    })
+  ) {
+    return fromSearch
+  }
+
+  // layout:* needs module ids loaded later; still accept a layout tab from the URL
+  // so refresh lands correctly before route-layout data resolves.
+  if (fromSearch?.startsWith('layout:')) {
+    return fromSearch as EditPageTab
+  }
+
+  return getDefaultTab({ hasIterables, hasNonIterables, hasSeo })
+}
 
 const managerPreviewSelectedClassName = 'rakun-manager-preview-selected'
 
@@ -251,6 +340,7 @@ export const EditPageProvider = ({
   const isTrashed =
     (defaultData as { _trashed?: boolean } | undefined)?._trashed === true ||
     (defaultData as { _visibility?: DocumentVisibility } | undefined)?._visibility === 'trash'
+  const hasLocaleVariants = Boolean(contentTypeId && localeVariantRoute && !isTrashed)
   const [visibility, setVisibility] = useState<DocumentVisibility>(() =>
     getDefaultVisibility(defaultData),
   )
@@ -260,7 +350,23 @@ export const EditPageProvider = ({
   const editableVisibility = (
     visibility === 'trash' ? visibilityBeforeTrash : visibility
   ) as EditableDocumentVisibility
-  const [activeTab, setActiveTab] = useState<EditPageTab>(() => getInitialTab(sections))
+  const [activeTab, setActiveTabState] = useState<EditPageTab>(() =>
+    getInitialTab({
+      hasIterables: sections.hasIterables,
+      hasNonIterables: sections.hasNonIterables,
+      hasSeo: sections.hasSeo,
+      hasLocaleVariants,
+      hasVersioning,
+      hasDocumentId: Boolean(contentTypeId),
+    }),
+  )
+  const setActiveTab = useCallback(
+    (tab: EditPageTab) => {
+      setActiveTabState(tab)
+      writeTabToSearch(tab, navigation?.replacePath)
+    },
+    [navigation?.replacePath],
+  )
   const [showSaveErrorTooltip, setShowSaveErrorTooltip] = useState(false)
   const [moveToTrashOpen, setMoveToTrashOpen] = useState(false)
   const [permanentDeleteOpen, setPermanentDeleteOpen] = useState(false)
@@ -387,7 +493,14 @@ export const EditPageProvider = ({
         `[data-rakun-manager-layout-key="${escapeCssValue(layoutModule.key)}"]`,
       ])
     },
-    [navigation, previewRoute, routeLayout.routeLayoutModules, saveFormState, sections.hasIterables],
+    [
+      navigation,
+      previewRoute,
+      routeLayout.routeLayoutModules,
+      saveFormState,
+      sections.hasIterables,
+      setActiveTab,
+    ],
   )
   const previewState = useContentPreview({
     canPreview,
@@ -436,6 +549,17 @@ export const EditPageProvider = ({
     requestedVariantLanguageCodeRef.current = null
     if (targetLocaleVariantDocumentId === contentTypeId) return
 
+    const href = navigation?.href?.({
+      name: 'content.edit',
+      contentType: contentType.name,
+      id: targetLocaleVariantDocumentId,
+    })
+    const search = typeof window !== 'undefined' ? window.location.search : ''
+    if (href && navigation?.replacePath) {
+      navigation.replacePath(`${href}${search}`)
+      return
+    }
+
     navigation?.replace?.({
       name: 'content.edit',
       contentType: contentType.name,
@@ -447,6 +571,66 @@ export const EditPageProvider = ({
     language.code,
     navigation,
     targetLocaleVariantDocumentId,
+  ])
+
+  useEffect(() => {
+    writeTabToSearch(activeTab, navigation?.replacePath)
+  }, [activeTab, navigation?.replacePath])
+
+  useEffect(() => {
+    const layoutQuery = routeLayout.routeLayoutOverridesQuery
+    if (activeTab.startsWith('layout:')) {
+      if (!contentTypeId) {
+        setActiveTab(
+          getDefaultTab({
+            hasIterables: sections.hasIterables,
+            hasNonIterables: sections.hasNonIterables,
+            hasSeo: sections.hasSeo,
+          }),
+        )
+        return
+      }
+
+      if (layoutQuery.isPending || (!layoutQuery.data && layoutQuery.isFetching)) {
+        return
+      }
+    }
+
+    const layoutModuleIds = new Set(
+      routeLayout.routeLayoutModules.map((layoutModule) => layoutModule._id),
+    )
+    if (
+      isEditPageTabAvailable(activeTab, {
+        hasIterables: sections.hasIterables,
+        hasNonIterables: sections.hasNonIterables,
+        hasSeo: sections.hasSeo,
+        hasLocaleVariants,
+        hasVersioning,
+        hasDocumentId: Boolean(contentTypeId),
+        layoutModuleIds,
+      })
+    ) {
+      return
+    }
+
+    setActiveTab(
+      getDefaultTab({
+        hasIterables: sections.hasIterables,
+        hasNonIterables: sections.hasNonIterables,
+        hasSeo: sections.hasSeo,
+      }),
+    )
+  }, [
+    activeTab,
+    contentTypeId,
+    hasLocaleVariants,
+    hasVersioning,
+    routeLayout.routeLayoutModules,
+    routeLayout.routeLayoutOverridesQuery,
+    sections.hasIterables,
+    sections.hasNonIterables,
+    sections.hasSeo,
+    setActiveTab,
   ])
 
   const handleTabChange = (value: string) => {
@@ -483,7 +667,7 @@ export const EditPageProvider = ({
         handleTabChange,
         handleVisibilityChange,
         hasVersioning,
-        hasLocaleVariants: Boolean(contentTypeId && localeVariantRoute && !isTrashed),
+        hasLocaleVariants,
         hasVisibility,
         isTrashed,
         languageCode: language.code,

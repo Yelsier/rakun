@@ -3,7 +3,6 @@
 import { Box, ChevronsUpDown, Eye, GripVertical, Unlink, Plus, Save, Trash } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { flushSync } from 'react-dom'
 import type {
   EncodedRelationField,
   IteratorItemVisibilityCondition,
@@ -45,7 +44,9 @@ import {
 } from '../../_components/module-navigation-reorder'
 import {
   captureModuleCardPositions,
+  MODULE_REORDER_FLIP_MS,
   playModuleCardFlip,
+  reorderModuleCardElements,
 } from '../../_components/module-reorder-animation'
 import { useSession } from '@/state/session'
 import { getEncodedContentPermissions } from '@/state/permissions'
@@ -53,6 +54,22 @@ import { cn } from '@/lib/utils'
 import { useTranslations } from '@/i18n'
 
 type ListFieldValues = (ListFieldValueItem<FieldValue> & { uid: string })[]
+
+const reconcileListValueRef = (
+  current: ListFieldValues,
+  incoming: ListFieldValues,
+): ListFieldValues => {
+  if (
+    current.length === incoming.length &&
+    current.length > 0 &&
+    current.every((item) => incoming.some((other) => other.uid === item.uid))
+  ) {
+    const byUid = new Map(incoming.map((item) => [item.uid, item] as const))
+    return current.map((item) => byUid.get(item.uid) ?? item)
+  }
+
+  return incoming
+}
 
 type RelationExistingValue = Extract<RelationFieldValue, { type: 'existing' }>
 type RelationNewValue = Extract<RelationFieldValue, { type: 'new' }>
@@ -218,7 +235,6 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
     []
   )
   const { language, getTranslation } = useLanguage()
-  const [, setModuleTitleVersion] = useState(0)
   const conditionFieldState = useConditionFieldState()
   const { hasAnyPermission } = useSession()
   const queryClient = useQueryClient()
@@ -249,9 +265,10 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
     },
   })
 
-  useEffect(() => {
-    valueRef.current = value
-  }, [value])
+  // Keep valueRef ordered ahead of React during DOM-first nav reorders. Same
+  // membership refreshes payloads without resetting that optimistic order.
+  valueRef.current = reconcileListValueRef(valueRef.current, value)
+  const listItems = valueRef.current
 
   useEffect(() => {
     if (!addedModuleUid) return
@@ -343,7 +360,13 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
       return values
     }
 
-    return (values as ListFieldValues)
+    // Prefer valueRef order so a deferred DOM reorder stays consistent if save
+    // happens before React commits.
+    const ordered = valueRef.current.length
+      ? valueRef.current
+      : (values as ListFieldValues)
+
+    return ordered
       .map((field) => {
         const nestedValue = refs.current[field.uid]?.getValue()
 
@@ -358,11 +381,9 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
   }
 
   const getStateWithNested = () => {
-    const states = getState()
+    if (!getState()) return getState()
 
-    if (!states) return states
-
-    return (states as ListFieldValues).map((field) => ({
+    return valueRef.current.map((field) => ({
       name: field.name,
       value: getItemStateValue(field),
       uid: field.uid,
@@ -372,19 +393,23 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
 
   const handleSort = useCallback(
     (items: ListFieldValues) => {
-      onValueChange(
-        items.map((item) => ({
-          name: item.name,
-          value: getItemStateValue(item),
-          uid: item.uid,
-          visibleWhen: item.visibleWhen,
-        }))
-      )
+      // Reorder only — keep existing value refs so we don't walk every nested
+      // module form via getState() just to change order.
+      const next = items.map((item) => ({
+        name: item.name,
+        value: item.value,
+        uid: item.uid,
+        visibleWhen: item.visibleWhen,
+      }))
+      valueRef.current = next
+      onValueChange(next)
     },
-    [getItemStateValue, onValueChange]
+    [onValueChange]
   )
 
   useEffect(() => {
+    let commitTimer = 0
+
     const onReorder = (event: Event) => {
       const detail = (event as CustomEvent<ReorderModulesDetail>).detail
       if (!detail || detail.fieldId !== id) return
@@ -396,16 +421,32 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
 
       if (next.length !== valueRef.current.length) return
 
-      const first = captureModuleCardPositions()
-      flushSync(() => {
-        handleSort(next)
-      })
-      playModuleCardFlip(first)
+      const orderChanged = next.some((item, index) => item.uid !== valueRef.current[index]?.uid)
+      if (!orderChanged) return
+
+      // 1) Mutate ref + DOM immediately (no React render).
+      valueRef.current = next
+      const first = captureModuleCardPositions(document, id)
+      const moved = reorderModuleCardElements(id, detail.orderedUids)
+
+      // 2) Animate the already-moved DOM.
+      if (moved) {
+        playModuleCardFlip(first, document, id)
+      }
+
+      // 3) Commit React state after the flip so reconciliation doesn't interrupt it.
+      window.clearTimeout(commitTimer)
+      commitTimer = window.setTimeout(() => {
+        onValueChange(next)
+      }, MODULE_REORDER_FLIP_MS)
     }
 
     window.addEventListener(REORDER_MODULES_EVENT, onReorder)
-    return () => window.removeEventListener(REORDER_MODULES_EVENT, onReorder)
-  }, [handleSort, id])
+    return () => {
+      window.clearTimeout(commitTimer)
+      window.removeEventListener(REORDER_MODULES_EVENT, onReorder)
+    }
+  }, [id, onValueChange])
 
   const handleDelete = useCallback(
     (uid: string) => {
@@ -634,7 +675,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
   }, [language.code])
 
   const visibilityItem = visibilityUid
-    ? value.find((item) => item.uid === visibilityUid)
+    ? listItems.find((item) => item.uid === visibilityUid)
     : undefined
   const visibilityField = visibilityItem
     ? props.fields.find((field) => field.name === visibilityItem.name)
@@ -646,7 +687,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
       : undefined
 
   return (
-    <Sortable value={value} onValueChange={handleSort} getItemValue={(item) => item.uid}>
+    <Sortable value={listItems} onValueChange={handleSort} getItemValue={(item) => item.uid}>
       <FieldWrapper
         id={id}
         errors={errors}
@@ -659,10 +700,10 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
         ) : (
           <AddListButtons fields={props.fields} onAdd={handleAddItem} />
         )}
-        {value.length > 0 && (
+        {listItems.length > 0 && (
           <SortableContent className="max-h-full">
             <div className="flex flex-col gap-4 mt-4">
-              {value.map((item, i) => {
+              {listItems.map((item, i) => {
                 const fieldConfig = props.fields.find((f) => f.name === item.name)
                 if (!fieldConfig) {
                   return null
@@ -685,10 +726,9 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                 const moduleDisplay = getIteratorModuleDisplay(fieldConfig)
                 const ModuleIcon = moduleDisplay.icon ?? Box
                 const typeTitle = t(moduleDisplay.title)
-                const currentValue = getItemStateValue(item) ?? item.value
                 const distinguishingLabel = getModuleDistinguishingLabel(
                   fieldConfig.field,
-                  currentValue,
+                  item.value,
                   getTranslation,
                 )
                 const moduleTitle = resolveModuleItemTitle({
@@ -701,6 +741,27 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                   conditionFieldState?.fieldState ?? {}
                 )
                 const showIteratorChrome = props.config.ui === 'Iterator'
+
+                const syncModuleTitleFromInput = (root: HTMLElement) => {
+                  const liveValue =
+                    (refs.current[item.uid]?.getState() as FieldValue | undefined) ?? item.value
+                  const nextLabel = getModuleDistinguishingLabel(
+                    fieldConfig.field,
+                    liveValue,
+                    getTranslation,
+                  )
+                  const nextTitle = resolveModuleItemTitle({
+                    typeTitle,
+                    distinguishingLabel: nextLabel,
+                  })
+                  root.dataset.rakunManagerModuleTitle = nextTitle
+                  const titleText = root.querySelector<HTMLElement>(
+                    '[data-rakun-manager-module-title-text]',
+                  )
+                  if (titleText && titleText.textContent !== nextTitle) {
+                    titleText.textContent = nextTitle
+                  }
+                }
 
                 return (
                   <SortableItem key={item.uid} value={item.uid} asChild>
@@ -715,7 +776,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                       data-rakun-manager-module-item=""
                       data-rakun-manager-module-navigation-id={`${id}.${item.uid}`}
                       data-rakun-manager-module-title={moduleTitle}
-                      onInput={() => setModuleTitleVersion((version) => version + 1)}
+                      onInput={(event) => syncModuleTitleFromInput(event.currentTarget)}
                     >
                       <Collapsible defaultOpen={!noModulesToRender} className="w-full">
                         <Card
@@ -760,7 +821,12 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                   </div>
                                   <div className="flex min-w-0 items-center gap-2">
                                     <ModuleIcon className="size-4 shrink-0 text-muted-foreground" />
-                                    <span className="truncate">{moduleTitle}</span>
+                                    <span
+                                      className="truncate"
+                                      data-rakun-manager-module-title-text=""
+                                    >
+                                      {moduleTitle}
+                                    </span>
                                     {distinguishingLabel && distinguishingLabel !== typeTitle ? (
                                       <span className="hidden truncate text-xs font-normal text-muted-foreground sm:inline">
                                         {typeTitle}
@@ -868,7 +934,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                   id={`${id}.${item.uid}.${fieldConfig.name}`}
                                   ref={setRef(item.uid)}
                                   collapsible
-                                  defaultData={value[i]?.value}
+                                  defaultData={listItems[i]?.value}
                                   parentContentType={props.parentContentType}
                                   {...fieldConfig.field}
                                 />
