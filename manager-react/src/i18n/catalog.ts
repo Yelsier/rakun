@@ -1059,6 +1059,35 @@ export const managerMessages = {
   },
   'modules.couldNotUnlink': { defaultMessage: 'Could not unlink module' },
   'modules.documentFallback': { defaultMessage: 'document' },
+  'modules.otherCategory': { defaultMessage: 'Other' },
+  'modules.conditional': { defaultMessage: 'Conditional' },
+  'modules.hiddenForDocument': {
+    defaultMessage: 'Hidden for this {contentType}',
+    params: { contentType: 'string' },
+  },
+  'modules.navigation': { defaultMessage: 'Module navigation' },
+  'modules.reorder': { defaultMessage: 'Reorder module' },
+  'modules.toggleModule': {
+    defaultMessage: 'Toggle {title}',
+    params: { title: 'string' },
+  },
+  'modules.changeVisibility': {
+    defaultMessage: 'Change {title} visibility',
+    params: { title: 'string' },
+  },
+  'modules.saveModule': {
+    defaultMessage: 'Save {title}',
+    params: { title: 'string' },
+  },
+  'modules.unlinkModule': {
+    defaultMessage: 'Unlink {title}',
+    params: { title: 'string' },
+  },
+  'modules.fallbackTitle': { defaultMessage: 'Module' },
+  'modules.fallbackTitleNumbered': {
+    defaultMessage: 'Module {number}',
+    params: { number: 'number' },
+  },
 
   'common.unknown': { defaultMessage: 'Unknown' },
   'common.enabled': { defaultMessage: 'Enabled' },

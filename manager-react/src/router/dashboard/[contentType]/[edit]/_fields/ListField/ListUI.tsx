@@ -3,6 +3,7 @@
 import { Box, ChevronsUpDown, Eye, GripVertical, Unlink, Plus, Save, Trash } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import type {
   EncodedRelationField,
   IteratorItemVisibilityCondition,
@@ -34,6 +35,18 @@ import {
 import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
 import { getIteratorModuleDisplay, IteratorModulePickerDialog } from './IteratorModulePicker'
 import { IteratorVisibilityDialog } from './IteratorVisibilityDialog'
+import {
+  getModuleDistinguishingLabel,
+  resolveModuleItemTitle,
+} from './moduleItemLabel'
+import {
+  REORDER_MODULES_EVENT,
+  type ReorderModulesDetail,
+} from '../../_components/module-navigation-reorder'
+import {
+  captureModuleCardPositions,
+  playModuleCardFlip,
+} from '../../_components/module-reorder-animation'
 import { useSession } from '@/state/session'
 import { getEncodedContentPermissions } from '@/state/permissions'
 import { cn } from '@/lib/utils'
@@ -169,15 +182,23 @@ const getApiOnlyNewRelationValue = (field: EncodedRelationField): RelationNewVal
 })
 
 const AddListButtons = React.memo(
-  ({ fields, onAdd }: { fields: ListPropsRef['fields']; onAdd: (fieldName: string) => void }) => (
-    <div className="flex flex-wrap gap-2">
-      {fields.map((field) => (
-        <Button onClick={() => onAdd(field.name)} variant="outline" key={field.name}>
-          <Plus /> {field.name}
-        </Button>
-      ))}
-    </div>
-  )
+  ({ fields, onAdd }: { fields: ListPropsRef['fields']; onAdd: (fieldName: string) => void }) => {
+    const t = useTranslations()
+
+    return (
+      <div className="flex flex-wrap gap-2">
+        {fields.map((field) => {
+          const label = t(getIteratorModuleDisplay(field).title)
+
+          return (
+            <Button onClick={() => onAdd(field.name)} variant="outline" key={field.name}>
+              <Plus /> {label}
+            </Button>
+          )
+        })}
+      </div>
+    )
+  }
 )
 
 AddListButtons.displayName = 'AddListButtons'
@@ -196,7 +217,8 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
     },
     []
   )
-  const { language } = useLanguage()
+  const { language, getTranslation } = useLanguage()
+  const [, setModuleTitleVersion] = useState(0)
   const conditionFieldState = useConditionFieldState()
   const { hasAnyPermission } = useSession()
   const queryClient = useQueryClient()
@@ -220,7 +242,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
       const values = value.map((item) => refs.current[item.uid]?.getValue())
 
       if (values.some((v) => typeof v === 'object' && v && '_error' in v)) {
-        return 'Please fix the errors above'
+        return t('contentEdit.fixFixErrors')
       }
 
       return null
@@ -361,6 +383,29 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
     },
     [getItemStateValue, onValueChange]
   )
+
+  useEffect(() => {
+    const onReorder = (event: Event) => {
+      const detail = (event as CustomEvent<ReorderModulesDetail>).detail
+      if (!detail || detail.fieldId !== id) return
+
+      const byUid = new Map(valueRef.current.map((item) => [item.uid, item]))
+      const next = detail.orderedUids
+        .map((uid) => byUid.get(uid))
+        .filter((item): item is ListFieldValues[number] => Boolean(item))
+
+      if (next.length !== valueRef.current.length) return
+
+      const first = captureModuleCardPositions()
+      flushSync(() => {
+        handleSort(next)
+      })
+      playModuleCardFlip(first)
+    }
+
+    window.addEventListener(REORDER_MODULES_EVENT, onReorder)
+    return () => window.removeEventListener(REORDER_MODULES_EVENT, onReorder)
+  }, [handleSort, id])
 
   const handleDelete = useCallback(
     (uid: string) => {
@@ -595,8 +640,10 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
     ? props.fields.find((field) => field.name === visibilityItem.name)
     : undefined
   const visibilityModuleTitle = visibilityField
-    ? (getIteratorModuleDisplay(visibilityField)?.title ?? visibilityItem?.name)
-    : visibilityItem?.name
+    ? t(getIteratorModuleDisplay(visibilityField).title)
+    : visibilityItem
+      ? t(visibilityItem.name)
+      : undefined
 
   return (
     <Sortable value={value} onValueChange={handleSort} getItemValue={(item) => item.uid}>
@@ -635,15 +682,25 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                     canUsePermissions(createPermissions, hasAnyPermission)
                   : false
                 const moduleId = getModuleId(item)
-                const moduleDisplay =
-                  props.config.ui === 'Iterator' ? getIteratorModuleDisplay(fieldConfig) : undefined
-                const ModuleIcon = moduleDisplay?.icon ?? Box
-                const moduleTitle = moduleDisplay?.title ?? item.name
+                const moduleDisplay = getIteratorModuleDisplay(fieldConfig)
+                const ModuleIcon = moduleDisplay.icon ?? Box
+                const typeTitle = t(moduleDisplay.title)
+                const currentValue = getItemStateValue(item) ?? item.value
+                const distinguishingLabel = getModuleDistinguishingLabel(
+                  fieldConfig.field,
+                  currentValue,
+                  getTranslation,
+                )
+                const moduleTitle = resolveModuleItemTitle({
+                  typeTitle,
+                  distinguishingLabel,
+                })
                 const fieldKey = `${item.uid}:${relationValue?.type ?? 'empty'}`
                 const isVisibleForCurrentDocument = isIteratorItemVisible(
                   item,
                   conditionFieldState?.fieldState ?? {}
                 )
+                const showIteratorChrome = props.config.ui === 'Iterator'
 
                 return (
                   <SortableItem key={item.uid} value={item.uid} asChild>
@@ -651,11 +708,14 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                       tabIndex={-1}
                       className="flex gap-2"
                       data-rakun-manager-field-id={id}
+                      data-rakun-manager-list-field-id={id}
+                      data-rakun-manager-list-item-uid={item.uid}
                       data-rakun-manager-module-id={moduleId}
                       data-rakun-manager-module-index={i}
                       data-rakun-manager-module-item=""
                       data-rakun-manager-module-navigation-id={`${id}.${item.uid}`}
                       data-rakun-manager-module-title={moduleTitle}
+                      onInput={() => setModuleTitleVersion((version) => version + 1)}
                     >
                       <Collapsible defaultOpen={!noModulesToRender} className="w-full">
                         <Card
@@ -675,7 +735,12 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                 <CardTitle className="flex min-w-0 items-center gap-2">
                                   <div className="flex shrink-0 items-center gap-2">
                                     <SortableItemHandle asChild>
-                                      <Button variant="ghost" size="icon" className="size-8">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="size-8"
+                                        aria-label={t('modules.reorder')}
+                                      >
                                         <GripVertical className="h-4 w-4" />
                                       </Button>
                                     </SortableItemHandle>
@@ -693,37 +758,42 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                       </Button>
                                     ) : null}
                                   </div>
-                                  {moduleDisplay ? (
-                                    <div className="flex min-w-0 items-center gap-2">
-                                      <ModuleIcon className="size-4 shrink-0 text-muted-foreground" />
-                                      <span className="truncate">{moduleTitle}</span>
-                                      {isSavedModule ? (
-                                        <Badge variant="secondary" className="shrink-0">
-                                          {t('common.global')}
-                                        </Badge>
-                                      ) : null}
-                                      {item.visibleWhen ? (
-                                        <Badge variant="outline" className="shrink-0">
-                                          {isVisibleForCurrentDocument
-                                            ? 'Conditional'
-                                            : `Hidden for this ${
-                                                props.parentContentType?.name ?? 'document'
-                                              }`}
-                                        </Badge>
-                                      ) : null}
-                                    </div>
-                                  ) : (
-                                    item.name
-                                  )}
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    <ModuleIcon className="size-4 shrink-0 text-muted-foreground" />
+                                    <span className="truncate">{moduleTitle}</span>
+                                    {distinguishingLabel && distinguishingLabel !== typeTitle ? (
+                                      <span className="hidden truncate text-xs font-normal text-muted-foreground sm:inline">
+                                        {typeTitle}
+                                      </span>
+                                    ) : null}
+                                    {isSavedModule ? (
+                                      <Badge variant="secondary" className="shrink-0">
+                                        {t('common.global')}
+                                      </Badge>
+                                    ) : null}
+                                    {item.visibleWhen ? (
+                                      <Badge variant="outline" className="shrink-0">
+                                        {isVisibleForCurrentDocument
+                                          ? t('modules.conditional')
+                                          : t('modules.hiddenForDocument', {
+                                              contentType:
+                                                props.parentContentType?.name ??
+                                                t('modules.documentFallback'),
+                                            })}
+                                      </Badge>
+                                    ) : null}
+                                  </div>
                                 </CardTitle>
                                 <div className="flex shrink-0 items-center gap-2">
-                                  {props.config.ui === 'Iterator' ? (
+                                  {showIteratorChrome ? (
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Button
                                           size="icon"
                                           variant="outline"
-                                          aria-label={`Change ${moduleTitle} visibility`}
+                                          aria-label={t('modules.changeVisibility', {
+                                            title: moduleTitle,
+                                          })}
                                           onClick={(event) => {
                                             event.stopPropagation()
                                             setVisibilityUid(item.uid)
@@ -737,13 +807,13 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                       </TooltipContent>
                                     </Tooltip>
                                   ) : null}
-                                  {props.config.ui === 'Iterator' &&
+                                  {showIteratorChrome &&
                                   !isSavedModule &&
                                   canSaveGlobal ? (
                                     <Button
                                       size="icon"
                                       variant="outline"
-                                      aria-label={`Save ${moduleTitle}`}
+                                      aria-label={t('modules.saveModule', { title: moduleTitle })}
                                       disabled={savingUid === item.uid}
                                       onClick={(event) => {
                                         event.stopPropagation()
@@ -753,13 +823,15 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                       <Save />
                                     </Button>
                                   ) : null}
-                                  {props.config.ui === 'Iterator' && isSavedModule ? (
+                                  {showIteratorChrome && isSavedModule ? (
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Button
                                           size="icon"
                                           variant="outline"
-                                          aria-label={`Unlink ${moduleTitle}`}
+                                          aria-label={t('modules.unlinkModule', {
+                                            title: moduleTitle,
+                                          })}
                                           disabled={unlinkingUid === item.uid}
                                           onClick={(event) => {
                                             event.stopPropagation()
@@ -816,7 +888,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
           open={visibilityItem !== undefined}
           condition={visibilityItem?.visibleWhen}
           contentType={props.parentContentType}
-          moduleTitle={visibilityModuleTitle ?? 'Module'}
+          moduleTitle={visibilityModuleTitle ?? t('modules.fallbackTitle')}
           onOpenChange={(open) => {
             if (!open) setVisibilityUid(null)
           }}
