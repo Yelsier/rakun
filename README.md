@@ -27,20 +27,38 @@ with Express and Next.js integrations available.
 
 ## Packages
 
-| Package                    | Purpose                                                                                                             |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `@rakun-kit/core`          | Content types, fields, schemas, runtime bootstrap, operations, auth, media, event logs, routes, redirects and shared contracts. |
-| `@rakun-kit/manager-react` | React manager application, manager clients, navigation helpers and styles.                                          |
-| `@rakun-kit/manager-locales` | Optional manager UI translations exposed through one subpath per language.                                        |
-| `@rakun-kit/express`       | Express adapter for Rakun APIs, media routes and optional tRPC support.                                             |
-| `@rakun-kit/next`          | Next.js adapter for APIs, media routes and mounting the manager.                                                    |
-| `@rakun-kit/trpc`          | tRPC router adapter for Rakun operations.                                                                           |
-| `@rakun-kit/s3`            | S3 media storage adapter.                                                                                           |
-| `@rakun-kit/smtp`          | Nodemailer SMTP adapter for outbound mail.                                                                          |
-| `@rakun-kit/resend`        | Resend adapter for outbound mail.                                                                                   |
-| `@rakun-kit/jsx-email`     | ESM JSX Email renderer for typed React mail templates.                                                              |
-| `@rakun-kit/openai`        | OpenAI automatic translation adapter.                                                                               |
-| `@rakun-kit/preview`       | Local development app, not intended for publication.                                                                |
+| Package                         | Purpose                                                                                                                         |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `@rakun-kit/core`               | Content types, fields, schemas, runtime bootstrap, operations, auth, media, event logs, routes, redirects and shared contracts. |
+| `@rakun-kit/manager-react`      | React manager application, manager clients, navigation helpers and styles.                                                      |
+| `@rakun-kit/manager-locales`    | Optional manager UI translations exposed through one subpath per language.                                                      |
+| `@rakun-kit/express`            | Express adapter for Rakun APIs, media routes and optional tRPC support.                                                         |
+| `@rakun-kit/next`               | Next.js adapter for APIs, media routes and mounting the manager.                                                                |
+| `@rakun-kit/trpc`               | tRPC router adapter for Rakun operations.                                                                                       |
+| `@rakun-kit/react`              | Framework-neutral React helpers for rendering Rakun web modules.                                                                |
+| `@rakun-kit/s3`                 | S3 media storage adapter.                                                                                                       |
+| `@rakun-kit/smtp`               | Nodemailer SMTP adapter for outbound mail.                                                                                      |
+| `@rakun-kit/resend`             | Resend adapter for outbound mail.                                                                                               |
+| `@rakun-kit/jsx-email`          | ESM JSX Email renderer for typed React mail templates.                                                                          |
+| `@rakun-kit/openai`             | OpenAI automatic translation adapter.                                                                                           |
+| `@rakun-kit/plugin-code-editor` | Manager plugin for code blocks in RichText fields.                                                                              |
+| `@rakun-kit/preview`            | Local development app, not intended for publication.                                                                            |
+
+## AI Documentation
+
+Every published package ships an AI-oriented manual at `dist/docs/index.md`.
+Start with the package map in
+`node_modules/@rakun-kit/core/dist/docs/index.md`, then read the manual for each
+adapter or integration used by the application.
+
+Projects can make this discoverable to coding agents with a rule like this in
+their `AGENTS.md`:
+
+```md
+Before writing or changing Rakun code, read
+`node_modules/@rakun-kit/core/dist/docs/index.md` and the installed manual for
+each Rakun package involved in the change.
+```
 
 ## Basic Shape
 

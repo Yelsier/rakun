@@ -22,7 +22,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "rm -rf dist && bun run build:esm && bun run build:cjs",
+    "build": "rm -rf dist && bun run build:esm && bun run build:cjs && node ../scripts/copy-package-docs.mjs",
     "build:esm": "tsc -p tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
     "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../scripts/fix-dist-imports.mjs dist/cjs && node ../scripts/write-cjs-package-json.mjs dist/cjs"
   },
