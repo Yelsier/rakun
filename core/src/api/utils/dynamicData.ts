@@ -19,6 +19,8 @@ import { getLink } from "./getLink";
 import { populateLinks } from "./populates/populateLinks";
 import { populateRelations } from "./populates/populateRelations";
 import { parseSafeManagerQuery } from "./safeManagerQuery";
+import { getContentHookContext } from '../hooks/context'
+import { resolveBreadcrumsFields } from './breadcrums'
 
 type ResolveOptions = {
   db: DBService;
@@ -821,5 +823,8 @@ export const resolveContentOutput = async <T extends ContentType>({
     surface,
   });
 
-  return stripDynamicBindings(hooked);
+  const stripped = stripDynamicBindings(hooked)
+  const breadcrums = getContentHookContext().route?.breadcrums ?? null
+
+  return resolveBreadcrumsFields(contentType, stripped, breadcrums)
 };

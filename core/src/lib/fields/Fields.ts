@@ -1,4 +1,5 @@
 import { booleanField } from "./Boolean";
+import { breadcrumsField } from './Breadcrums'
 import { contentReferenceField } from "./ContentReference";
 import { dateField } from "./Date";
 import { fileField } from "./File";
@@ -19,6 +20,7 @@ export const Fields = {
   selfRelation: selfRelationField,
   number: numberField,
   boolean: booleanField,
+  breadcrums: breadcrumsField,
   link: linkField,
   file: fileField,
   date: dateField,

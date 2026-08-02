@@ -1,4 +1,5 @@
 export * from "./Boolean";
+export * from './Breadcrums'
 export * from "./ContentReference";
 export * from "./Date";
 export * from "./Field";

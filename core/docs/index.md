@@ -119,6 +119,13 @@ back to `Date`. `Time` stores an ISO time string.
 `{ routeId, contentTypeId }` reference. Internal references resolve to localized
 paths in web output; direct URLs pass through unchanged.
 
+`f.breadcrums()` declares a computed, API-only field intended for modules such
+as heroes. When the module is rendered in a routable page, the field returns
+`{ label, href }[]` from the highest route ancestor through the current page,
+using localized route labels and paths. It returns `null` outside routable page
+output. The field is part of `DataFront`, but not `DataInput` or `DBOutput`, and
+does not appear in the manager.
+
 Use `iterator` for ordered page modules. Rakun stores it as the reserved
 `_iterator` field and edits it in the manager's Content tab. When the content
 type has a `hasPage: true` route, Rakun automatically enables a separate shared

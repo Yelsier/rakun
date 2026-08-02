@@ -631,6 +631,7 @@ f.blocks([{ name: "title", field: f.string() }]);
 f.array(f.string());
 f.link();
 f.file();
+f.breadcrums();
 ```
 
 Common modifiers:
@@ -653,6 +654,11 @@ Notable fields:
 - `LinkField`: `f.link()` stores either a direct URL string or an internal
   `{ routeId, contentTypeId }` reference. Internal references resolve to localized
   paths in web output; direct URLs pass through unchanged.
+- `BreadcrumsField`: `f.breadcrums()` is a computed, API-only field for page
+  modules. In web and preview output it returns the localized route hierarchy as
+  `{ label, href }[]`, ordered from the highest ancestor to the current page. It
+  returns `null` when the content is resolved outside a routable page and is
+  never accepted as input, persisted, or rendered in the manager.
 - `FileField`: integrates media and optimization options.
 - `f.blocks(...)`: heterogeneous ordered list. Each item stores a `name` and a `value`, and the value can match one of the named field shapes. Use it for block-like content where different item types can appear in the same list.
 - `f.array(...)`: homogeneous ordered list. Every item uses the same field shape. Multi-value fields such as relation `.multiple()` use this backing model.

@@ -1,6 +1,7 @@
 import type ContentType from "./ContentType";
 import type { RakunRequestContext } from "../api/context";
 import type { DBMutationOptions, DBService } from "../orm/dbService";
+import type { BreadcrumsValue } from './fields/Breadcrums'
 
 export type Awaitable<T> = T | Promise<T>;
 
@@ -21,6 +22,7 @@ export type ContentHookRouteContext = {
   contentTypeId?: string;
   type?: string;
   info?: Record<string, unknown>;
+  breadcrums?: BreadcrumsValue;
 };
 
 export type ContentHookContext<T extends ContentType = ContentType> = {

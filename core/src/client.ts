@@ -25,6 +25,7 @@ export {
 } from "./lib/dynamicData";
 export { Fields, f } from "./lib/fields";
 export * from "./lib/fields/Boolean";
+export * from './lib/fields/Breadcrums'
 export * from "./lib/fields/ContentReference";
 export * from "./lib/fields/Date";
 export * from "./lib/fields/Field";

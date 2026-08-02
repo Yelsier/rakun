@@ -36,6 +36,10 @@ import {
 } from "../../utils/contentTemplate";
 import { isIteratorItemVisible } from "../../utils/iteratorVisibility";
 import type { IteratorItemVisibilityCondition } from "../../../lib/fields/List";
+import {
+  getRouteBreadcrums,
+  hasBreadcrumsFields,
+} from '../../utils/breadcrums'
 
 export const NotFoundResponse: PageOutput = {
   renderMode: "static",
@@ -177,6 +181,17 @@ export const buildPageOutput = async ({
   templateModules?: unknown[];
 }): Promise<PageOutput> => {
   const db = await getMongoService();
+  const languages = await getLanguages()
+  const breadcrums = hasBreadcrumsFields()
+    ? await getRouteBreadcrums({
+        db,
+        route,
+        document: data,
+        language,
+        languages,
+        path,
+      })
+    : null
   const surface = tracePrefix === "web.previewPage" ? "preview" : "web";
   const localeCode = language.code || "en";
   const iterator = contentType.hasIterator
@@ -217,6 +232,7 @@ export const buildPageOutput = async ({
         routeId: route._id,
         contentTypeId,
         type: contentType.name,
+        breadcrums,
       },
     },
     async () => {
@@ -238,7 +254,6 @@ export const buildPageOutput = async ({
       });
       Logger.addTrace(`${tracePrefix}: output resolved`);
 
-      const languages = await getLanguages();
       const populatedTranslated = translateObject(output, language, languages);
       Logger.addTrace(`${tracePrefix}: content translated`);
 
@@ -284,6 +299,7 @@ export const buildPageOutput = async ({
             contentTypeId,
             type: contentType.name,
             info: info as Record<string, unknown>,
+            breadcrums,
           },
         },
         async () => {

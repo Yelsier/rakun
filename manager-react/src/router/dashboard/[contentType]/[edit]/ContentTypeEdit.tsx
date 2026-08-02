@@ -67,6 +67,8 @@ type FieldComponentProps = EncodedFieldUnknown & {
 
 type FieldComponent = (config: FieldComponentProps) => React.ReactElement
 
+const HiddenField: FieldComponent = () => <></>
+
 const FieldMetaIcon = ({ label, children }: { label: string; children: ReactNode }) => (
   <Tooltip>
     <TooltipTrigger asChild>
@@ -142,6 +144,7 @@ export const fieldsMap = {
   Select: SelectField,
   File: FileField,
   ContentReference: ContentReferenceField,
+  Breadcrums: HiddenField,
 } as {
   [key in FieldType]: FieldComponent
 }

@@ -1,6 +1,7 @@
 import z from "zod";
 
 import type { EncodedBooleanField } from "./Boolean";
+import type { EncodedBreadcrumsField } from "./Breadcrums";
 import type { EncodedContentReferenceField } from "./ContentReference";
 import type { EncodedDateField } from "./Date";
 import type { EncodedFileField } from "./File";
@@ -38,6 +39,7 @@ export const FieldUIType = z.enum([
   "Iterator",
   "SimpleList",
   "File",
+  "Breadcrums",
 ]);
 
 export type FieldUIType = z.infer<typeof FieldUIType>;
@@ -53,6 +55,7 @@ export const FieldType = z.enum([
   "Date",
   "File",
   "ContentReference",
+  "Breadcrums",
 ]);
 
 export type FieldType = z.infer<typeof FieldType>;
@@ -342,6 +345,7 @@ export type EncodedField = {
 
 export type EncodedFieldUnknown =
   | EncodedBooleanField
+  | EncodedBreadcrumsField
   | EncodedContentReferenceField
   | EncodedDateField
   | EncodedFileField
