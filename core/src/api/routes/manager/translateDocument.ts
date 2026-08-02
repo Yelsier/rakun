@@ -18,18 +18,6 @@ import { checkOwnership } from "../../utils/checkOwnership";
 import { getLanguages } from "../../utils/getLanguages";
 import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
-import {
-  applyEffectiveIterator,
-  getLinkedIteratorTemplate,
-  isIteratorUnlinked,
-  saveLinkedIteratorTemplate,
-} from "../../utils/linkedIterator";
-import { ITERATOR_FIELD_NAME } from "../../../lib/systemFields";
-import {
-  canUpdateLinkedIterator,
-  requireLinkedIteratorUpdate,
-} from "./linkedIterator";
-import { revalidateContentTypePaths } from "../../utils/routes/revalidatePath";
 import { isRouteableContentType } from "../../../lib/routeableContent";
 import {
   getRelationId,
@@ -112,15 +100,7 @@ export const translateDocumentHandler = async ({
       message: "Create a draft version before translating this published document",
     });
   }
-  const current = await applyEffectiveIterator({
-    db,
-    contentType,
-    document: storedCurrent,
-  });
-  const canTranslateSharedIterator =
-    contentType.linkedIterator &&
-    !isIteratorUnlinked(storedCurrent) &&
-    canUpdateLinkedIterator(contentType, ctx);
+  const current = storedCurrent;
   const effectiveInputData =
     contentType.name === "Route" ? normalizeRouteData(input.data) : input.data;
 
@@ -133,13 +113,6 @@ export const translateDocumentHandler = async ({
       ...current,
       ...(parsedData as Record<string, unknown> | undefined),
     };
-    if (
-      contentType.linkedIterator &&
-      !isIteratorUnlinked(storedCurrent) &&
-      !canTranslateSharedIterator
-    ) {
-      delete document[ITERATOR_FIELD_NAME];
-    }
     const service = getTranslationService();
     const { patch, summary } = await createDocumentTranslationPatch({
       contentType,
@@ -154,29 +127,6 @@ export const translateDocumentHandler = async ({
       ...patch,
       updatedBy: user._id,
     };
-    let linkedIteratorChanged = false;
-    if (
-      canTranslateSharedIterator &&
-      ITERATOR_FIELD_NAME in patch
-    ) {
-      requireLinkedIteratorUpdate(contentType, ctx);
-      const template = await getLinkedIteratorTemplate(db, contentType);
-      if (template.configured) {
-        await saveLinkedIteratorTemplate({
-          action: "update",
-          contentType,
-          db,
-          expectedRevision: template.revision,
-          iterator: data[ITERATOR_FIELD_NAME],
-          options: {
-            actorId: user._id,
-            reason: "linked iterator translation",
-          },
-        });
-        linkedIteratorChanged = true;
-      }
-    }
-
     if (Object.keys(data).length === 1 && "updatedBy" in data) {
       return { item: current, summary };
     }
@@ -198,16 +148,8 @@ export const translateDocumentHandler = async ({
       contentTypeId: updated._id,
       operation: "update",
     });
-    if (linkedIteratorChanged) {
-      await revalidateContentTypePaths(contentType.name);
-    }
-
     return {
-      item: await applyEffectiveIterator({
-        db,
-        contentType,
-        document: updated,
-      }),
+      item: updated,
       summary,
     };
   } catch (error) {

@@ -16,8 +16,8 @@ import {
 } from "./fields/Iterator";
 import {
   ITERATOR_FIELD_NAME,
-  ITERATOR_UNLINKED_FIELD_NAME,
   SEO_FIELD_NAME,
+  TEMPLATE_FIELD_NAME,
 } from "./systemFields";
 import { isNeverOptional } from "./utils/isNeverOptional";
 import type { DBService } from "../orm/dbService";
@@ -242,14 +242,10 @@ type AuthorMetadata = {
   updatedBy?: string;
 };
 
-type IteratorLinkMetadata = {
-  [ITERATOR_UNLINKED_FIELD_NAME]?: boolean;
-};
-
 type ContentTypeInputShape<F extends FieldRecord, N extends string> =
   ContentTypeShape<
     InputFields<F>,
-    BaseMetadata<N> & AuthorMetadata & IteratorLinkMetadata
+    BaseMetadata<N> & AuthorMetadata
   >;
 
 type ContentTypeDbShape<F extends FieldRecord, N extends string> =
@@ -259,8 +255,7 @@ type ContentTypeDbShape<F extends FieldRecord, N extends string> =
       IdMetadata &
       TrashMetadata &
       TimestampMetadata &
-      AuthorMetadata &
-      IteratorLinkMetadata
+      AuthorMetadata
   >;
 
 type ContentTypeOutputShape<F extends FieldRecord, N extends string> =
@@ -282,8 +277,7 @@ type ContentTypePopulatedShape<
       IdMetadata &
       TrashMetadata &
       TimestampMetadata &
-      AuthorMetadata &
-      IteratorLinkMetadata
+      AuthorMetadata
   >;
 
 type ContentTypeParams<
@@ -303,11 +297,6 @@ type ContentTypeParams<
    * reserved `_iterator` field automatically.
    */
   iterator?: I;
-  /**
-   * Makes the generated iterator use one shared template for all documents.
-   * Individual documents can opt out and keep a local iterator.
-   */
-  linkedIterator?: boolean;
   /** Controls how the content type appears in the manager navigation. */
   menu?: Menu;
   /** Customizes how this content type appears in an iterator module picker. */
@@ -383,10 +372,6 @@ const dynamicBindingsMetadataSchema = {
   [DYNAMIC_BINDINGS_FIELD_NAME]: DynamicDocumentBindingsSchema.optional(),
 } satisfies SchemaShape;
 
-const iteratorLinkMetadataSchema = {
-  [ITERATOR_UNLINKED_FIELD_NAME]: z.boolean().nullish(),
-} satisfies SchemaShape;
-
 export type ContentTypeInput<CT> = CT extends ContentType<
   infer F,
   infer N,
@@ -460,8 +445,8 @@ export default class ContentType<
   isInternal?: boolean;
   /** Whether an iterator field was generated for this content type. */
   hasIterator = false;
-  /** Whether documents use a shared iterator template by default. */
-  linkedIterator = false;
+  /** Whether bootstrap enabled a shared template for a routeable iterator. */
+  hasTemplate = false;
   /** Whether the reserved SEO field has been added to this content type. */
   hasSeo = false;
 
@@ -469,21 +454,8 @@ export default class ContentType<
     params: ContentTypeParams<F, N, I>,
     options?: { allowSystemFields?: boolean },
   ) {
-    const hasProvidedIterator =
-      params.iterator !== undefined ||
-      (options?.allowSystemFields === true &&
-        Object.values(params.fields).some(
-          (field) => field.meta.ui === "Iterator",
-        ));
-    if (params.linkedIterator && !hasProvidedIterator) {
-      throw new Error(
-        "ContentType.linkedIterator requires ContentType.iterator.",
-      );
-    }
-
     this.name = params.name;
     this.hasIterator = params.iterator !== undefined;
-    this.linkedIterator = params.linkedIterator === true;
     this.fields = this.bindSelfRelations(
       this.buildFields(params, options),
     ) as ContentTypeFields<F, I>;
@@ -511,7 +483,6 @@ export default class ContentType<
     const schema = this.documentSchema(this.fieldSchemas("input"), {
       ...authorMetadataSchema,
       ...this.dynamicBindingsMetadataSchema(),
-      ...this.iteratorLinkMetadataSchema(),
     });
 
     const inputSchema = partial ? schema.partial() : schema;
@@ -526,7 +497,6 @@ export default class ContentType<
     return this.documentSchema(this.fieldSchemas("db"), {
       ...trashMetadataSchema,
       ...this.dynamicBindingsMetadataSchema(),
-      ...this.iteratorLinkMetadataSchema(),
     }) as unknown as ContentTypeSchema<
       ContentTypeDbShape<ContentTypeFields<F, I>, N>
     >;
@@ -538,7 +508,6 @@ export default class ContentType<
       ...trashMetadataSchema,
       ...authorMetadataSchema,
       ...this.dynamicBindingsMetadataSchema(),
-      ...this.iteratorLinkMetadataSchema(),
     }) as unknown as ContentTypeSchema<
       ContentTypePopulatedShape<ContentTypeFields<F, I>, N>
     >;
@@ -609,6 +578,15 @@ export default class ContentType<
     return this;
   }
 
+  enableTemplate() {
+    if (!this.hasIterator) {
+      throw new Error("ContentType templates require ContentType.iterator.");
+    }
+
+    this.hasTemplate = true;
+    return this;
+  }
+
   enableSeoField(field: AnyField) {
     if (!this.fields[SEO_FIELD_NAME]) {
       this.fields = {
@@ -652,10 +630,6 @@ export default class ContentType<
     return this.hasDynamicBindableFields() ? dynamicBindingsMetadataSchema : {};
   }
 
-  private iteratorLinkMetadataSchema() {
-    return this.linkedIterator ? iteratorLinkMetadataSchema : {};
-  }
-
   private buildOutputSchema<Fields extends FieldRecord>(fields: Fields) {
     return this.documentSchema(this.outputFieldSchemas(fields), {
       ...idMetadataSchema,
@@ -686,7 +660,6 @@ export default class ContentType<
         hooks: this.hooks,
         dynamicData: this.dynamicData,
         dynamicDataSource: this.dynamicDataSource,
-        linkedIterator: this.linkedIterator,
       },
       { allowSystemFields: true },
     );
@@ -705,7 +678,7 @@ export default class ContentType<
       modulePicker: this.modulePicker,
       isInternal: this.isInternal,
       hasIterator: this.hasIterator,
-      linkedIterator: this.linkedIterator,
+      hasTemplate: this.hasTemplate,
       hasSeo: this.hasSeo,
     });
   }
@@ -743,15 +716,15 @@ export default class ContentType<
       );
     }
 
-    if (DYNAMIC_BINDINGS_FIELD_NAME in fields) {
+    if (TEMPLATE_FIELD_NAME in fields) {
       throw new Error(
-        `Field ${DYNAMIC_BINDINGS_FIELD_NAME} is reserved for dynamic data bindings.`,
+        `Field ${TEMPLATE_FIELD_NAME} is reserved for the shared template editor.`,
       );
     }
 
-    if (ITERATOR_UNLINKED_FIELD_NAME in fields) {
+    if (DYNAMIC_BINDINGS_FIELD_NAME in fields) {
       throw new Error(
-        `Field ${ITERATOR_UNLINKED_FIELD_NAME} is reserved for linked iterator state.`,
+        `Field ${DYNAMIC_BINDINGS_FIELD_NAME} is reserved for dynamic data bindings.`,
       );
     }
 
@@ -1026,7 +999,8 @@ export const EncodedContentTypeSchema = z.object({
     ])
     .optional(),
   hasIterator: z.boolean().optional(),
-  linkedIterator: z.boolean().optional(),
+  hasTemplate: z.boolean().optional(),
+  templateField: z.unknown().optional(),
   hasSeo: z.boolean().optional(),
   routes: z
     .array(

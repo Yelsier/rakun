@@ -378,19 +378,29 @@ const Page = new ContentType({
     title: f.string().required(),
     slug: f.string().type("Slug").required(),
   },
-  iterator: [{ contentType: PageSection, type: "existing" }],
-  linkedIterator: true,
+  iterator: [
+    { contentType: PageSection, type: "new" },
+    { contentType: Hero, type: "new" },
+    { contentType: LayoutWithInfo, type: "new" },
+    { contentType: Newsletter, type: "new" },
+  ],
 });
 ```
 
-Set `linkedIterator: true` when every document should use one shared module
-structure. The manager stores a canonical iterator for the content type, while
-dynamic bindings such as `Current document` continue to resolve against the
-individual page being rendered. Documents are linked by default and can be
-unlinked in the manager to keep a local copy of the iterator.
+`iterator` always belongs to the individual document and is edited in the
+manager's Content tab. When the content type has a configured `hasPage: true`
+route, Rakun automatically enables a separate shared Template tab with the
+same module picker as Content. The manager also offers one special Content slot
+at the template root and inside every `f.blocks(...)` field. The template must
+contain that slot exactly once; web output replaces it with the current
+document's iterator modules. This supports compositions such as a shared hero,
+a `LayoutWithInfo` wrapper containing the unique content, and a shared
+newsletter. Route layout modules such as header and footer still wrap the
+assembled result.
 
-Iterator modules can also be made conditional from the manager. A condition is
-stored on the shared module entry and evaluated against the current document:
+Iterator and template modules can also be made conditional from the manager. A
+condition is stored on the module entry and evaluated against the current
+document:
 
 ```ts
 {
@@ -403,17 +413,15 @@ stored on the shared module entry and evaluated against the current document:
 }
 ```
 
-Supported operators are `notEmpty` and `empty`. Conditional modules remain part
-of the shared structure but are omitted from web and preview output when their
-condition does not match.
+Supported operators are `notEmpty` and `empty`. Conditional modules remain in
+their stored Content or Template composition but are omitted from web and
+preview output when their condition does not match.
 
 Main properties:
 
 - `name`: stable type name. Also used as `_type`.
 - `fields`: field map.
 - `iterator`: page module entries. Generates the reserved `_iterator` field.
-- `linkedIterator`: shares that iterator between documents while allowing
-  explicit per-document overrides.
 - `menu`: manager metadata.
 - `uniques`: unique field groups.
 - `listFields`: preferred fields in lists and relations.
@@ -425,8 +433,9 @@ Main properties:
 - Dynamic data bindings are available on manager-visible fields by default; use
   field-level `.noDynamic()` to opt out.
 
-When a content type has a configured route with `hasPage: true`, Rakun also
-adds an optional reserved `_seo` relation automatically.
+When a content type has a configured route with `hasPage: true`, Rakun adds an
+optional reserved `_seo` relation automatically. If that content type has an
+`iterator`, Rakun also enables its shared Template editor automatically.
 
 Hooks run around DB mutations and public output resolution:
 

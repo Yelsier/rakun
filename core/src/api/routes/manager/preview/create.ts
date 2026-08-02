@@ -18,6 +18,10 @@ import { hashPreviewToken } from '../../../utils/previewToken'
 import { buildRoutePath, getParentPath, loadRouteData } from '../../../utils/routes/routeMapHelpers'
 import { routeSignature } from '../../../utils/routes/routeDefinitions'
 import { requireContentType } from '../../../utils/requireContentType'
+import {
+  ContentTemplateValidationError,
+  validateContentTemplate,
+} from '../../../utils/contentTemplate'
 
 const PREVIEW_TTL_MS = 10 * 60 * 1000
 
@@ -132,6 +136,22 @@ export const createPreviewHandler = async ({
   const path = buildRoutePath(previewItem, route, language, parentPath, languages, routeSettings)
   const token = createPreviewToken()
   const expiresAt = new Date(Date.now() + PREVIEW_TTL_MS)
+  let templateModules: unknown[] | undefined
+  try {
+    templateModules = input.templateModules
+      ? validateContentTemplate(contentType, input.templateModules)
+      : undefined
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throwAppError('VALIDATION', { errors: error.issues })
+    }
+    if (error instanceof ContentTemplateValidationError) {
+      throwAppError('VALIDATION', {
+        errors: [{ path: ['templateModules'], message: error.message }],
+      })
+    }
+    throw error
+  }
 
   await db.create(PreviewSnapshot, {
     _type: PreviewSnapshot.name,
@@ -142,6 +162,9 @@ export const createPreviewHandler = async ({
     languageCode: language.code,
     path,
     data: serializePreviewData(previewItem),
+    templatePayload: templateModules
+      ? serializePreviewData(templateModules)
+      : undefined,
     createdBy: user._id,
     expiresAt,
   })

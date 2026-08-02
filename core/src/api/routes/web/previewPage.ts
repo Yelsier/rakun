@@ -62,7 +62,9 @@ export const getPreviewPage = async (
       data,
       language,
       tracePrefix: "web.previewPage",
-      preferDocumentIterator: true,
+      templateModules: snapshot.templatePayload
+        ? (parsePreviewData(snapshot.templatePayload) as unknown[])
+        : undefined,
     });
   } catch (error) {
     Logger.addTrace("web.previewPage: handler failed");

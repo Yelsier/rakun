@@ -23,7 +23,7 @@ export type RakunPreviewUpdateMessage = {
 
 export type RakunPreviewModuleSelectMessage = {
   type: typeof rakunPreviewModuleSelectMessageType;
-  entryType: "content" | "layout";
+  entryType: "content" | "layout" | "template";
   moduleId: string;
   moduleType: string;
   index: number;

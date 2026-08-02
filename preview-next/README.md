@@ -26,6 +26,10 @@ bun run dev
 Open:
 
 - `http://localhost:3000` for seeded home page
+- `http://localhost:3000/use-cases/multi-market-campaign/` for the shared
+  template example
+- `http://localhost:3000/use-cases/product-stories/` for a second document
+  using the same template
 - `http://localhost:3000/backend` for manager
 
 Default seeded login:
@@ -56,6 +60,8 @@ The API route seeds preview data on first request when `SEED_PREVIEW` is not
 - `en`, `es`, and `es-MX` locales, with `es-MX` falling back to `es`
 - home, about, and contact `Page` records with seeded locale variants
 - inline `HelloWorld` modules in the seeded page `_iterator`
+- two `UseCase` documents with unique Content modules and one shared Template
+  composed as Hero -> LayoutWithInfo(Content) -> Newsletter
 - a `FeatureCarousel` module that demonstrates dynamic data bindings from
   `Project`
 - a `CategoriesGallery` module that maps `Category` records and queries each
@@ -74,6 +80,23 @@ The API route seeds preview data on first request when `SEED_PREVIEW` is not
 The seed is idempotent and also repairs the seeded home `_iterator` so
 `HelloWorld`, `FeatureCarousel`, and `CategoriesGallery` stay present after
 local database reuse.
+
+## Shared use case template
+
+Open either seeded use case in the manager. Its Content tab contains only the
+sections owned by that document. The Template tab contains the shared hero, a
+two-column `UseCaseLayoutWithInfo`, and the newsletter. The built-in Content
+item is nested in the layout's otherwise empty `blocks` field.
+
+`UseCase` declares Content, Hero, LayoutWithInfo, and Newsletter once in its
+`iterator`; because it is routeable, Template is enabled automatically and
+offers that same module catalog plus the built-in Content item.
+
+The hero title and summary use current-document bindings, so the same shared
+hero renders different copy on each URL. Editing the aside or newsletter from
+either document updates both pages, while editing Content updates only the
+selected use case. Header and Footer come from the route layout and remain
+outside the template.
 
 The seeded `FeatureCarousel` is a reusable layout module. Its title can be bound
 to a selected `Project`, and its item list can be populated from filtered

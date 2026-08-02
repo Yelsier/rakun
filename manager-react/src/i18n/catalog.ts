@@ -550,9 +550,21 @@ export const managerMessages = {
 
   'contentEdit.tabInfo': { defaultMessage: 'Info' },
   'contentEdit.tabContent': { defaultMessage: 'Content' },
+  'contentEdit.tabTemplate': { defaultMessage: 'Template' },
   'contentEdit.tabSeo': { defaultMessage: 'Seo' },
   'contentEdit.tabVariants': { defaultMessage: 'Variants' },
   'contentEdit.tabHistory': { defaultMessage: 'History' },
+  'contentEdit.templateContent': { defaultMessage: 'Content' },
+  'contentEdit.templateContentDescription': {
+    defaultMessage: 'Renders the modules from this document’s Content tab here.',
+  },
+  'contentEdit.couldNotSaveTemplate': {
+    defaultMessage: 'Could not save the shared template',
+  },
+  'contentEdit.sharedTemplateWarning': {
+    defaultMessage:
+      'This template is shared. Changes made here apply to all content of this type.',
+  },
   'contentEdit.saveAsDraft': { defaultMessage: 'Save as draft' },
   'contentEdit.saveOptions': { defaultMessage: 'Save options' },
   'contentEdit.moreActions': { defaultMessage: 'More actions' },

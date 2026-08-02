@@ -16,7 +16,7 @@ import { deleteMediaStorage } from "./media/deleteMediaStorage";
 import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
 import { prepareLocaleVariantRemoval } from "../../utils/localeVariants";
-import { forbidLinkedIteratorTemplateAccess } from "./linkedIterator";
+import { forbidContentTemplateAccess } from "./template";
 import {
   getLocaleVariantGroupId,
   getLocaleVariantRole,
@@ -34,7 +34,7 @@ export const deleteHandler = async ({
   const db = await getMongoService();
   const { contentType: contentTypeName, id } = input;
   const contentType = requireContentType(contentTypeName);
-  forbidLinkedIteratorTemplateAccess(contentType);
+  forbidContentTemplateAccess(contentType);
 
   await checkOwnership({
     ctx,

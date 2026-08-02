@@ -10,6 +10,7 @@ import {
   Languages,
   MapPinned,
   LayoutPanelTop,
+  LayoutTemplate,
   Monitor,
   MoreVertical,
   NotepadText,
@@ -234,6 +235,7 @@ export const EditToolbar = () => {
     sections,
     showSaveErrorTooltip,
     tabErrors,
+    template,
     translation,
     translationEnabled,
   } = useEditPageContext()
@@ -245,7 +247,8 @@ export const EditToolbar = () => {
     pending.delete ||
     pending.trash ||
     pending.version ||
-    pending.promote
+    pending.promote ||
+    template.pending
   const canSaveAsDraft = hasVisibility && contentTypeId && !isTrashed
   const commentsEnabled = Boolean(contentTypeId)
   const hasMoreActions = Boolean(contentTypeId) || canPreview || translationEnabled || isTrashed
@@ -272,6 +275,7 @@ export const EditToolbar = () => {
           sections.hasNonIterables,
           sections.hasIterables,
           sections.hasSeo,
+          template.enabled,
           hasLocaleVariants,
           hasVersioning,
           contentTypeId,
@@ -291,6 +295,16 @@ export const EditToolbar = () => {
               <ScrollText />
               {t('contentEdit.tabContent')}
               {tabErrors.content ? <TabErrorText /> : null}
+            </TabsTrigger>
+          ) : null}
+          {template.enabled ? (
+            <TabsTrigger
+              value="template"
+              className={cn(tabErrors.template && tabErrorClassName)}
+            >
+              <LayoutTemplate />
+              {t('contentEdit.tabTemplate')}
+              {tabErrors.template ? <TabErrorText /> : null}
             </TabsTrigger>
           ) : null}
           {sections.hasSeo ? (

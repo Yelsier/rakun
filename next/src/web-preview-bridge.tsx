@@ -186,7 +186,12 @@ export const RakunPreviewBridge = ({
 
   const buildSelectMessage = (module) => ({
     type: selectMessageType,
-    entryType: module.dataset.rakunPreviewEntryType === "layout" ? "layout" : "content",
+    entryType:
+      module.dataset.rakunPreviewEntryType === "layout"
+        ? "layout"
+        : module.dataset.rakunPreviewEntryType === "template"
+          ? "template"
+          : "content",
     moduleId: module.dataset.rakunPreviewModuleId || "",
     moduleType: module.dataset.rakunPreviewModuleType || "",
     index: readNumber(module.dataset.rakunPreviewIndex) ?? 0,

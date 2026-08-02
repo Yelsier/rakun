@@ -287,6 +287,7 @@ export const rakunBootstrap = (options: RakunBootstrapOptions) => {
     if (routeableContentTypes.has(ct.name)) {
       ct.enableDocumentVisibility();
       ct.enableSeoField(Fields.relation(internalContentTypes.Seo, "new"));
+      if (ct.hasIterator) ct.enableTemplate();
     }
     registerInternalContentType(ct, { override: true });
   }
@@ -295,6 +296,7 @@ export const rakunBootstrap = (options: RakunBootstrapOptions) => {
     if (routeableContentTypes.has(ct.name)) {
       ct.enableDocumentVisibility();
       ct.enableSeoField(Fields.relation(internalContentTypes.Seo, "new"));
+      if (ct.hasIterator) ct.enableTemplate();
     }
     registerContentType(ct, { override: true });
   }
@@ -451,8 +453,8 @@ export { getTranslation } from "./lib/utils/getTranslation";
 export { encodeContentTypeForManager } from "./lib/Registry";
 export {
   ITERATOR_FIELD_NAME,
-  ITERATOR_UNLINKED_FIELD_NAME,
   SEO_FIELD_NAME,
+  TEMPLATE_FIELD_NAME,
 } from "./lib/systemFields";
 export {
   LOCALE_VARIANT_GROUP_FIELD,

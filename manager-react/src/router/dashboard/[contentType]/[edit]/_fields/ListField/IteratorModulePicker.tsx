@@ -63,6 +63,7 @@ type IteratorModuleDisplay = {
   labelField: string
   preview?: string
   props: ModuleProp[]
+  queryExisting: boolean
   technicalName: string
   title: string
 }
@@ -118,6 +119,20 @@ const getRelationField = (
 ): EncodedRelationField | undefined =>
   field.config.type === 'Relation' ? (field as EncodedRelationField) : undefined
 
+export const isApiOnlyNewRelationField = (
+  field: EncodedListFieldItem['field']
+): field is EncodedRelationField => {
+  const relationField = getRelationField(field)
+
+  return Boolean(
+    relationField &&
+    relationField.only === 'new' &&
+    Object.values(relationField.contentType.fields).every(
+      (contentField) => contentField.visibility === 'api'
+    )
+  )
+}
+
 const uniqueText = (values: Array<string | undefined>) =>
   Array.from(new Set(values.filter(Boolean) as string[]))
 
@@ -168,6 +183,7 @@ export const getIteratorModuleDisplay = (entry: EncodedListFieldItem): IteratorM
     labelField,
     preview,
     props,
+    queryExisting: !isApiOnlyNewRelationField(entry.field),
     technicalName: entry.name,
     title,
   }
@@ -215,6 +231,7 @@ const ModulePreviewImage = ({ src }: { src?: string }) => {
 const isQueryableOption = (
   option: IteratorModuleDisplay
 ): option is QueryableIteratorModuleDisplay =>
+  option.queryExisting &&
   Boolean(option.contentType) &&
   typeof option.contentTypeName === 'string' &&
   option.contentTypeName.length > 0

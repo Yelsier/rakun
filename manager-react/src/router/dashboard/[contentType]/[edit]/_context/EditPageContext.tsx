@@ -3,6 +3,7 @@
 import {
   createContext,
   type PropsWithChildren,
+  type RefObject,
   useCallback,
   useContext,
   useEffect,
@@ -10,13 +11,15 @@ import {
   useRef,
   useState,
 } from 'react'
-import type { LocaleVariantListOutput, LanguageSchema } from '@rakun-kit/core/client'
 import type {
-  LinkedIteratorAction,
-  LinkedIteratorControl,
-  LinkedIteratorStateOutput,
+  EncodedContentType,
+  EncodedField,
+  LanguageSchema,
+  LocaleVariantListOutput,
+  TemplateStateOutput,
 } from '@rakun-kit/core/client'
-import { ITERATOR_FIELD_NAME } from '@rakun-kit/core/client'
+import { TEMPLATE_FIELD_NAME } from '@rakun-kit/core/client'
+import { toast } from 'sonner'
 
 import { useContentDocumentActions } from '../_hooks/useContentDocumentActions'
 import { VariantNameDialog } from '../_components/VariantNameDialog'
@@ -37,14 +40,16 @@ import type {
   EditPageTab,
 } from '../edit.types'
 import type { FieldValue } from '../_fields/shared'
+import type { FieldRef } from '../ContentTypeEdit'
 
 import { useEditErrorStore } from '@/hooks/app-store'
 import { useOptionalManagerNavigation } from '@/state/navigation'
 import { useLanguage } from '@/state/language'
 import { useSession } from '@/state/session'
-import { useManagerQuery } from '@/client/react'
+import { useManagerMutation, useManagerQuery } from '@/client/react'
 import { confirm } from '@/components/confirm'
 import { deepEqual } from '@/helpers/deepEqual'
+import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { useTranslations } from '@/i18n'
 
 const getDefaultVisibility = (defaultData?: Record<string, FieldValue>) =>
@@ -70,6 +75,7 @@ const isEditPageTabAvailable = (
     hasIterables: boolean
     hasNonIterables: boolean
     hasSeo: boolean
+    hasTemplate: boolean
     hasLocaleVariants: boolean
     hasVersioning: boolean
     hasDocumentId: boolean
@@ -78,6 +84,7 @@ const isEditPageTabAvailable = (
 ): tab is EditPageTab => {
   if (tab === 'info') return options.hasNonIterables
   if (tab === 'content') return options.hasIterables
+  if (tab === 'template') return options.hasTemplate
   if (tab === 'seo') return options.hasSeo
   if (tab === 'variants') return options.hasLocaleVariants
   if (tab === 'history') return options.hasVersioning && options.hasDocumentId
@@ -115,6 +122,7 @@ const getInitialTab = ({
   hasIterables,
   hasNonIterables,
   hasSeo,
+  hasTemplate,
   hasLocaleVariants,
   hasVersioning,
   hasDocumentId,
@@ -122,6 +130,7 @@ const getInitialTab = ({
   hasIterables: boolean
   hasNonIterables: boolean
   hasSeo: boolean
+  hasTemplate: boolean
   hasLocaleVariants: boolean
   hasVersioning: boolean
   hasDocumentId: boolean
@@ -133,6 +142,7 @@ const getInitialTab = ({
       hasIterables,
       hasNonIterables,
       hasSeo,
+      hasTemplate,
       hasLocaleVariants,
       hasVersioning,
       hasDocumentId,
@@ -243,12 +253,13 @@ type EditPageContextValue = {
   tabErrors: ReturnType<typeof useEditTabErrors>
   translation: ReturnType<typeof useTranslationDialogState>
   translationEnabled: boolean
-  linkedIterator: {
+  template: {
     enabled: boolean
-    state?: LinkedIteratorStateOutput
-    mode: 'linked' | 'unlinked'
-    setMode: (mode: 'linked' | 'unlinked') => void
-    adoptShared: () => void
+    state?: TemplateStateOutput
+    contentType?: EncodedContentType
+    ref: RefObject<FieldRef | null>
+    defaultData?: Record<string, FieldValue>
+    pending: boolean
   }
 }
 
@@ -314,24 +325,31 @@ export const EditPageProvider = ({
     (contentType as typeof contentType & { routes?: ContentTypeRouteMeta[] }).routes ?? []
   ).find((route) => route.hasPage)
   const contentTypeId = (defaultData as { _id?: string } | undefined)?._id
-  const linkedIteratorQuery = useManagerQuery({
-    name: 'manager.linkedIterator.get',
+  const templateQuery = useManagerQuery({
+    name: 'manager.template.get',
     input: {
       contentType: contentType.name,
       ...(contentTypeId ? { documentId: contentTypeId } : {}),
     },
-    enabled: Boolean(contentType.linkedIterator),
+    enabled: Boolean(contentType.hasTemplate),
   })
-  const linkedIteratorState = linkedIteratorQuery.data as LinkedIteratorStateOutput | undefined
-  const [linkedIteratorMode, setLinkedIteratorMode] = useState<'linked' | 'unlinked'>('linked')
-  const effectiveDefaultData = useMemo(() => {
-    if (defaultData) return defaultData
-    if (!linkedIteratorState?.iterator) return defaultData
+  const templateState = templateQuery.data as TemplateStateOutput | undefined
+  const templateMutation = useManagerMutation('manager.template.update')
+  const templateRef = useRef<FieldRef>(null)
+  const templateContentType = useMemo<EncodedContentType | undefined>(() => {
+    if (!contentType.hasTemplate || !contentType.templateField) return undefined
 
     return {
-      [ITERATOR_FIELD_NAME]: linkedIteratorState.iterator,
-    } as Record<string, FieldValue>
-  }, [defaultData, linkedIteratorState?.iterator])
+      ...contentType,
+      name: `${contentType.name}Template`,
+      fields: {
+        [TEMPLATE_FIELD_NAME]: contentType.templateField as EncodedField,
+      },
+      hasIterator: true,
+      hasTemplate: false,
+      templateField: undefined,
+    }
+  }, [contentType])
   const hasVisibility = Boolean(contentType.documentVisibility)
   const canReadVersions = hasPermissions(['content.ContentVersion.readAny'])
   const canRestoreVersions = hasPermissions(['content.ContentVersion.updateAny'])
@@ -354,6 +372,7 @@ export const EditPageProvider = ({
       hasIterables: sections.hasIterables,
       hasNonIterables: sections.hasNonIterables,
       hasSeo: sections.hasSeo,
+      hasTemplate: Boolean(contentType.hasTemplate),
       hasLocaleVariants,
       hasVersioning,
       hasDocumentId: Boolean(contentTypeId),
@@ -368,12 +387,59 @@ export const EditPageProvider = ({
   )
   const [showSaveErrorTooltip, setShowSaveErrorTooltip] = useState(false)
   const form = useEditFormController({
-    defaultData: effectiveDefaultData,
+    defaultData,
     hasVisibility,
     setSaveErrorVisible: setShowSaveErrorTooltip,
     visibility,
   })
   const saveFormState = form.saveState
+  const readTemplateModules = useCallback(() => {
+    if (!contentType.hasTemplate) return []
+
+    const value = templateRef.current?.getValue() as
+      | ({ _error?: string } & Record<string, unknown>)
+      | undefined
+    if (value?._error) {
+      setShowSaveErrorTooltip(true)
+      return undefined
+    }
+
+    const modules = value?.[TEMPLATE_FIELD_NAME] ?? templateState?.modules
+    return Array.isArray(modules) ? modules : undefined
+  }, [contentType.hasTemplate, templateState?.modules])
+  const saveTemplate = useCallback(async () => {
+    if (!contentType.hasTemplate) return true
+    if (!templateState) return false
+
+    const modules = readTemplateModules()
+    if (!modules) return false
+    if (!templateState.canUpdate || deepEqual(modules, templateState.modules)) {
+      return true
+    }
+
+    try {
+      await templateMutation.mutateAsync({
+        contentType: contentType.name,
+        modules,
+        revision: templateState.revision,
+      })
+      await templateQuery.refetch()
+      return true
+    } catch (error) {
+      toast.error(
+        getActionErrorMessage(error, t('contentEdit.couldNotSaveTemplate')),
+      )
+      return false
+    }
+  }, [
+    contentType.hasTemplate,
+    contentType.name,
+    readTemplateModules,
+    t,
+    templateMutation,
+    templateQuery,
+    templateState,
+  ])
   const documentActions = useContentDocumentActions({
     contentType,
     contentTypeId,
@@ -384,37 +450,7 @@ export const EditPageProvider = ({
     onAfterRestore,
     readFormData: form.readFormData,
     replaceDraft: form.replaceDraft,
-    getLinkedIteratorControl: (
-      data: Record<string, unknown>,
-      requestedAction?: LinkedIteratorAction,
-    ): LinkedIteratorControl | undefined => {
-      if (!contentType.linkedIterator || !linkedIteratorState?.enabled) return undefined
-
-      const iteratorChanged = !deepEqual(
-        data[ITERATOR_FIELD_NAME],
-        linkedIteratorState.iterator,
-      )
-      const action =
-        linkedIteratorMode === 'linked'
-          ? requestedAction ??
-            (linkedIteratorState.configured &&
-            iteratorChanged &&
-            linkedIteratorState.canUpdateShared
-              ? 'update'
-              : undefined)
-          : undefined
-
-      return {
-        mode: linkedIteratorMode,
-        ...(action ? { action } : {}),
-        ...(linkedIteratorState.revision !== undefined
-          ? { revision: linkedIteratorState.revision }
-          : {}),
-      }
-    },
-    onLinkedIteratorSaved: async () => {
-      await linkedIteratorQuery.refetch()
-    },
+    saveTemplate,
     setVisibility,
     visibilityBeforeTrash,
   })
@@ -456,6 +492,14 @@ export const EditPageProvider = ({
   const requestedVariantLanguageCodeRef = useRef<string | null>(null)
   const handlePreviewModuleSelect = useCallback(
     (message: PreviewModuleSelectMessage) => {
+      if (message.entryType === 'template') {
+        if (!contentType.hasTemplate) return
+
+        saveFormState()
+        setActiveTab('template')
+        return
+      }
+
       if (message.entryType === 'content') {
         if (!sections.hasIterables) return
 
@@ -490,6 +534,7 @@ export const EditPageProvider = ({
     },
     [
       navigation,
+      contentType.hasTemplate,
       previewRoute,
       routeLayout.routeLayoutModules,
       saveFormState,
@@ -506,23 +551,19 @@ export const EditPageProvider = ({
     preview,
     previewRoute,
     readFormData: form.readFormData,
+    readTemplateModules,
   })
   const tabErrors = useEditTabErrors({
     contentTypeName: contentType.name,
     editErrors,
     sections,
+    templateContentType,
   })
   const translationEnabled = Boolean(contentTypeId && !isTrashed && languageList.length > 1)
 
   useEffect(() => {
     setVisibility(getDefaultVisibility(defaultData))
   }, [defaultData])
-
-  useEffect(() => {
-    if (linkedIteratorState?.mode) {
-      setLinkedIteratorMode(linkedIteratorState.mode)
-    }
-  }, [linkedIteratorState?.mode])
 
   useEffect(() => {
     if (editErrors.length === 0) {
@@ -599,6 +640,7 @@ export const EditPageProvider = ({
         hasIterables: sections.hasIterables,
         hasNonIterables: sections.hasNonIterables,
         hasSeo: sections.hasSeo,
+        hasTemplate: Boolean(contentType.hasTemplate),
         hasLocaleVariants,
         hasVersioning,
         hasDocumentId: Boolean(contentTypeId),
@@ -618,6 +660,7 @@ export const EditPageProvider = ({
   }, [
     activeTab,
     contentTypeId,
+    contentType.hasTemplate,
     hasLocaleVariants,
     hasVersioning,
     routeLayout.routeLayoutModules,
@@ -635,16 +678,6 @@ export const EditPageProvider = ({
 
   const handleVisibilityChange = (nextVisibility: EditableDocumentVisibility) => {
     setVisibility(nextVisibility)
-  }
-
-  const adoptSharedIterator = () => {
-    if (!linkedIteratorState?.iterator) return
-
-    form.replaceDraft({
-      ...(form.draft.current ?? {}),
-      [ITERATOR_FIELD_NAME]: linkedIteratorState.iterator as FieldValue,
-    })
-    setLinkedIteratorMode('linked')
   }
 
   return (
@@ -667,12 +700,17 @@ export const EditPageProvider = ({
         isTrashed,
         languageCode: language.code,
         languageList,
-        linkedIterator: {
-          enabled: Boolean(contentType.linkedIterator),
-          state: linkedIteratorState,
-          mode: linkedIteratorMode,
-          setMode: setLinkedIteratorMode,
-          adoptShared: adoptSharedIterator,
+        template: {
+          enabled: Boolean(contentType.hasTemplate),
+          state: templateState,
+          contentType: templateContentType,
+          ref: templateRef,
+          defaultData: templateState
+            ? ({
+                [TEMPLATE_FIELD_NAME]: templateState.modules,
+              } as Record<string, FieldValue>)
+            : undefined,
+          pending: templateMutation.isPending || templateQuery.isLoading,
         },
         onAfterRestore,
         openMoveToTrashDialog: () => {

@@ -29,6 +29,7 @@ export const pageOutput = z.object({
   renderMode: z.enum(["static", "dynamic"]),
   ttl: z.number().optional(),
   modules: z.array(pageModule),
+  templateModuleIds: z.array(z.string()).optional(),
   layout: z
     .array(
       z.discriminatedUnion("type", [

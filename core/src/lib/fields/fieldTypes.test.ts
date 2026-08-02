@@ -8,8 +8,8 @@ import {
 } from "../Registry";
 import {
   ITERATOR_FIELD_NAME,
-  ITERATOR_UNLINKED_FIELD_NAME,
   SEO_FIELD_NAME,
+  TEMPLATE_FIELD_NAME,
 } from "../systemFields";
 import { Fields, f } from "./index";
 import type { DataInput } from "../types";
@@ -134,18 +134,17 @@ describe("field type inference", () => {
     ).toThrow();
   });
 
-  it("requires an iterator when linkedIterator is enabled and encodes the flag", () => {
-    expect(
-      () =>
-        new ContentType({
-          name: "InvalidLinkedIterator",
-          fields: {},
-          linkedIterator: true,
-        }),
-    ).toThrow("requires ContentType.iterator");
+  it("enables templates from an iterator and encodes the same modules", () => {
+    const InvalidTemplate = new ContentType({
+      name: "InvalidTemplate",
+      fields: {},
+    });
+    expect(() => InvalidTemplate.enableTemplate()).toThrow(
+      "require ContentType.iterator",
+    );
 
-    const LinkedIteratorCT = new ContentType({
-      name: "LinkedIteratorParam",
+    const TemplateCT = new ContentType({
+      name: "TemplateParam",
       fields: {},
       iterator: [
         {
@@ -153,14 +152,18 @@ describe("field type inference", () => {
           type: "new",
         },
       ],
-      linkedIterator: true,
-    });
+    }).enableTemplate();
 
-    expect(LinkedIteratorCT.linkedIterator).toBe(true);
-    expect(encodeContentTypeForManager(LinkedIteratorCT).linkedIterator).toBe(
-      true,
-    );
-    expect(LinkedIteratorCT.apiOnly().linkedIterator).toBe(true);
+    const encoded = encodeContentTypeForManager(TemplateCT);
+    expect(TemplateCT.hasTemplate).toBe(true);
+    expect(encoded.hasTemplate).toBe(true);
+    expect(encoded.templateField).toBeDefined();
+    expect(
+      (encoded.templateField as { fields: Array<{ name: string }> }).fields.map(
+        (entry) => entry.name,
+      ),
+    ).toContain(TypeRegressionCT.name);
+    expect(TemplateCT.apiOnly().hasTemplate).toBe(true);
   });
 
   it("allows new iterator modules to be saved as existing relations", () => {
@@ -273,9 +276,9 @@ describe("field type inference", () => {
     expect(
       () =>
         new ContentType({
-          name: "ReservedIteratorLink",
+          name: "ReservedTemplate",
           fields: {
-            [ITERATOR_UNLINKED_FIELD_NAME]: Fields.boolean(),
+            [TEMPLATE_FIELD_NAME]: Fields.boolean(),
           },
         }),
     ).toThrow("reserved");

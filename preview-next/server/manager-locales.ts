@@ -16,6 +16,7 @@ const englishPreviewMessages = {
   'preview.contentTypes.header.menu': 'Headers',
   'preview.contentTypes.footer.menu': 'Footers',
   'preview.contentTypes.pageSection.menu': 'Page sections',
+  'preview.contentTypes.useCase.menu': 'Use cases',
   'preview.contentTypes.category.menu': 'Categories',
   'preview.contentTypes.project.menu': 'Projects',
   'preview.contentTypes.featureCarousel.menu': 'Feature carousels',
@@ -28,6 +29,15 @@ const englishPreviewMessages = {
   'preview.contentTypes.imagePlayground.menu': 'Images playground',
   'preview.contentTypes.conditionalDemo.menu': 'Conditional demos',
   'preview.contentTypes.translationPlayground.menu': 'Translation playground',
+  'preview.modules.useCaseContent.title': 'Use case content',
+  'preview.modules.useCaseContent.description': 'Unique content edited on each use case.',
+  'preview.modules.useCaseHero.title': 'Use case hero',
+  'preview.modules.useCaseHero.description': 'Shared hero that reads the current use case.',
+  'preview.modules.useCaseLayoutWithInfo.title': 'Layout with info',
+  'preview.modules.useCaseLayoutWithInfo.description':
+    'Shared two-column layout that contains the Content slot.',
+  'preview.modules.useCaseNewsletter.title': 'Newsletter',
+  'preview.modules.useCaseNewsletter.description': 'Shared newsletter call to action.',
 }
 
 const spanishPreviewMessages = {
@@ -42,6 +52,7 @@ const spanishPreviewMessages = {
   'preview.contentTypes.header.menu': 'Cabeceras',
   'preview.contentTypes.footer.menu': 'Pies de página',
   'preview.contentTypes.pageSection.menu': 'Secciones de página',
+  'preview.contentTypes.useCase.menu': 'Casos de uso',
   'preview.contentTypes.category.menu': 'Categorías',
   'preview.contentTypes.project.menu': 'Proyectos',
   'preview.contentTypes.featureCarousel.menu': 'Carruseles destacados',
@@ -54,6 +65,18 @@ const spanishPreviewMessages = {
   'preview.contentTypes.imagePlayground.menu': 'Playground de imágenes',
   'preview.contentTypes.conditionalDemo.menu': 'Demos condicionales',
   'preview.contentTypes.translationPlayground.menu': 'Playground de traducción',
+  'preview.modules.useCaseContent.title': 'Contenido del caso de uso',
+  'preview.modules.useCaseContent.description':
+    'Contenido único que se edita en cada caso de uso.',
+  'preview.modules.useCaseHero.title': 'Hero del caso de uso',
+  'preview.modules.useCaseHero.description':
+    'Hero compartido que lee el caso de uso actual.',
+  'preview.modules.useCaseLayoutWithInfo.title': 'Layout con información',
+  'preview.modules.useCaseLayoutWithInfo.description':
+    'Layout compartido de dos columnas que contiene el slot Content.',
+  'preview.modules.useCaseNewsletter.title': 'Newsletter',
+  'preview.modules.useCaseNewsletter.description':
+    'Llamada a la acción compartida para la newsletter.',
 }
 
 export const previewManagerLanguages: ManagerLanguagePack[] = [

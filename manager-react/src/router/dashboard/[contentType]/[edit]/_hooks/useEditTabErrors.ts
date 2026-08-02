@@ -25,10 +25,12 @@ export const useEditTabErrors = ({
   contentTypeName,
   editErrors,
   sections,
+  templateContentType,
 }: {
   contentTypeName: string
   editErrors: EditError[]
   sections: ContentTypeSections
+  templateContentType?: { name: string; fields: Record<string, EncodedField> }
 }) =>
   useMemo(
     () => ({
@@ -47,6 +49,13 @@ export const useEditTabErrors = ({
         editErrors,
         fields: sections.seo.fields,
       }),
+      template: templateContentType
+        ? hasErrorsInFields({
+            contentTypeName: templateContentType.name,
+            editErrors,
+            fields: templateContentType.fields,
+          })
+        : false,
     }),
     [
       contentTypeName,
@@ -54,5 +63,6 @@ export const useEditTabErrors = ({
       sections.iterables.fields,
       sections.nonIterables.fields,
       sections.seo.fields,
+      templateContentType,
     ],
   )

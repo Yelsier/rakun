@@ -96,6 +96,19 @@ Built-in manager copy must use the static manager translation catalog. Project
 labels may use arbitrary project keys. Fields resolve `field.<fieldName>` and
 layout slots resolve `layoutModule.<layoutKey>` with fallbacks.
 
+## Content and template tabs
+
+For a routeable content type with `iterator`, Content edits the `_iterator`
+modules unique to the current document. Template is enabled automatically and
+edits one shared composition for every document of that type. Both tabs offer
+the same configured iterator modules. The Template module picker additionally
+adds a built-in Content item at its root and inside blocks fields; it marks the
+exact position where the current document's Content modules are inserted.
+
+Template changes require the content type's `updateAny` permission and are
+saved with optimistic revision checks. Preview includes unsaved changes from
+both tabs.
+
 ## Confirmations
 
 Use the shared async confirm API instead of ad-hoc yes/no dialogs:

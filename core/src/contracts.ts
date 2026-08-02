@@ -20,6 +20,7 @@ export * from "./schemas/manager/contentVersions";
 export * from "./schemas/manager/reviewPolicies";
 export * from "./schemas/manager/reviews";
 export * from "./schemas/manager/routeLayout";
+export * from "./schemas/manager/template";
 export * from "./schemas/manager/translateDocument";
 export * from "./schemas/manager/preview";
 export * from "./schemas/manager/slugRedirects";

@@ -1,16 +1,19 @@
 'use client'
 
+import { AlertTriangle } from 'lucide-react'
+
 import ContentTypeEdit from '../ContentTypeEdit'
 import { useEditPageContext } from '../_context/EditPageContext'
 import VersionHistory from './Versions'
 import { RouteLayoutModuleTabContent } from './RouteLayoutModuleTabContent'
 import { ContentVariants } from './LocaleVariants'
-import { LinkedIteratorControl } from './LinkedIteratorControl'
 
 import { TabsContent } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { useTranslations } from '@/i18n'
 
 export const EditTabPanels = () => {
+  const t = useTranslations()
   const {
     activeTab,
     canRestoreVersions,
@@ -23,7 +26,7 @@ export const EditTabPanels = () => {
     onAfterRestore,
     routeLayout,
     sections,
-    linkedIterator,
+    template,
   } = useEditPageContext()
 
   return (
@@ -38,30 +41,42 @@ export const EditTabPanels = () => {
             data-rakun-manager-tab-panel="content"
             data-tour="content-edit-fields"
           >
-            <LinkedIteratorControl />
+            <ContentTypeEdit
+              key={`iterables:${form.formRevision}`}
+              defaultData={form.draft.current}
+              ref={form.iterablesRef}
+              contentType={sections.iterables}
+              parentContentType={contentType}
+              id={contentTypeName}
+              collapsible
+              hideTitle
+            />
+          </TabsContent>
+        ) : null}
+        {template.enabled && template.contentType && template.defaultData ? (
+          <TabsContent
+            value="template"
+            forceMount
+            hidden={activeTab !== 'template'}
+            className="w-full h-full"
+            data-rakun-manager-tab-panel="template"
+            data-tour="content-edit-fields"
+          >
+            <div className="flex items-start gap-3 rounded-md border border-amber-300 bg-amber-500/10 p-3 text-sm text-amber-950 dark:border-amber-500/40 dark:text-amber-100">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <p>{t('contentEdit.sharedTemplateWarning')}</p>
+            </div>
             <div
-              className={
-                linkedIterator.enabled &&
-                linkedIterator.mode === 'linked' &&
-                linkedIterator.state?.configured &&
-                !linkedIterator.state.canUpdateShared
-                  ? 'pointer-events-none opacity-70'
-                  : undefined
-              }
-              aria-disabled={
-                linkedIterator.enabled &&
-                linkedIterator.mode === 'linked' &&
-                linkedIterator.state?.configured &&
-                !linkedIterator.state.canUpdateShared
-              }
+              className={template.state?.canUpdate ? undefined : 'pointer-events-none opacity-70'}
+              aria-disabled={!template.state?.canUpdate}
             >
               <ContentTypeEdit
-                key={`iterables:${form.formRevision}`}
-                defaultData={form.draft.current}
-                ref={form.iterablesRef}
-                contentType={sections.iterables}
+                key={`template:${template.state?.revision ?? 'new'}`}
+                defaultData={template.defaultData}
+                ref={template.ref}
+                contentType={template.contentType}
                 parentContentType={contentType}
-                id={contentTypeName}
+                id={`${contentTypeName}Template`}
                 collapsible
                 hideTitle
               />

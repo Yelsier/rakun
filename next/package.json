@@ -1,6 +1,6 @@
 {
   "name": "@rakun-kit/next",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Next.js adapter for Rakun APIs, manager UI, and media endpoints.",
   "license": "MIT",
   "author": {

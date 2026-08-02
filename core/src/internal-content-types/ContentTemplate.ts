@@ -2,9 +2,9 @@ import ContentType from "../lib/ContentType";
 import { Fields } from "../lib/fields";
 import type { DBOutput } from "../lib/types";
 
-export const LinkedIteratorTemplate = new ContentType({
-  name: "LinkedIteratorTemplate",
-  permissions: "LinkedIteratorTemplate",
+export const ContentTemplate = new ContentType({
+  name: "ContentTemplate",
+  permissions: false,
   fields: {
     contentType: Fields.string().required(),
     payload: Fields.string().required(),
@@ -14,5 +14,5 @@ export const LinkedIteratorTemplate = new ContentType({
   listFields: ["contentType", "revision"],
 }).hideFromManager();
 
-export type LinkedIteratorTemplate = typeof LinkedIteratorTemplate;
-export type LinkedIteratorTemplateRecord = DBOutput<LinkedIteratorTemplate>;
+export type ContentTemplate = typeof ContentTemplate;
+export type ContentTemplateRecord = DBOutput<ContentTemplate>;

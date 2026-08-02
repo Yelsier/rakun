@@ -66,10 +66,15 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/get",
   },
-  "manager.linkedIterator.get": {
+  "manager.template.get": {
     kind: "query",
     method: "post",
-    path: "/manager/linkedIterator/get",
+    path: "/manager/template/get",
+  },
+  "manager.template.update": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/template/update",
   },
   "manager.list": {
     kind: "query",

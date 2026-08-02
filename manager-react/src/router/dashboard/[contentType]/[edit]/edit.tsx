@@ -34,6 +34,8 @@ const EditPageContent = () => {
   const { activeTab, canPreview, handleTabChange, previewState } = useEditPageContext()
   const canResizePreview = useCanResizePreview()
   const previewOpen = canPreview && previewState.previewOpen
+  const moduleNavigationTab =
+    activeTab === 'content' || activeTab === 'template' ? activeTab : undefined
 
   return (
     <div className="container mx-auto h-full min-h-0 px-4 pt-5 pb-4">
@@ -43,7 +45,7 @@ const EditPageContent = () => {
           <ResizablePanelGroup className="min-h-0 w-full flex-1" orientation="horizontal">
             <ResizablePanel style={{ overflow: 'hidden' }} defaultSize={50} minSize={350}>
               <div className="flex h-full min-h-0 min-w-0 gap-4 pr-2">
-                {activeTab === 'content' ? <ModuleNavigation /> : null}
+                {moduleNavigationTab ? <ModuleNavigation tab={moduleNavigationTab} /> : null}
                 <div className="min-h-0 min-w-0 flex-1">
                   <EditTabPanels />
                 </div>
@@ -59,7 +61,7 @@ const EditPageContent = () => {
         ) : (
           <div className="grid min-h-0 flex-1 gap-4">
             <div className="flex h-full min-h-0 min-w-0 gap-4">
-              {activeTab === 'content' ? <ModuleNavigation /> : null}
+              {moduleNavigationTab ? <ModuleNavigation tab={moduleNavigationTab} /> : null}
               <div className="min-h-0 min-w-0 flex-1">
                 <EditTabPanels />
               </div>

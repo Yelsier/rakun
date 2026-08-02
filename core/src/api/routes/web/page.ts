@@ -29,8 +29,11 @@ import { populateRelations } from "../../utils/populates/populateRelations";
 import { resolveRedirect } from "../../utils/redirects/resolveRedirect";
 import { validateModule } from "../../utils/validateModule";
 import { resolveSeo } from "./seo";
-import { applyEffectiveIterator } from "../../utils/linkedIterator";
-import { ITERATOR_UNLINKED_FIELD_NAME } from "../../../lib/systemFields";
+import {
+  applyContentTemplate,
+  getContentTemplate,
+  isTemplateContentSlot,
+} from "../../utils/contentTemplate";
 import { isIteratorItemVisible } from "../../utils/iteratorVisibility";
 import type { IteratorItemVisibilityCondition } from "../../../lib/fields/List";
 
@@ -129,7 +132,7 @@ export const buildPageOutput = async ({
   data,
   language,
   tracePrefix = "web.page",
-  preferDocumentIterator = false,
+  templateModules,
 }: {
   path: string;
   route: DBOutput<Route>;
@@ -139,21 +142,39 @@ export const buildPageOutput = async ({
   data: PageContentData;
   language: DBOutput<Language>;
   tracePrefix?: string;
-  preferDocumentIterator?: boolean;
+  templateModules?: unknown[];
 }): Promise<PageOutput> => {
   const db = await getMongoService();
   const surface = tracePrefix === "web.previewPage" ? "preview" : "web";
   const localeCode = language.code || "en";
-  const effectiveData = await applyEffectiveIterator({
-    db,
-    contentType,
-    document: data,
-    preferDocument: preferDocumentIterator,
-  });
   const iterator = contentType.hasIterator
-    ? effectiveData[ITERATOR_FIELD_NAME]
+    ? data[ITERATOR_FIELD_NAME]
     : [];
   const iteratorModules = Array.isArray(iterator) ? iterator : [];
+  const configuredTemplate = contentType.hasTemplate
+    ? templateModules ?? (await getContentTemplate(db, contentType)).modules
+    : undefined;
+  const templateModuleIndexes = new Set<number>();
+  if (configuredTemplate) {
+    let outputIndex = 0;
+    for (const entry of configuredTemplate) {
+      if (isTemplateContentSlot(entry)) {
+        outputIndex += iteratorModules.length;
+        continue;
+      }
+
+      templateModuleIndexes.add(outputIndex++);
+    }
+  }
+  const sourceData = configuredTemplate
+    ? ({
+        ...data,
+        [ITERATOR_FIELD_NAME]: applyContentTemplate(
+          configuredTemplate,
+          iteratorModules,
+        ),
+      } as PageContentData)
+    : data;
 
   return runContentHookContext(
     {
@@ -168,7 +189,7 @@ export const buildPageOutput = async ({
     },
     async () => {
       const linksPopulated = await populateLinks(
-        effectiveData as DBOutput<ContentType>,
+        sourceData as DBOutput<ContentType>,
       );
       Logger.addTrace(`${tracePrefix}: links populated`);
 
@@ -215,8 +236,8 @@ export const buildPageOutput = async ({
 
       const {
         [ITERATOR_FIELD_NAME]: modules = iteratorModules,
-        [ITERATOR_UNLINKED_FIELD_NAME]: _iteratorUnlinked,
         [SEO_FIELD_NAME]: seo,
+        _iteratorUnlinked: _legacyIteratorUnlinked,
         ...info
       } = populatedTranslated;
       const contentModulesSource = Array.isArray(modules) ? modules : [];
@@ -329,32 +350,81 @@ export const buildPageOutput = async ({
             ),
           );
 
-          const contentModules = (
-            (await Promise.all(
-              [
-                ...(contentModulesSource as IterableContentTypes)
-                  .filter((item) =>
-                    isIteratorItemVisible(
-                      item,
-                      info as Record<string, unknown>,
-                    ),
-                  )
-                  .map((m) => ({
-                    ...m.value,
-                  })),
-              ].map(async (item) => {
-                const moduleContentType = getContentTypeByName(item._type);
-                if (!moduleContentType) return item;
+          const resolveEntry = async (
+            entry: IterableContentTypes[number],
+            templateEntry = false,
+          ) => {
+            if (isTemplateContentSlot(entry)) return entry;
 
-                return await resolveContentOutput({
+            const moduleContentType = getContentTypeByName(entry.value._type);
+            const resolved = moduleContentType
+              ? await resolveContentOutput({
                   db,
                   contentType: moduleContentType,
-                  data: item as never,
+                  data: entry.value as never,
                   surface,
-                });
-              }),
-            )) as PageModule[]
-          ).map(validateModule);
+                })
+              : entry.value;
+
+            if (!templateEntry) {
+              return { ...entry, value: validateModule(resolved as PageModule) };
+            }
+
+            return { ...entry, value: resolved };
+          };
+          const visible = (item: IterableContentTypes[number]) =>
+            isIteratorItemVisible(item, info as Record<string, unknown>);
+          const filterNestedVisibleItems = (value: unknown): unknown => {
+            if (Array.isArray(value)) {
+              return value.flatMap((item) => {
+                if (
+                  item &&
+                  typeof item === "object" &&
+                  "name" in item &&
+                  "value" in item &&
+                  !visible(item as IterableContentTypes[number])
+                ) {
+                  return [];
+                }
+
+                return [filterNestedVisibleItems(item)];
+              });
+            }
+
+            if (!value || typeof value !== "object") return value;
+
+            return Object.fromEntries(
+              Object.entries(value).map(([key, item]) => [
+                key,
+                filterNestedVisibleItems(item),
+              ]),
+            );
+          };
+          const assembledEntries = await Promise.all(
+            (contentModulesSource as IterableContentTypes)
+              .map((entry, index) => ({ entry, index }))
+              .filter(({ entry }) => visible(entry))
+              .map(async ({ entry, index }) => ({
+                entry: await resolveEntry(
+                  {
+                    ...entry,
+                    value: filterNestedVisibleItems(entry.value) as typeof entry.value,
+                  },
+                  templateModuleIndexes.has(index),
+                ),
+                index,
+              })),
+          );
+          const contentModules = assembledEntries.map(
+            ({ entry }) => entry.value as PageModule,
+          );
+          const templateModuleIds = configuredTemplate
+            ? assembledEntries.flatMap(({ entry, index }) =>
+                templateModuleIndexes.has(index)
+                  ? [(entry.value as PageModule)._id]
+                  : [],
+              )
+            : undefined;
 
           const layout = [
             ...layoutModuleSelections
@@ -378,6 +448,7 @@ export const buildPageOutput = async ({
             renderMode: route.dynamic ? "dynamic" : "static",
             ttl: route.dynamic ? undefined : 86400,
             modules: contentModules,
+            templateModuleIds,
             language,
             seo: resolvedSeo,
             layout,

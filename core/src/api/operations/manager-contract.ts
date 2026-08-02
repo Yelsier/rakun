@@ -6,9 +6,10 @@ import { defineOperationContract } from "./types";
 import { Language, ManagerUser } from "../../internal-content-types";
 import { EncodedContentTypeSchema } from "../../lib/ContentType";
 import {
-  linkedIteratorGetInput,
-  linkedIteratorStateOutput,
-} from "../../schemas/manager/linkedIterator";
+  templateGetInput,
+  templateStateOutput,
+  templateUpdateInput,
+} from "../../schemas/manager/template";
 import {
   accountInfoOutput,
   backupRecord,
@@ -247,12 +248,20 @@ export const createManagerOperationContracts = () =>
       output: z.any(),
       method: "post",
     }),
-    "manager.linkedIterator.get": defineOperationContract({
+    "manager.template.get": defineOperationContract({
       access: "auth",
       kind: "query",
-      description: "Get the effective linked iterator state for a content type",
-      input: linkedIteratorGetInput,
-      output: linkedIteratorStateOutput,
+      description: "Get the shared template for a content type",
+      input: templateGetInput,
+      output: templateStateOutput,
+      method: "post",
+    }),
+    "manager.template.update": defineOperationContract({
+      access: "auth",
+      kind: "mutation",
+      description: "Create or update the shared template for a content type",
+      input: templateUpdateInput,
+      output: templateStateOutput,
       method: "post",
     }),
     "manager.list": defineOperationContract({

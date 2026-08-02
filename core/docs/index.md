@@ -115,8 +115,12 @@ Special manager editors are selected with `.type(...)`, for example `Slug`,
 paths in web output; direct URLs pass through unchanged.
 
 Use `iterator` for ordered page modules. Rakun stores it as the reserved
-`_iterator` field. `linkedIterator: true` shares a canonical module structure
-between documents while allowing a document to be explicitly unlinked.
+`_iterator` field and edits it in the manager's Content tab. When the content
+type has a `hasPage: true` route, Rakun automatically enables a separate shared
+Template composition using the same module list as `iterator`. The Template
+editor makes a special Content slot available at the root and inside
+`f.blocks(...)`. A valid template contains exactly one such slot; web and
+preview output replace it with the current document's iterator.
 
 ```ts
 const Page = new ContentType({
@@ -125,10 +129,19 @@ const Page = new ContentType({
     title: f.string().required(),
     slug: f.string().type('Slug').required(),
   },
-  iterator: [{ contentType: Hero, type: 'new' }],
-  linkedIterator: true,
+  iterator: [
+    { contentType: UseCaseSection, type: 'new' },
+    { contentType: Hero, type: 'new' },
+    { contentType: LayoutWithInfo, type: 'new' },
+    { contentType: Newsletter, type: 'new' },
+  ],
 })
 ```
+
+For example, place Content inside an otherwise empty
+`LayoutWithInfo.fields.blocks` list to render the document-specific sections
+inside that shared wrapper. Route `layout` modules such as header and footer
+remain outside the assembled template.
 
 Content type names, field names and reserved fields are persisted API. Do not
 rename them without a data migration and a review of manager and web consumers.

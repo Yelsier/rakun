@@ -12,6 +12,7 @@ export const PreviewSnapshot = new ContentType({
     languageCode: Fields.string().required(),
     path: Fields.string().required(),
     data: Fields.string().required(),
+    templatePayload: Fields.string(),
     createdBy: Fields.string().type("Id").required(),
     expiresAt: Fields.date().type("DateTime").required(),
   },

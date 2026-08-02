@@ -17,6 +17,7 @@ type UseContentPreviewParams = {
   preview?: ManagerPreviewConfig
   previewRoute?: ContentTypeRouteMeta
   readFormData: (options?: { showSaveError?: boolean }) => unknown | undefined
+  readTemplateModules?: () => unknown[] | undefined
 }
 
 const defaultPreviewTokenParam = 'rakun_preview'
@@ -40,7 +41,7 @@ type PreviewInspectorMessage = {
 
 export type PreviewModuleSelectMessage = {
   type: typeof previewModuleSelectMessageType
-  entryType: 'content' | 'layout'
+  entryType: 'content' | 'layout' | 'template'
   moduleId: string
   moduleType: string
   index: number
@@ -60,7 +61,13 @@ const readPreviewModuleSelectMessage = (
   const message = value as Record<string, unknown>
 
   if (message.type !== previewModuleSelectMessageType) return null
-  if (message.entryType !== 'content' && message.entryType !== 'layout') return null
+  if (
+    message.entryType !== 'content' &&
+    message.entryType !== 'layout' &&
+    message.entryType !== 'template'
+  ) {
+    return null
+  }
   if (typeof message.moduleId !== 'string') return null
   if (typeof message.moduleType !== 'string') return null
 
@@ -111,6 +118,7 @@ export const useContentPreview = ({
   preview,
   previewRoute,
   readFormData,
+  readTemplateModules,
 }: UseContentPreviewParams) => {
   const t = useTranslations()
   const { mutateAsync: createPreview, isPending: isPreviewPending } = useManagerMutation(
@@ -281,8 +289,9 @@ export const useContentPreview = ({
     if (!preview || !previewRoute) return
 
     const data = readFormData()
+    const templateModules = readTemplateModules?.()
 
-    if (!data) return
+    if (!data || (readTemplateModules && !templateModules)) return
 
     setPreviewOpen(true)
     setPreviewError(null)
@@ -294,6 +303,7 @@ export const useContentPreview = ({
         contentType: contentTypeName,
         documentId: contentTypeId,
         data,
+        templateModules,
         languageCode,
         routeKey: previewRoute.key,
       })
@@ -321,6 +331,7 @@ export const useContentPreview = ({
     previewRoute,
     previewUrl,
     readFormData,
+    readTemplateModules,
     updatePreviewFrame,
   ])
 

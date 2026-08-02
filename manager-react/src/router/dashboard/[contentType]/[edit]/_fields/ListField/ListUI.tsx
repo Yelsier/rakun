@@ -32,7 +32,11 @@ import {
   SortableItemHandle,
 } from '@/components/ui/sortable'
 import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
-import { getIteratorModuleDisplay, IteratorModulePickerDialog } from './IteratorModulePicker'
+import {
+  getIteratorModuleDisplay,
+  isApiOnlyNewRelationField,
+  IteratorModulePickerDialog,
+} from './IteratorModulePicker'
 import { IteratorVisibilityDialog } from './IteratorVisibilityDialog'
 import {
   getModuleDistinguishingLabel,
@@ -177,18 +181,6 @@ const getModuleId = (item: ListFieldValues[number]) => {
   }
 
   return undefined
-}
-
-const isApiOnlyNewRelationField = (
-  field: ListPropsRef['fields'][number]['field']
-): field is EncodedRelationField => {
-  const relationField = getRelationField(field)
-
-  return Boolean(
-    relationField &&
-    relationField.only === 'new' &&
-    Object.values(relationField.contentType.fields).every((field) => field.visibility === 'api')
-  )
 }
 
 const getApiOnlyNewRelationValue = (field: EncodedRelationField): RelationNewValue => ({

@@ -1,11 +1,13 @@
 import bcrypt from "bcrypt";
 import { MongoClient, type Db, type Document } from "mongodb";
 import {
+  ContentTemplate,
   HelloWorld,
   LiteralTranslation,
   Media,
   RouteLocaleVariant,
   Seo,
+  TemplateContent,
 } from "@rakun-kit/next/internal-content-types";
 import {
   ITERATOR_FIELD_NAME,
@@ -32,6 +34,11 @@ import {
   RelationLevel2,
   RelationLevel3,
   RelationPlayground,
+  UseCase,
+  UseCaseContent,
+  UseCaseHero,
+  UseCaseLayoutWithInfo,
+  UseCaseNewsletter,
 } from "./content-types";
 
 const now = () => new Date();
@@ -294,6 +301,36 @@ const buildLegacyPrefixedCategoryPath = ({
   return `/${code}/categories/${slug}/`.replace(/\/\/+/g, "/");
 };
 
+const buildUseCasePath = ({
+  useCase,
+  language,
+  languages = [],
+}: {
+  useCase: Document;
+  language: Document;
+  languages?: readonly Document[];
+}) => {
+  const languagePrefix = getLanguagePathPrefix(language);
+  const slug = getTranslatableValue(useCase.slug, String(language.code), languages);
+
+  return `/${languagePrefix}/use-cases/${slug}/`.replace(/\/\/+/g, "/");
+};
+
+const buildLegacyPrefixedUseCasePath = ({
+  useCase,
+  language,
+  languages = [],
+}: {
+  useCase: Document;
+  language: Document;
+  languages?: readonly Document[];
+}) => {
+  const code = String(language.code);
+  const slug = getTranslatableValue(useCase.slug, code, languages);
+
+  return `/${code}/use-cases/${slug}/`.replace(/\/\/+/g, "/");
+};
+
 const pageLink = (route: Document, page: Document) => ({
   routeId: route._id.toString(),
   contentTypeId: page._id.toString(),
@@ -410,6 +447,50 @@ const upsertCategoryRouteMap = async ({
     path,
     contentType: Category.name,
     contentTypeId: category._id,
+    routeId: route._id,
+    languageId: language._id,
+    _type: "RouteMap",
+    updatedAt: now(),
+  };
+
+  try {
+    await db.collection("RouteMap").updateOne(
+      { path },
+      {
+        $set: payload,
+        $setOnInsert: {
+          createdAt: now(),
+        },
+      },
+      { upsert: true },
+    );
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) {
+      throw error;
+    }
+
+    await db.collection("RouteMap").updateOne({ path }, { $set: payload });
+  }
+};
+
+const upsertUseCaseRouteMap = async ({
+  db,
+  useCase,
+  route,
+  language,
+  languages = [],
+}: {
+  db: Db;
+  useCase: Document;
+  route: Document;
+  language: Document;
+  languages?: readonly Document[];
+}) => {
+  const path = buildUseCasePath({ useCase, language, languages });
+  const payload = {
+    path,
+    contentType: UseCase.name,
+    contentTypeId: useCase._id,
     routeId: route._id,
     languageId: language._id,
     _type: "RouteMap",
@@ -670,6 +751,93 @@ const previewHelloWorldModule = (
     },
   },
 });
+
+const previewUseCaseContentModule = ({
+  eyebrow,
+  title,
+  body,
+}: {
+  eyebrow: string;
+  title: string;
+  body: string;
+}) => ({
+  name: UseCaseContent.name,
+  value: {
+    type: "new",
+    data: {
+      _type: UseCaseContent.name,
+      eyebrow,
+      title,
+      body: richText(body),
+    },
+  },
+});
+
+export const previewUseCaseTemplate = () => [
+  {
+    name: UseCaseHero.name,
+    value: {
+      type: "new",
+      data: {
+        _type: UseCaseHero.name,
+        eyebrow: "Customer story",
+        title: "Use case title",
+        summary: "Use case summary",
+        _bindings: {
+          fields: {
+            title: {
+              contentType: UseCase.name,
+              path: "title",
+            },
+            summary: {
+              contentType: UseCase.name,
+              path: "summary",
+            },
+          },
+        },
+      },
+    },
+  },
+  {
+    name: UseCaseLayoutWithInfo.name,
+    value: {
+      type: "new",
+      data: {
+        _type: UseCaseLayoutWithInfo.name,
+        asideEyebrow: "One shared template",
+        asideTitle: "This aside belongs to Template",
+        asideBody:
+          "Edit this card once in the Template tab. The sections beside it remain unique to each use case in Content.",
+        blocks: [
+          {
+            name: TemplateContent.name,
+            value: {
+              type: "new",
+              data: {
+                _type: TemplateContent.name,
+              },
+            },
+          },
+        ],
+      },
+    },
+  },
+  {
+    name: UseCaseNewsletter.name,
+    value: {
+      type: "new",
+      data: {
+        _type: UseCaseNewsletter.name,
+        eyebrow: "Shared newsletter",
+        title: "Hero, aside and newsletter are configured once",
+        body:
+          "Change this module from either use case and the shared template updates both pages.",
+        buttonLabel: "Edit in the manager",
+        buttonHref: "http://localhost:3000/backend",
+      },
+    },
+  },
+];
 
 const previewFeatureCarouselModule = (featuredProject: Document) => ({
   name: FeatureCarousel.name,
@@ -1201,6 +1369,92 @@ export const seedPreviewData = async ({
       throw new Error("Failed to create preview projects.");
     }
 
+    const seededUseCases = await Promise.all(
+      [
+        {
+          title: "Launch a multi-market campaign without duplicating layout",
+          slug: "multi-market-campaign",
+          summary:
+            "A campaign team keeps every market story unique while reusing the same hero, information rail and newsletter.",
+          industry: "Marketing",
+          content: [
+            {
+              eyebrow: "Challenge",
+              title: "Every market needed its own narrative",
+              body:
+                "The team wanted local editors to own the central story without giving them responsibility for the shared campaign shell.",
+            },
+            {
+              eyebrow: "Result",
+              title: "Editors now work only in Content",
+              body:
+                "The hero and newsletter live in Template, while these sections are stored only on this use case document.",
+            },
+          ],
+        },
+        {
+          title: "Publish product stories with a consistent information rail",
+          slug: "product-stories",
+          summary:
+            "A product studio standardizes the surrounding experience and lets each story keep its own structure and copy.",
+          industry: "Product design",
+          content: [
+            {
+              eyebrow: "Approach",
+              title: "A shared frame, with document-owned sections",
+              body:
+                "The Content slot is nested inside LayoutWithInfo. At render time Rakun inserts this document's iterator exactly at that position.",
+            },
+            {
+              eyebrow: "Verification",
+              title: "Compare both seeded pages",
+              body:
+                "Their hero title and summary resolve from the current document, and their body sections differ, but the aside and newsletter remain identical.",
+            },
+          ],
+        },
+      ].map((useCase) =>
+        db.collection(UseCase.name).findOneAndUpdate(
+          { slug: useCase.slug },
+          {
+            $setOnInsert: {
+              title: useCase.title,
+              slug: useCase.slug,
+              summary: useCase.summary,
+              industry: useCase.industry,
+              [ITERATOR_FIELD_NAME]: useCase.content.map(previewUseCaseContentModule),
+              _type: UseCase.name,
+              createdAt: now(),
+              updatedAt: now(),
+            },
+          },
+          { upsert: true, returnDocument: "after" },
+        ),
+      ),
+    );
+    const useCases = seededUseCases.filter(Boolean) as Array<
+      NonNullable<(typeof seededUseCases)[number]>
+    >;
+
+    if (useCases.length !== seededUseCases.length) {
+      throw new Error("Failed to create preview use cases.");
+    }
+
+    await db.collection(ContentTemplate.name).updateOne(
+      { contentType: UseCase.name },
+      {
+        $setOnInsert: {
+          contentType: UseCase.name,
+          payload: JSON.stringify(previewUseCaseTemplate()),
+          revision: 1,
+          _type: ContentTemplate.name,
+          createdAt: now(),
+          updatedAt: now(),
+        },
+      },
+      { upsert: true },
+    );
+
     const page = await db.collection(Page.name).findOneAndUpdate(
       { "slug.en": "home" },
       {
@@ -1573,6 +1827,10 @@ export const seedPreviewData = async ({
       contentType: Category.name,
       field: "slug",
     });
+    const useCaseRoute = await db.collection("Route").findOne({
+      contentType: UseCase.name,
+      field: "slug",
+    });
 
     if (route) {
       await db.collection("RouteLayoutModule").updateOne(
@@ -1708,6 +1966,15 @@ export const seedPreviewData = async ({
                     }),
                   )
                 : []),
+              ...(useCaseRoute
+                ? useCases.map((useCase) =>
+                    buildLegacyPrefixedUseCasePath({
+                      useCase,
+                      language: routeLanguage,
+                      languages,
+                    }),
+                  )
+                : []),
             ]),
         ),
       );
@@ -1720,6 +1987,7 @@ export const seedPreviewData = async ({
               route._id,
               ...(projectRoute ? [projectRoute._id] : []),
               ...(categoryRoute ? [categoryRoute._id] : []),
+              ...(useCaseRoute ? [useCaseRoute._id] : []),
             ],
           },
         });
@@ -1764,6 +2032,17 @@ export const seedPreviewData = async ({
                 }),
               )
             : []),
+          ...(useCaseRoute
+            ? useCases.map((useCase) =>
+                upsertUseCaseRouteMap({
+                  db,
+                  useCase,
+                  route: useCaseRoute,
+                  language: routeLanguage,
+                  languages,
+                }),
+              )
+            : []),
         ]),
       );
 
@@ -1802,6 +2081,28 @@ export const seedPreviewData = async ({
 
         await db.collection("RouteLayoutModule").updateOne(
           { routeId: categoryRoute._id, key: "footer" },
+          {
+            $set: {
+              moduleId: footer._id.toString(),
+              updatedAt: now(),
+            },
+          },
+        );
+      }
+
+      if (useCaseRoute) {
+        await db.collection("RouteLayoutModule").updateOne(
+          { routeId: useCaseRoute._id, key: "header" },
+          {
+            $set: {
+              moduleId: header._id.toString(),
+              updatedAt: now(),
+            },
+          },
+        );
+
+        await db.collection("RouteLayoutModule").updateOne(
+          { routeId: useCaseRoute._id, key: "footer" },
           {
             $set: {
               moduleId: footer._id.toString(),

@@ -51,6 +51,101 @@ export const PageSection = new ContentType({
   listFields: ['title'],
 })
 
+export const UseCaseContent = new ContentType({
+  name: 'UseCaseContent',
+  modulePicker: {
+    title: 'preview.modules.useCaseContent.title',
+    description: 'preview.modules.useCaseContent.description',
+    icon: 'FileText',
+  },
+  fields: {
+    eyebrow: f.string(),
+    title: f.string().required(),
+    body: f.string().type('RichText'),
+  },
+}).hideFromManager()
+
+export const UseCaseHero = new ContentType({
+  name: 'UseCaseHero',
+  modulePicker: {
+    title: 'preview.modules.useCaseHero.title',
+    description: 'preview.modules.useCaseHero.description',
+    icon: 'Sparkles',
+  },
+  fields: {
+    eyebrow: f.string(),
+    title: f.string().required(),
+    summary: f.string().type('Textarea'),
+  },
+}).hideFromManager()
+
+export const UseCaseLayoutWithInfo = new ContentType({
+  name: 'UseCaseLayoutWithInfo',
+  modulePicker: {
+    title: 'preview.modules.useCaseLayoutWithInfo.title',
+    description: 'preview.modules.useCaseLayoutWithInfo.description',
+    icon: 'PanelRight',
+  },
+  fields: {
+    asideEyebrow: f.string(),
+    asideTitle: f.string().required(),
+    asideBody: f.string().type('Textarea'),
+    blocks: f.blocks([]),
+  },
+}).hideFromManager()
+
+export const UseCaseNewsletter = new ContentType({
+  name: 'UseCaseNewsletter',
+  modulePicker: {
+    title: 'preview.modules.useCaseNewsletter.title',
+    description: 'preview.modules.useCaseNewsletter.description',
+    icon: 'Mail',
+  },
+  fields: {
+    eyebrow: f.string(),
+    title: f.string().required(),
+    body: f.string().type('Textarea'),
+    buttonLabel: f.string(),
+    buttonHref: f.string().type('Url'),
+  },
+}).hideFromManager()
+
+export const UseCase = new ContentType({
+  name: 'UseCase',
+  dynamicDataSource: true,
+  menu: {
+    title: 'preview.contentTypes.useCase.menu',
+    icon: 'BriefcaseBusiness',
+    category: 'preview.contentTypes.category.editorial',
+  },
+  fields: {
+    title: f.string().required(),
+    slug: f.string().type('Slug').required(),
+    summary: f.string().type('Textarea').required(),
+    industry: f.string().required(),
+  },
+  iterator: [
+    {
+      contentType: UseCaseContent,
+      type: 'new',
+    },
+    {
+      contentType: UseCaseHero,
+      type: 'new',
+    },
+    {
+      contentType: UseCaseLayoutWithInfo,
+      type: 'new',
+    },
+    {
+      contentType: UseCaseNewsletter,
+      type: 'new',
+    },
+  ],
+  uniques: [['slug']],
+  listFields: ['title', 'slug', 'industry'],
+})
+
 export const Category = new ContentType({
   name: 'Category',
   dynamicDataSource: true,
@@ -69,7 +164,6 @@ export const Category = new ContentType({
     title: f.string().required(),
     slug: f.string().type('Slug').required(),
   },
-  linkedIterator: true,
   uniques: [['slug']],
   listFields: ['title', 'slug'],
 })
@@ -389,6 +483,11 @@ export const previewContentTypes = [
   Header,
   Footer,
   PageSection,
+  UseCaseContent,
+  UseCaseHero,
+  UseCaseLayoutWithInfo,
+  UseCaseNewsletter,
+  UseCase,
   Category,
   Project,
   FeatureCarouselItem,
@@ -410,6 +509,11 @@ export const keyedContentTypes = {
   Header,
   Footer,
   PageSection,
+  UseCaseContent,
+  UseCaseHero,
+  UseCaseLayoutWithInfo,
+  UseCaseNewsletter,
+  UseCase,
   Category,
   Project,
   FeatureCarouselItem,

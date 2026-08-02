@@ -57,7 +57,7 @@ export type RakunPageRendererProps = {
 };
 
 type PreviewModuleRenderMeta = {
-  entryType: "content" | "layout";
+  entryType: "content" | "layout" | "template";
   index: number;
   layoutIndex: number;
   layoutKey?: string;
@@ -164,7 +164,9 @@ export async function RakunPageRenderer({
           const index = pageModuleIndex++;
 
           return renderModule(module, `content:${module._id}:${moduleIndex}`, {
-            entryType: "content",
+            entryType: page.templateModuleIds?.includes(module._id)
+              ? "template"
+              : "content",
             index,
             layoutIndex,
             moduleIndex,

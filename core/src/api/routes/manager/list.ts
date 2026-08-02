@@ -17,7 +17,7 @@ import { syncConfiguredRoutes } from "../../utils/routes/syncConfiguredRoutes";
 import { parseSafeManagerQuery } from "../../utils/safeManagerQuery";
 import { sanitizeManagerOutput } from "../../utils/sanitizeManagerOutput";
 import { resolveMediaRecordUrls } from "./media/resolveMediaRecordUrls";
-import { forbidLinkedIteratorTemplateAccess } from "./linkedIterator";
+import { forbidContentTemplateAccess } from "./template";
 import { getLanguages } from "../../utils/getLanguages";
 
 export const listHandler = async ({
@@ -31,7 +31,7 @@ export const listHandler = async ({
   const { contentType: contentTypeName } = input;
   const listingTrash = input.query.filter?._trashed === true;
   const contentType = requireContentType(contentTypeName);
-  forbidLinkedIteratorTemplateAccess(contentType);
+  forbidContentTemplateAccess(contentType);
   const query = parseSafeManagerQuery(contentType, input.query);
   const user = ctx.getUser();
 

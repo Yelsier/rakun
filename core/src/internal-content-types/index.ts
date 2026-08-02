@@ -10,7 +10,8 @@ export * from "./ContentVersion";
 export * from "./Language";
 export * from "./LiteralTranslation";
 export * from './LoginIpBlock'
-export * from "./LinkedIteratorTemplate";
+export * from "./ContentTemplate";
+export * from "./TemplateContent";
 export * from "./ManagerRole";
 export * from "./ManagerFavorite";
 export * from "./ManagerNotification";

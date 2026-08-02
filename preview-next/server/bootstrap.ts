@@ -9,6 +9,7 @@ import {
   Header,
   PreviewPage,
   Project,
+  UseCase,
   previewContentTypes,
 } from './content-types'
 import { previewManagerLanguages } from './manager-locales'
@@ -87,6 +88,20 @@ export const createPreviewBootstrap = () =>
         dynamic: false,
         defaultBasePath: 'categories',
         infoSchema: Category.getPopulatedSchema(),
+        layout: [
+          { type: 'module', key: 'header', contentType: Header.name },
+          { type: 'content' },
+          { type: 'module', key: 'footer', contentType: Footer.name },
+        ],
+      },
+      {
+        key: 'useCase',
+        contentType: UseCase.name,
+        field: 'slug',
+        hasPage: true,
+        dynamic: false,
+        defaultBasePath: 'use-cases',
+        infoSchema: UseCase.getPopulatedSchema(),
         layout: [
           { type: 'module', key: 'header', contentType: Header.name },
           { type: 'content' },

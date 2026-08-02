@@ -50,8 +50,8 @@ export { slugify } from "./lib/utils/slugify";
 export { encodeContentTypeForManager } from "./lib/Registry";
 export {
   ITERATOR_FIELD_NAME,
-  ITERATOR_UNLINKED_FIELD_NAME,
   SEO_FIELD_NAME,
+  TEMPLATE_FIELD_NAME,
 } from "./lib/systemFields";
 export {
   LOCALE_VARIANT_GROUP_FIELD,
@@ -153,12 +153,10 @@ export type {
   SetRouteLayoutOverrideOutput,
 } from "./schemas/manager/routeLayout";
 export type {
-  LinkedIteratorAction,
-  LinkedIteratorControl,
-  LinkedIteratorGetInput,
-  LinkedIteratorMode,
-  LinkedIteratorStateOutput,
-} from "./schemas/manager/linkedIterator";
+  TemplateGetInput,
+  TemplateStateOutput,
+  TemplateUpdateInput,
+} from "./schemas/manager/template";
 export type { DuplicateInput } from "./schemas/manager/duplicate";
 export type {
   CommentRecord,

@@ -26,6 +26,8 @@ type ModuleNavigationItem = {
   children: ModuleNavigationItem[]
 }
 
+type ModuleNavigationTab = 'content' | 'template'
+
 const moduleSelector = '[data-rakun-manager-module-item]'
 const ACTIVATION_DISTANCE_PX = 4
 
@@ -391,14 +393,18 @@ const ModuleNavHeader = memo(function ModuleNavHeader({ count }: { count: number
   )
 })
 
-const ModuleNavAddButton = memo(function ModuleNavAddButton() {
+const ModuleNavAddButton = memo(function ModuleNavAddButton({
+  tab,
+}: {
+  tab: ModuleNavigationTab
+}) {
   const t = useTranslations()
 
   const openModulePicker = () => {
-    const contentPanel = document.querySelector<HTMLElement>(
-      '[data-rakun-manager-tab-panel="content"]',
+    const tabPanel = document.querySelector<HTMLElement>(
+      `[data-rakun-manager-tab-panel="${tab}"]`,
     )
-    const trigger = contentPanel?.querySelector<HTMLButtonElement>(
+    const trigger = tabPanel?.querySelector<HTMLButtonElement>(
       '[data-rakun-manager-add-module-trigger]',
     )
     trigger?.click()
@@ -588,7 +594,7 @@ const NavigationItems = memo(function NavigationItems({
   )
 })
 
-const ModuleNavList = () => {
+const ModuleNavList = ({ tab }: { tab: ModuleNavigationTab }) => {
   const t = useTranslations()
   const [activeId, setActiveId] = useState<string>()
   const [items, setItems] = useState<ModuleNavigationItem[]>([])
@@ -636,10 +642,10 @@ const ModuleNavList = () => {
   }, [])
 
   useEffect(() => {
-    const contentPanel = document.querySelector<HTMLElement>(
-      '[data-rakun-manager-tab-panel="content"]',
+    const tabPanel = document.querySelector<HTMLElement>(
+      `[data-rakun-manager-tab-panel="${tab}"]`,
     )
-    if (!contentPanel) return
+    if (!tabPanel) return
 
     let scheduled = false
     let cancelled = false
@@ -678,7 +684,7 @@ const ModuleNavList = () => {
         if (draggingRef.current || cancelled) return
 
         applyTree(
-          buildModuleTree(contentPanel, (index) =>
+          buildModuleTree(tabPanel, (index) =>
             t('modules.fallbackTitleNumbered', { number: index + 1 }),
           ),
         )
@@ -686,7 +692,7 @@ const ModuleNavList = () => {
     }
     const observer = new MutationObserver(update)
 
-    observer.observe(contentPanel, {
+    observer.observe(tabPanel, {
       childList: true,
       subtree: true,
       attributes: true,
@@ -704,7 +710,7 @@ const ModuleNavList = () => {
       window.clearTimeout(commitTimerRef.current)
       observer.disconnect()
     }
-  }, [t])
+  }, [t, tab])
 
   return (
     <>
@@ -726,12 +732,12 @@ const ModuleNavList = () => {
           )}
         </div>
       </ScrollArea>
-      <ModuleNavAddButton />
+      <ModuleNavAddButton tab={tab} />
     </>
   )
 }
 
-export const ModuleNavigation = () => {
+export const ModuleNavigation = ({ tab }: { tab: ModuleNavigationTab }) => {
   const t = useTranslations()
 
   return (
@@ -740,7 +746,7 @@ export const ModuleNavigation = () => {
       aria-label={t('modules.navigation')}
     >
       <div className="flex h-full min-h-0 flex-col">
-        <ModuleNavList />
+        <ModuleNavList tab={tab} />
       </div>
     </aside>
   )

@@ -4,6 +4,7 @@ export const createPreviewInput = z.object({
   contentType: z.string(),
   documentId: z.string().optional(),
   data: z.record(z.string(), z.any()),
+  templateModules: z.array(z.unknown()).optional(),
   languageCode: z.string().optional(),
   routeKey: z.string().optional(),
 });

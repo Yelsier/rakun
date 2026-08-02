@@ -373,9 +373,16 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'pagination.goToNext': 'Ir a la página siguiente',
   'contentEdit.tabInfo': 'Info',
   'contentEdit.tabContent': 'Contenido',
+  'contentEdit.tabTemplate': 'Template',
   'contentEdit.tabSeo': 'Seo',
   'contentEdit.tabVariants': 'Variantes',
   'contentEdit.tabHistory': 'Historial',
+  'contentEdit.templateContent': 'Contenido',
+  'contentEdit.templateContentDescription':
+    'Renderiza aquí los módulos de la pestaña Contenido de este documento.',
+  'contentEdit.couldNotSaveTemplate': 'No se pudo guardar el template compartido',
+  'contentEdit.sharedTemplateWarning':
+    'Este template es compartido. Los cambios que hagas aquí se aplicarán a todos los contenidos de este tipo.',
   'contentEdit.saveAsDraft': 'Guardar como borrador',
   'contentEdit.saveOptions': 'Opciones de guardado',
   'contentEdit.moreActions': 'Más acciones',

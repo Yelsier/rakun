@@ -45,6 +45,7 @@ export type ContentTypeRouteMeta = {
 
 export type EditPageTab =
   | 'content'
+  | 'template'
   | 'info'
   | 'seo'
   | 'variants'

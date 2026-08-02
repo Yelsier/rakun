@@ -1,6 +1,9 @@
 import type ContentType from "./ContentType";
 import type { AnyField } from "./fields/Field";
+import { relationField } from "./fields/Relation";
+import { TemplateContent } from "../internal-content-types/TemplateContent";
 import { getRakunBootstrapOptions } from "../bootstrapState";
+import { ITERATOR_FIELD_NAME } from "./systemFields";
 
 type EncodedField = {
   schema: undefined;
@@ -46,7 +49,10 @@ export function getContentTypes() {
   return Object.values(registry).concat(Object.values(internalRegistry));
 }
 
-export const encodeContentTypeForManager = <T extends ContentType>(ct: T) => {
+export const encodeContentTypeForManager = <T extends ContentType>(
+  ct: T,
+  templateEditor = false,
+) => {
   const routes = (getRakunBootstrapOptions()?.routes ?? [])
     .filter((route) => route.contentType === ct.name)
     .map((route) => ({
@@ -68,20 +74,26 @@ export const encodeContentTypeForManager = <T extends ContentType>(ct: T) => {
     dynamicData: ct.dynamicData,
     dynamicDataSource: ct.dynamicDataSource,
     hasIterator: ct.hasIterator,
-    linkedIterator: ct.linkedIterator,
+    hasTemplate: ct.hasTemplate,
+    templateField: !templateEditor && ct.hasTemplate
+      ? removeSchemaFromField(ct.fields[ITERATOR_FIELD_NAME], true)
+      : undefined,
     hasSeo: ct.hasSeo,
     routes,
     isInternal: ct.isInternal,
     fields: Object.fromEntries(
       Object.entries(ct.fields).map(([key, field]) => [
         key,
-        removeSchemaFromField(field),
+        removeSchemaFromField(field, templateEditor),
       ]),
     ),
   };
 };
 
-const removeSchemaFromField = (field: AnyField): EncodedField => {
+const removeSchemaFromField = (
+  field: AnyField,
+  templateEditor = false,
+): EncodedField => {
   const base = {
     ...(field.meta as Record<string, unknown>),
     schema: undefined,
@@ -99,6 +111,7 @@ const removeSchemaFromField = (field: AnyField): EncodedField => {
       ...base,
       contentType: encodeContentTypeForManager(
         field.contentType as ContentType,
+        templateEditor,
       ),
     };
   }
@@ -126,10 +139,23 @@ const removeSchemaFromField = (field: AnyField): EncodedField => {
   ) {
     return {
       ...base,
-      fields: field.fields.map((entry: { name: string; field: AnyField }) => ({
-        name: entry.name,
-        field: removeSchemaFromField(entry.field),
-      })),
+      fields: [
+        ...field.fields.map((entry: { name: string; field: AnyField }) => ({
+          name: entry.name,
+          field: removeSchemaFromField(entry.field, templateEditor),
+        })),
+        ...(templateEditor
+          ? [
+              {
+                name: TemplateContent.name,
+                field: removeSchemaFromField(
+                  relationField(TemplateContent, "new"),
+                  true,
+                ),
+              },
+            ]
+          : []),
+      ],
     };
   }
 
@@ -140,7 +166,7 @@ const removeSchemaFromField = (field: AnyField): EncodedField => {
   ) {
     return {
       ...base,
-      field: removeSchemaFromField(field.field),
+      field: removeSchemaFromField(field.field, templateEditor),
     };
   }
 

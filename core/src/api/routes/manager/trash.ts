@@ -12,7 +12,7 @@ import { RakunRequestContext } from "../../context";
 import { checkOwnership } from "../../utils/checkOwnership";
 import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
-import { forbidLinkedIteratorTemplateAccess } from "./linkedIterator";
+import { forbidContentTemplateAccess } from "./template";
 
 type TrashableDocument = Record<string, unknown> & {
   _id: string;
@@ -67,7 +67,7 @@ export const trashHandler = async ({
   const db = await getMongoService();
   const { contentType: contentTypeName, id } = input;
   const contentType = requireContentType(contentTypeName);
-  forbidLinkedIteratorTemplateAccess(contentType);
+  forbidContentTemplateAccess(contentType);
 
   if (contentType.name === "Route") {
     throwAppError("FORBIDDEN", {

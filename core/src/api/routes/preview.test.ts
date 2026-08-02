@@ -16,6 +16,7 @@ import {
   RouteMap,
   RouteSettings,
   Seo,
+  TemplateContent,
 } from "../../internal-content-types";
 import ContentType from "../../lib/ContentType";
 import { throwAppError } from "../../lib/errors";
@@ -229,7 +230,7 @@ describe.serial("preview", () => {
     expect(publicPage.modules[0]?._type).toBe("NotFound");
   });
 
-  it("adds optional seo fields and manager flags for routeable content types", () => {
+  it("adds seo and template manager fields for routeable iterator content types", () => {
     const encoded = PreviewPage.getInputSchema().parse({
       _type: PreviewPage.name,
       title: translatable("SEO flag"),
@@ -238,10 +239,18 @@ describe.serial("preview", () => {
     });
 
     expect(PreviewPage.hasIterator).toBe(true);
+    expect(PreviewPage.hasTemplate).toBe(true);
     expect(PreviewPage.hasSeo).toBe(true);
     expect(PreviewPage.fields[SEO_FIELD_NAME]?.getIsRequired()).toBe(false);
-    expect(encodeContentTypeForManager(PreviewPage).hasIterator).toBe(true);
-    expect(encodeContentTypeForManager(PreviewPage).hasSeo).toBe(true);
+    const managerContentType = encodeContentTypeForManager(PreviewPage);
+    expect(managerContentType.hasIterator).toBe(true);
+    expect(managerContentType.hasTemplate).toBe(true);
+    expect(managerContentType.hasSeo).toBe(true);
+    expect(
+      (managerContentType.templateField as {
+        fields: Array<{ name: string }>;
+      }).fields.map((entry) => entry.name),
+    ).toEqual([PreviewModule.name, TemplateContent.name]);
     expect((encoded as Record<string, unknown>)[SEO_FIELD_NAME]).toBeUndefined();
   });
 
