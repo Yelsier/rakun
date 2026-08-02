@@ -4,7 +4,6 @@ import {
   createField,
   defaultFieldState,
   type EncodedField,
-  sameSchemas,
   type DefaultFieldState,
   type FieldLike,
   type FieldState,
@@ -72,7 +71,11 @@ function makeDateField<Ui extends DateUI, State extends FieldState>(
     ...createField({
       meta: { type: "Date", ui: options.ui },
       state,
-      schemas: sameSchemas(() => buildDateSchema(options.ui)),
+      schemas: {
+        input: () => buildDateInputSchema(options.ui),
+        db: () => buildDateSchema(options.ui),
+        output: () => buildDateSchema(options.ui),
+      },
     }),
     type: function <
       TThis extends DateFieldBase<Ui, FieldState>,
@@ -90,6 +93,19 @@ function makeDateField<Ui extends DateUI, State extends FieldState>(
         NextState
       >,
   });
+}
+
+function buildDateInputSchema<Ui extends DateUI>(
+  ui: Ui,
+): z.ZodType<DateValue<Ui>> {
+  if (ui === "Time") {
+    return buildDateSchema(ui);
+  }
+
+  return z.union([
+    z.date(),
+    z.iso.datetime().transform((value) => new Date(value)),
+  ]) as unknown as z.ZodType<DateValue<Ui>>;
 }
 
 function buildDateSchema<Ui extends DateUI>(ui: Ui): z.ZodType<DateValue<Ui>> {

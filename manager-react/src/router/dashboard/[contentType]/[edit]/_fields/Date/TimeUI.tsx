@@ -13,7 +13,7 @@ const TimeUI: React.FC<DatePropsRef> = ({ id, ref, ...props }) => {
   const { value, errors, onValueChange, getValue, getState } =
     useDateFieldValues({
       id,
-      type: 'Time',
+      dateType: 'Time',
       ...props,
     })
 
@@ -29,7 +29,7 @@ const TimeUI: React.FC<DatePropsRef> = ({ id, ref, ...props }) => {
     >
       <Input
         type='time'
-        step={2}
+        step={1}
         required={props.isRequired}
         placeholder={props.dynamicFallbackPlaceholder}
         value={value}

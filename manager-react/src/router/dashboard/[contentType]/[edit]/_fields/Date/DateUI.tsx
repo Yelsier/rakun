@@ -12,7 +12,7 @@ const DateUI: React.FC<DatePropsRef> = ({ id, ref, ...props }) => {
   const { value, errors, onValueChange, getValue, getState } =
     useDateFieldValues({
       id,
-      type: 'Date',
+      dateType: 'Date',
       ...props,
     })
 

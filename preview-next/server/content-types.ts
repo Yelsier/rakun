@@ -423,6 +423,22 @@ export const ImagePlayground = new ContentType({
   listFields: ['title'],
 })
 
+export const DatePlayground = new ContentType({
+  name: 'DatePlayground',
+  menu: {
+    title: 'preview.contentTypes.datePlayground.menu',
+    icon: 'CalendarClock',
+    category: 'preview.contentTypes.category.development',
+  },
+  fields: {
+    title: f.string().required(),
+    date: f.date().type('Date'),
+    dateTime: f.date().type('DateTime'),
+    time: f.date().type('Time'),
+  },
+  listFields: ['title', 'date', 'dateTime', 'time'],
+})
+
 export const ConditionalDemo = new ContentType({
   name: 'ConditionalDemo',
   menu: {
@@ -500,6 +516,7 @@ export const previewContentTypes = [
   RelationLevel2,
   RelationPlayground,
   ImagePlayground,
+  DatePlayground,
   ConditionalDemo,
   TranslationPlayground,
   ProjectHeader,
@@ -526,6 +543,7 @@ export const keyedContentTypes = {
   RelationLevel2,
   RelationPlayground,
   ImagePlayground,
+  DatePlayground,
   ConditionalDemo,
   TranslationPlayground,
 }

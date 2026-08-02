@@ -39,5 +39,17 @@ describe("sanitizeManagerOutput", () => {
       },
     });
   });
+
+  it("preserves dates so JSON responses serialize them as ISO strings", () => {
+    const date = new Date("2026-08-08T00:00:00.000Z");
+    const dateTime = new Date("2026-08-08T16:05:00.000Z");
+    const sanitized = sanitizeManagerOutput({ date, nested: { dateTime } });
+
+    expect(sanitized).toEqual({ date, nested: { dateTime } });
+    expect(JSON.parse(JSON.stringify(sanitized))).toEqual({
+      date: "2026-08-08T00:00:00.000Z",
+      nested: { dateTime: "2026-08-08T16:05:00.000Z" },
+    });
+  });
 });
 

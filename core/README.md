@@ -644,6 +644,10 @@ Notable fields:
 
 - `StringField`: UI `Text`, `Textarea`, `RichText`, `Email`, `Slug`, `Password`, `Id`, `Url`; supports `.min()` and `.max()`.
 - `NumberField`: supports `.min()` and `.max()`.
+- `DateField`: supports `.type("Date")`, `.type("DateTime")` and
+  `.type("Time")`. Date and datetime writes accept JavaScript `Date` values or
+  their ISO datetime JSON representation and normalize them to `Date`; time
+  values remain ISO time strings.
 - `RelationField`: relation to another `ContentType`; accepts existing references or inline creation. `f.relation(Post, "existing")` restricts to existing records; `"new"` restricts to new records. `.multiple()` returns a homogeneous array of relations.
 - `ContentReferenceField`: reference by content type name.
 - `LinkField`: `f.link()` stores either a direct URL string or an internal

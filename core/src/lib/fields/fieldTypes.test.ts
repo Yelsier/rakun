@@ -69,6 +69,29 @@ describe("field type inference", () => {
     expect(link.getInputSchema().safeParse("").success).toBe(false);
   });
 
+  it("normalizes serialized date inputs and keeps persisted dates strict", () => {
+    const serializedDate = "2026-08-06T00:00:00.000Z";
+    const serializedDateTime = "2026-08-15T15:58:00.000Z";
+    const date = Fields.date().type("Date").required();
+    const dateTime = Fields.date().type("DateTime").required();
+    const time = Fields.date().type("Time").required();
+
+    expect(date.getInputSchema().parse(serializedDate)).toEqual(
+      new Date(serializedDate),
+    );
+    expect(dateTime.getInputSchema().parse(serializedDateTime)).toEqual(
+      new Date(serializedDateTime),
+    );
+    expect(time.getInputSchema().parse("17:59:46")).toBe("17:59:46");
+
+    expect(date.getSchema().safeParse(serializedDate).success).toBe(false);
+    expect(dateTime.getSchema().safeParse(serializedDateTime).success).toBe(
+      false,
+    );
+    expect(date.getInputSchema().safeParse("2026-08-06").success).toBe(false);
+    expect(time.getInputSchema().safeParse("not-a-time").success).toBe(false);
+  });
+
   it("adds iterator fields from content type params", () => {
     const IteratorParamCT = new ContentType({
       name: "IteratorParam",

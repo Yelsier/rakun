@@ -43,6 +43,8 @@ export const sanitizeManagerOutput = <T>(
     ) as unknown as T;
   }
 
+  if (value instanceof Date) return value;
+
   if (!isRecord(value)) return value;
 
   const resolvedContentType = resolveContentType(contentType, value);

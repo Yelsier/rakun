@@ -33,22 +33,27 @@ const typeMap: {
   Time: TimeUI,
 }
 
-const TransformDefaultData = (
+export const transformDateDefaultData = (
   value: DefaultDataTypes<FieldValue>,
   type: 'Date' | 'DateTime' | 'Time',
 ): DefaultDataTypes<string> => {
   if (typeof value === 'string') {
-    return value as DefaultDataTypes<string>
+    return type === 'Time'
+      ? value
+      : dateTimeToInputValue(value, type === 'DateTime')
   }
 
   if (value instanceof Date) {
-    return dateTimeToInputValue(value, type === 'DateTime')
+    return type === 'Time'
+      ? ''
+      : dateTimeToInputValue(value, type === 'DateTime')
   }
 
   if (isTranslatableData(value)) {
     return Object.fromEntries(
       Object.entries(value).map(([key, val]) => {
-        if (val instanceof Date) {
+        if (key === '_tag') return [key, val]
+        if (type !== 'Time' && (typeof val === 'string' || val instanceof Date)) {
           return [key, dateTimeToInputValue(val, type === 'DateTime')]
         }
         return [key, val]
@@ -65,19 +70,19 @@ export const useDateFieldValues = ({
   isRequired = false,
   isTranslatable = false,
   defaultData,
-  type,
+  dateType,
 }: {
   id: string
   isRequired?: boolean
   isTranslatable?: boolean
   defaultData?: FieldValue
-  type: 'Date' | 'DateTime' | 'Time'
+  dateType: 'Date' | 'DateTime' | 'Time'
 }) => {
   return useFieldValues<string>({
     id,
     isRequired,
     isTranslatable,
-    defaultData: TransformDefaultData(defaultData, type),
+    defaultData: transformDateDefaultData(defaultData, dateType),
     defaultValue: '',
   })
 }

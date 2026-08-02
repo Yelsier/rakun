@@ -110,6 +110,11 @@ blocks and array/list forms. Chain field modifiers such as `.required()`,
 Special manager editors are selected with `.type(...)`, for example `Slug`,
 `RichText`, `Email`, `Password` and `Image`.
 
+Date fields support the `Date`, `DateTime` and `Time` manager modes. `Date` and
+`DateTime` persist JavaScript `Date` values; their write schema also accepts the
+ISO datetime strings produced when those values cross JSON and normalizes them
+back to `Date`. `Time` stores an ISO time string.
+
 `f.link()` accepts either a direct URL string or an internal
 `{ routeId, contentTypeId }` reference. Internal references resolve to localized
 paths in web output; direct URLs pass through unchanged.

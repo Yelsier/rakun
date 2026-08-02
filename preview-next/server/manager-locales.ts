@@ -6,6 +6,9 @@ import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'
 
 const englishPreviewMessages = {
   'field.title': 'Title',
+  'field.date': 'Date',
+  'field.dateTime': 'Date and time',
+  'field.time': 'Time',
   'layoutModule.header': 'Header',
   'layoutModule.footer': 'Footer',
   'preview.contentTypes.category.layout': 'Layout',
@@ -27,6 +30,7 @@ const englishPreviewMessages = {
   'preview.contentTypes.relationLevel2.menu': 'Relations level 2',
   'preview.contentTypes.relationPlayground.menu': 'Relations playground',
   'preview.contentTypes.imagePlayground.menu': 'Images playground',
+  'preview.contentTypes.datePlayground.menu': 'Dates playground',
   'preview.contentTypes.conditionalDemo.menu': 'Conditional demos',
   'preview.contentTypes.translationPlayground.menu': 'Translation playground',
   'preview.modules.useCaseContent.title': 'Use case content',
@@ -41,6 +45,9 @@ const englishPreviewMessages = {
 }
 
 const spanishPreviewMessages = {
+  'field.date': 'Fecha',
+  'field.dateTime': 'Fecha y hora',
+  'field.time': 'Hora',
   'field.title': 'Título',
   'layoutModule.header': 'Cabecera',
   'layoutModule.footer': 'Pie de página',
@@ -49,6 +56,7 @@ const spanishPreviewMessages = {
   'preview.contentTypes.category.dynamicData': 'Datos dinámicos',
   'preview.contentTypes.category.editorial': 'Editorial',
   'preview.contentTypes.category.development': 'Desarrollo',
+  'preview.contentTypes.datePlayground.menu': 'Playground de fechas',
   'preview.contentTypes.header.menu': 'Cabeceras',
   'preview.contentTypes.footer.menu': 'Pies de página',
   'preview.contentTypes.pageSection.menu': 'Secciones de página',
