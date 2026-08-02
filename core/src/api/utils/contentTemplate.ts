@@ -28,7 +28,10 @@ export const createTemplateContentSlot = () => ({
 });
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  !!value && typeof value === "object" && !Array.isArray(value);
+  !!value &&
+  typeof value === "object" &&
+  !Array.isArray(value) &&
+  !(value instanceof Date);
 
 export const isTemplateContentSlot = (value: unknown) => {
   if (!isRecord(value) || value.name !== TemplateContent.name) return false;

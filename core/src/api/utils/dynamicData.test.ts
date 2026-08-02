@@ -9,9 +9,39 @@ import {
   mergeDynamicListItems,
   resolveDynamicData,
   resolveRelatedCollectionValue,
+  stripDynamicBindings,
 } from "./dynamicData";
 
 describe("dynamic data output", () => {
+  it("preserves dates while resolving data and stripping bindings", async () => {
+    const DateSource = new ContentType({
+      name: "DynamicDateSource",
+      fields: {
+        publishedAt: Fields.date().type("DateTime").required(),
+      },
+    });
+    const publishedAt = new Date("2026-08-14T16:12:00.000Z");
+
+    const resolved = await resolveDynamicData(
+      {
+        _type: DateSource.name,
+        publishedAt,
+        nested: { publishedAt },
+      },
+      {
+        db: {} as never,
+        contentType: DateSource,
+        surface: "web",
+      },
+    );
+
+    expect(resolved.publishedAt).toBe(publishedAt);
+    expect(resolved.nested.publishedAt).toBe(publishedAt);
+    expect(
+      stripDynamicBindings({ publishedAt, _bindings: {} }).publishedAt,
+    ).toBe(publishedAt);
+  });
+
   it("does not resolve field bindings from the same root document", async () => {
     const SelfDynamicDataCT = new ContentType({
       name: "SelfDynamicData",

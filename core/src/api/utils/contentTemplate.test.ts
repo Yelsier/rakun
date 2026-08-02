@@ -103,6 +103,21 @@ const createFakeDb = () => {
 };
 
 describe("content template", () => {
+  it("preserves dates while expanding template modules", () => {
+    const publishedAt = new Date("2026-08-14T16:12:00.000Z");
+    const assembled = applyContentTemplate(
+      [
+        {
+          name: "DatedModule",
+          value: { publishedAt },
+        },
+      ],
+      [],
+    ) as Array<{ value: { publishedAt: Date } }>;
+
+    expect(assembled[0]?.value.publishedAt).toBe(publishedAt);
+  });
+
   it("adds Content to the root picker and nested blocks pickers", () => {
     const encoded = encodeContentTypeForManager(UseCase);
     const templateField = encoded.templateField as {

@@ -31,7 +31,10 @@ type ResolveOptions = {
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  !!value && typeof value === "object" && !Array.isArray(value);
+  !!value &&
+  typeof value === "object" &&
+  !Array.isArray(value) &&
+  !(value instanceof Date);
 
 const getAtPath = (value: unknown, path: string | undefined) => {
   if (!path) return undefined;

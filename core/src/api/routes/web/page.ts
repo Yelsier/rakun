@@ -54,6 +54,38 @@ type IterableContentTypes = {
   visibleWhen?: IteratorItemVisibilityCondition;
 }[];
 
+export const filterNestedVisibleIteratorItems = (
+  value: unknown,
+  visible: (item: IterableContentTypes[number]) => boolean,
+): unknown => {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => {
+      if (
+        item &&
+        typeof item === "object" &&
+        "name" in item &&
+        "value" in item &&
+        !visible(item as IterableContentTypes[number])
+      ) {
+        return [];
+      }
+
+      return [filterNestedVisibleIteratorItems(item, visible)];
+    });
+  }
+
+  if (!value || typeof value !== "object" || value instanceof Date) {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [
+      key,
+      filterNestedVisibleIteratorItems(item, visible),
+    ]),
+  );
+};
+
 // Add trailing slash
 export const normalizePagePath = (path: string): string => {
   if (!path.startsWith("/")) {
@@ -374,32 +406,6 @@ export const buildPageOutput = async ({
           };
           const visible = (item: IterableContentTypes[number]) =>
             isIteratorItemVisible(item, info as Record<string, unknown>);
-          const filterNestedVisibleItems = (value: unknown): unknown => {
-            if (Array.isArray(value)) {
-              return value.flatMap((item) => {
-                if (
-                  item &&
-                  typeof item === "object" &&
-                  "name" in item &&
-                  "value" in item &&
-                  !visible(item as IterableContentTypes[number])
-                ) {
-                  return [];
-                }
-
-                return [filterNestedVisibleItems(item)];
-              });
-            }
-
-            if (!value || typeof value !== "object") return value;
-
-            return Object.fromEntries(
-              Object.entries(value).map(([key, item]) => [
-                key,
-                filterNestedVisibleItems(item),
-              ]),
-            );
-          };
           const assembledEntries = await Promise.all(
             (contentModulesSource as IterableContentTypes)
               .map((entry, index) => ({ entry, index }))
@@ -408,7 +414,10 @@ export const buildPageOutput = async ({
                 entry: await resolveEntry(
                   {
                     ...entry,
-                    value: filterNestedVisibleItems(entry.value) as typeof entry.value,
+                    value: filterNestedVisibleIteratorItems(
+                      entry.value,
+                      visible,
+                    ) as typeof entry.value,
                   },
                   templateModuleIndexes.has(index),
                 ),
