@@ -47,10 +47,11 @@ export const isTranslatableData = <T>(
 
 export const isPrimitiveData = <T>(data: DefaultDataTypes<T>): data is T => {
   return (
-    typeof data === 'string' ||
-    typeof data === 'number' ||
-    typeof data === 'boolean' ||
-    typeof data === 'object'
+    data !== null &&
+    (typeof data === 'string' ||
+      typeof data === 'number' ||
+      typeof data === 'boolean' ||
+      typeof data === 'object')
   )
 }
 
