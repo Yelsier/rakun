@@ -48,9 +48,12 @@ const registry = createModuleRegistryFromGlob(
 );
 ```
 
-With Next, keep the dynamic import in app code:
+With Next, keep the dynamic import inside a client module when using
+`ModuleRenderer`:
 
 ```tsx
+"use client";
+
 import { ModuleRenderer } from "@rakun-kit/react";
 
 export function Page({ modules }) {
@@ -62,6 +65,32 @@ export function Page({ modules }) {
   );
 }
 ```
+
+For nested modules rendered by a React Server Component, use
+`ServerModuleRenderer`. It resolves every import on the server, so its loader
+does not cross a server-to-client boundary:
+
+```tsx
+import { ServerModuleRenderer } from "@rakun-kit/react";
+
+export default async function SectionLayout({ blocks = [] }) {
+  const modules = blocks.map(({ name, value }) => ({
+    ...value,
+    _type: name,
+  }));
+
+  return (
+    <ServerModuleRenderer
+      modules={modules}
+      loadModule={(name) => import(`./${name}`)}
+    />
+  );
+}
+```
+
+Use the client `ModuleRenderer` when viewport lazy loading or client-side module
+loading is required. `ServerModuleRenderer` also accepts a `registry` and a
+`missing` renderer, but intentionally has no client-only lazy-loading props.
 
 Web plugins package module registries that the application explicitly merges:
 

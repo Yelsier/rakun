@@ -27,9 +27,38 @@ Registry keys must match module `_type` values. A module file exports either a
 default component or a named `component`.
 
 For Vite, `createModuleRegistryFromGlob(import.meta.glob(...))` maps file names
-to module names. Pass `getName` for nested or nonstandard layouts. For Next.js,
-keep `(name) => import(...)` in application code so the bundler can see the
-dynamic import.
+to module names. Pass `getName` for nested or nonstandard layouts. When using
+the client `ModuleRenderer` with Next.js, define `(name) => import(...)` inside
+a client module so the function does not cross the server boundary and the
+bundler can see the dynamic import.
+
+## Render nested modules on the server
+
+Use `ServerModuleRenderer` inside React Server Components. Unlike
+`ModuleRenderer`, it has no client boundary and awaits every module import on
+the server:
+
+```tsx
+import { ServerModuleRenderer } from '@rakun-kit/react'
+
+export default async function SectionLayout({ blocks = [] }) {
+  const modules = blocks.map(({ name, value }) => ({
+    ...value,
+    _type: name,
+  }))
+
+  return (
+    <ServerModuleRenderer
+      modules={modules}
+      loadModule={(name) => import(`./${name}`)}
+    />
+  )
+}
+```
+
+The server renderer accepts either `loadModule` or the same `registry` used by
+the client renderer. It also accepts `missing` and `getKey`. Use the client
+`ModuleRenderer` when Suspense fallbacks or viewport lazy loading are required.
 
 ## Layouts and plugins
 
