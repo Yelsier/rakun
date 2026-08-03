@@ -581,9 +581,6 @@ const GenericSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) =
                 <div>
                   <Card>
                     <CardHeader className='flex flex-row items-center justify-between'>
-                      <CardTitle>
-                        {relationName} {index + 1}
-                      </CardTitle>
                       <div className='flex items-center gap-1'>
                         <SortableItemHandle asChild>
                           <Button
@@ -595,15 +592,18 @@ const GenericSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) =
                             <GripVertical />
                           </Button>
                         </SortableItemHandle>
-                        <Button
-                          size='icon'
-                          variant='destructive'
-                          onClick={() => handleDelete(item.uid)}
-                          type='button'
-                        >
-                          <Trash />
-                        </Button>
+                        <CardTitle>
+                          {relationName} {index + 1}
+                        </CardTitle>
                       </div>
+                      <Button
+                        size='icon'
+                        variant='destructive'
+                        onClick={() => handleDelete(item.uid)}
+                        type='button'
+                      >
+                        <Trash />
+                      </Button>
                     </CardHeader>
                     <CardContent>
                       <FieldComponent
