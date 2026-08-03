@@ -19,7 +19,7 @@ const IDColumn: React.FC<{ _id: string }> = ({ _id }) => {
             navigator.clipboard.writeText(_id)
             setCopiedID(true)
           }}
-          className="cursor-pointer w-[115px] justify-start"
+          className="cursor-pointer justify-start tabular-nums"
           variant="outline"
           onMouseOver={() => setOpen(true)}
           onMouseOut={() => {
