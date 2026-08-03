@@ -486,6 +486,10 @@ export type {
   FinalizeUploadOutput,
 } from "./schemas/manager/media/finalizeUpload";
 export type {
+  ReimportMediaInput,
+  ReimportMediaOutput,
+} from "./schemas/manager/media/reimportMedia";
+export type {
   GetMediaUrlInput,
   GetMediaUrlOutput,
 } from "./schemas/manager/media/getMediaUrl";

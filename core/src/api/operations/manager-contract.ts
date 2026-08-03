@@ -106,6 +106,8 @@ import {
   logoutOutput,
   prepareUploadInput,
   prepareUploadOutput,
+  reimportMediaInput,
+  reimportMediaOutput,
   createPreviewInput,
   createPreviewOutput,
   previewSlugRedirectsInput,
@@ -635,6 +637,14 @@ export const createManagerOperationContracts = () =>
       description: "Verify uploaded media and return metadata",
       input: finalizeUploadInput,
       output: finalizeUploadOutput,
+      method: "post",
+    }),
+    "manager.media.reimport": defineOperationContract({
+      access: "auth",
+      kind: "mutation",
+      description: "Reimport an image using the selected optimization settings",
+      input: reimportMediaInput,
+      output: reimportMediaOutput,
       method: "post",
     }),
     "manager.media.getUrl": defineOperationContract({

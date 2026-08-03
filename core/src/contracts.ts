@@ -46,6 +46,7 @@ export * from "./schemas/manager/auth/webauthn/webauthnAuthOptions";
 export * from "./schemas/manager/auth/webauthn/webauthnAuthVerify";
 export * from "./schemas/manager/media/prepareUpload";
 export * from "./schemas/manager/media/finalizeUpload";
+export * from "./schemas/manager/media/reimportMedia";
 export * from "./schemas/manager/media/getMediaUrl";
 export * from "./schemas/manager/media/createFolder";
 export * from "./schemas/manager/media/listFolders";

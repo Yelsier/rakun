@@ -61,6 +61,11 @@ The manager preserves Unicode original file names when uploading media. Names
 with accents, non-Latin scripts, or emoji are encoded into ASCII for the binary
 upload headers and restored by core before metadata is saved.
 
+When optimization is enabled, right-click an image and select `Reimport with
+current optimization` to regenerate its optimized source, preview, and
+responsive sizes. The action keeps the existing media ID, title, alt text,
+folder, and content references.
+
 ## Manager plugins
 
 ```tsx

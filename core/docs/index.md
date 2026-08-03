@@ -242,6 +242,11 @@ The built-in manager upload protocol preserves Unicode original file names,
 including accents, non-Latin scripts, and emoji, while storage object keys stay
 adapter-safe.
 
+The media manager can reimport an existing image with its currently selected
+optimization settings. Rakun writes the replacement and responsive variants
+under new storage keys, updates the existing `Media` record in place, and only
+then removes the previous objects, so content relations keep the same media ID.
+
 ## Manager languages and user-facing text
 
 Web/content-facing text belongs in Rakun literals. Manager UI text belongs in

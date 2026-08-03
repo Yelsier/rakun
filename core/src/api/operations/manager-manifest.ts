@@ -311,6 +311,11 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/media/finalizeUpload",
   },
+  "manager.media.reimport": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/media/reimport",
+  },
   "manager.media.getUrl": {
     kind: "query",
     method: "post",

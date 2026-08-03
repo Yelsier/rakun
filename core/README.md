@@ -925,6 +925,8 @@ APIs:
 
 The service supports prepare/finalize upload, URL generation, folders, and image optimization depending on adapter/configuration. Manager uploads encode original file names for transport, so Unicode names (including accents, non-Latin scripts, and emoji) are preserved without placing invalid characters in HTTP headers.
 
+Existing images can be reimported from the media manager with the selected optimization settings. The replacement uses new storage keys and updates the existing `Media` record only after every requested variant has been written, preserving its ID and content references.
+
 ## Persistent Event Log
 
 Rakun keeps business/audit events separate from its technical console logger.

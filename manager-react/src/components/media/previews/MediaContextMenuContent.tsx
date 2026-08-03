@@ -1,6 +1,14 @@
 'use client'
 
-import { Check, Crop, FolderInput, Pencil, Trash2 } from 'lucide-react'
+import {
+  Check,
+  Crop,
+  FolderInput,
+  LoaderCircle,
+  Pencil,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react'
 
 import {
   ContextMenuContent,
@@ -27,6 +35,9 @@ export default function MediaContextMenuContent({
     onRequestSelect,
     onRequestEdit,
     onRequestImageEdit,
+    canReimportWithOptimization,
+    isReimporting,
+    onRequestReimport,
     onRequestMove,
     onRequestDelete,
   } = useMediaPreview()
@@ -51,10 +62,27 @@ export default function MediaContextMenuContent({
         {t('common.edit')}
       </ContextMenuItem>
       {isImageItem ? (
-        <ContextMenuItem onSelect={() => onRequestImageEdit(item)}>
-          <Crop className='size-4' />
-          {t('media.cropAndRotate')}
-        </ContextMenuItem>
+        <>
+          <ContextMenuItem onSelect={() => onRequestImageEdit(item)}>
+            <Crop className='size-4' />
+            {t('media.cropAndRotate')}
+          </ContextMenuItem>
+          <ContextMenuItem
+            disabled={
+              !canReimportWithOptimization || isReimporting(item._id)
+            }
+            onSelect={() => onRequestReimport(item)}
+          >
+            {isReimporting(item._id) ? (
+              <LoaderCircle className='size-4 animate-spin' />
+            ) : (
+              <RefreshCw className='size-4' />
+            )}
+            {canReimportWithOptimization
+              ? t('media.reimportWithOptimization')
+              : t('media.enableOptimizationToReimport')}
+          </ContextMenuItem>
+        </>
       ) : null}
       {isMediaItem ? (
         <>

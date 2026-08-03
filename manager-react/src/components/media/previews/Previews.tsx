@@ -98,6 +98,8 @@ export default function Previews() {
     selectedMediaIds,
     onSelect,
     onUpload,
+    optimizeEnabled,
+    optimizeOptions,
   } = useMediaLibrary()
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid-sm')
@@ -125,6 +127,9 @@ export default function Previews() {
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(() => new Set())
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
+  const [reimportingIds, setReimportingIds] = useState<Set<string>>(
+    () => new Set(),
+  )
 
   const getMediaQueryFilter = (
     folderId: string | null,
@@ -660,6 +665,39 @@ export default function Previews() {
     setDestinationFolderId(item.folder?._id ?? ROOT_FOLDER_VALUE)
   }
 
+  const onRequestReimport = (item: MediaRecord) => {
+    if (!optimizeEnabled || !item.mime.startsWith('image/')) return
+
+    void confirm({
+      title: t('media.reimportTitle'),
+      description: t('media.reimportDescription', { name: item.name }),
+      confirmLabel: t('media.reimportConfirm'),
+      onConfirm: async () => {
+        setReimportingIds((current) => new Set(current).add(item._id))
+        try {
+          await managerClient.request('manager.media.reimport', {
+            id: item._id,
+            optimizeOptions,
+          })
+          await refetch()
+          toast.success(t('media.reimported'))
+        } catch (error) {
+          toast.error(
+            t('media.reimportError', {
+              reason: getActionErrorMessage(error),
+            }),
+          )
+        } finally {
+          setReimportingIds((current) => {
+            const next = new Set(current)
+            next.delete(item._id)
+            return next
+          })
+        }
+      },
+    })
+  }
+
   const onRequestSelect = (item: MediaRecord) => {
     if (!canBulkSelect) return
 
@@ -777,6 +815,9 @@ export default function Previews() {
       onClearSelection: clearBulkSelection,
       onRequestEdit,
       onRequestImageEdit,
+      canReimportWithOptimization: optimizeEnabled,
+      isReimporting: (id: string) => reimportingIds.has(id),
+      onRequestReimport,
       onRequestMove,
       onRequestDelete,
       renderPreview,
@@ -804,6 +845,9 @@ export default function Previews() {
       clearBulkSelection,
       onRequestEdit,
       onRequestImageEdit,
+      optimizeEnabled,
+      reimportingIds,
+      onRequestReimport,
       onRequestMove,
       onRequestDelete,
       renderPreview,

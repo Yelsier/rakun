@@ -99,6 +99,10 @@ Original file names may contain accents, non-Latin scripts, or emoji. The
 manager transports those names through ASCII-safe upload headers and core
 restores them before saving media metadata.
 
+With optimization enabled in the media toolbar, an image's context menu offers
+`Reimport with current optimization`. It regenerates the configured variants
+while retaining the existing media record and all relations to it.
+
 ## Dynamic data mappings
 
 The list mapping editor supports recursive `blocks` targets. Select

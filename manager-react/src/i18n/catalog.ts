@@ -382,6 +382,22 @@ export const managerMessages = {
     defaultMessage: 'Could not open image editor',
   },
   'media.editedImageSaved': { defaultMessage: 'Edited image saved' },
+  'media.reimportWithOptimization': {
+    defaultMessage: 'Reimport with current optimization',
+  },
+  'media.enableOptimizationToReimport': {
+    defaultMessage: 'Enable optimization to reimport',
+  },
+  'media.reimportTitle': { defaultMessage: 'Reimport image?' },
+  'media.reimportDescription': {
+    defaultMessage:
+      'Reprocess {name} with the optimization settings currently selected in the media toolbar. Existing references and details will be preserved.',
+  },
+  'media.reimportConfirm': { defaultMessage: 'Reimport' },
+  'media.reimported': { defaultMessage: 'Image reimported' },
+  'media.reimportError': {
+    defaultMessage: 'Could not reimport the image: {reason}',
+  },
   'media.saveEditedImageError': {
     defaultMessage: 'Could not save edited image',
   },
