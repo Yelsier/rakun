@@ -118,6 +118,7 @@ describe("populateLinks", () => {
       primaryLink: {
         routeId: "route-about",
         contentTypeId: "about-id",
+        title: "About us",
       },
       blocks: [
         {
@@ -137,9 +138,12 @@ describe("populateLinks", () => {
       _type: "TestPage",
       title: "Docs",
       primaryLink: {
-        _tag: "Translatable",
-        en: "/about/",
-        es: "/es/sobre/",
+        href: {
+          _tag: "Translatable",
+          en: "/about/",
+          es: "/es/sobre/",
+        },
+        title: "About us",
       },
       blocks: [
         {
@@ -221,6 +225,10 @@ describe("populateLinks", () => {
       _id: "page-id",
       _type: "TestPage",
       primaryLink: "https://example.com/docs",
+      titledLink: {
+        href: "https://example.com/guides",
+        title: "Guides",
+      },
       nested: {
         link: "/contact/",
       },
@@ -230,6 +238,10 @@ describe("populateLinks", () => {
       _id: "page-id",
       _type: "TestPage",
       primaryLink: "https://example.com/docs",
+      titledLink: {
+        href: "https://example.com/guides",
+        title: "Guides",
+      },
       nested: {
         link: "/contact/",
       },

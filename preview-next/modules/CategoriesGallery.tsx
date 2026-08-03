@@ -7,8 +7,10 @@ type CategoriesGalleryProps = Props<'CategoriesGallery'>
 type GalleryImage = {
   alt: string
   height?: number
+  href: string
   name: string
   src: string
+  title: string
   width?: number
 }
 
@@ -30,19 +32,23 @@ const text = (value: unknown) => {
 
 const galleryImages = (value: unknown): GalleryImage[] =>
   (Array.isArray(value) ? value : []).flatMap((entry, index) => {
-    const image = asRecord(entry)
+    const item = asRecord(asRecord(entry).value)
+    const image = asRecord(item.image)
     const src = text(image.url)
 
     if (!src) return []
 
-    const name = text(image.name) || `Project image ${index + 1}`
+    const title = text(item.title) || text(image.title)
+    const name = text(image.name) || title || `Project image ${index + 1}`
 
     return [
       {
         alt: text(image.alt) || text(image.title) || name,
         height: typeof image.height === 'number' ? image.height : undefined,
+        href: text(item.href),
         name,
         src,
+        title,
         width: typeof image.width === 'number' ? image.width : undefined,
       },
     ]
@@ -61,10 +67,6 @@ export default function CategoriesGallery({
             {eyebrow}
           </span>
           <h2 className="text-4xl font-semibold tracking-tight">{title}</h2>
-          <p className="text-base leading-7 text-stone-600">
-            Each category queries its related projects and flattens their image arrays into one
-            gallery.
-          </p>
         </div>
 
         <div className="space-y-16">
@@ -89,20 +91,33 @@ export default function CategoriesGallery({
 
                 {images.length > 0 ? (
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                    {images.map((image, imageIndex) => (
-                      <figure
-                        key={`${image.src}-${imageIndex}`}
-                        className="group overflow-hidden rounded-xl bg-stone-200"
-                      >
-                        <img
-                          alt={image.alt}
-                          className="aspect-4/3 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          height={image.height ?? 900}
-                          src={image.src}
-                          width={image.width ?? 1200}
-                        />
-                      </figure>
-                    ))}
+                    {images.map((image, imageIndex) => {
+                      const card = (
+                        <figure
+                          key={`${image.src}-${imageIndex}`}
+                          className="group relative overflow-hidden rounded-xl bg-stone-200"
+                        >
+                          <img
+                            alt={image.alt}
+                            className="aspect-4/3 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            height={image.height ?? 900}
+                            src={image.src}
+                            width={image.width ?? 1200}
+                          />
+                          {image.title ? (
+                            <figcaption className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent px-4 pb-3 pt-10 text-sm font-semibold text-white">
+                              {image.title}
+                            </figcaption>
+                          ) : null}
+                        </figure>
+                      )
+
+                      return image.href ? (
+                        <a key={`${image.src}-${imageIndex}`} href={image.href}>
+                          {card}
+                        </a>
+                      ) : card
+                    })}
                   </div>
                 ) : (
                   <p className="rounded-xl border border-dashed border-stone-300 p-6 text-stone-500">

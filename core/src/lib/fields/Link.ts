@@ -16,16 +16,33 @@ import { Id } from "../utils/id";
 const internalLinkInputSchema = z.object({
   routeId: Id,
   contentTypeId: Id,
+  title: z.string().optional(),
 });
 
-const linkInputSchema = z.union([z.string().min(1), internalLinkInputSchema]);
+const directLinkInputSchema = z.object({
+  href: z.string().min(1),
+  title: z.string(),
+});
 
-const linkOutputSchema = z.string();
+const linkInputSchema = z.union([
+  z.string().min(1),
+  internalLinkInputSchema,
+  directLinkInputSchema,
+]);
+
+const linkOutputSchema = z.union([
+  z.string(),
+  z.object({
+    href: z.string(),
+    title: z.string(),
+  }),
+]);
 
 type LinkInput = z.infer<typeof linkInputSchema>;
 type LinkOutput = z.infer<typeof linkOutputSchema>;
 
 export type LinkfieldValue = LinkInput;
+export type LinkOutputValue = LinkOutput;
 
 export type LinkMeta = {
   type: "Link";

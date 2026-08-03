@@ -57,6 +57,49 @@ describe("dynamic data", () => {
     });
   });
 
+  it("accepts recursively mapped list sources", () => {
+    const parsed = DynamicDocumentBindingsSchema.parse({
+      lists: {
+        items: {
+          contentType: "Category",
+          itemName: "CategoriesGalleryItem",
+          map: {
+            title: { contentType: "Category", path: "title" },
+            images: {
+              kind: "list",
+              contentType: "Project",
+              itemName: "CategoriesGalleryItemImage",
+              query: {
+                filter: { "category._id": { $current: "_id" } },
+                options: { limit: 10 },
+              },
+              map: {
+                title: { contentType: "Project", path: "title" },
+                href: { contentType: "Project", virtual: "href" },
+                image: { contentType: "Project", path: "image" },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(parsed.lists?.items?.map.images).toEqual({
+      kind: "list",
+      contentType: "Project",
+      itemName: "CategoriesGalleryItemImage",
+      query: {
+        filter: { "category._id": { $current: "_id" } },
+        options: { limit: 10 },
+      },
+      map: {
+        title: { contentType: "Project", path: "title" },
+        href: { contentType: "Project", virtual: "href" },
+        image: { contentType: "Project", path: "image" },
+      },
+    });
+  });
+
   it("accepts current-document query value references", () => {
     expect(DynamicQueryCurrentValueSchema.parse({ $current: "slug" })).toEqual({
       $current: "slug",

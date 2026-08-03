@@ -61,11 +61,31 @@ describe("field type inference", () => {
       link.getInputSchema().parse({
         routeId: "64f0c0000000000000000001",
         contentTypeId: "64f0c0000000000000000002",
+        title: "Documentation",
       }),
     ).toEqual({
       routeId: "64f0c0000000000000000001",
       contentTypeId: "64f0c0000000000000000002",
+      title: "Documentation",
     });
+    expect(
+      link.getInputSchema().parse({
+        href: "https://example.com/docs",
+        title: "Documentation",
+      }),
+    ).toEqual({
+      href: "https://example.com/docs",
+      title: "Documentation",
+    });
+    expect(
+      link.getOutputSchema().parse({
+        href: "/docs/",
+        title: "Documentation",
+      }),
+    ).toEqual({ href: "/docs/", title: "Documentation" });
+    expect(link.getOutputSchema().parse("/legacy-docs/")).toBe(
+      "/legacy-docs/",
+    );
     expect(link.getInputSchema().safeParse("").success).toBe(false);
   });
 

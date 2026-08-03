@@ -548,6 +548,36 @@ query: {
 Current-document paths are checked against the content type's dynamic field
 rules before the query runs. `_id` is also available for relation queries.
 
+List mappings can be nested recursively when a mapped target field is itself a
+`blocks` list. Use `kind: "list"` for that map entry and configure its source,
+query, item type, and field map exactly like a top-level list binding. Inside
+the nested query, `$current` refers to the source item being mapped by the
+parent list:
+
+```ts
+map: {
+  title: { contentType: Category.name, path: "title" },
+  images: {
+    kind: "list",
+    contentType: Project.name,
+    itemName: "CategoriesGalleryItemImage",
+    query: {
+      filter: { "category._id": { $current: "_id" } },
+      options: { limit: 10, sort: { title: "asc" } },
+    },
+    map: {
+      title: { contentType: Project.name, path: "title" },
+      href: { contentType: Project.name, virtual: "href" },
+      image: { contentType: Project.name, path: "image" },
+    },
+  },
+}
+```
+
+The manager exposes this as the `Nested list` mapping mode. Nested mappings
+apply the same source opt-in, field compatibility, query validation, and
+`.noDynamic()` rules at every level.
+
 A list mapping can also collect an array through a reverse relation without
 persisting that relation on the source document. For example, a category gallery
 can create one item per `Category` and collect the images of its related
@@ -651,9 +681,11 @@ Notable fields:
   values remain ISO time strings.
 - `RelationField`: relation to another `ContentType`; accepts existing references or inline creation. `f.relation(Post, "existing")` restricts to existing records; `"new"` restricts to new records. `.multiple()` returns a homogeneous array of relations.
 - `ContentReferenceField`: reference by content type name.
-- `LinkField`: `f.link()` stores either a direct URL string or an internal
-  `{ routeId, contentTypeId }` reference. Internal references resolve to localized
-  paths in web output; direct URLs pass through unchanged.
+- `LinkField`: the manager stores a direct `{ href, title }` value or an
+  internal `{ routeId, contentTypeId, title }` reference. Titled links resolve
+  to `{ href, title }` in web output, with internal `href` values localized by
+  route. Legacy direct URL strings and untitled internal references remain
+  accepted and continue to produce string output.
 - `BreadcrumsField`: `f.breadcrums()` is a computed, API-only field for page
   modules. In web and preview output it returns the localized route hierarchy as
   `{ label, href }[]`, ordered from the highest ancestor to the current page. It

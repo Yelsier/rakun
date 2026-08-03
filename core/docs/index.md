@@ -115,9 +115,12 @@ Date fields support the `Date`, `DateTime` and `Time` manager modes. `Date` and
 ISO datetime strings produced when those values cross JSON and normalizes them
 back to `Date`. `Time` stores an ISO time string.
 
-`f.link()` accepts either a direct URL string or an internal
-`{ routeId, contentTypeId }` reference. Internal references resolve to localized
-paths in web output; direct URLs pass through unchanged.
+The `f.link()` manager editor stores a direct `{ href, title }` value or an
+internal `{ routeId, contentTypeId, title }` reference. Web output for these
+values is `{ href, title }`, with internal `href` values localized by route.
+Legacy URL strings and untitled internal references remain accepted and retain
+their string web output. Dynamic data exposes titled link properties as
+`<field>.href` and `<field>.title`.
 
 `f.breadcrums()` declares a computed, API-only field intended for modules such
 as heroes. When the module is rendered in a routable page, the field returns
@@ -159,6 +162,14 @@ Content type names, field names and reserved fields are persisted API. Do not
 rename them without a data migration and a review of manager and web consumers.
 Use `.withHooks(...)` for lifecycle behavior; keep mutations and secrets out of
 `onGet` transformations unless that behavior is explicitly intended.
+
+Dynamic data list mappings may map a target `blocks` field recursively. A map
+entry with `kind: 'list'` contains the same `contentType`, optional `source` or
+`query`, `itemName`, and `map` shape as a top-level list binding. In its query,
+`{ $current: 'path' }` resolves against the parent source item, which supports
+flows such as Category -> gallery item -> related Project -> nested image card.
+The manager exposes this shape as `Nested list`; source and target dynamic-field
+rules are enforced at every level.
 
 ## Routes and web output
 

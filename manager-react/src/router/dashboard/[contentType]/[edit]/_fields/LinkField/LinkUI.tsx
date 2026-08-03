@@ -22,6 +22,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 import { useTRPC } from '@/components/trpc-provider'
 import { decodeCamelCase } from '@/helpers/decodeCamelCase'
@@ -29,19 +30,26 @@ import { resolveLucideIcon } from '@/helpers/resolve-lucide-icon'
 import { useTranslations } from '@/i18n'
 import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
 
-type InternalLinkValue = Exclude<LinkfieldValue, string>
+type InternalLinkValue = Extract<LinkfieldValue, { routeId: string }>
+type DirectLinkValue = Extract<LinkfieldValue, { href: string }>
 
 type LinkDocument = Record<string, unknown> & {
   _id: string
 }
 
-const EMPTY_LINK: InternalLinkValue = {
-  routeId: '',
-  contentTypeId: '',
+const EMPTY_LINK: DirectLinkValue = {
+  href: '',
+  title: '',
 }
 
 const isInternalLinkValue = (value: LinkfieldValue): value is InternalLinkValue =>
   typeof value === 'object' && value !== null && 'routeId' in value && 'contentTypeId' in value
+
+const isDirectLinkValue = (value: LinkfieldValue): value is DirectLinkValue =>
+  typeof value === 'object' && value !== null && 'href' in value
+
+const getLinkTitle = (value: LinkfieldValue) =>
+  typeof value === 'object' && value !== null && 'title' in value ? (value.title ?? '') : ''
 
 const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
   const t = useTranslations()
@@ -61,8 +69,14 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
     defaultValue: EMPTY_LINK,
     validateValue: (nextValue) => {
       if (typeof nextValue === 'string') return null
+      if (isDirectLinkValue(nextValue)) {
+        if (!nextValue.href) {
+          return props.isRequired || nextValue.title ? t('linkPicker.destinationRequired') : null
+        }
+        return null
+      }
       if (!nextValue.routeId && !nextValue.contentTypeId) {
-        return props.isRequired ? t('linkPicker.routeRequired') : null
+        return props.isRequired || nextValue.title ? t('linkPicker.destinationRequired') : null
       }
       if (!nextValue.routeId) return t('linkPicker.routeRequired')
       if (!nextValue.contentTypeId) return t('linkPicker.itemRequired')
@@ -107,6 +121,8 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
     ? contentTypesByName.get(activeRoute.contentType)
     : undefined
   const internalValue = isInternalLinkValue(value) ? value : null
+  const directValue = isDirectLinkValue(value) ? value : null
+  const linkTitle = getLinkTitle(value)
   const selectedRoute = internalValue
     ? routes.find((route) => route._id === internalValue.routeId)
     : undefined
@@ -171,9 +187,11 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
   const displayValue =
     typeof value === 'string'
       ? value
-      : (selectedDocumentLabel ??
-        pendingSelectedLabel ??
-        (internalValue?.contentTypeId ? t('linkPicker.selected') : ''))
+      : directValue
+        ? directValue.href
+        : (selectedDocumentLabel ??
+          pendingSelectedLabel ??
+          (internalValue?.contentTypeId ? t('linkPicker.selected') : ''))
   const routeItems = ((routeItemsData as { items?: LinkDocument[] } | undefined)?.items ??
     []) as LinkDocument[]
   const error = errors.find((item) => item.id === id)?.error
@@ -190,7 +208,22 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
   const selectDirectUrl = (url: string) => {
     setPendingSelectedLabel(null)
     setActiveRouteId(null)
-    onValueChange(url)
+    onValueChange({ href: url, title: linkTitle })
+  }
+
+  const clearLink = () => {
+    setPendingSelectedLabel(null)
+    setActiveRouteId(null)
+    onValueChange(EMPTY_LINK)
+  }
+
+  const updateTitle = (title: string) => {
+    if (typeof value === 'string') {
+      onValueChange({ href: value, title })
+      return
+    }
+
+    onValueChange({ ...value, title })
   }
 
   const selectInternalLink = (document: LinkDocument) => {
@@ -200,6 +233,7 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
     onValueChange({
       routeId: activeRoute._id,
       contentTypeId: document._id,
+      title: linkTitle || label,
     })
     closePicker()
   }
@@ -211,166 +245,185 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
 
   return (
     <FieldWrapper id={id} errors={errors} getValue={getValue} getState={getState} ref={ref}>
-      <Popover open={open} onOpenChange={handleOpenChange}>
-        <PopoverAnchor asChild>
-          <div ref={anchorRef} className="relative w-full">
-            <Link2
-              aria-hidden="true"
-              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              aria-invalid={Boolean(error)}
-              className={errorStyle({
-                error: Boolean(error),
-                className: 'pl-9 pr-9',
-              })}
-              onBlur={() => {
-                if (typeof value === 'string' && value !== value.trim()) {
-                  selectDirectUrl(value.trim())
+      <div className="grid gap-3">
+        <Label className="grid gap-1.5">
+          {t('linkPicker.title')}
+          <Input
+            onChange={(event) => updateTitle(event.target.value)}
+            placeholder={t('linkPicker.titlePlaceholder')}
+            value={linkTitle}
+          />
+        </Label>
+        <div className="grid gap-1.5">
+          <span className="text-sm font-medium">{t('linkPicker.destination')}</span>
+          <Popover open={open} onOpenChange={handleOpenChange}>
+            <PopoverAnchor asChild>
+              <div ref={anchorRef} className="relative w-full">
+                <Link2
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
+                  aria-invalid={Boolean(error)}
+                  className={errorStyle({
+                    error: Boolean(error),
+                    className: 'pl-9 pr-9',
+                  })}
+                  onBlur={() => {
+                    if (!internalValue && displayValue !== displayValue.trim()) {
+                      selectDirectUrl(displayValue.trim())
+                    }
+                  }}
+                  onChange={(event) => selectDirectUrl(event.target.value)}
+                  onClick={openPicker}
+                  onFocus={openPicker}
+                  placeholder={props.dynamicFallbackPlaceholder ?? t('linkPicker.placeholder')}
+                  value={displayValue}
+                />
+                {displayValue ? (
+                  <Button
+                    aria-label={t('linkPicker.clear')}
+                    className="absolute right-0 top-0 text-muted-foreground hover:text-foreground"
+                    onClick={clearLink}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <X />
+                  </Button>
+                ) : null}
+              </div>
+            </PopoverAnchor>
+            <PopoverContent
+              align="start"
+              avoidCollisions={false}
+              className="overflow-hidden p-0"
+              onInteractOutside={(event) => {
+                if (anchorRef.current?.contains(event.target as Node)) {
+                  event.preventDefault()
                 }
               }}
-              onChange={(event) => selectDirectUrl(event.target.value)}
-              onClick={openPicker}
-              onFocus={openPicker}
-              placeholder={props.dynamicFallbackPlaceholder ?? t('linkPicker.placeholder')}
-              value={displayValue}
-            />
-            {displayValue ? (
-              <Button
-                aria-label={t('linkPicker.clear')}
-                className="absolute right-0 top-0 text-muted-foreground hover:text-foreground"
-                onClick={() => selectDirectUrl('')}
-                size="icon"
-                variant="ghost"
-              >
-                <X />
-              </Button>
-            ) : null}
-          </div>
-        </PopoverAnchor>
-        <PopoverContent
-          align="start"
-          avoidCollisions={false}
-          className="overflow-hidden p-0"
-          onInteractOutside={(event) => {
-            if (anchorRef.current?.contains(event.target as Node)) {
-              event.preventDefault()
-            }
-          }}
-          onOpenAutoFocus={(event) => event.preventDefault()}
-          side="top"
-          style={popoverWidth ? { width: popoverWidth } : undefined}
-        >
-          {activeRoute ? (
-            <div>
-              <div className="flex items-center gap-2 border-b p-2">
-                <Button
-                  aria-label={t('linkPicker.back')}
-                  onClick={() => setActiveRouteId(null)}
-                  size="icon"
-                  variant="ghost"
-                >
-                  <ArrowLeft />
-                </Button>
-                <span className="truncate text-sm font-medium">{getRouteTitle(activeRoute)}</span>
-              </div>
-              {routeItemsError ? (
-                <p className="px-3 py-6 text-center text-sm text-destructive">
-                  {t('linkPicker.loadError')}
-                </p>
-              ) : routeItemsPending ? (
-                <div className="flex items-center justify-center gap-2 px-3 py-6 text-sm text-muted-foreground">
-                  <LoaderCircle className="size-4 animate-spin" />
-                  {t('common.loading')}
+              onOpenAutoFocus={(event) => event.preventDefault()}
+              side="top"
+              style={popoverWidth ? { width: popoverWidth } : undefined}
+            >
+              {activeRoute ? (
+                <div>
+                  <div className="flex items-center gap-2 border-b p-2">
+                    <Button
+                      aria-label={t('linkPicker.back')}
+                      onClick={() => setActiveRouteId(null)}
+                      size="icon"
+                      variant="ghost"
+                    >
+                      <ArrowLeft />
+                    </Button>
+                    <span className="truncate text-sm font-medium">
+                      {getRouteTitle(activeRoute)}
+                    </span>
+                  </div>
+                  {routeItemsError ? (
+                    <p className="px-3 py-6 text-center text-sm text-destructive">
+                      {t('linkPicker.loadError')}
+                    </p>
+                  ) : routeItemsPending ? (
+                    <div className="flex items-center justify-center gap-2 px-3 py-6 text-sm text-muted-foreground">
+                      <LoaderCircle className="size-4 animate-spin" />
+                      {t('common.loading')}
+                    </div>
+                  ) : (
+                    <Command key={activeRoute._id}>
+                      <CommandInput autoFocus placeholder={t('linkPicker.search')} />
+                      <CommandList>
+                        <CommandEmpty>{t('linkPicker.noResults')}</CommandEmpty>
+                        <CommandGroup>
+                          {routeItems.map((document) => {
+                            const label = getDocumentLabel(document, activeContentType)
+                            return (
+                              <CommandItem
+                                key={document._id}
+                                keywords={[label, document._id]}
+                                onSelect={() => selectInternalLink(document)}
+                                value={`${label} ${document._id}`}
+                              >
+                                <FileText />
+                                <span className="truncate">{label}</span>
+                              </CommandItem>
+                            )
+                          })}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  )}
                 </div>
               ) : (
-                <Command key={activeRoute._id}>
-                  <CommandInput autoFocus placeholder={t('linkPicker.search')} />
-                  <CommandList>
-                    <CommandEmpty>{t('linkPicker.noResults')}</CommandEmpty>
-                    <CommandGroup>
-                      {routeItems.map((document) => {
-                        const label = getDocumentLabel(document, activeContentType)
-                        return (
-                          <CommandItem
-                            key={document._id}
-                            keywords={[label, document._id]}
-                            onSelect={() => selectInternalLink(document)}
-                            value={`${label} ${document._id}`}
-                          >
-                            <FileText />
-                            <span className="truncate">{label}</span>
-                          </CommandItem>
-                        )
-                      })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              )}
-            </div>
-          ) : (
-            <div>
-              <div className="border-b px-3 py-2">
-                <p className="text-sm font-medium">{t('linkPicker.chooseDestination')}</p>
-                <p className="text-xs text-muted-foreground">{t('linkPicker.directHint')}</p>
-              </div>
-              <div className="max-h-80 overflow-y-auto p-1">
-                <button
-                  className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
-                  onClick={() => {
-                    selectDirectUrl('/')
-                    closePicker()
-                  }}
-                  type="button"
-                >
-                  <span className="flex size-8 items-center justify-center rounded-md border bg-background">
-                    <Home className="size-4" />
-                  </span>
-                  <span className="flex-1 font-medium">{t('linkPicker.homepage')}</span>
-                </button>
-                <p className="px-2 pb-1 pt-3 text-xs font-medium text-muted-foreground">
-                  {t('linkPicker.routeTypes')}
-                </p>
-                {routesError || contentTypesError ? (
-                  <p className="px-2 py-4 text-center text-sm text-destructive">
-                    {t('linkPicker.loadError')}
-                  </p>
-                ) : routesPending || contentTypesPending ? (
-                  <div className="flex items-center justify-center gap-2 px-2 py-4 text-sm text-muted-foreground">
-                    <LoaderCircle className="size-4 animate-spin" />
-                    {t('common.loading')}
+                <div>
+                  <div className="border-b px-3 py-2">
+                    <p className="text-sm font-medium">{t('linkPicker.chooseDestination')}</p>
+                    <p className="text-xs text-muted-foreground">{t('linkPicker.directHint')}</p>
                   </div>
-                ) : routes.length === 0 ? (
-                  <p className="px-2 py-4 text-center text-sm text-muted-foreground">
-                    {t('linkPicker.noRoutes')}
-                  </p>
-                ) : (
-                  routes.map((route) => {
-                    const contentType = contentTypesByName.get(route.contentType)
-                    const RouteIcon = resolveLucideIcon(contentType?.menu?.icon) ?? FileText
-                    return (
-                      <button
-                        className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
-                        key={route._id}
-                        onClick={() => setActiveRouteId(route._id)}
-                        type="button"
-                      >
-                        <span className="flex size-8 items-center justify-center rounded-md border bg-background">
-                          <RouteIcon className="size-4" />
-                        </span>
-                        <span className="min-w-0 flex-1 truncate font-medium">
-                          {getRouteTitle(route)}
-                        </span>
-                        <ChevronRight className="size-4 text-muted-foreground" />
-                      </button>
-                    )
-                  })
-                )}
-              </div>
-            </div>
-          )}
-        </PopoverContent>
-      </Popover>
+                  <div className="max-h-80 overflow-y-auto p-1">
+                    <button
+                      className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                      onClick={() => {
+                        onValueChange({
+                          href: '/',
+                          title: linkTitle || t('linkPicker.homepage'),
+                        })
+                        closePicker()
+                      }}
+                      type="button"
+                    >
+                      <span className="flex size-8 items-center justify-center rounded-md border bg-background">
+                        <Home className="size-4" />
+                      </span>
+                      <span className="flex-1 font-medium">{t('linkPicker.homepage')}</span>
+                    </button>
+                    <p className="px-2 pb-1 pt-3 text-xs font-medium text-muted-foreground">
+                      {t('linkPicker.routeTypes')}
+                    </p>
+                    {routesError || contentTypesError ? (
+                      <p className="px-2 py-4 text-center text-sm text-destructive">
+                        {t('linkPicker.loadError')}
+                      </p>
+                    ) : routesPending || contentTypesPending ? (
+                      <div className="flex items-center justify-center gap-2 px-2 py-4 text-sm text-muted-foreground">
+                        <LoaderCircle className="size-4 animate-spin" />
+                        {t('common.loading')}
+                      </div>
+                    ) : routes.length === 0 ? (
+                      <p className="px-2 py-4 text-center text-sm text-muted-foreground">
+                        {t('linkPicker.noRoutes')}
+                      </p>
+                    ) : (
+                      routes.map((route) => {
+                        const contentType = contentTypesByName.get(route.contentType)
+                        const RouteIcon = resolveLucideIcon(contentType?.menu?.icon) ?? FileText
+                        return (
+                          <button
+                            className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                            key={route._id}
+                            onClick={() => setActiveRouteId(route._id)}
+                            type="button"
+                          >
+                            <span className="flex size-8 items-center justify-center rounded-md border bg-background">
+                              <RouteIcon className="size-4" />
+                            </span>
+                            <span className="min-w-0 flex-1 truncate font-medium">
+                              {getRouteTitle(route)}
+                            </span>
+                            <ChevronRight className="size-4 text-muted-foreground" />
+                          </button>
+                        )
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
     </FieldWrapper>
   )
 }

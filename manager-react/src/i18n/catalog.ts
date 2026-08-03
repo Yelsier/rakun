@@ -730,6 +730,10 @@ export const managerMessages = {
   'linkPicker.placeholder': {
     defaultMessage: 'Paste a URL or choose a destination',
   },
+  'linkPicker.title': { defaultMessage: 'Title' },
+  'linkPicker.titlePlaceholder': { defaultMessage: 'Link title' },
+  'linkPicker.destination': { defaultMessage: 'Destination' },
+  'linkPicker.destinationRequired': { defaultMessage: 'Choose a destination.' },
   'linkPicker.chooseDestination': { defaultMessage: 'Choose a destination' },
   'linkPicker.directHint': {
     defaultMessage: 'You can also type a web address directly in the field.',
@@ -756,6 +760,7 @@ export const managerMessages = {
   'contentEdit.invalidNumber': { defaultMessage: 'Invalid number' },
   'contentEdit.selectAnOption': { defaultMessage: 'Select an option' },
   'contentEdit.reorderMedia': { defaultMessage: 'Reorder media' },
+  'contentEdit.reorderItem': { defaultMessage: 'Reorder item' },
   'contentEdit.removeMedia': { defaultMessage: 'Remove media' },
   'contentEdit.mediaSelected': {
     defaultMessage: '{count} media selected',
@@ -969,6 +974,10 @@ export const managerMessages = {
   'dynamicData.mappingMode': { defaultMessage: 'Mapping mode' },
   'dynamicData.directField': { defaultMessage: 'Direct field' },
   'dynamicData.relatedCollection': { defaultMessage: 'Related collection' },
+  'dynamicData.nestedList': { defaultMessage: 'Nested list' },
+  'dynamicData.nestedListHelp': {
+    defaultMessage: 'Choose a direct field or map every item in a nested list.',
+  },
   'dynamicData.fieldOn': { defaultMessage: 'Field on' },
   'dynamicData.collectionToQuery': { defaultMessage: 'Collection to query' },
   'dynamicData.relationTo': { defaultMessage: 'Relation to' },

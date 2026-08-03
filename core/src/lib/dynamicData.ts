@@ -54,11 +54,6 @@ const dynamicListDocumentSourceSchema = z.object({
   itemName: z.string().optional(),
 });
 
-const dynamicListMapSourceSchema = z.union([
-  dynamicBindingSourceSchema,
-  dynamicRelatedCollectionSourceSchema,
-]);
-
 const dynamicQuerySchema = z
   .object({
     filter: z.record(z.string(), z.any()).optional(),
@@ -73,7 +68,44 @@ const dynamicQuerySchema = z
   })
   .optional();
 
-const dynamicListBindingSchema = z.object({
+export type DynamicBindingSource = Omit<
+  z.infer<typeof dynamicBindingSourceSchema>,
+  "kind"
+>;
+export type DynamicRelatedCollectionSource = z.infer<
+  typeof dynamicRelatedCollectionSourceSchema
+>;
+export type DynamicListDocumentSource = z.infer<
+  typeof dynamicListDocumentSourceSchema
+>;
+export type DynamicListBinding = {
+  contentType: string;
+  source?: DynamicListDocumentSource;
+  query?: z.infer<typeof dynamicQuerySchema>;
+  itemName: string;
+  map: Record<string, DynamicListMapSource>;
+};
+export type DynamicNestedListSource = DynamicListBinding & {
+  kind: "list";
+};
+export type DynamicListMapSource =
+  | DynamicBindingSource
+  | DynamicRelatedCollectionSource
+  | DynamicNestedListSource;
+
+const dynamicListMapSourceSchema: z.ZodType<DynamicListMapSource> = z.lazy(
+  () =>
+    z.union([
+      dynamicBindingSourceSchema,
+      dynamicRelatedCollectionSourceSchema,
+      z.intersection(
+        dynamicListBindingSchema,
+        z.object({ kind: z.literal("list") }),
+      ),
+    ]),
+);
+
+const dynamicListBindingSchema: z.ZodType<DynamicListBinding> = z.object({
   contentType: z.string(),
   source: dynamicListDocumentSourceSchema.optional(),
   query: dynamicQuerySchema,
@@ -86,20 +118,6 @@ export const DynamicDocumentBindingsSchema = z.object({
   lists: z.record(z.string(), dynamicListBindingSchema).optional(),
 });
 
-export type DynamicBindingSource = Omit<
-  z.infer<typeof dynamicBindingSourceSchema>,
-  "kind"
->;
-export type DynamicRelatedCollectionSource = z.infer<
-  typeof dynamicRelatedCollectionSourceSchema
->;
-export type DynamicListDocumentSource = z.infer<
-  typeof dynamicListDocumentSourceSchema
->;
-export type DynamicListMapSource =
-  | DynamicBindingSource
-  | DynamicRelatedCollectionSource;
-export type DynamicListBinding = z.infer<typeof dynamicListBindingSchema>;
 export type DynamicDocumentBindings = z.infer<
   typeof DynamicDocumentBindingsSchema
 >;

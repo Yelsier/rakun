@@ -237,6 +237,206 @@ describe("dynamic data output", () => {
     ]);
   });
 
+  it("maps lists recursively inside dynamic list items", async () => {
+    const NestedSourceImage = new ContentType({
+      name: "NestedDynamicSourceImage",
+      fields: {
+        title: Fields.string().required(),
+        link: Fields.link().required(),
+        image: Fields.file().type("Image").required(),
+      },
+    });
+    const NestedSourceCategory = new ContentType({
+      name: "NestedDynamicSourceCategory",
+      fields: {
+        title: Fields.string().required(),
+        images: Fields.blocks([
+          {
+            name: "SourceImage",
+            field: Fields.relation(NestedSourceImage, "new"),
+          },
+        ]),
+      },
+    });
+    const NestedGalleryImage = new ContentType({
+      name: "NestedDynamicGalleryImage",
+      fields: {
+        title: Fields.string().required(),
+        href: Fields.string().required(),
+        linkTitle: Fields.string().required(),
+        image: Fields.file().type("Image").required(),
+      },
+    });
+    const NestedGalleryItem = new ContentType({
+      name: "NestedDynamicGalleryItem",
+      fields: {
+        title: Fields.string().required(),
+        images: Fields.blocks([
+          {
+            name: "GalleryImage",
+            field: Fields.relation(NestedGalleryImage, "new"),
+          },
+        ]),
+      },
+    });
+    const NestedGallery = new ContentType({
+      name: "NestedDynamicGallery",
+      fields: {
+        items: Fields.blocks([
+          {
+            name: "GalleryItem",
+            field: Fields.relation(NestedGalleryItem, "new"),
+          },
+        ]),
+      },
+    });
+    const NestedPage = new ContentType({
+      name: "NestedDynamicPage",
+      fields: {
+        categories: Fields.blocks([
+          {
+            name: "SourceCategory",
+            field: Fields.relation(NestedSourceCategory, "new"),
+          },
+        ]),
+        modules: Fields.blocks([
+          {
+            name: "Gallery",
+            field: Fields.relation(NestedGallery, "new"),
+          },
+        ]),
+      },
+    });
+    for (const contentType of [
+      NestedSourceImage,
+      NestedSourceCategory,
+      NestedGalleryImage,
+      NestedGalleryItem,
+      NestedGallery,
+    ]) {
+      registerContentType(contentType);
+    }
+
+    const image = { key: "aurora", url: "/aurora.webp" };
+    const resolved = await resolveDynamicData(
+      {
+        _id: "page-1",
+        _type: NestedPage.name,
+        categories: [
+          {
+            name: "SourceCategory",
+            value: {
+              _id: "category-1",
+              _type: NestedSourceCategory.name,
+              title: "Launches",
+              images: [
+                {
+                  name: "SourceImage",
+                  value: {
+                    _id: "image-1",
+                    _type: NestedSourceImage.name,
+                    title: "Aurora launch",
+                    link: {
+                      href: "/projects/aurora-launch",
+                      title: "View Aurora launch",
+                    },
+                    image,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+        modules: [
+          {
+            name: "Gallery",
+            value: {
+              _type: NestedGallery.name,
+              _bindings: {
+                lists: {
+                  items: {
+                    contentType: NestedSourceCategory.name,
+                    source: {
+                      kind: "currentDocument",
+                      contentType: NestedPage.name,
+                      path: "categories",
+                      itemName: "SourceCategory",
+                    },
+                    itemName: "GalleryItem",
+                    map: {
+                      title: {
+                        contentType: NestedSourceCategory.name,
+                        path: "title",
+                      },
+                      images: {
+                        kind: "list",
+                        contentType: NestedSourceImage.name,
+                        source: {
+                          kind: "currentDocument",
+                          contentType: NestedSourceCategory.name,
+                          path: "images",
+                          itemName: "SourceImage",
+                        },
+                        itemName: "GalleryImage",
+                        map: {
+                          title: {
+                            contentType: NestedSourceImage.name,
+                            path: "title",
+                          },
+                          href: {
+                            contentType: NestedSourceImage.name,
+                            path: "link.href",
+                          },
+                          linkTitle: {
+                            contentType: NestedSourceImage.name,
+                            path: "link.title",
+                          },
+                          image: {
+                            contentType: NestedSourceImage.name,
+                            path: "image",
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+      {
+        db: {} as never,
+        contentType: NestedPage,
+        surface: "web",
+      },
+    );
+
+    expect(resolved.modules[0]?.value.items).toEqual([
+      {
+        name: "GalleryItem",
+        value: {
+          _id: "GalleryItem:category-1",
+          _type: NestedGalleryItem.name,
+          title: "Launches",
+          images: [
+            {
+              name: "GalleryImage",
+              value: {
+                _id: "GalleryImage:image-1",
+                _type: NestedGalleryImage.name,
+                title: "Aurora launch",
+                href: "/projects/aurora-launch",
+                linkTitle: "View Aurora launch",
+                image,
+              },
+            },
+          ],
+        },
+      },
+    ]);
+  });
+
   it("resolves list query values from the current document", async () => {
     const CurrentQueryCard = new ContentType({
       name: "CurrentQueryCard",

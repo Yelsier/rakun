@@ -83,11 +83,22 @@ const navigation = createPathManagerNavigation({
 
 ## Link fields
 
-The `f.link()` editor is a single link input. Users can paste or type a direct
-URL, choose the home page, or browse configured page-route types and select one
-of their entries. Route types use their content type's manager icon. Internal
-selections remain route references so localized paths can resolve at render
-time; direct URLs are stored as strings.
+The `f.link()` editor shows a title alongside its destination. Users can paste
+or type a direct URL, choose the home page, or browse configured page-route
+types and select one of their entries. Internal selections automatically use
+the item label when the title is empty. Direct links are stored as
+`{ href, title }`; internal links as `{ routeId, contentTypeId, title }` so core
+can resolve localized paths. Legacy values remain editable.
+
+Compound arrays such as `f.array(f.link())` are reorderable from their drag
+handles in the Info editor, without losing unsaved values inside each item.
+
+## Dynamic data mappings
+
+The list mapping editor supports recursive `blocks` targets. Select
+`Nested list` for a mapped list property to configure its own source, query,
+filters, item type, and field mapping. `Current document` query values inside
+that nested editor resolve against the parent source item.
 
 ## Styles
 

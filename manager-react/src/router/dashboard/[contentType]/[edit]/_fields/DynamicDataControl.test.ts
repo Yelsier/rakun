@@ -55,6 +55,10 @@ const project = {
     featuredImage: fileField('Image'),
     document: fileField('Document'),
     featuredImages: fileField('Image', true),
+    website: {
+      ...fieldState,
+      config: { type: 'Link', ui: 'Link' },
+    } as EncodedFieldUnknown,
     category: {
       ...fieldState,
       config: { type: 'Relation', ui: 'ContentType' },
@@ -124,6 +128,9 @@ describe('dynamic data source field options', () => {
     expect(values).not.toContain('_iterator')
     expect(values).toContain('featuredImage.url')
     expect(values).toContain('document.alt')
+    expect(values).toContain('website.href')
+    expect(values).toContain('website.title')
+    expect(values).not.toContain('website')
     expect(values).not.toContain('featuredImage')
     expect(values).not.toContain('featuredImages')
   })

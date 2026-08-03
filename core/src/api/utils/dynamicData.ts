@@ -8,6 +8,7 @@ import {
   type DynamicBindingSource,
   type DynamicListBinding,
   type DynamicListMapSource,
+  type DynamicNestedListSource,
   type DynamicRelatedCollectionSource,
 } from "../../lib/dynamicData";
 import { Logger } from "../../lib/Logger";
@@ -72,6 +73,7 @@ const fileSourcePaths = new Set([
   "height",
   "size",
 ]);
+const linkSourcePaths = new Set(["href", "title"]);
 
 const isDynamicSourcePathAllowed = (
   contentType: ContentType,
@@ -102,6 +104,10 @@ const isDynamicSourcePathAllowed = (
 
   if (field.meta.type === "File") {
     return rest.length === 1 && fileSourcePaths.has(rest[0]);
+  }
+
+  if (field.meta.type === "Link") {
+    return rest.length === 1 && linkSourcePaths.has(rest[0]);
   }
 
   return false;
@@ -284,6 +290,11 @@ const isRelatedCollectionSource = (
 ): source is DynamicRelatedCollectionSource =>
   "kind" in source && source.kind === "relatedCollection";
 
+const isNestedListSource = (
+  source: DynamicListMapSource,
+): source is DynamicNestedListSource =>
+  "kind" in source && source.kind === "list";
+
 const addPublicContentFilter = (query: Query): Query => ({
   ...query,
   filter: {
@@ -420,16 +431,35 @@ export const resolveRelatedCollectionValue = async ({
 const resolveListMapSourceValue = async ({
   db,
   source,
+  targetField,
   currentSource,
   currentContentType,
   contextSource,
 }: {
   db: DBService;
   source: DynamicListMapSource;
+  targetField?: ContentType["fields"][string];
   currentSource: Record<string, unknown>;
   currentContentType: ContentType;
   contextSource?: ResolveOptions["contextSource"];
-}) => {
+}): Promise<unknown> => {
+  if (isNestedListSource(source)) {
+    const targetContentType = getListTargetContentType(
+      targetField,
+      source.itemName,
+    );
+    if (!targetContentType) return undefined;
+
+    return await resolveListBinding({
+      db,
+      binding: source,
+      contextSource,
+      currentDocument: currentSource,
+      currentDocumentContentType: currentContentType,
+      itemContentTypeName: targetContentType.name,
+    });
+  }
+
   if (isRelatedCollectionSource(source)) {
     return await resolveRelatedCollectionValue({
       db,
@@ -463,7 +493,9 @@ const resolveListBinding = async ({
   currentDocument: Record<string, unknown>;
   currentDocumentContentType: ContentType;
   itemContentTypeName: string;
-}) => {
+}): Promise<
+  Array<{ name: string; value: Record<string, unknown> }> | undefined
+> => {
   const documentSource = binding.source;
   const sourceContentType = documentSource
     ? getContentTypeByName(binding.contentType)
@@ -476,14 +508,13 @@ const resolveListBinding = async ({
 
   if (documentSource) {
     if (
-      !contextSource ||
-      documentSource.contentType !== contextSource.contentType.name
+      documentSource.contentType !== currentDocumentContentType.name
     ) {
       return undefined;
     }
 
     const sourceField = getDynamicSourceField(
-      contextSource.contentType,
+      currentDocumentContentType,
       documentSource.path,
     );
     const itemContentType = getDocumentListItemContentType(
@@ -494,7 +525,7 @@ const resolveListBinding = async ({
       return undefined;
     }
 
-    const value = getAtPath(contextSource.value, documentSource.path);
+    const value = getAtPath(currentDocument, documentSource.path);
     if (!Array.isArray(value)) return undefined;
 
     sourceItems = documentSource.itemName
@@ -525,8 +556,15 @@ const resolveListBinding = async ({
     sourceItems = (await db.list(sourceContentType, query)).items;
   }
 
-  const resolvedItems = await Promise.all(
-    sourceItems.map(async (sourceItem, index) => {
+  const resolvedItems: Array<
+    { name: string; value: Record<string, unknown> } | undefined
+  > = await Promise.all(
+    sourceItems.map(async (
+      sourceItem,
+      index,
+    ): Promise<
+      { name: string; value: Record<string, unknown> } | undefined
+    > => {
       if (!isRecord(sourceItem)) return undefined;
 
       const populated = documentSource
@@ -534,13 +572,15 @@ const resolveListBinding = async ({
         : ((await populateRelations(
             await populateLinks(sourceItem as DBOutput<ContentType>),
           )) as Record<string, unknown>);
-      const mapped = Object.fromEntries(
+      const targetContentType = getContentTypeByName(itemContentTypeName);
+      const mapped: Record<string, unknown> = Object.fromEntries(
         await Promise.all(
           Object.entries(binding.map).map(async ([targetField, source]) => [
             targetField,
             await resolveListMapSourceValue({
               db,
               source,
+              targetField: targetContentType?.fields[targetField],
               currentSource: populated,
               currentContentType: sourceContentType,
               contextSource,
@@ -563,7 +603,10 @@ const resolveListBinding = async ({
     }),
   );
 
-  return resolvedItems.filter((item) => item !== undefined);
+  return resolvedItems.filter(
+    (item): item is { name: string; value: Record<string, unknown> } =>
+      item !== undefined,
+  );
 };
 
 const getListTargetContentType = (
@@ -606,12 +649,38 @@ const filterListBindingMap = (
   );
   if (!targetContentType) return binding;
 
+  return filterListBindingForTarget(targetContentType, binding);
+};
+
+const filterListBindingForTarget = (
+  targetContentType: ContentType,
+  binding: DynamicListBinding,
+): DynamicListBinding => {
   return {
     ...binding,
     map: Object.fromEntries(
-      Object.entries(binding.map).filter(([targetField]) =>
-        targetContentType.allowsDynamicBindingForField(targetField),
-      ),
+      Object.entries(binding.map).flatMap(([targetField, source]) => {
+        if (!targetContentType.allowsDynamicBindingForField(targetField)) {
+          return [];
+        }
+
+        if (!isNestedListSource(source)) {
+          return [[targetField, source]];
+        }
+
+        const nestedTargetContentType = getListTargetContentType(
+          targetContentType.fields[targetField],
+          source.itemName,
+        );
+        return nestedTargetContentType
+          ? [
+              [
+                targetField,
+                filterListBindingForTarget(nestedTargetContentType, source),
+              ],
+            ]
+          : [];
+      }),
     ),
   };
 };

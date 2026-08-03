@@ -8,6 +8,7 @@ import type {
   DynamicListBinding,
   DynamicListDocumentSource,
   DynamicListMapSource,
+  DynamicNestedListSource,
   DynamicRelatedCollectionSource,
   EncodedContentType,
   EncodedFileField,
@@ -156,6 +157,16 @@ const isRelatedCollectionSource = (
   source: ListMapSource,
 ): source is DynamicRelatedCollectionSource =>
   !!source && 'kind' in source && source.kind === 'relatedCollection'
+
+const isNestedListSource = (
+  source: ListMapSource,
+): source is DynamicNestedListSource =>
+  !!source && 'kind' in source && source.kind === 'list'
+
+const asListField = (field: EncodedFieldUnknown) =>
+  field.config.ui === 'List' || field.config.ui === 'Iterator'
+    ? (field as EncodedListField)
+    : undefined
 
 const isDynamicVisibleField = (field: EncodedFieldUnknown) =>
   (field.visibility ?? 'all') === 'all' && field.isDynamic !== false
@@ -341,6 +352,27 @@ const nestedSourceFieldOptions = ({
       return [...fieldOption, ...fileFieldOptions(path, targetField)]
     }
 
+    if (field.config.type === 'Link') {
+      const fieldOption =
+        targetField?.config.type === 'Link' &&
+        areFieldKindsCompatible(field, targetField)
+        ? [{ label: fieldLabel(path), value: path, kind }]
+        : []
+      const propertyOptions = ['href', 'title'].flatMap((property) =>
+        isCompatibleSourceKind('string', targetField)
+          ? [
+              {
+                label: fieldLabel(`${path}.${property}`),
+                value: `${path}.${property}`,
+                kind: 'string' as const,
+              },
+            ]
+          : [],
+      )
+
+      return [...fieldOption, ...propertyOptions]
+    }
+
     if (!areFieldKindsCompatible(field, targetField)) return []
 
     return [
@@ -436,6 +468,13 @@ const mappingSourceSummary = (
     return {
       mode: 'Not configured',
       detail: 'Choose a mapping source',
+    }
+  }
+
+  if (isNestedListSource(source)) {
+    return {
+      mode: '',
+      detail: `${source.contentType} · ${source.itemName}`,
     }
   }
 
@@ -1118,9 +1157,13 @@ const MappingSourceEditor = ({
   onChange: (source: ListMapSource) => void
 }) => {
   const t = useTranslations()
+  const nestedListTarget = asListField(targetField)
+  const nestedSource = isNestedListSource(source) ? source : undefined
   const relatedSource = isRelatedCollectionSource(source) ? source : undefined
   const directSource =
-    source && !isRelatedCollectionSource(source) ? source : undefined
+    source && !isRelatedCollectionSource(source) && !isNestedListSource(source)
+      ? source
+      : undefined
   const directFieldOptions = sourceFieldOptions(currentSource, targetField)
   const relatedContentTypes = contentTypes.filter(
     (contentType) =>
@@ -1145,6 +1188,57 @@ const MappingSourceEditor = ({
   const sortField = sortEntry?.[0] ?? ''
   const sortDirection = sortEntry?.[1] ?? 'desc'
 
+  const createNestedSource = (): DynamicNestedListSource | undefined => {
+    const nestedItemName = nestedListTarget?.fields.find(
+      (item) => item.name !== ITERATOR_FIELD_NAME,
+    )?.name
+    if (!nestedItemName) return undefined
+
+    return {
+      kind: 'list',
+      contentType: currentSource.name,
+      itemName: nestedItemName,
+      query: { options: { limit: 10 } },
+      map: {},
+    }
+  }
+
+  if (nestedSource && nestedListTarget) {
+    return (
+      <div className='grid gap-3'>
+        <div className='grid max-w-sm content-start gap-1.5'>
+          <ControlLabel help={t('dynamicData.nestedListHelp')}>
+            {t('dynamicData.mappingMode')}
+          </ControlLabel>
+          <Select
+            value='list'
+            onValueChange={(value) => {
+              if (value === 'field') onChange(undefined)
+            }}
+          >
+            <SelectTrigger className='w-full'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='field'>{t('dynamicData.directField')}</SelectItem>
+              <SelectItem value='list'>{t('dynamicData.nestedList')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <ListBindingEditor
+          contentTypes={contentTypes}
+          documentContentType={currentSource}
+          currentDocumentSourceEnabled
+          field={nestedListTarget}
+          binding={nestedSource}
+          onChange={(binding) =>
+            onChange(binding ? { ...binding, kind: 'list' } : undefined)
+          }
+        />
+      </div>
+    )
+  }
+
   if (!relatedSource) {
     return (
       <div className='grid gap-3 md:grid-cols-[0.7fr_1.3fr]'>
@@ -1155,6 +1249,10 @@ const MappingSourceEditor = ({
           <Select
             value='field'
             onValueChange={(value) => {
+              if (value === 'list') {
+                onChange(createNestedSource())
+                return
+              }
               if (value !== 'relatedCollection') return
 
               const next = relatedContentTypes
@@ -1176,6 +1274,9 @@ const MappingSourceEditor = ({
               <SelectItem value='field'>{t('dynamicData.directField')}</SelectItem>
               {relatedContentTypes.length > 0 ? (
                 <SelectItem value='relatedCollection'>{t('dynamicData.relatedCollection')}</SelectItem>
+              ) : null}
+              {nestedListTarget ? (
+                <SelectItem value='list'>{t('dynamicData.nestedList')}</SelectItem>
               ) : null}
             </SelectContent>
           </Select>
@@ -1224,7 +1325,9 @@ const MappingSourceEditor = ({
           </ControlLabel>
           <Select
             value='relatedCollection'
-            onValueChange={() => onChange(undefined)}
+            onValueChange={(value) =>
+              onChange(value === 'list' ? createNestedSource() : undefined)
+            }
           >
             <SelectTrigger className='w-full'>
               <SelectValue />
@@ -1232,6 +1335,9 @@ const MappingSourceEditor = ({
             <SelectContent>
               <SelectItem value='field'>{t('dynamicData.directField')}</SelectItem>
               <SelectItem value='relatedCollection'>{t('dynamicData.relatedCollection')}</SelectItem>
+              {nestedListTarget ? (
+                <SelectItem value='list'>{t('dynamicData.nestedList')}</SelectItem>
+              ) : null}
             </SelectContent>
           </Select>
         </div>
@@ -1997,6 +2103,9 @@ const ListBindingEditor = ({
               source,
               selectedSource?.name ?? 'Source',
             )
+            const summaryMode = isNestedListSource(source)
+              ? t('dynamicData.nestedList')
+              : summary.mode
             const isOpen = openMappingField === targetField
 
             return (
@@ -2021,7 +2130,7 @@ const ListBindingEditor = ({
                         variant={source ? 'secondary' : 'outline'}
                         className='max-w-40 truncate'
                       >
-                        {summary.mode}
+                        {summaryMode}
                       </Badge>
                       <span className='truncate text-sm text-muted-foreground'>
                         {selectedSource

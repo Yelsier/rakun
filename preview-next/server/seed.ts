@@ -22,6 +22,7 @@ import {
   Author,
   CategoriesGallery,
   CategoriesGalleryItem,
+  CategoriesGalleryItemImage,
   Category,
   Footer,
   FeatureCarousel,
@@ -926,13 +927,34 @@ const previewCategoriesGalleryModule = () => ({
                 routeKey: "category",
               },
               images: {
-                kind: "relatedCollection",
+                kind: "list",
                 contentType: Project.name,
-                relation: "category",
-                path: "images",
-                limit: 10,
-                sort: {
-                  title: "asc",
+                itemName: CategoriesGalleryItemImage.name,
+                query: {
+                  filter: {
+                    "category._id": { $current: "_id" },
+                  },
+                  options: {
+                    limit: 10,
+                    sort: {
+                      title: "asc",
+                    },
+                  },
+                },
+                map: {
+                  title: {
+                    contentType: Project.name,
+                    path: "title",
+                  },
+                  href: {
+                    contentType: Project.name,
+                    virtual: "href",
+                    routeKey: "project",
+                  },
+                  image: {
+                    contentType: Project.name,
+                    path: "image",
+                  },
                 },
               },
             },
@@ -1347,6 +1369,7 @@ export const seedPreviewData = async ({
               excerpt: project.excerpt,
               featured: project.featured,
               category: categoryRelation(project.category),
+              image: imageRelation(project.images[0]),
               images: project.images.map(imageRelation),
               updatedAt: now(),
             },
@@ -2116,8 +2139,16 @@ export const seedPreviewData = async ({
         { _id: header._id },
         {
           $set: {
-            internalLinkLabel: "About",
-            internalLink: pageLink(route, aboutPage),
+            internalLinks: [
+              {
+                ...pageLink(route, aboutPage),
+                title: "About",
+              },
+              {
+                href: "https://github.com/Yelsier/rakun",
+                title: "GitHub",
+              },
+            ],
             updatedAt: now(),
           },
         },
@@ -2127,8 +2158,10 @@ export const seedPreviewData = async ({
         { _id: footer._id },
         {
           $set: {
-            internalLinkLabel: "Rakun on GitHub",
-            internalLink: "https://github.com/Yelsier/rakun",
+            internalLink: {
+              href: "https://github.com/Yelsier/rakun",
+              title: "Rakun on GitHub",
+            },
             updatedAt: now(),
           },
         },

@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckIcon, Plus, Trash } from 'lucide-react'
+import { CheckIcon, GripVertical, Plus, Trash } from 'lucide-react'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { EncodedSimpleListField } from '@rakun-kit/core/client'
 import type { EncodedRelationField } from '@rakun-kit/core/client'
@@ -11,10 +11,20 @@ import { toast } from 'sonner'
 import { fieldsMap, type FieldRef } from '../../ContentTypeEdit'
 import { FieldValue, useFieldValues } from '../shared'
 import { FieldWrapper } from '../shared/FieldWrapper'
+import {
+  snapshotSimpleListOrder,
+  type SimpleListItem,
+} from './simpleListItems'
 import { useTranslations } from '@/i18n'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Sortable,
+  SortableContent,
+  SortableItem,
+  SortableItemHandle,
+} from '@/components/ui/sortable'
 import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
 import { useTRPC } from '@/components/trpc-provider'
 import { useEditErrorStore } from '@/hooks/app-store'
@@ -35,11 +45,6 @@ type SimpleListProps = EncodedSimpleListField & {
   defaultData?: FieldValue
   dynamicFallbackPlaceholder?: string
   ref?: React.Ref<FieldRef>
-}
-
-type SimpleListItem = {
-  uid: string
-  value: FieldValue
 }
 
 type ExistingRelationValue = {
@@ -446,11 +451,11 @@ const PrimitiveSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props })
 const GenericSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) => {
   const t = useTranslations()
   const refs = useRef<Record<string, FieldRef | null>>({})
-  const valueRef = useRef<SimpleListItem[]>([])
+  const valueRef = useRef<SimpleListItem<FieldValue>[]>([])
   const { language } = useLanguage()
 
   const { value, errors, onValueChange, getValue, getState } = useFieldValues<
-    SimpleListItem[]
+    SimpleListItem<FieldValue>[]
   >({
     id,
     isRequired: props.isRequired,
@@ -481,7 +486,7 @@ const GenericSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) =
       return values
     }
 
-    return (values as SimpleListItem[])
+    return (values as SimpleListItem<FieldValue>[])
       .map((item) => refs.current[item.uid]?.getValue())
       .filter((v) => v !== undefined && v !== null && v !== '')
   }
@@ -489,7 +494,7 @@ const GenericSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) =
   const getStateWithNested = () => {
     const states = getState()
     if (!states) return states
-    return (states as SimpleListItem[]).map((item) => ({
+    return (states as SimpleListItem<FieldValue>[]).map((item) => ({
       uid: item.uid,
       value: refs.current[item.uid]?.getState(),
     }))
@@ -524,6 +529,17 @@ const GenericSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) =
     ])
   }, [onValueChange])
 
+  const handleSort = useCallback(
+    (items: SimpleListItem<FieldValue>[]) => {
+      const reordered = snapshotSimpleListOrder(items, (uid) =>
+        refs.current[uid]?.getState() as FieldValue | undefined,
+      )
+      valueRef.current = reordered
+      onValueChange(reordered)
+    },
+    [onValueChange],
+  )
+
   useEffect(() => {
     const currentValue = valueRef.current
     onValueChange(
@@ -554,35 +570,57 @@ const GenericSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) =
       </Button>
 
       {value.length > 0 ? (
-        <div className='mt-6 flex flex-col gap-4'>
-          {value.map((item, index) => (
-            <Card key={item.uid}>
-              <CardHeader className='flex flex-row items-center justify-between'>
-                <CardTitle>
-                  {relationName} {index + 1}
-                </CardTitle>
-                <Button
-                  size={'icon'}
-                  variant={'destructive'}
-                  onClick={() => handleDelete(item.uid)}
-                  type='button'
-                >
-                  <Trash />
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <FieldComponent
-                  id={`${id}.${item.uid}`}
-                  ref={(fieldRef) => {
-                    refs.current[item.uid] = fieldRef
-                  }}
-                  defaultData={value[index]?.value}
-                  {...props.field}
-                />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Sortable
+          value={value}
+          onValueChange={handleSort}
+          getItemValue={(item) => item.uid}
+        >
+          <SortableContent className='mt-6 flex flex-col gap-4'>
+            {value.map((item, index) => (
+              <SortableItem key={item.uid} value={item.uid} asChild>
+                <div>
+                  <Card>
+                    <CardHeader className='flex flex-row items-center justify-between'>
+                      <CardTitle>
+                        {relationName} {index + 1}
+                      </CardTitle>
+                      <div className='flex items-center gap-1'>
+                        <SortableItemHandle asChild>
+                          <Button
+                            aria-label={t('contentEdit.reorderItem')}
+                            size='icon'
+                            type='button'
+                            variant='ghost'
+                          >
+                            <GripVertical />
+                          </Button>
+                        </SortableItemHandle>
+                        <Button
+                          size='icon'
+                          variant='destructive'
+                          onClick={() => handleDelete(item.uid)}
+                          type='button'
+                        >
+                          <Trash />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <FieldComponent
+                        id={`${id}.${item.uid}`}
+                        ref={(fieldRef) => {
+                          refs.current[item.uid] = fieldRef
+                        }}
+                        defaultData={value[index]?.value}
+                        {...props.field}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+              </SortableItem>
+            ))}
+          </SortableContent>
+        </Sortable>
       ) : null}
     </FieldWrapper>
   )

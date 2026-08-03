@@ -13,10 +13,9 @@ export const Header = new ContentType({
     brand: f.string().required(),
     primaryLinkLabel: f.string(),
     primaryLinkHref: f.string().type('Url'),
-    internalLinkLabel: f.string(),
-    internalLink: f.link(),
+    internalLinks: f.array(f.link()),
   },
-  listFields: ['brand', 'primaryLinkLabel', 'internalLinkLabel'],
+  listFields: ['brand', 'primaryLinkLabel'],
 })
 
 export const Footer = new ContentType({
@@ -31,10 +30,9 @@ export const Footer = new ContentType({
     copyright: f.string(),
     primaryLinkLabel: f.string(),
     primaryLinkHref: f.string().type('Url'),
-    internalLinkLabel: f.string(),
     internalLink: f.link(),
   },
-  listFields: ['brand', 'copyright', 'internalLinkLabel'],
+  listFields: ['brand', 'copyright'],
 })
 
 export const PageSection = new ContentType({
@@ -181,12 +179,14 @@ export const ProjectHeader = new ContentType({
   name: 'ProjectHeader',
   fields: {
     title: f.string().translatable().required(),
-    categories: f.blocks([
-      {
-        name: 'Category',
-        field: f.relation(LinkItem, 'new'),
-      },
-    ]).required(),
+    categories: f
+      .blocks([
+        {
+          name: 'Category',
+          field: f.relation(LinkItem, 'new'),
+        },
+      ])
+      .required(),
     company: f.string().translatable().required(),
   },
 })
@@ -206,6 +206,7 @@ export const Project = new ContentType({
     featured: f.boolean(),
     category: f.relation(Category, 'existing').required(),
     categories: f.relation(Category, 'existing').multiple(),
+    image: f.file().type('Image').required(),
     images: f.file().type('Image').multiple(),
   },
   iterator: [
@@ -250,12 +251,28 @@ export const FeatureCarousel = new ContentType({
   listFields: ['title', 'eyebrow'],
 })
 
+export const CategoriesGalleryItemImage = new ContentType({
+  name: 'CategoriesGalleryItemImage',
+  fields: {
+    href: f.link().required(),
+    title: f.string().required(),
+    image: f.file().type('Image').required(),
+  },
+}).hideFromManager()
+
 export const CategoriesGalleryItem = new ContentType({
   name: 'CategoriesGalleryItem',
   fields: {
     title: f.string().required(),
     href: f.link().required(),
-    images: f.file().type('Image').multiple().required(),
+    images: f
+      .blocks([
+        {
+          name: CategoriesGalleryItemImage.name,
+          field: f.relation(CategoriesGalleryItemImage, 'new').required(),
+        },
+      ])
+      .required(),
   },
 }).hideFromManager()
 
@@ -463,7 +480,8 @@ export const ConditionalDemo = new ContentType({
       field: 'flags',
       includes: 'featured',
     }),
-    multiFlagSummary: f.string()
+    multiFlagSummary: f
+      .string()
       .type('Textarea')
       .condition({
         field: 'flags',
@@ -508,6 +526,7 @@ export const previewContentTypes = [
   Project,
   FeatureCarouselItem,
   FeatureCarousel,
+  CategoriesGalleryItemImage,
   CategoriesGalleryItem,
   CategoriesGallery,
   Author,
@@ -535,6 +554,7 @@ export const keyedContentTypes = {
   Project,
   FeatureCarouselItem,
   FeatureCarousel,
+  CategoriesGalleryItemImage,
   CategoriesGalleryItem,
   CategoriesGallery,
   Author,

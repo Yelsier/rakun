@@ -61,8 +61,11 @@ export const populateLinks = async <T extends ContentType>(
           })
           .concat([["_tag", "Translatable"]]),
       );
+      const href = await populateLinks(populated as DBOutput<T>);
 
-      return await populateLinks(populated as DBOutput<T>);
+      return "title" in value && typeof value.title === "string"
+        ? { href, title: value.title }
+        : href;
     }
 
     if (hasKeys(value)) {

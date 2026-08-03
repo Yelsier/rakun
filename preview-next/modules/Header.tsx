@@ -4,32 +4,29 @@ type HeaderProps = {
   brand?: string
   primaryLinkLabel?: string
   primaryLinkHref?: string
-  internalLinkLabel?: string
-  internalLink?: unknown
+  internalLinks?: unknown[]
+}
+
+const readLink = (value: unknown) => {
+  if (typeof value === 'string') return { href: value, title: '' }
+  if (!value || typeof value !== 'object') return { href: '', title: '' }
+
+  const link = value as Record<string, unknown>
+  return {
+    href: typeof link.href === 'string' ? link.href : '',
+    title: typeof link.title === 'string' ? link.title : '',
+  }
 }
 
 export default function Header({
   brand = 'Rakun Preview',
   primaryLinkLabel = 'Backend',
   primaryLinkHref = '/backend',
-  internalLinkLabel,
-  internalLink,
+  internalLinks = [],
 }: HeaderProps) {
   const t = useT()
 
-  const internalLinkHref = typeof internalLink === 'string' ? internalLink : ''
-  const internalLinkPreview =
-    typeof internalLink === 'string'
-      ? internalLink
-      : internalLink
-        ? JSON.stringify(internalLink)
-        : ''
-  const internalLinkContent = (
-    <>
-      <span>{internalLinkLabel || internalLinkPreview}</span>
-      <span className="text-xs font-normal text-zinc-500">{internalLinkPreview}</span>
-    </>
-  )
+  const navigationLinks = internalLinks.map(readLink).filter((link) => link.href)
 
   return (
     <header className="border-b border-zinc-200 bg-white">
@@ -39,20 +36,11 @@ export default function Header({
           <span className="text-xs font-medium text-emerald-700">{t({ key: 'demo.welcome' })}</span>
         </div>
         <nav className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm">
-          {internalLinkPreview ? (
-            internalLinkHref ? (
-              <a
-                className="flex flex-col items-end font-medium text-emerald-700"
-                href={internalLinkHref}
-              >
-                {internalLinkContent}
-              </a>
-            ) : (
-              <span className="flex flex-col items-end font-medium text-amber-700">
-                {internalLinkContent}
-              </span>
-            )
-          ) : null}
+          {navigationLinks.map((link) => (
+            <a className="font-medium text-emerald-700" href={link.href} key={link.href}>
+              {link.title || link.href}
+            </a>
+          ))}
           <a className="font-medium text-zinc-700" href={primaryLinkHref}>
             {primaryLinkLabel}
           </a>

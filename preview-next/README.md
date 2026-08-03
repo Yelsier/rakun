@@ -64,14 +64,14 @@ The API route seeds preview data on first request when `SEED_PREVIEW` is not
   composed as Hero -> LayoutWithInfo(Content) -> Newsletter
 - a `FeatureCarousel` module that demonstrates dynamic data bindings from
   `Project`
-- a `CategoriesGallery` module that maps `Category` records and queries each
-  category's related `Project.images`
+- a `CategoriesGallery` module that maps `Category` records, then uses a nested
+  list mapping to turn each related `Project` into an image card
 - local SVG `Media` records used by the related project galleries
 - an `ImagePlayground` record with 18 selected images (three distinct media
   records for each of the six SVGs) for testing compact previews and
   dialog-based reordering
-- populated `f.link()` examples for an internal route in the header and a
-  direct external URL in the footer
+- a reorderable `f.array(f.link())` in the header, plus a titled direct
+  `f.link()` in the footer
 - `Author` and `Article`
 - `RouteLocaleVariant` assignments and route maps for `/`, `/es/`,
   `/es-MX/`, `/about/`, `/es/sobre/`, `/es-MX/sobre-mexico/`,
@@ -103,19 +103,27 @@ to a selected `Project`, and its item list can be populated from filtered
 `Project` records. The manager stores those bindings in `_bindings`; manually
 added carousel items are kept and merged with the dynamic list output.
 
-The seeded `CategoriesGallery` demonstrates a reverse relation without storing
-`Category.projects`. Its outer list comes from `Category`; the `images` mapping
-queries projects whose `category._id` matches the current category and flattens
-each project's `images` array:
+The seeded `CategoriesGallery` demonstrates a recursive mapping without storing
+`Category.projects`. Its outer list comes from `Category`; its `images` target
+is a `blocks` field whose nested list queries projects with a `category._id`
+matching the category currently being mapped. Every related project then maps
+its `title`, generated `href`, and singular `image` into a
+`CategoriesGalleryItemImage`:
 
 ```ts
 images: {
-  kind: "relatedCollection",
+  kind: "list",
   contentType: Project.name,
-  relation: "category",
-  path: "images",
-  limit: 10,
-  sort: { title: "asc" },
+  itemName: CategoriesGalleryItemImage.name,
+  query: {
+    filter: { "category._id": { $current: "_id" } },
+    options: { limit: 10, sort: { title: "asc" } },
+  },
+  map: {
+    title: { contentType: Project.name, path: "title" },
+    href: { contentType: Project.name, virtual: "href" },
+    image: { contentType: Project.name, path: "image" },
+  },
 }
 ```
 

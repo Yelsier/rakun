@@ -5,8 +5,18 @@ type FooterProps = {
   copyright?: string;
   primaryLinkLabel?: string;
   primaryLinkHref?: string;
-  internalLinkLabel?: string;
   internalLink?: unknown;
+};
+
+const readLink = (value: unknown) => {
+  if (typeof value === "string") return { href: value, title: "" };
+  if (!value || typeof value !== "object") return { href: "", title: "" };
+
+  const link = value as Record<string, unknown>;
+  return {
+    href: typeof link.href === "string" ? link.href : "",
+    title: typeof link.title === "string" ? link.title : "",
+  };
 };
 
 export default function Footer({
@@ -14,22 +24,16 @@ export default function Footer({
   copyright = "2026 Rakun Preview",
   primaryLinkLabel = "Docs",
   primaryLinkHref = "/backend/settings/routes",
-  internalLinkLabel,
   internalLink,
 }: FooterProps) {
   const t = useT();
-  const internalLinkHref = typeof internalLink === "string" ? internalLink : "";
-  const internalLinkPreview =
-    typeof internalLink === "string"
-      ? internalLink
-      : internalLink
-        ? JSON.stringify(internalLink)
-        : "";
+  const { href: internalLinkHref, title: internalLinkTitle } =
+    readLink(internalLink);
   const internalLinkContent = (
     <>
-      <span>{internalLinkLabel || internalLinkPreview}</span>
+      <span>{internalLinkTitle || internalLinkHref}</span>
       <span className="text-xs font-normal text-zinc-500">
-        {internalLinkPreview}
+        {internalLinkHref}
       </span>
     </>
   );
@@ -44,19 +48,13 @@ export default function Footer({
           </span>
         </div>
         <nav className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1">
-          {internalLinkPreview ? (
-            internalLinkHref ? (
-              <a
-                className="flex flex-col items-end font-medium text-emerald-700"
-                href={internalLinkHref}
-              >
-                {internalLinkContent}
-              </a>
-            ) : (
-              <span className="flex flex-col items-end font-medium text-amber-700">
-                {internalLinkContent}
-              </span>
-            )
+          {internalLinkHref ? (
+            <a
+              className="flex flex-col items-end font-medium text-emerald-700"
+              href={internalLinkHref}
+            >
+              {internalLinkContent}
+            </a>
           ) : null}
           <a className="font-medium text-zinc-800" href={primaryLinkHref}>
             {primaryLinkLabel}

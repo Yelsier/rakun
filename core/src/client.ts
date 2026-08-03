@@ -13,6 +13,7 @@ export type {
   DynamicListBinding,
   DynamicListDocumentSource,
   DynamicListMapSource,
+  DynamicNestedListSource,
   DynamicQueryCurrentValue,
   DynamicRelatedCollectionSource,
 } from "./lib/dynamicData";

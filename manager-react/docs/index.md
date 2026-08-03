@@ -43,11 +43,17 @@ types in host code. Keep `baseUrl` (API) distinct from `basePath` (manager UI).
 
 ## Link field picker
 
-The `f.link()` editor uses one input for direct and internal destinations. A
-typed or pasted URL is stored as a string. Opening the picker exposes the home
-page and configured page-route types with their content type icons; selecting a
-type opens its searchable entry list. Internal selections are stored as
-`{ routeId, contentTypeId }` so core can resolve localized paths.
+The `f.link()` editor always shows Title and Destination inputs. A typed or
+pasted URL is stored as `{ href, title }`. Opening the destination picker
+exposes the home page and configured page-route types with their content type
+icons; selecting an item fills an empty title from its manager label and stores
+`{ routeId, contentTypeId, title }` so core can resolve localized paths.
+Existing string and untitled reference values remain editable and are upgraded
+to the titled shape when changed.
+
+Compound arrays such as `f.array(f.link())` render each value as a reorderable
+card in the Info editor. Use the drag handle to change their persisted order;
+current nested input values are preserved while an item is moved.
 
 ## Manager plugins
 
@@ -108,6 +114,15 @@ exact position where the current document's Content modules are inserted.
 Template changes require the content type's `updateAny` permission and are
 saved with optimistic revision checks. Preview includes unsaved changes from
 both tabs.
+
+## Dynamic data mappings
+
+List bindings use a type-aware mapping editor. When a mapped target property is
+itself a `blocks` field, choose `Nested list` to open another collection, query,
+filter, and mapping editor for that property. Nested query values selected from
+`Current document` refer to the parent source item at that level, so mappings
+can build structures such as Category -> gallery item -> Project -> image card.
+The editor can repeat this flow for deeper block structures.
 
 ## Confirmations
 
