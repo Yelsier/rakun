@@ -1,6 +1,8 @@
 import { RouteMap } from "../../../internal-content-types";
-import ContentType from "../../../lib/ContentType";
-import { DBOutput, DataFront } from "../../../lib/types";
+import type ContentType from "../../../lib/ContentType";
+import type { AnyField } from "../../../lib/fields/Field";
+import { getContentTypeByName } from "../../../lib/Registry";
+import type { DBOutput, DataFront } from "../../../lib/types";
 import { hasKeys } from "../../../lib/utils/hasKeys";
 import { getMongoService } from "../../../orm";
 import { getLanguages } from "../getLanguages";
@@ -13,10 +15,9 @@ export const populateLinks = async <T extends ContentType>(
   const languages = await getLanguages();
   const defaultLanguageCode = languages.find((l) => l.default)?.code || "";
 
-  const populateValue = async (value: unknown): Promise<unknown> => {
-    // arrays: procesar en paralelo cada elemento
-    if (Array.isArray(value)) {
-      return Promise.all(value.map(populateValue));
+  const populateLinkValue = async (value: unknown): Promise<unknown> => {
+    if (typeof value === "string") {
+      return { href: value, title: "" };
     }
 
     if (
@@ -48,7 +49,13 @@ export const populateLinks = async <T extends ContentType>(
       ).items;
 
       if (items.length === 0) {
-        return value;
+        return {
+          href: "",
+          title:
+            "title" in value && typeof value.title === "string"
+              ? value.title
+              : "",
+        };
       }
 
       const populated = Object.fromEntries(
@@ -61,31 +68,124 @@ export const populateLinks = async <T extends ContentType>(
           })
           .concat([["_tag", "Translatable"]]),
       );
-      const href = await populateLinks(populated as DBOutput<T>);
-
-      return "title" in value && typeof value.title === "string"
-        ? { href, title: value.title }
-        : href;
+      return {
+        href: populated,
+        title:
+          "title" in value && typeof value.title === "string"
+            ? value.title
+            : "",
+      };
     }
 
-    if (hasKeys(value)) {
-      const entries = Object.entries(value);
-      return Object.fromEntries(
-        await Promise.all(
-          entries.map(async ([k, v]) => [k, await populateValue(v)]),
-        ),
-      );
+    if (hasKeys(value) && typeof value.href === "string") {
+      return {
+        href: value.href,
+        title: typeof value.title === "string" ? value.title : "",
+      };
     }
 
     return value;
   };
 
-  const entries = Object.entries(data);
-  const result = Object.fromEntries(
-    await Promise.all(
-      entries.map(async ([k, v]) => [k, await populateValue(v)]),
-    ),
-  );
+  const populateObject = async (
+    value: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> => {
+    const contentType =
+      typeof value._type === "string"
+        ? getContentTypeByName(value._type)
+        : undefined;
+
+    return Object.fromEntries(
+      await Promise.all(
+        Object.entries(value).map(async ([key, item]) => [
+          key,
+          await populateValue(item, contentType?.fields[key]),
+        ]),
+      ),
+    );
+  };
+
+  const populateValue = async (
+    value: unknown,
+    field?: AnyField,
+  ): Promise<unknown> => {
+    if (hasKeys(value) && value._tag === "Translatable") {
+      return Object.fromEntries(
+        await Promise.all(
+          Object.entries(value).map(async ([key, item]) => [
+            key,
+            key === "_tag" ? item : await populateValue(item, field),
+          ]),
+        ),
+      );
+    }
+
+    if (
+      field?.meta.ui === "SimpleList" &&
+      "field" in field &&
+      Array.isArray(value)
+    ) {
+      return Promise.all(
+        value.map((item) => populateValue(item, field.field as AnyField)),
+      );
+    }
+
+    if (
+      field &&
+      (field.meta.ui === "List" || field.meta.ui === "Iterator") &&
+      "fields" in field &&
+      Array.isArray(field.fields) &&
+      Array.isArray(value)
+    ) {
+      const fields = field.fields as Array<{
+        name: string;
+        field: AnyField;
+      }>;
+
+      return Promise.all(
+        value.map(async (item) => {
+          if (!hasKeys(item) || typeof item.name !== "string") {
+            return populateValue(item);
+          }
+
+          const entry = fields.find(
+            (candidate: { name: string }) => candidate.name === item.name,
+          ) as { name: string; field: AnyField } | undefined;
+
+          return {
+            ...item,
+            value: await populateValue(item.value, entry?.field),
+          };
+        }),
+      );
+    }
+
+    if (field?.meta.type === "Link") {
+      return populateLinkValue(value);
+    }
+
+    // Preserve support for route references found in untyped nested objects.
+    if (
+      value &&
+      typeof value === "object" &&
+      "routeId" in value &&
+      "contentTypeId" in value
+    ) {
+      return populateLinkValue(value);
+    }
+
+    if (Array.isArray(value)) {
+      return Promise.all(value.map((item) => populateValue(item)));
+    }
+
+    if (hasKeys(value)) {
+      return populateObject(value);
+    }
+
+    return value;
+  };
+
+  const result = await populateObject(data as Record<string, unknown>);
 
   return result as DataFront<T>;
 };

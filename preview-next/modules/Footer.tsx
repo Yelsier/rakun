@@ -1,23 +1,7 @@
 import { useT } from "@rakun-kit/next/web";
+import type { Props } from "../server/content-types";
 
-type FooterProps = {
-  brand?: string;
-  copyright?: string;
-  primaryLinkLabel?: string;
-  primaryLinkHref?: string;
-  internalLink?: unknown;
-};
-
-const readLink = (value: unknown) => {
-  if (typeof value === "string") return { href: value, title: "" };
-  if (!value || typeof value !== "object") return { href: "", title: "" };
-
-  const link = value as Record<string, unknown>;
-  return {
-    href: typeof link.href === "string" ? link.href : "",
-    title: typeof link.title === "string" ? link.title : "",
-  };
-};
+type FooterProps = Props<"Footer">;
 
 export default function Footer({
   brand = "Rakun Preview",
@@ -28,7 +12,7 @@ export default function Footer({
 }: FooterProps) {
   const t = useT();
   const { href: internalLinkHref, title: internalLinkTitle } =
-    readLink(internalLink);
+    internalLink ?? { href: "", title: "" };
   const internalLinkContent = (
     <>
       <span>{internalLinkTitle || internalLinkHref}</span>

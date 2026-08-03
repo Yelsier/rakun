@@ -12,7 +12,9 @@ mock.module("../getLanguages", () => ({
 }));
 
 import { Language, RouteMap } from "../../../internal-content-types";
-import type ContentType from "../../../lib/ContentType";
+import ContentType from "../../../lib/ContentType";
+import { Fields } from "../../../lib/fields";
+import { registerContentType } from "../../../lib/Registry";
 import type { DBOutput } from "../../../lib/types";
 
 const { populateLinks } = await import("./populateLinks");
@@ -36,6 +38,16 @@ const languages: LanguageRow[] = [
     default: false,
   },
 ];
+
+const LinkTestPage = new ContentType({
+  name: "PopulateLinksTypeAwarePage",
+  fields: {
+    primaryLink: Fields.link(),
+    links: Fields.array(Fields.link()),
+  },
+});
+
+registerContentType(LinkTestPage);
 
 const makeRouteMap = (overrides: Partial<RouteMapRow>): RouteMapRow =>
   ({
@@ -148,9 +160,12 @@ describe("populateLinks", () => {
       blocks: [
         {
           ctaLink: {
-            _tag: "Translatable",
-            en: "/contact/",
-            es: "/es/contacto/",
+            href: {
+              _tag: "Translatable",
+              en: "/contact/",
+              es: "/es/contacto/",
+            },
+            title: "",
           },
         },
       ],
@@ -212,8 +227,11 @@ describe("populateLinks", () => {
       _id: "page-id",
       _type: "TestPage",
       primaryLink: {
-        _tag: "Translatable",
-        en: "/fallback/about/",
+        href: {
+          _tag: "Translatable",
+          en: "/fallback/about/",
+        },
+        title: "",
       },
     });
   });
@@ -249,6 +267,31 @@ describe("populateLinks", () => {
     expect(list).not.toHaveBeenCalled();
   });
 
+  it("normalizes legacy direct strings for typed link fields and arrays", async () => {
+    const list = setRouteMaps([]);
+
+    const result = await populateLinks({
+      _id: "page-id",
+      _type: LinkTestPage.name,
+      primaryLink: "https://example.com/docs",
+      links: ["/about/", { href: "/contact/", title: "Contact" }],
+    } as DBOutput<typeof LinkTestPage>);
+
+    expect(result).toEqual({
+      _id: "page-id",
+      _type: LinkTestPage.name,
+      primaryLink: {
+        href: "https://example.com/docs",
+        title: "",
+      },
+      links: [
+        { href: "/about/", title: "" },
+        { href: "/contact/", title: "Contact" },
+      ],
+    });
+    expect(list).not.toHaveBeenCalled();
+  });
+
   it("resolves links through locale variant groups", async () => {
     const list = setRouteMaps([
       makeRouteMap({
@@ -280,9 +323,12 @@ describe("populateLinks", () => {
       _id: "page-id",
       _type: "TestPage",
       primaryLink: {
-        _tag: "Translatable",
-        en: "/about/",
-        es: "/es/sobre/",
+        href: {
+          _tag: "Translatable",
+          en: "/about/",
+          es: "/es/sobre/",
+        },
+        title: "",
       },
     });
     expect(list).toHaveBeenCalledTimes(1);
@@ -320,13 +366,16 @@ describe("populateLinks", () => {
       _id: "page-id",
       _type: "TestPage",
       primaryLink: {
-        _tag: "Translatable",
-        es: "/es/sobre/",
+        href: {
+          _tag: "Translatable",
+          es: "/es/sobre/",
+        },
+        title: "",
       },
     });
   });
 
-  it("keeps the link value when no route map is found", async () => {
+  it("keeps the object shape when no route map is found", async () => {
     const list = setRouteMaps([]);
 
     const result = await populateLinks({
@@ -342,8 +391,8 @@ describe("populateLinks", () => {
       _id: "page-id",
       _type: "TestPage",
       primaryLink: {
-        routeId: "route-about",
-        contentTypeId: "about-id",
+        href: "",
+        title: "",
       },
     });
     expect(list).toHaveBeenCalledTimes(2);

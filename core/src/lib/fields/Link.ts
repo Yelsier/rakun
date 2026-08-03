@@ -30,13 +30,16 @@ const linkInputSchema = z.union([
   directLinkInputSchema,
 ]);
 
-const linkOutputSchema = z.union([
-  z.string(),
-  z.object({
-    href: z.string(),
-    title: z.string(),
-  }),
-]);
+const resolvedLinkSchema = z.object({
+  href: z.string(),
+  title: z.string(),
+});
+
+const linkOutputSchema = z
+  .union([z.string(), resolvedLinkSchema])
+  .transform((value) =>
+    typeof value === "string" ? { href: value, title: "" } : value,
+  );
 
 type LinkInput = z.infer<typeof linkInputSchema>;
 type LinkOutput = z.infer<typeof linkOutputSchema>;

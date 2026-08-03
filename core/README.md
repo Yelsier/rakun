@@ -684,8 +684,9 @@ Notable fields:
 - `LinkField`: the manager stores a direct `{ href, title }` value or an
   internal `{ routeId, contentTypeId, title }` reference. Titled links resolve
   to `{ href, title }` in web output, with internal `href` values localized by
-  route. Legacy direct URL strings and untitled internal references remain
-  accepted and continue to produce string output.
+  route. Web output always uses that object shape. Legacy direct URL strings
+  and untitled internal references remain accepted as input and persisted data;
+  they are normalized to an empty `title` on output.
 - `BreadcrumsField`: `f.breadcrums()` is a computed, API-only field for page
   modules. In web and preview output it returns the localized route hierarchy as
   `{ label, href }[]`, ordered from the highest ancestor to the current page. It

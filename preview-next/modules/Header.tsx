@@ -1,22 +1,7 @@
 import { useT } from '@rakun-kit/next/web'
+import type { Props } from '../server/content-types'
 
-type HeaderProps = {
-  brand?: string
-  primaryLinkLabel?: string
-  primaryLinkHref?: string
-  internalLinks?: unknown[]
-}
-
-const readLink = (value: unknown) => {
-  if (typeof value === 'string') return { href: value, title: '' }
-  if (!value || typeof value !== 'object') return { href: '', title: '' }
-
-  const link = value as Record<string, unknown>
-  return {
-    href: typeof link.href === 'string' ? link.href : '',
-    title: typeof link.title === 'string' ? link.title : '',
-  }
-}
+type HeaderProps = Props<'Header'>
 
 export default function Header({
   brand = 'Rakun Preview',
@@ -26,7 +11,9 @@ export default function Header({
 }: HeaderProps) {
   const t = useT()
 
-  const navigationLinks = internalLinks.map(readLink).filter((link) => link.href)
+  const navigationLinks = internalLinks.filter(
+    (link): link is NonNullable<typeof link> => Boolean(link?.href),
+  )
 
   return (
     <header className="border-b border-zinc-200 bg-white">

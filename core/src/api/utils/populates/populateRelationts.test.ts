@@ -23,6 +23,7 @@ describe.serial("populate", () => {
     fields: {
       title: Fields.string().required(),
       slug: Fields.string().translatable().required(),
+      link: Fields.link(),
     },
   });
 
@@ -87,6 +88,7 @@ describe.serial("populate", () => {
         en: "test-1",
         _tag: "Translatable",
       },
+      link: "/legacy-link/",
     });
 
     const test2 = await db.create(Test2CT, {
@@ -104,6 +106,11 @@ describe.serial("populate", () => {
     });
 
     const populated = await populateRelations<typeof Test2CT>(test2);
+
+    expect(populated.relation?.link).toEqual({
+      href: "/legacy-link/",
+      title: "",
+    });
 
     Test2CT.getPopulatedSchema().parse(populated);
   });

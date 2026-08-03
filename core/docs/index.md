@@ -118,9 +118,10 @@ back to `Date`. `Time` stores an ISO time string.
 The `f.link()` manager editor stores a direct `{ href, title }` value or an
 internal `{ routeId, contentTypeId, title }` reference. Web output for these
 values is `{ href, title }`, with internal `href` values localized by route.
-Legacy URL strings and untitled internal references remain accepted and retain
-their string web output. Dynamic data exposes titled link properties as
-`<field>.href` and `<field>.title`.
+`DataFront` always exposes that object shape. Legacy URL strings and untitled
+internal references remain accepted for writes and persisted data, then receive
+an empty `title` when normalized for web output. Dynamic data exposes link
+properties as `<field>.href` and `<field>.title`.
 
 `f.breadcrums()` declares a computed, API-only field intended for modules such
 as heroes. When the module is rendered in a routable page, the field returns

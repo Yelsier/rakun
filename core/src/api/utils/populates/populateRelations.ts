@@ -1,11 +1,12 @@
 import { Media } from "../../../internal-content-types";
-import ContentType from "../../../lib/ContentType";
+import type ContentType from "../../../lib/ContentType";
 import { getContentTypeByName } from "../../../lib/Registry";
-import { DBOutput, DataPopulated } from "../../../lib/types";
+import type { DBOutput, DataPopulated } from "../../../lib/types";
 import { hasKeys } from "../../../lib/utils/hasKeys";
 import { getMediaService } from "../../../media";
 import { getMongoService } from "../../../orm";
 import { getMongoDB } from "../../../orm/mongodbPeer";
+import { populateLinks } from "./populateLinks";
 
 type MediaSizeRecord = {
   key: string;
@@ -273,10 +274,13 @@ export async function populateRelations<T extends ContentType>(
           .then((populated) => {
             // Keep original value if the target no longer exists.
             if (!populated) return Promise.resolve(value);
-            return populateRelations(
-              populated as DBOutput<T>,
-              options,
-            ) as Promise<unknown>;
+            return populateLinks(populated as DBOutput<T>).then(
+              (linksPopulated) =>
+                populateRelations(
+                  linksPopulated as DBOutput<T>,
+                  options,
+                ) as Promise<unknown>,
+            );
           });
       }
 
@@ -284,7 +288,7 @@ export async function populateRelations<T extends ContentType>(
       if (value.type === "new" && "data" in value) {
         const data = value.data as DBOutput<T>;
         return {
-          ...(await populateRelations(data, options)),
+          ...(await populateRelations(await populateLinks(data), options)),
           _id: new ObjectId().toString(),
         };
       }

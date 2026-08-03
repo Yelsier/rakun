@@ -83,9 +83,10 @@ describe("field type inference", () => {
         title: "Documentation",
       }),
     ).toEqual({ href: "/docs/", title: "Documentation" });
-    expect(link.getOutputSchema().parse("/legacy-docs/")).toBe(
-      "/legacy-docs/",
-    );
+    expect(link.getOutputSchema().parse("/legacy-docs/")).toEqual({
+      href: "/legacy-docs/",
+      title: "",
+    });
     expect(link.getInputSchema().safeParse("").success).toBe(false);
   });
 
