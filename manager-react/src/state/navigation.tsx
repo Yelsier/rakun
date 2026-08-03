@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, type ReactNode, startTransition } from "react";
 
 export type ManagerRoute =
   | {
@@ -132,22 +132,30 @@ export const createPathManagerNavigation = (
   hrefPath: (href) => getManagerPathHref(href, options),
   pushPath: options.push
     ? (href) => {
-        options.push?.(getManagerPathHref(href, options));
+        startTransition(() => {
+          options.push?.(getManagerPathHref(href, options));
+        });
       }
     : undefined,
   replacePath: options.replace
     ? (href) => {
-        options.replace?.(getManagerPathHref(href, options));
+        startTransition(() => {
+          options.replace?.(getManagerPathHref(href, options));
+        });
       }
     : undefined,
   push: options.push
     ? (route) => {
-        options.push?.(getManagerRouteHref(route, options));
+        startTransition(() => {
+          options.push?.(getManagerRouteHref(route, options));
+        });
       }
     : undefined,
   replace: options.replace
     ? (route) => {
-        options.replace?.(getManagerRouteHref(route, options));
+        startTransition(() => {
+          options.replace?.(getManagerRouteHref(route, options));
+        });
       }
     : undefined,
 });

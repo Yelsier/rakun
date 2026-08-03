@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   createContext,
@@ -7,48 +7,49 @@ import {
   type ComponentType,
   type MouseEvent,
   type ReactNode,
-} from "react";
+  startTransition,
+} from 'react'
 
-import { useOptionalManagerNavigation } from "./state/navigation";
+import { useOptionalManagerNavigation } from './state/navigation'
 
 export type ManagerLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
-  href: string;
-  children?: ReactNode;
-};
+  href: string
+  children?: ReactNode
+}
 
-export type ManagerLinkComponent = ComponentType<ManagerLinkProps>;
+export type ManagerLinkComponent = ComponentType<ManagerLinkProps>
 
-const ManagerLinkContext = createContext<ManagerLinkComponent | null>(null);
+const ManagerLinkContext = createContext<ManagerLinkComponent | null>(null)
 
 export function ManagerLinkProvider({
   children,
   component,
 }: {
-  children: ReactNode;
-  component?: ManagerLinkComponent;
+  children: ReactNode
+  component?: ManagerLinkComponent
 }) {
   return (
     <ManagerLinkContext.Provider value={component ?? null}>
       {children}
     </ManagerLinkContext.Provider>
-  );
+  )
 }
 
 export function ManagerLink({ children, ...props }: ManagerLinkProps) {
-  const LinkComponent = useContext(ManagerLinkContext);
-  const navigation = useOptionalManagerNavigation();
-  const href = navigation?.hrefPath?.(props.href) ?? props.href;
+  const LinkComponent = useContext(ManagerLinkContext)
+  const navigation = useOptionalManagerNavigation()
+  const href = navigation?.hrefPath?.(props.href) ?? props.href
 
   if (LinkComponent) {
     return (
       <LinkComponent {...props} href={href}>
         {children}
       </LinkComponent>
-    );
+    )
   }
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    props.onClick?.(event);
+    props.onClick?.(event)
 
     if (
       event.defaultPrevented ||
@@ -60,24 +61,26 @@ export function ManagerLink({ children, ...props }: ManagerLinkProps) {
       props.target ||
       props.download ||
       !navigation?.pushPath ||
-      href.startsWith("#")
+      href.startsWith('#')
     ) {
-      return;
+      return
     }
 
-    const url = new URL(href, window.location.href);
+    const url = new URL(href, window.location.href)
 
     if (url.origin !== window.location.origin) {
-      return;
+      return
     }
 
-    event.preventDefault();
-    navigation.pushPath(`${url.pathname}${url.search}${url.hash}`);
-  };
+    event.preventDefault()
+    startTransition(() => {
+      navigation.pushPath(`${url.pathname}${url.search}${url.hash}`)
+    })
+  }
 
   return (
     <a {...props} href={href} onClick={handleClick}>
       {children}
     </a>
-  );
+  )
 }

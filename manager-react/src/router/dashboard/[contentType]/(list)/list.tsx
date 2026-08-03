@@ -8,6 +8,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
@@ -272,7 +273,7 @@ const ListContents: React.FC<{
 
     return Object.keys(filter).length > 0 ? filter : undefined
   }, [creatorFilterIds, hasPageRoutes, isTrash, searchableFields, trimmedSearch])
-  const { data, refetch, isPending } = useQuery({
+  const { data, refetch, isPending, isPlaceholderData } = useQuery({
     ...trpc.manager.list.queryOptions({
       contentType,
       ...(hasPageRoutes && !isTrash ? { languageCode: language.code } : {}),
@@ -287,8 +288,29 @@ const ListContents: React.FC<{
         },
       },
     }),
+    // Keep prior rows while filter/page/trash/content-type fetches settle so
+    // `showInitialSkeleton` (isPending && !data) does not flash. Pair with
+    // startTransition on navigation and list state updates.
     placeholderData: keepPreviousData,
   })
+  const displaySnapshotRef = useRef({
+    contentType,
+    fields,
+    documentVisibility,
+    hasPageRoutes,
+  })
+  if (!isPlaceholderData) {
+    displaySnapshotRef.current = {
+      contentType,
+      fields,
+      documentVisibility,
+      hasPageRoutes,
+    }
+  }
+  const displayContentType = displaySnapshotRef.current.contentType
+  const displayFields = displaySnapshotRef.current.fields
+  const displayDocumentVisibility = displaySnapshotRef.current.documentVisibility
+  const displayHasPageRoutes = displaySnapshotRef.current.hasPageRoutes
   const { users: creators, usersById: creatorsById } = useManagerUsers()
   const restoreMutation = useManagerMutation('manager.update')
   const duplicateMutation = useManagerMutation('manager.duplicate')
@@ -306,8 +328,12 @@ const ListContents: React.FC<{
   const typedData = data as { totalItems: number; items: object[] } | undefined
   const totalItems = typedData?.totalItems ?? 0
   const items = typedData?.items ?? []
-  const hasDeleteAnyPermission = hasPermissions([`content.${contentType}.deleteAny` as Permission])
-  const hasOwnPermission = hasPermissions([`content.${contentType}.own` as Permission])
+  const hasDeleteAnyPermission = hasPermissions([
+    `content.${displayContentType}.deleteAny` as Permission,
+  ])
+  const hasOwnPermission = hasPermissions([
+    `content.${displayContentType}.own` as Permission,
+  ])
   const selectedItems = selectedIds
     .map((id) => items.find((item) => (item as { _id?: unknown })._id === id))
     .filter((item): item is object => Boolean(item))
@@ -317,13 +343,13 @@ const ListContents: React.FC<{
     selectedItems.every((item) => getContentOwnerId(item) === user._id)
   const canBulkDelete = hasDeleteAnyPermission || (hasOwnPermission && ownsEverySelectedItem)
   const canSelectForBulkDelete = hasDeleteAnyPermission || hasOwnPermission
-  const showVariantCount = Boolean(hasPageRoutes)
+  const showVariantCount = Boolean(displayHasPageRoutes)
   const canBulkTranslate =
     !isTrash &&
     languageList.length > 1 &&
     hasAnyPermission([
-      `content.${contentType}.own` as Permission,
-      `content.${contentType}.updateAny` as Permission,
+      `content.${displayContentType}.own` as Permission,
+      `content.${displayContentType}.updateAny` as Permission,
     ])
   const enableSelection = canSelectForBulkDelete || canBulkTranslate
   const bulkTranslationTargetOptions = languageList.filter(
@@ -338,12 +364,16 @@ const ListContents: React.FC<{
     startTransition(() => {
       setDebouncedSearch((previous) => (previous === '' ? previous : ''))
       setCreatorFilterIds((previous) => (previous.length ? [] : previous))
+      setPage((previous) => (previous === 1 ? previous : 1))
+      setIsTrash((previous) => (previous ? false : previous))
     })
   }, [contentType])
 
   useEffect(() => {
-    setPage((previous) => (previous === 1 ? previous : 1))
-  }, [contentType, creatorFilterIds, isTrash, debouncedSearch])
+    startTransition(() => {
+      setPage((previous) => (previous === 1 ? previous : 1))
+    })
+  }, [creatorFilterIds, isTrash, debouncedSearch])
 
   useEffect(() => {
     if (!enableSelection) {
@@ -560,8 +590,8 @@ const ListContents: React.FC<{
         {!showInitialSkeleton ? (
           <DataTable
             columns={columns({
-              fields: fields || [],
-              contentType,
+              fields: displayFields || [],
+              contentType: displayContentType,
               t,
               getTranslation,
               setDeleteItem,
@@ -570,7 +600,7 @@ const ListContents: React.FC<{
               onDuplicateItem: (item) => void duplicateItem(item),
               duplicatingItemId,
               enableSelection,
-              showVisibility: Boolean(documentVisibility),
+              showVisibility: Boolean(displayDocumentVisibility),
               showVariantCount,
               creators,
               creatorsById,
@@ -587,8 +617,8 @@ const ListContents: React.FC<{
           />
         ) : (
           <ContentListTableSkeleton
-            fieldsCount={(fields || []).length}
-            showVisibility={Boolean(documentVisibility)}
+            fieldsCount={(displayFields || []).length}
+            showVisibility={Boolean(displayDocumentVisibility)}
             showVariantCount={showVariantCount}
             enableSelection={enableSelection}
           />

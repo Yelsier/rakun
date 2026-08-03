@@ -3,6 +3,7 @@
 import type {
   ColumnDef,
   ColumnSizingState,
+  Header,
   Row,
   RowSelectionState,
   SortingState,
@@ -14,11 +15,13 @@ import {
   type CSSProperties,
   type Dispatch,
   type SetStateAction,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react'
+import { flushSync } from 'react-dom'
 
 import {
   Table,
@@ -42,9 +45,12 @@ interface DataTableProps<TData, TValue> {
 }
 
 const selectColumnWidth = 44
-const idColumnWidth = 120
+const idColumnWidth = 140
+const createdByColumnWidth = 160
+const visibilityColumnWidth = 110
+const variantCountColumnWidth = 88
 const actionColumnWidth = 56
-const defaultColumnWidth = 150
+const defaultColumnWidth = 180
 const defaultMinColumnWidth = 60
 const defaultMaxColumnWidth = 800
 
@@ -70,32 +76,69 @@ const getDefaultColumnSize = (columnId: string | undefined) => {
   ) {
     return idColumnWidth
   }
+  if (columnId === 'createdBy') return createdByColumnWidth
+  if (columnId === 'visibility') return visibilityColumnWidth
+  if (columnId === '_variantCount') return variantCountColumnWidth
   return defaultColumnWidth
 }
 
 const isFixedWidthColumn = (columnId: string | undefined) =>
   columnId === 'select' || columnId === 'actions' || columnId === 'view'
 
-/** Fixed columns keep exact px widths; the flex column absorbs leftover space so
- *  the table can stay full-width without other columns shifting on resize. */
-const getColumnLayoutStyle = (
+/** Compact columns keep a fixed px budget. Content columns size to their cells. */
+const isCompactColumn = (columnId: string | undefined) => {
+  if (!columnId || isFixedWidthColumn(columnId)) return true
+  if (
+    columnId === 'id' ||
+    columnId === '_id' ||
+    columnId.endsWith('Id') ||
+    columnId === 'createdBy' ||
+    columnId === 'visibility' ||
+    columnId === '_variantCount'
+  ) {
+    return true
+  }
+  return false
+}
+
+/** Content-sized layout until the user resizes; then every column is an explicit
+ *  px width driven by CSS variables on the table (so the body can stay memoized). */
+const getContentColumnStyle = (
   columnId: string,
   size: number,
-  flexColumnId: string | undefined,
 ): CSSProperties => {
-  if (flexColumnId && columnId === flexColumnId) {
+  if (isCompactColumn(columnId)) {
+    if (
+      columnId === 'id' ||
+      columnId === '_id' ||
+      columnId.endsWith('Id')
+    ) {
+      return {
+        width: size,
+        minWidth: size,
+      }
+    }
+
     return {
-      width: 'auto',
+      width: size,
       minWidth: size,
+      maxWidth: size,
     }
   }
 
   return {
-    width: size,
-    minWidth: size,
-    maxWidth: size,
+    width: 'auto',
+    minWidth: defaultMinColumnWidth,
   }
 }
+
+const getLockedColumnStyle = (columnId: string): CSSProperties => ({
+  width: `calc(var(--col-${columnId}-size) * 1px)`,
+  minWidth: `calc(var(--col-${columnId}-size) * 1px)`,
+  ...(isFixedWidthColumn(columnId)
+    ? { maxWidth: `calc(var(--col-${columnId}-size) * 1px)` }
+    : {}),
+})
 
 const withResizableDefaults = <TData, TValue>(
   columns: ColumnDef<TData, TValue>[],
@@ -161,12 +204,17 @@ const DataTableBody = <TData, TValue>({
   table,
   columnCount,
   emptyLabel,
-  flexColumnId,
+  sizingLocked,
 }: {
   table: TanStackTable<TData>
   columnCount: number
   emptyLabel: string
-  flexColumnId: string | undefined
+  sizingLocked: boolean
+  /** Compared by memo — do not read mutable table.options.data in the comparer. */
+  data: TData[]
+  columnIdsKey: string
+  columnSizing: ColumnSizingState
+  isResizing: boolean
 }) => {
   const rows = table.getRowModel().rows
 
@@ -190,11 +238,14 @@ const DataTableBody = <TData, TValue>({
             <TableCell
               key={cell.id}
               className='overflow-hidden'
-              style={getColumnLayoutStyle(
-                cell.column.id,
-                cell.column.getSize(),
-                flexColumnId,
-              )}
+              style={
+                sizingLocked
+                  ? getLockedColumnStyle(cell.column.id)
+                  : getContentColumnStyle(
+                      cell.column.id,
+                      cell.column.getSize(),
+                    )
+              }
             >
               {flexRender(cell.column.columnDef.cell, cell.getContext())}
             </TableCell>
@@ -205,11 +256,30 @@ const DataTableBody = <TData, TValue>({
   )
 }
 
+/** Stable component type so resize never remounts the body. While dragging,
+ *  skip re-renders — widths flow through CSS variables on <table>.
+ *
+ *  Compare React-owned props only. TanStack mutates a stable table instance, so
+ *  reading `table.options.data` in the comparer always sees the latest value on
+ *  both prev/next and freezes the body after the first lock. */
 const MemoizedDataTableBody = memo(
   DataTableBody,
-  (prev, next) =>
-    prev.table.options.data === next.table.options.data &&
-    prev.flexColumnId === next.flexColumnId,
+  (prev, next) => {
+    if (next.isResizing) {
+      return (
+        prev.data === next.data &&
+        prev.columnIdsKey === next.columnIdsKey &&
+        prev.sizingLocked === next.sizingLocked
+      )
+    }
+
+    return (
+      prev.data === next.data &&
+      prev.columnIdsKey === next.columnIdsKey &&
+      prev.sizingLocked === next.sizingLocked &&
+      prev.columnSizing === next.columnSizing
+    )
+  },
 ) as typeof DataTableBody
 
 export function DataTable<TData, TValue>({
@@ -222,11 +292,28 @@ export function DataTable<TData, TValue>({
   getRowId,
 }: DataTableProps<TData, TValue>) {
   const t = useTranslations()
+  const tableWrapperRef = useRef<HTMLDivElement>(null)
+  const columnSizingRef = useRef<ColumnSizingState>({})
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({})
+  columnSizingRef.current = columnSizing
+
   const resizableColumns = useMemo(
     () => withResizableDefaults(columns),
     [columns],
   )
+  const columnIdsKey = useMemo(
+    () =>
+      resizableColumns
+        .map((column) => getColumnId(column) ?? '')
+        .join('\0'),
+    [resizableColumns],
+  )
+
+  useEffect(() => {
+    setColumnSizing((previous) =>
+      Object.keys(previous).length === 0 ? previous : {},
+    )
+  }, [columnIdsKey])
 
   const table = useReactTable({
     data,
@@ -251,6 +338,17 @@ export function DataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
   })
 
+  const leafColumns = table.getAllLeafColumns()
+  const sizingLocked = Object.keys(columnSizing).length > 0
+  const isResizingColumn = Boolean(
+    table.getState().columnSizingInfo.isResizingColumn,
+  )
+  const useFixedLayout = sizingLocked || isResizingColumn
+  const totalSize = table.getTotalSize()
+  const contentKey = `${leafColumns.length}:${data.length}:${sizingLocked}:${useFixedLayout ? totalSize : 'auto'}`
+  const { scrollRef, leftFadeRef, rightFadeRef } =
+    useHorizontalScrollOverflow(contentKey)
+
   const columnSizeVars = useMemo(() => {
     const headers = table.getFlatHeaders()
     const colSizes: Record<string, number> = {}
@@ -261,23 +359,56 @@ export function DataTable<TData, TValue>({
     return colSizes
   }, [table.getState().columnSizingInfo, table.getState().columnSizing])
 
-  const tableWidth = table.getTotalSize()
-  const leafColumns = table.getAllLeafColumns()
-  const flexColumnId = useMemo(() => {
-    const resizable = leafColumns.filter(
-      (column) => column.getCanResize() && !isFixedWidthColumn(column.id),
+  /** Freeze live content-sized widths before table-fixed / TanStack sizing take
+   *  over, otherwise the first drag frame redistributes columns. */
+  const lockRenderedColumnSizes = useCallback(() => {
+    if (Object.keys(columnSizingRef.current).length > 0) return
+
+    const root = tableWrapperRef.current?.querySelector('table')
+    if (!root) return
+
+    const headerCells = root.querySelectorAll<HTMLElement>(
+      '[data-slot="table-header"] th',
     )
-    return resizable[resizable.length - 1]?.id
+    if (!headerCells.length) return
+
+    const nextSizing: ColumnSizingState = {}
+    leafColumns.forEach((column, index) => {
+      const width = headerCells[index]?.getBoundingClientRect().width
+      if (width && Number.isFinite(width)) {
+        nextSizing[column.id] = Math.max(
+          column.columnDef.minSize ?? defaultMinColumnWidth,
+          Math.round(width),
+        )
+      }
+    })
+
+    if (Object.keys(nextSizing).length) {
+      flushSync(() => {
+        setColumnSizing(nextSizing)
+      })
+    }
   }, [leafColumns])
-  const isResizingColumn = table.getState().columnSizingInfo.isResizingColumn
-  const { scrollRef, leftFadeRef, rightFadeRef } = useHorizontalScrollOverflow(
-    `${tableWidth}:${leafColumns.length}:${data.length}:${flexColumnId ?? ''}`,
+
+  const getResizeHandler = useCallback(
+    (header: Header<TData, unknown>) => {
+      const resize = header.getResizeHandler()
+      return (event: unknown) => {
+        lockRenderedColumnSizes()
+        resize(event)
+      }
+    },
+    [lockRenderedColumnSizes],
   )
 
+  /** Once columns are locked to px widths, size the table to their sum — not
+   *  `width: 100%`. A percentage width redistributes leftover space across every
+   *  column when one is resized (especially the last), so the whole table jumps. */
   const tableStyle = {
     ...columnSizeVars,
-    width: '100%',
-    minWidth: tableWidth,
+    ...(useFixedLayout
+      ? { width: totalSize, minWidth: totalSize }
+      : { width: '100%' }),
   } as CSSProperties
 
   return (
@@ -287,19 +418,23 @@ export function DataTable<TData, TValue>({
         className='w-full max-w-full min-w-0 overflow-x-auto pb-4 [contain:inline-size]'
       >
         <div
+          ref={tableWrapperRef}
           className='w-full min-w-full overflow-hidden rounded-lg border'
-          style={{ minWidth: tableWidth }}
+          style={useFixedLayout ? { minWidth: totalSize } : undefined}
         >
-          <Table className='w-full table-fixed' style={tableStyle}>
+          <Table
+            className={cn(useFixedLayout ? 'table-fixed' : 'w-full')}
+            style={tableStyle}
+          >
             <colgroup>
               {leafColumns.map((column) => (
                 <col
                   key={column.id}
-                  style={getColumnLayoutStyle(
-                    column.id,
-                    column.getSize(),
-                    flexColumnId,
-                  )}
+                  style={
+                    useFixedLayout
+                      ? getLockedColumnStyle(column.id)
+                      : getContentColumnStyle(column.id, column.getSize())
+                  }
                 />
               ))}
             </colgroup>
@@ -310,11 +445,17 @@ export function DataTable<TData, TValue>({
                     <TableHead
                       key={header.id}
                       className='relative overflow-hidden'
-                      style={getColumnLayoutStyle(
-                        header.column.id,
-                        header.getSize(),
-                        flexColumnId,
-                      )}
+                      style={
+                        useFixedLayout
+                          ? {
+                              width: `calc(var(--header-${header.id}-size) * 1px)`,
+                              minWidth: `calc(var(--header-${header.id}-size) * 1px)`,
+                            }
+                          : getContentColumnStyle(
+                              header.column.id,
+                              header.getSize(),
+                            )
+                      }
                     >
                       {header.isPlaceholder
                         ? null
@@ -327,9 +468,12 @@ export function DataTable<TData, TValue>({
                           role='separator'
                           aria-orientation='vertical'
                           aria-label={t('dataTable.resizeColumn')}
-                          onDoubleClick={() => header.column.resetSize()}
-                          onMouseDown={header.getResizeHandler()}
-                          onTouchStart={header.getResizeHandler()}
+                          onDoubleClick={() => {
+                            header.column.resetSize()
+                            setColumnSizing({})
+                          }}
+                          onMouseDown={getResizeHandler(header)}
+                          onTouchStart={getResizeHandler(header)}
                           className={cn(
                             'group/resizer absolute inset-y-0 right-0 z-20 flex w-3 cursor-col-resize touch-none select-none items-center justify-center',
                             'hover:bg-primary/15',
@@ -351,21 +495,16 @@ export function DataTable<TData, TValue>({
                 </TableRow>
               ))}
             </TableHeader>
-            {isResizingColumn ? (
-              <MemoizedDataTableBody
-                table={table}
-                columnCount={columns.length}
-                emptyLabel={t('dataTable.noResults')}
-                flexColumnId={flexColumnId}
-              />
-            ) : (
-              <DataTableBody
-                table={table}
-                columnCount={columns.length}
-                emptyLabel={t('dataTable.noResults')}
-                flexColumnId={flexColumnId}
-              />
-            )}
+            <MemoizedDataTableBody
+              table={table}
+              columnCount={columns.length}
+              emptyLabel={t('dataTable.noResults')}
+              sizingLocked={sizingLocked}
+              data={data}
+              columnIdsKey={columnIdsKey}
+              columnSizing={columnSizing}
+              isResizing={isResizingColumn}
+            />
           </Table>
         </div>
       </div>

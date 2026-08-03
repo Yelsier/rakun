@@ -9,6 +9,7 @@ import {
   useMemo,
   useRef,
   useState,
+  startTransition,
   type ReactNode,
 } from "react";
 
@@ -413,11 +414,15 @@ export const ManagerBrowserApp = (props: ManagerBrowserAppProps) => {
         basePath,
         push: (href) => {
           window.history.pushState({}, "", href);
-          window.dispatchEvent(new PopStateEvent("popstate"));
+          startTransition(() => {
+            window.dispatchEvent(new PopStateEvent("popstate"));
+          });
         },
         replace: (href) => {
           window.history.replaceState({}, "", href);
-          window.dispatchEvent(new PopStateEvent("popstate"));
+          startTransition(() => {
+            window.dispatchEvent(new PopStateEvent("popstate"));
+          });
         },
       }),
     [basePath],
