@@ -1,6 +1,6 @@
 {
   "name": "@rakun-kit/manager-locales",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "Optional manager UI locale packs for Rakun.",
   "license": "MIT",
   "author": {
@@ -35,7 +35,7 @@
     }
   },
   "peerDependencies": {
-    "@rakun-kit/manager-react": "^1.5.2"
+    "@rakun-kit/manager-react": "^1.5.5"
   },
   "devDependencies": {
     "typescript": "^6.0.2"
