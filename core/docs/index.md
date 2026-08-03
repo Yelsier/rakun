@@ -238,6 +238,9 @@ Core defines service contracts; concrete integrations are separate:
 
 Never expose adapter credentials in client modules. Public and private media
 have different URL semantics; do not replace stored media objects with raw URLs.
+The built-in manager upload protocol preserves Unicode original file names,
+including accents, non-Latin scripts, and emoji, while storage object keys stay
+adapter-safe.
 
 ## Manager languages and user-facing text
 

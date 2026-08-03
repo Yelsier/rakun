@@ -93,6 +93,12 @@ can resolve localized paths. Legacy values remain editable.
 Compound arrays such as `f.array(f.link())` are reorderable from their drag
 handles in the Info editor, without losing unsaved values inside each item.
 
+## Media uploads
+
+Original file names may contain accents, non-Latin scripts, or emoji. The
+manager transports those names through ASCII-safe upload headers and core
+restores them before saving media metadata.
+
 ## Dynamic data mappings
 
 The list mapping editor supports recursive `blocks` targets. Select

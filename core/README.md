@@ -923,7 +923,7 @@ APIs:
 - `getMediaService()`: returns the singleton or creates it from config.
 - `handleMediaBinaryUpload`: processes manager binary uploads.
 
-The service supports prepare/finalize upload, URL generation, folders, and image optimization depending on adapter/configuration.
+The service supports prepare/finalize upload, URL generation, folders, and image optimization depending on adapter/configuration. Manager uploads encode original file names for transport, so Unicode names (including accents, non-Latin scripts, and emoji) are preserved without placing invalid characters in HTTP headers.
 
 ## Persistent Event Log
 

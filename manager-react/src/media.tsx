@@ -12,6 +12,10 @@ import type {
 
 import { useManagerClient } from '@/client/react'
 import type { ManagerClient } from '@/client/request'
+import {
+  encodeMediaUploadFileName,
+  MEDIA_UPLOAD_FILE_NAME_ENCODING,
+} from '@/lib/mediaUploadFileName'
 
 export type MediaClient = Pick<ManagerClient, 'request'>
 
@@ -144,7 +148,10 @@ export async function uploadFileToPresignedUrl(params: {
       'x-cms-upload-access': params.prepared.access,
       'x-cms-upload-token': params.prepared.uploadToken,
       'x-cms-upload-file-name':
-        params.file instanceof File ? params.file.name : 'upload.bin',
+        encodeMediaUploadFileName(
+          params.file instanceof File ? params.file.name : 'upload.bin',
+        ),
+      'x-cms-upload-file-name-encoding': MEDIA_UPLOAD_FILE_NAME_ENCODING,
       ...(params.optimizeOptions
         ? {
             'x-cms-upload-optimize': JSON.stringify(params.optimizeOptions),

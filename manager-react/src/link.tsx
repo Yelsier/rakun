@@ -49,6 +49,8 @@ export function ManagerLink({ children, ...props }: ManagerLinkProps) {
   }
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    const pushPath = navigation?.pushPath
+
     props.onClick?.(event)
 
     if (
@@ -60,7 +62,7 @@ export function ManagerLink({ children, ...props }: ManagerLinkProps) {
       event.shiftKey ||
       props.target ||
       props.download ||
-      !navigation?.pushPath ||
+      !pushPath ||
       href.startsWith('#')
     ) {
       return
@@ -74,7 +76,7 @@ export function ManagerLink({ children, ...props }: ManagerLinkProps) {
 
     event.preventDefault()
     startTransition(() => {
-      navigation.pushPath(`${url.pathname}${url.search}${url.hash}`)
+      pushPath(`${url.pathname}${url.search}${url.hash}`)
     })
   }
 

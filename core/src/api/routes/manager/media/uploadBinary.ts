@@ -11,11 +11,13 @@ import { createRequestContext } from "../../../context";
 import { checkPermissions } from "../../../utils/checkPermissions";
 import type { CookieOptions } from "../../../context";
 import { verifyMediaUploadToken } from "../../../utils/mediaUploadToken";
+import { decodeMediaUploadFileName } from "../../../utils/mediaUploadFileName";
 
 const uploadHeadersSchema = z.object({
   key: z.string().min(1),
   access: z.enum(["public", "private"]).default("public"),
   fileName: z.string().min(1),
+  fileNameEncoding: z.string().optional(),
   mime: z.string().min(1).optional(),
   optimizeRaw: z.string().optional(),
   purpose: z.enum(["profileAvatar"]).optional(),
@@ -132,15 +134,24 @@ export async function handleMediaBinaryUpload(
     });
     const user = ctx.getUser();
 
-    const parsedHeaders = uploadHeadersSchema.parse({
+    const rawHeaders = uploadHeadersSchema.parse({
       key: getHeader(req, "x-cms-upload-key"),
       access: getHeader(req, "x-cms-upload-access") || undefined,
       fileName: getHeader(req, "x-cms-upload-file-name"),
+      fileNameEncoding:
+        getHeader(req, "x-cms-upload-file-name-encoding") || undefined,
       mime: getHeader(req, "x-cms-upload-mime") || undefined,
       optimizeRaw: getHeader(req, "x-cms-upload-optimize") || undefined,
       purpose: getHeader(req, "x-cms-upload-purpose") || undefined,
       uploadToken: getHeader(req, "x-cms-upload-token"),
     });
+    const parsedHeaders = {
+      ...rawHeaders,
+      fileName: decodeMediaUploadFileName(
+        rawHeaders.fileName,
+        rawHeaders.fileNameEncoding,
+      ),
+    };
     const tokenPayload = verifyMediaUploadToken(parsedHeaders.uploadToken);
     if (!tokenPayload) {
       sendJson(res, 403, {

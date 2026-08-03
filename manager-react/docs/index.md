@@ -55,6 +55,12 @@ Compound arrays such as `f.array(f.link())` render each value as a reorderable
 card in the Info editor. Use the drag handle to change their persisted order;
 current nested input values are preserved while an item is moved.
 
+## Media uploads
+
+The manager preserves Unicode original file names when uploading media. Names
+with accents, non-Latin scripts, or emoji are encoded into ASCII for the binary
+upload headers and restored by core before metadata is saved.
+
 ## Manager plugins
 
 ```tsx
