@@ -130,10 +130,11 @@ both tabs.
 
 List bindings use a type-aware mapping editor. When a mapped target property is
 itself a `blocks` field, choose `Nested list` to open another collection, query,
-filter, and mapping editor for that property. Nested query values selected from
-`Current document` refer to the parent source item at that level, so mappings
-can build structures such as Category -> gallery item -> Project -> image card.
-The editor can repeat this flow for deeper block structures.
+filter, and mapping editor for that property. Nested query conditions can select
+`Current item` to read the parent source item at that level, or `Current
+document` to read the root document. This supports mappings such as Category ->
+gallery item -> Project -> image card, and the editor can repeat the flow for
+deeper block structures.
 
 ## Confirmations
 

@@ -626,6 +626,7 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'dynamicData.source': 'Origen',
   'dynamicData.item': 'Elemento',
   'dynamicData.currentDocument': 'Documento actual',
+  'dynamicData.currentItem': 'Elemento actual',
   'dynamicData.field': 'Campo',
   'dynamicData.mappingMode': 'Modo de mapeo',
   'dynamicData.directField': 'Campo directo',

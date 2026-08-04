@@ -522,6 +522,153 @@ describe("dynamic data output", () => {
     });
   });
 
+  it("resolves nested list queries from the current item and root document", async () => {
+    const NestedQueryCard = new ContentType({
+      name: "NestedQueryCard",
+      fields: {
+        title: Fields.string(),
+      },
+    });
+    const NestedQueryGroup = new ContentType({
+      name: "NestedQueryGroup",
+      fields: {
+        title: Fields.string(),
+        projects: Fields.blocks([
+          {
+            name: NestedQueryCard.name,
+            field: Fields.relation(NestedQueryCard, "new"),
+          },
+        ]),
+      },
+    });
+    const NestedQueryCategory = new ContentType({
+      name: "NestedQueryCategory",
+      dynamicDataSource: true,
+      fields: {
+        title: Fields.string(),
+      },
+    });
+    const NestedQueryPage = new ContentType({
+      name: "NestedQueryPage",
+      fields: {
+        site: Fields.string(),
+        categories: Fields.blocks([
+          {
+            name: NestedQueryCategory.name,
+            field: Fields.relation(NestedQueryCategory, "new"),
+          },
+        ]),
+        groups: Fields.blocks([
+          {
+            name: NestedQueryGroup.name,
+            field: Fields.relation(NestedQueryGroup, "new"),
+          },
+        ]),
+      },
+    });
+    const NestedQueryProject = new ContentType({
+      name: "NestedQueryProject",
+      dynamicDataSource: true,
+      fields: {
+        title: Fields.string(),
+        site: Fields.string(),
+        category: Fields.relation(NestedQueryCategory, "existing"),
+      },
+    });
+    for (const contentType of [
+      NestedQueryCard,
+      NestedQueryGroup,
+      NestedQueryCategory,
+      NestedQueryProject,
+    ]) {
+      registerContentType(contentType);
+    }
+
+    const list = mock(async () => ({ totalItems: 0, items: [] }));
+
+    const resolved = await resolveDynamicData(
+      {
+        _id: "page-1",
+        _type: NestedQueryPage.name,
+        site: "agency",
+        categories: [
+          {
+            name: NestedQueryCategory.name,
+            value: {
+              _id: "category-1",
+              _type: NestedQueryCategory.name,
+              title: "Design",
+            },
+          },
+        ],
+        groups: [],
+        _bindings: {
+          lists: {
+            groups: {
+              contentType: NestedQueryCategory.name,
+              source: {
+                kind: "currentDocument",
+                contentType: NestedQueryPage.name,
+                path: "categories",
+                itemName: NestedQueryCategory.name,
+              },
+              itemName: NestedQueryGroup.name,
+              map: {
+                title: {
+                  contentType: NestedQueryCategory.name,
+                  path: "title",
+                },
+                projects: {
+                  kind: "list",
+                  contentType: NestedQueryProject.name,
+                  itemName: NestedQueryCard.name,
+                  query: {
+                    filter: {
+                      $and: [
+                        { "category._id": { $current: "_id" } },
+                        { site: { $document: "site" } },
+                      ],
+                    },
+                    options: { limit: 10 },
+                  },
+                  map: {
+                    title: {
+                      contentType: NestedQueryProject.name,
+                      path: "title",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        db: { list } as unknown as DBService,
+        contentType: NestedQueryPage,
+        surface: "web",
+      },
+    );
+
+    expect(list).toHaveBeenCalledWith(NestedQueryProject, {
+      filter: {
+        $and: [
+          { "category._id": "category-1" },
+          { site: "agency" },
+        ],
+        _trashed: { $ne: true },
+        _visibility: { $nin: ["draft", "trash"] },
+      },
+      options: {
+        fields: undefined,
+        limit: 10,
+        page: undefined,
+        sort: undefined,
+      },
+    });
+    expect(resolved.groups[0]?.value.title).toBe("Design");
+  });
+
   it("uses the relation content type as _type when a block name is an alias", () => {
     const AliasedBlock = new ContentType({
       name: "AliasedDynamicBlock",

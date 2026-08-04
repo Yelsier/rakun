@@ -15,13 +15,16 @@ export type {
   DynamicListMapSource,
   DynamicNestedListSource,
   DynamicQueryCurrentValue,
+  DynamicQueryDocumentValue,
   DynamicRelatedCollectionSource,
 } from "./lib/dynamicData";
 export {
   DYNAMIC_QUERY_CURRENT_VALUE_KEY,
+  DYNAMIC_QUERY_DOCUMENT_VALUE_KEY,
   DYNAMIC_BINDINGS_FIELD_NAME,
   DynamicDocumentBindingsSchema,
   DynamicQueryCurrentValueSchema,
+  DynamicQueryDocumentValueSchema,
   isDynamicDataSourceContentTypeAllowed,
 } from "./lib/dynamicData";
 export { Fields, f } from "./lib/fields";

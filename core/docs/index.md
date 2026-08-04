@@ -167,10 +167,11 @@ Use `.withHooks(...)` for lifecycle behavior; keep mutations and secrets out of
 Dynamic data list mappings may map a target `blocks` field recursively. A map
 entry with `kind: 'list'` contains the same `contentType`, optional `source` or
 `query`, `itemName`, and `map` shape as a top-level list binding. In its query,
-`{ $current: 'path' }` resolves against the parent source item, which supports
+`{ $current: 'path' }` resolves against the parent source item and
+`{ $document: 'path' }` resolves against the root document. The manager exposes
+these values as `Current item` and `Current document`, respectively, supporting
 flows such as Category -> gallery item -> related Project -> nested image card.
-The manager exposes this shape as `Nested list`; source and target dynamic-field
-rules are enforced at every level.
+Source and target dynamic-field rules are enforced at every level.
 
 ## Routes and web output
 

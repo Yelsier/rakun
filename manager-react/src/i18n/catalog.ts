@@ -986,6 +986,7 @@ export const managerMessages = {
   'dynamicData.source': { defaultMessage: 'Source' },
   'dynamicData.item': { defaultMessage: 'Item' },
   'dynamicData.currentDocument': { defaultMessage: 'Current document' },
+  'dynamicData.currentItem': { defaultMessage: 'Current item' },
   'dynamicData.field': { defaultMessage: 'Field' },
   'dynamicData.mappingMode': { defaultMessage: 'Mapping mode' },
   'dynamicData.directField': { defaultMessage: 'Direct field' },

@@ -240,7 +240,7 @@ describe('dynamic data query filters', () => {
     })
   })
 
-  test('builds and reads values from the current document', () => {
+  test('builds and reads values from the current context and root document', () => {
     const state = {
       combinator: 'and' as const,
       conditions: [
@@ -250,14 +250,28 @@ describe('dynamic data query filters', () => {
           value: 'slug',
           valueSource: 'current' as const,
         },
+        {
+          field: 'site',
+          operator: 'equals' as const,
+          value: 'site',
+          valueSource: 'document' as const,
+        },
       ],
     }
 
     expect(buildFilter(state)).toEqual({
-      'category.slug': { $current: 'slug' },
+      $and: [
+        { 'category.slug': { $current: 'slug' } },
+        { site: { $document: 'site' } },
+      ],
     })
     expect(
-      readFilterState({ 'category.slug': { $current: 'slug' } }),
+      readFilterState({
+        $and: [
+          { 'category.slug': { $current: 'slug' } },
+          { site: { $document: 'site' } },
+        ],
+      }),
     ).toEqual(state)
   })
 

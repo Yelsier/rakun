@@ -3,6 +3,7 @@ import type ContentType from "../../lib/ContentType";
 import {
   DYNAMIC_BINDINGS_FIELD_NAME,
   DynamicQueryCurrentValueSchema,
+  DynamicQueryDocumentValueSchema,
   getDynamicDocumentBindings,
   isDynamicDataSourceContentTypeAllowed,
   type DynamicBindingSource,
@@ -315,12 +316,27 @@ const isDynamicQueryCurrentPathAllowed = (
 
 const resolveDynamicQueryValue = (
   value: unknown,
+  currentItem: Record<string, unknown>,
+  currentItemContentType: ContentType,
   currentDocument: Record<string, unknown>,
   currentDocumentContentType: ContentType,
 ): DynamicQueryValueResolution => {
   const currentValue = DynamicQueryCurrentValueSchema.safeParse(value);
   if (currentValue.success) {
     const path = currentValue.data.$current;
+    if (!isDynamicQueryCurrentPathAllowed(currentItemContentType, path)) {
+      return { success: false };
+    }
+
+    const resolved = getAtPath(currentItem, path);
+    return resolved === undefined
+      ? { success: false }
+      : { success: true, value: resolved };
+  }
+
+  const documentValue = DynamicQueryDocumentValueSchema.safeParse(value);
+  if (documentValue.success) {
+    const path = documentValue.data.$document;
     if (!isDynamicQueryCurrentPathAllowed(currentDocumentContentType, path)) {
       return { success: false };
     }
@@ -336,6 +352,8 @@ const resolveDynamicQueryValue = (
     for (const item of value) {
       const resolved = resolveDynamicQueryValue(
         item,
+        currentItem,
+        currentItemContentType,
         currentDocument,
         currentDocumentContentType,
       );
@@ -351,6 +369,8 @@ const resolveDynamicQueryValue = (
     for (const [key, item] of Object.entries(value)) {
       const resolved = resolveDynamicQueryValue(
         item,
+        currentItem,
+        currentItemContentType,
         currentDocument,
         currentDocumentContentType,
       );
@@ -497,6 +517,10 @@ const resolveListBinding = async ({
   Array<{ name: string; value: Record<string, unknown> }> | undefined
 > => {
   const documentSource = binding.source;
+  const rootDocumentSource = contextSource ?? {
+    contentType: currentDocumentContentType,
+    value: currentDocument,
+  };
   const sourceContentType = documentSource
     ? getContentTypeByName(binding.contentType)
     : getAllowedSourceContentType(binding.contentType);
@@ -542,6 +566,8 @@ const resolveListBinding = async ({
       binding.query?.filter ?? {},
       currentDocument,
       currentDocumentContentType,
+      rootDocumentSource.value,
+      rootDocumentSource.contentType,
     );
     if (!resolvedFilter.success || !isRecord(resolvedFilter.value)) {
       return [];
@@ -583,7 +609,7 @@ const resolveListBinding = async ({
               targetField: targetContentType?.fields[targetField],
               currentSource: populated,
               currentContentType: sourceContentType,
-              contextSource,
+              contextSource: rootDocumentSource,
             }),
           ]),
         ),

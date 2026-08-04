@@ -532,9 +532,10 @@ const headerBindings = {
 ```
 
 List query conditions can compare a source field with a value from the current
-document. The manager exposes this as `Current document`; programmatic bindings
-use `{ $current: "path.to.field" }`. For example, a category can query only the
-projects whose related category has the same slug:
+context. At the top level this is the current document; inside a nested list it
+is the parent source item and the manager labels it `Current item`. Programmatic
+bindings use `{ $current: "path.to.field" }`. For example, a category can query
+only the projects whose related category has the same slug:
 
 ```ts
 query: {
@@ -545,8 +546,11 @@ query: {
 }
 ```
 
-Current-document paths are checked against the content type's dynamic field
-rules before the query runs. `_id` is also available for relation queries.
+Nested conditions can still read the root document by selecting `Current
+document`, which stores `{ $document: "path.to.field" }`. Current-item and
+current-document paths are checked against their respective content type's
+dynamic field rules before the query runs. `_id` is also available for relation
+queries.
 
 List mappings can be nested recursively when a mapped target field is itself a
 `blocks` list. Use `kind: "list"` for that map entry and configure its source,

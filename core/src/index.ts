@@ -363,14 +363,17 @@ export type {
   DynamicListMapSource,
   DynamicNestedListSource,
   DynamicQueryCurrentValue,
+  DynamicQueryDocumentValue,
   DynamicRelatedCollectionSource,
 } from "./lib/dynamicData";
 export {
   DYNAMIC_BINDINGS_FIELD_NAME,
   DYNAMIC_QUERY_CURRENT_VALUE_KEY,
+  DYNAMIC_QUERY_DOCUMENT_VALUE_KEY,
   DynamicDataOptionsSchema,
   DynamicDocumentBindingsSchema,
   DynamicQueryCurrentValueSchema,
+  DynamicQueryDocumentValueSchema,
   isDynamicDataSourceContentTypeAllowed,
 } from "./lib/dynamicData";
 export { getRakunBootstrapOptions } from "./bootstrapState";

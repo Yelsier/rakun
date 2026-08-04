@@ -19,6 +19,7 @@ import type {
 } from '@rakun-kit/core/client'
 import {
   DYNAMIC_QUERY_CURRENT_VALUE_KEY,
+  DYNAMIC_QUERY_DOCUMENT_VALUE_KEY,
   ITERATOR_FIELD_NAME,
   getListField,
   isDynamicDataSourceContentTypeAllowed,
@@ -96,7 +97,7 @@ type FilterCondition = {
   field: string
   operator: FilterOperator
   value: string
-  valueSource?: 'literal' | 'current'
+  valueSource?: 'literal' | 'current' | 'document'
 }
 type FilterState = {
   combinator: 'and' | 'or'
@@ -534,6 +535,16 @@ const readFilterOperand = (
     }
   }
 
+  if (
+    isRecord(value) &&
+    typeof value[DYNAMIC_QUERY_DOCUMENT_VALUE_KEY] === 'string'
+  ) {
+    return {
+      value: value[DYNAMIC_QUERY_DOCUMENT_VALUE_KEY],
+      valueSource: 'document' as const,
+    }
+  }
+
   return {
     value: Array.isArray(value) ? value.join(', ') : String(value ?? ''),
   }
@@ -547,7 +558,10 @@ const filterConditionFromEntry = (
   if (value === false) return { field, operator: 'false', value: '' }
 
   const directOperand = readFilterOperand(value)
-  if (directOperand.valueSource === 'current') {
+  if (
+    directOperand.valueSource === 'current' ||
+    directOperand.valueSource === 'document'
+  ) {
     return { field, operator: 'equals', ...directOperand }
   }
 
@@ -653,7 +667,9 @@ const buildFilterCondition = (
   const value =
     condition.valueSource === 'current'
       ? { [DYNAMIC_QUERY_CURRENT_VALUE_KEY]: condition.value }
-      : parseFilterValue(condition, fieldOptions)
+      : condition.valueSource === 'document'
+        ? { [DYNAMIC_QUERY_DOCUMENT_VALUE_KEY]: condition.value }
+        : parseFilterValue(condition, fieldOptions)
   const mongoOperator: Partial<Record<FilterOperator, string>> = {
     notEquals: '$ne',
     contains: '$contains',
@@ -712,7 +728,7 @@ const filterSummary = (filter: Record<string, unknown> | undefined) => {
     first.field,
     operatorLabels[first.operator],
     operatorNeedsValue(first.operator)
-      ? first.valueSource === 'current'
+      ? first.valueSource === 'current' || first.valueSource === 'document'
         ? `Current document.${first.value}`
         : first.value
       : '',
@@ -1145,12 +1161,14 @@ const createRelatedCollectionSource = ({
 
 const MappingSourceEditor = ({
   contentTypes,
+  rootDocumentContentType,
   currentSource,
   targetField,
   source,
   onChange,
 }: {
   contentTypes: EncodedContentType[]
+  rootDocumentContentType: EncodedContentType
   currentSource: EncodedContentType
   targetField: EncodedFieldUnknown
   source: ListMapSource
@@ -1228,6 +1246,8 @@ const MappingSourceEditor = ({
         <ListBindingEditor
           contentTypes={contentTypes}
           documentContentType={currentSource}
+          rootDocumentContentType={rootDocumentContentType}
+          currentItemContentType={currentSource}
           currentDocumentSourceEnabled
           field={nestedListTarget}
           binding={nestedSource}
@@ -1523,6 +1543,8 @@ const MappingSourceEditor = ({
 const ListBindingEditor = ({
   contentTypes,
   documentContentType,
+  rootDocumentContentType,
+  currentItemContentType,
   currentDocumentSourceEnabled,
   field,
   binding,
@@ -1530,6 +1552,8 @@ const ListBindingEditor = ({
 }: {
   contentTypes: EncodedContentType[]
   documentContentType: EncodedContentType
+  rootDocumentContentType: EncodedContentType
+  currentItemContentType?: EncodedContentType
   currentDocumentSourceEnabled: boolean
   field: EncodedListField
   binding: DynamicListBinding | undefined
@@ -1584,13 +1608,24 @@ const ListBindingEditor = ({
     : []
   const currentDocumentFieldOptions: SourceFieldOption[] = [
     { label: '_id', value: '_id', kind: 'string' },
-    ...sourceFieldOptions(documentContentType).filter(
+    ...sourceFieldOptions(rootDocumentContentType).filter(
       (item) =>
         item.value !== '$href' &&
         item.kind !== 'object' &&
         item.kind !== 'array',
     ),
   ]
+  const currentItemFieldOptions: SourceFieldOption[] = currentItemContentType
+    ? [
+        { label: '_id', value: '_id', kind: 'string' },
+        ...sourceFieldOptions(currentItemContentType).filter(
+          (item) =>
+            item.value !== '$href' &&
+            item.kind !== 'object' &&
+            item.kind !== 'array',
+        ),
+      ]
+    : []
   const sortEntry = Object.entries(binding?.query?.options?.sort ?? {})[0]
   const sortField = sortEntry?.[0] ?? ''
   const sortDirection = sortEntry?.[1] ?? 'desc'
@@ -1906,14 +1941,30 @@ const ListBindingEditor = ({
                   fieldOption?.kind,
                 )
                 const needsValue = operatorNeedsValue(condition.operator)
-                const currentValueOptions = currentDocumentFieldOptions.filter(
+                const currentDocumentValueOptions =
+                  currentDocumentFieldOptions.filter(
+                    (option) =>
+                      !fieldOption || option.kind === fieldOption.kind,
+                  )
+                const currentItemValueOptions = currentItemFieldOptions.filter(
                   (option) =>
                     !fieldOption || option.kind === fieldOption.kind,
                 )
-                const allowsCurrentValue =
+                const currentValueOptions =
+                  condition.valueSource === 'document'
+                    ? currentDocumentValueOptions
+                    : currentItemContentType
+                      ? currentItemValueOptions
+                      : currentDocumentValueOptions
+                const allowsCurrentDocumentValue =
                   condition.operator !== 'in' &&
                   condition.operator !== 'notIn' &&
-                  currentValueOptions.length > 0
+                  currentDocumentValueOptions.length > 0
+                const allowsCurrentItemValue =
+                  !!currentItemContentType &&
+                  condition.operator !== 'in' &&
+                  condition.operator !== 'notIn' &&
+                  currentItemValueOptions.length > 0
 
                 return (
                   <div
@@ -1992,7 +2043,8 @@ const ListBindingEditor = ({
                               ...condition,
                               valueSource: valueSource as
                                 | 'literal'
-                                | 'current',
+                                | 'current'
+                                | 'document',
                               value: '',
                             })
                           }
@@ -2005,14 +2057,26 @@ const ListBindingEditor = ({
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value='literal'>{t('dynamicData.fixedValue')}</SelectItem>
-                            {allowsCurrentValue ? (
-                              <SelectItem value='current'>
+                            {allowsCurrentDocumentValue ? (
+                              <SelectItem
+                                value={
+                                  currentItemContentType
+                                    ? 'document'
+                                    : 'current'
+                                }
+                              >
                                 {t('dynamicData.currentDocument')}
+                              </SelectItem>
+                            ) : null}
+                            {allowsCurrentItemValue ? (
+                              <SelectItem value='current'>
+                                {t('dynamicData.currentItem')}
                               </SelectItem>
                             ) : null}
                           </SelectContent>
                         </Select>
-                        {condition.valueSource === 'current' ? (
+                        {condition.valueSource === 'current' ||
+                        condition.valueSource === 'document' ? (
                           <Select
                             disabled={!condition.field}
                             value={condition.value}
@@ -2146,6 +2210,7 @@ const ListBindingEditor = ({
                       {selectedSource ? (
                         <MappingSourceEditor
                           contentTypes={contentTypes}
+                          rootDocumentContentType={rootDocumentContentType}
                           currentSource={selectedSource}
                           targetField={targetFieldConfig}
                           source={source}
@@ -2352,6 +2417,7 @@ export const DynamicDataControl = ({
     <ListBindingEditor
       contentTypes={sourceContentTypes}
       documentContentType={currentDocumentContentType}
+      rootDocumentContentType={currentDocumentContentType}
       currentDocumentSourceEnabled={currentDocumentSourceEnabled}
       field={field as EncodedListField}
       binding={listBinding}
