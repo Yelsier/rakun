@@ -42,15 +42,15 @@ export default function MediaLibrary({
   const { uploadMedia } = useMedia()
 
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
-  const [libraryOptimizeEnabled, setLibraryOptimizeEnabled] = useState(false)
+  const [libraryOptimizeEnabled, setLibraryOptimizeEnabled] = useState(true)
   const [libraryOptimizeOptions, setLibraryOptimizeOptions] = useState<FileOptimizeOptions>({
     format: 'webp',
     quality: 80,
-    generatePreview: false,
+    generatePreview: true,
     generateSizes: true,
     responsiveSizes: [...DEFAULT_RESPONSIVE_IMAGE_WIDTHS],
     minBytesToOptimize: 350 * 1024,
-    previewMaxWidth: 480,
+    previewMaxWidth: 32,
   })
   const [externalEditFolderRequest, setExternalEditFolderRequest] = useState<{
     id: string
@@ -200,6 +200,7 @@ export default function MediaLibrary({
     externalEditFolderRequest,
     externalDeleteFolderRequest,
     selectable,
+    isModal,
     multipleSelect,
     selectedMediaIds,
     forcedMediaTypeFilter,
@@ -219,13 +220,21 @@ export default function MediaLibrary({
     <MediaLibraryProvider value={mediaLibraryContext}>
       <div
         className={cn(
-          'relative grid h-full min-h-0 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-xl border lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]',
+          'relative grid grid-cols-1 overflow-hidden rounded-xl border lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]',
+          isModal
+            ? 'h-full min-h-0 grid-rows-[auto_minmax(0,1fr)]'
+            : 'grid-rows-[auto_auto] lg:h-full lg:min-h-0 lg:grid-rows-[minmax(0,1fr)]',
           className
         )}
       >
         <FoldersTree isModal={isModal} />
 
-        <div className="flex min-h-0 min-w-0 flex-col overflow-hidden p-4">
+        <div
+          className={cn(
+            'flex min-h-0 min-w-0 flex-col overflow-hidden p-4',
+            isModal ? 'h-full' : 'lg:h-full',
+          )}
+        >
           <p className="mb-4 shrink-0 text-muted-foreground text-sm">
             {t('media.currentFolder')}{' '}
             <span className="font-medium text-foreground">{currentFolder?.path || '/'}</span>

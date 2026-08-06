@@ -72,6 +72,7 @@ export const finalizeUploadInput = z.object({
   mime: z.string().min(1).optional(),
   size: z.number().int().nonnegative().optional(),
   previewKey: z.string().min(1).optional(),
+  previewUrl: z.url().optional(),
   previewMime: z.string().min(1).optional(),
   sizes: z.array(mediaSizeInput).optional(),
   width: z.number().int().positive().optional(),

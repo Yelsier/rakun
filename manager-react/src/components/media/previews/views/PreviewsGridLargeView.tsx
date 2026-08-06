@@ -7,6 +7,7 @@ import { ContextMenu, ContextMenuTrigger } from '../../../ui/context-menu'
 import MediaContextMenuContent from '../MediaContextMenuContent'
 import { useMediaPreview } from '../context/MediaPreviewContext'
 
+import { cn } from '@/lib/utils'
 import type { MediaRecord } from '@/lib/media'
 
 type PreviewsGridLargeViewProps = {
@@ -22,7 +23,11 @@ export default function PreviewsGridLargeView({ media }: PreviewsGridLargeViewPr
         <ContextMenu key={item._id}>
           <ContextMenuTrigger asChild>
             <Card
-              className="relative contain-paint overflow-hidden cursor-pointer p-3 hover:bg-accent/40 data-[state=open]:bg-accent/60 data-[state=open]:ring-1 data-[state=open]:ring-primary/30 [content-visibility:auto] [contain-intrinsic-size:auto_16rem]"
+              data-selected={isSelected(item._id) ? 'true' : undefined}
+              className={cn(
+                'relative contain-paint overflow-hidden cursor-pointer p-3 hover:bg-accent/40 data-[state=open]:bg-accent/60 data-[state=open]:ring-1 data-[state=open]:ring-primary/30 [content-visibility:auto] [contain-intrinsic-size:auto_16rem]',
+                'data-[selected=true]:border-primary data-[selected=true]:ring-2 data-[selected=true]:ring-primary/50',
+              )}
               onClick={() => onMediaClick(item)}
             >
               {isSelected(item._id) ? (

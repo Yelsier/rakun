@@ -38,6 +38,7 @@ type MediaLibraryContextValue = {
   externalEditFolderRequest: FolderActionRequest | null
   externalDeleteFolderRequest: FolderActionRequest | null
   selectable: boolean
+  isModal: boolean
   multipleSelect: boolean
   selectedMediaIds?: Set<string>
   forcedMediaTypeFilter?: MediaTypeFilter

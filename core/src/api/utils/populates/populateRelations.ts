@@ -200,14 +200,16 @@ export async function populateRelations<T extends ContentType>(
                   access: media.access,
                 })
                 .catch(() => null),
-              media.previewKey
-                ? mediaService
-                    .getMediaUrl({
-                      key: media.previewKey,
-                      access: media.access,
-                    })
-                    .catch(() => null)
-                : Promise.resolve(null),
+              media.previewUrl?.startsWith("data:")
+                ? Promise.resolve({ url: media.previewUrl })
+                : media.previewKey
+                  ? mediaService
+                      .getMediaUrl({
+                        key: media.previewKey,
+                        access: media.access,
+                      })
+                      .catch(() => null)
+                  : Promise.resolve(null),
             ]);
             const resolvedSizes = (
               await Promise.all(

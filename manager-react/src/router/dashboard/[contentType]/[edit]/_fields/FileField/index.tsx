@@ -4,6 +4,7 @@ import { GripVertical, ImagePlus, Settings2, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { Image as RakunImage } from '@rakun-kit/react'
 
 import { useTranslations } from '@/i18n'
 import type { EncodedFileField } from '@rakun-kit/core/client'
@@ -33,6 +34,7 @@ import { useTRPC, useTRPCClient } from '@/components/trpc-provider'
 import { useEditErrorStore } from '@/hooks/app-store'
 import type { MediaRecord } from '@/lib/media'
 import { formatFileSize } from '@/components/media/previews/utils/mediaPreview'
+import { getMediaDisplaySource } from '@/components/media/previews/hooks/useMediaPreviewRenderer'
 import { useMedia } from '@/lib/providers/media/MediaClientProvider'
 import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
 
@@ -53,7 +55,21 @@ type MediaRelationArrayTranslatableValue = TranslatableValue<MediaRelationValue[
 
 type MediaPreviewListItem = Pick<MediaRecord, '_id' | 'name'> &
   Partial<
-    Pick<MediaRecord, 'access' | 'key' | 'mime' | 'previewKey' | 'previewUrl' | 'size' | 'url'>
+    Pick<
+      MediaRecord,
+      | 'access'
+      | 'alt'
+      | 'height'
+      | 'key'
+      | 'mime'
+      | 'previewKey'
+      | 'previewUrl'
+      | 'size'
+      | 'sizes'
+      | 'title'
+      | 'url'
+      | 'width'
+    >
   >
 
 const INLINE_MEDIA_LIMIT = 5
@@ -109,30 +125,61 @@ const SelectedMediaListItem = ({
 }) => {
   const t = useTranslations()
   const trpcClient = useTRPCClient()
-  const canResolvePreview = Boolean(
-    media.mime?.startsWith('image/') && media.access && (media.previewKey || media.key)
-  )
-  const { data: previewUrl } = useQuery({
+  const display = getMediaDisplaySource(media)
+  const canResolveImage =
+    Boolean(media.mime?.startsWith('image/')) &&
+    Boolean(
+      media.access &&
+        (display.src || display.key || media.sizes?.some((size) => size.url)),
+    )
+  const { data: resolvedUrl } = useQuery({
     queryKey: [
-      'file-field-media-list-preview-url',
+      'file-field-media-list-display-url',
       media._id,
-      media.previewKey || media.key,
+      display.key,
       media.access,
+      display.src,
+      media.sizes?.map((size) => size.url || size.key).join('|'),
     ],
-    enabled: canResolvePreview,
+    enabled: canResolveImage && !display.src && !media.sizes?.some((size) => size.url),
     queryFn: async () => {
-      if (media.previewUrl) return media.previewUrl
-      if (media.url) return media.url
-      if (!media.key || !media.access) return ''
+      if (!display.key || !media.access) return ''
 
       const result = (await trpcClient.manager.media.getUrl.query({
-        key: media.previewKey || media.key,
+        key: display.key,
         access: media.access,
       })) as { url: string }
 
       return result.url
     },
   })
+
+  const imageSrc = display.src || resolvedUrl || undefined
+  const showImage =
+    Boolean(media.mime?.startsWith('image/')) &&
+    Boolean(imageSrc || media.sizes?.some((size) => size.url))
+
+  const image = showImage ? (
+    <RakunImage
+      image={{
+        key: display.key,
+        access: media.access,
+        url: imageSrc,
+        previewUrl: media.previewUrl?.startsWith('data:')
+          ? media.previewUrl
+          : undefined,
+        name: media.name,
+        title: media.title,
+        alt: media.alt,
+        width: media.width,
+        height: media.height,
+        sizes: media.sizes,
+      }}
+      sizes={layout === 'grid' ? '200px' : '48px'}
+      className="h-full w-full object-cover"
+      loading="lazy"
+    />
+  ) : null
 
   const metadata = [
     typeof media.size === 'number' ? formatFileSize(media.size) : null,
@@ -145,15 +192,7 @@ const SelectedMediaListItem = ({
     return (
       <div className="group relative min-w-0 overflow-hidden rounded-lg border bg-background">
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-          {previewUrl ? (
-            <img
-              src={previewUrl}
-              alt={media.name || 'Selected image'}
-              className="h-full w-full object-cover"
-              loading="lazy"
-              decoding="async"
-            />
-          ) : (
+          {image ?? (
             <div className="flex size-full items-center justify-center">
               <ImagePlus className="text-muted-foreground size-7" />
             </div>
@@ -201,17 +240,7 @@ const SelectedMediaListItem = ({
         </SortableItemHandle>
       ) : null}
       <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
-        {previewUrl ? (
-          <img
-            src={previewUrl}
-            alt={media.name || 'Selected image'}
-            className="h-full w-full object-cover"
-            loading="lazy"
-            decoding="async"
-          />
-        ) : (
-          <ImagePlus className="text-muted-foreground size-5" />
-        )}
+        {image ?? <ImagePlus className="text-muted-foreground size-5" />}
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{media.name || media._id}</p>
@@ -356,25 +385,40 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
   const inlineMediaItems = selectedMediaItems.slice(0, INLINE_MEDIA_LIMIT)
   const hasMoreMedia = selectedMediaItems.length > INLINE_MEDIA_LIMIT
 
-  const { data: previewUrl } = useQuery({
+  const { data: singleImageUrl } = useQuery({
     queryKey: [
-      'file-field-media-preview-url',
+      'file-field-media-display-url',
       mediaForPreview?._id,
-      mediaForPreview?.previewKey || mediaForPreview?.key,
+      mediaForPreview?.key,
+      mediaForPreview?.previewKey,
       mediaForPreview?.access,
+      mediaForPreview?.url,
+      mediaForPreview?.previewUrl,
+      mediaForPreview?.sizes?.map((size) => size.url || size.key).join('|'),
     ],
-    enabled: !!mediaForPreview && mediaForPreview.mime.startsWith('image/'),
+    enabled:
+      !!mediaForPreview &&
+      mediaForPreview.mime.startsWith('image/') &&
+      !getMediaDisplaySource(mediaForPreview).src &&
+      !mediaForPreview.sizes?.some((size) => size.url),
     queryFn: async () => {
       if (!mediaForPreview) return ''
-      if (mediaForPreview.previewUrl) return mediaForPreview.previewUrl
-      if (mediaForPreview.url) return mediaForPreview.url
+      const display = getMediaDisplaySource(mediaForPreview)
+      if (!display.key) return ''
       const result = (await trpcClient.manager.media.getUrl.query({
-        key: mediaForPreview.previewKey || mediaForPreview.key,
+        key: display.key,
         access: mediaForPreview.access,
       })) as { url: string }
       return result.url
     },
   })
+  const singleDisplay = mediaForPreview
+    ? getMediaDisplaySource(mediaForPreview)
+    : { src: undefined, key: undefined }
+  const singleImageSrc = singleDisplay.src || singleImageUrl || undefined
+  const showSingleImage =
+    !!mediaForPreview?.mime?.startsWith('image/') &&
+    Boolean(singleImageSrc || mediaForPreview.sizes?.some((size) => size.url))
 
   const getValue = () => {
     if (props.isMultiple) {
@@ -714,10 +758,23 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
         ) : value ? (
           <Card className="p-3 text-sm">
             <div className="flex items-center gap-3">
-              {mediaForPreview?.mime?.startsWith('image/') && previewUrl ? (
-                <img
-                  src={previewUrl}
-                  alt={preview?.name || 'Selected image'}
+              {showSingleImage && mediaForPreview ? (
+                <RakunImage
+                  image={{
+                    key: singleDisplay.key,
+                    access: mediaForPreview.access,
+                    url: singleImageSrc,
+                    previewUrl: mediaForPreview.previewUrl?.startsWith('data:')
+                      ? mediaForPreview.previewUrl
+                      : undefined,
+                    name: mediaForPreview.name,
+                    title: mediaForPreview.title,
+                    alt: mediaForPreview.alt,
+                    width: mediaForPreview.width,
+                    height: mediaForPreview.height,
+                    sizes: mediaForPreview.sizes,
+                  }}
+                  sizes="80px"
                   className="h-20 w-20 shrink-0 rounded-[calc(var(--radius)-8px)] border object-cover"
                   loading="lazy"
                 />

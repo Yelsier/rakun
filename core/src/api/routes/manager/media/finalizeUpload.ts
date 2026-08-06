@@ -15,6 +15,7 @@ import {
 } from "../../../../orm/dbService";
 import { RakunRequestContext } from "../../../context";
 import { checkPermissions } from "../../../utils/checkPermissions";
+import { isCompatibleMediaUploadKey } from "../../../utils/mediaUploadKey";
 import { verifyMediaUploadToken } from "../../../utils/mediaUploadToken";
 import { slugify } from "../../../../lib/utils/slugify";
 import {
@@ -192,7 +193,7 @@ export const finalizeUploadHandler = async ({
 
     if (
       tokenPayload.userId !== user._id ||
-      tokenPayload.key !== input.key ||
+      !isCompatibleMediaUploadKey(tokenPayload.key, input.key) ||
       (input.access && tokenPayload.access !== input.access) ||
       (tokenPayload.purpose ?? undefined) !== (input.purpose ?? undefined)
     ) {
@@ -284,6 +285,7 @@ export const finalizeUploadHandler = async ({
       input.mime || finalized.mime || "application/octet-stream";
     const resolvedSize = input.size ?? finalized.size;
     const previewKey = input.previewKey;
+    const previewUrl = input.previewUrl;
     const sizes = input.sizes?.filter((size) => size.key);
     const persistedSizes = sizes?.length ? sizes : undefined;
     const createdMedia = await db.create(Media, {
@@ -297,6 +299,7 @@ export const finalizeUploadHandler = async ({
       size: resolvedSize,
       etag: finalized.etag,
       previewKey,
+      previewUrl,
       previewMime: input.previewMime,
       sizes: persistedSizes,
       width: input.width,

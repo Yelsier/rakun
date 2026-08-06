@@ -8,6 +8,7 @@ import {
   LayoutGrid,
   List,
   Loader2,
+  RefreshCw,
   Upload,
   FileText,
   SlidersHorizontal,
@@ -41,6 +42,9 @@ export default function PreviewsToolbar() {
     setSearchTerm,
     viewMode,
     setViewMode,
+    canBulkSelect,
+    areAllVisibleSelected,
+    onToggleSelectAllVisible,
   } = useMediaPreview()
   const {
     optimizeEnabled,
@@ -72,6 +76,11 @@ export default function PreviewsToolbar() {
         <FileUploadClear className="inline-flex h-8 items-center rounded-md border px-3 font-medium text-sm hover:bg-accent/40">
           {t('common.clear')}
         </FileUploadClear>
+        {canBulkSelect && mediaCount > 0 ? (
+          <Button size="sm" variant="outline" onClick={onToggleSelectAllVisible}>
+            {areAllVisibleSelected ? t('common.deselect') : t('common.selectAll')}
+          </Button>
+        ) : null}
         <Popover>
           <PopoverTrigger asChild>
             <Button size="sm" variant="outline">
@@ -228,20 +237,37 @@ export default function PreviewsToolbar() {
 
 export function PreviewsSelectionToolbar() {
   const t = useTranslations()
-  const { bulkSelectedCount, onRequestBulkDelete, onRequestBulkMove, onClearSelection } =
-    useMediaPreview()
+  const {
+    bulkSelectedCount,
+    canReimportWithOptimization,
+    onRequestBulkDelete,
+    onRequestBulkMove,
+    onRequestBulkReimport,
+    onClearSelection,
+  } = useMediaPreview()
 
   if (bulkSelectedCount === 0) return null
 
   return (
     <div
-      className="fixed bottom-12 left-1/2 z-40 -translate-x-1/2 animate-in fade-in-0 slide-in-from-bottom-3 duration-200"
+      className="fixed bottom-12 left-1/2 z-70 -translate-x-1/2 animate-in fade-in-0 slide-in-from-bottom-3 duration-200"
       data-tour="media-selection-toolbar"
     >
       <div className="flex flex-wrap items-center justify-center gap-2 rounded-md border bg-background px-3 py-2 shadow-lg">
         <span className="min-w-20 text-center text-muted-foreground text-sm">
           {t('contentList.selectedCount', { count: bulkSelectedCount })}
         </span>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!canReimportWithOptimization}
+          onClick={onRequestBulkReimport}
+        >
+          <RefreshCw className="size-4" />
+          {canReimportWithOptimization
+            ? t('media.reimportConfirm')
+            : t('media.enableOptimizationToReimport')}
+        </Button>
         <Button size="sm" variant="outline" onClick={onRequestBulkMove}>
           <FolderInput className="size-4" />
           {t('common.move')}

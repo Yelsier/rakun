@@ -59,7 +59,7 @@ const optimizeOptions = {
   generateSizes: true,
   responsiveSizes: [320, 640],
   minBytesToOptimize: 10_000_000,
-  previewMaxWidth: 480,
+  previewMaxWidth: 32,
 };
 
 describe("storeReimportedImage", () => {

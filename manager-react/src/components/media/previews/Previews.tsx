@@ -57,6 +57,7 @@ import { confirm } from '@/components/confirm'
 import { useTranslations } from '@/i18n'
 import { useMedia } from '@/media'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
+import { cn } from '@/lib/utils'
 
 type ViewMode = 'list' | 'grid-sm' | 'grid-lg'
 type DeleteTarget = {
@@ -100,6 +101,7 @@ export default function Previews() {
     onUpload,
     optimizeEnabled,
     optimizeOptions,
+    isModal,
   } = useMediaLibrary()
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid-sm')
@@ -231,10 +233,16 @@ export default function Previews() {
     refetchMedia: refetch,
   })
 
+  const previewSizes =
+    viewMode === 'list' ? '48px' : viewMode === 'grid-lg' ? '520px' : '280px'
+
   const { renderPreview } = useMediaPreviewRenderer({
     media,
-    resolvePreviewUrl: async (item) => {
-      if (item.previewUrl) return item.previewUrl
+    sizes: previewSizes,
+    resolveMediaUrl: async (item) => {
+      if (item.previewUrl && !item.previewUrl.startsWith('data:')) {
+        return item.previewUrl
+      }
       if (item.url) return item.url
       const result = (await managerClient.request('manager.media.getUrl', {
         key: item.previewKey || item.key,
@@ -249,9 +257,12 @@ export default function Previews() {
       selectable,
       onSelect,
       resolveOriginalUrl: async (item) => {
+        if (item.previewUrl && !item.previewUrl.startsWith('data:')) {
+          return item.previewUrl
+        }
         if (item.url) return item.url
         const result = (await managerClient.request('manager.media.getUrl', {
-          key: item.key,
+          key: item.previewKey || item.key,
           access: item.access,
         })) as { url: string }
         return result.url
@@ -321,6 +332,13 @@ export default function Previews() {
 
       return next
     })
+  }
+
+  const areAllVisibleSelected =
+    media.length > 0 && media.every((item) => bulkSelectedIds.has(item._id))
+
+  const toggleSelectAllVisible = () => {
+    selectVisible(media, !areAllVisibleSelected)
   }
 
   const handleMediaClick = (item: MediaRecord) => {
@@ -668,34 +686,16 @@ export default function Previews() {
   const onRequestReimport = (item: MediaRecord) => {
     if (!optimizeEnabled || !item.mime.startsWith('image/')) return
 
-    void confirm({
-      title: t('media.reimportTitle'),
-      description: t('media.reimportDescription', { name: item.name }),
-      confirmLabel: t('media.reimportConfirm'),
-      onConfirm: async () => {
-        setReimportingIds((current) => new Set(current).add(item._id))
-        try {
-          await managerClient.request('manager.media.reimport', {
-            id: item._id,
-            optimizeOptions,
-          })
-          await refetch()
-          toast.success(t('media.reimported'))
-        } catch (error) {
-          toast.error(
-            t('media.reimportError', {
-              reason: getActionErrorMessage(error),
-            }),
-          )
-        } finally {
-          setReimportingIds((current) => {
-            const next = new Set(current)
-            next.delete(item._id)
-            return next
-          })
-        }
-      },
-    })
+    const selectedImages = media.filter(
+      (mediaItem) =>
+        bulkSelectedIds.has(mediaItem._id) && mediaItem.mime.startsWith('image/'),
+    )
+    if (selectedImages.length > 1 && bulkSelectedIds.has(item._id)) {
+      void reimportImages(selectedImages)
+      return
+    }
+
+    void reimportImages([item])
   }
 
   const onRequestSelect = (item: MediaRecord) => {
@@ -714,6 +714,91 @@ export default function Previews() {
       currentFolderId: currentFolderId ?? undefined,
     })
     setDestinationFolderId(currentFolderId ?? ROOT_FOLDER_VALUE)
+  }
+
+  const onRequestBulkReimport = () => {
+    if (!optimizeEnabled) return
+
+    const selectedImages = media.filter(
+      (item) => bulkSelectedIds.has(item._id) && item.mime.startsWith('image/'),
+    )
+    if (selectedImages.length === 0) {
+      toast.error(t('media.bulkReimportNoImages'))
+      return
+    }
+
+    void reimportImages(selectedImages)
+  }
+
+  const reimportImages = (images: MediaRecord[]) => {
+    void confirm({
+      title:
+        images.length === 1
+          ? t('media.reimportTitle')
+          : t('media.bulkReimportTitle'),
+      description:
+        images.length === 1
+          ? t('media.reimportDescription', { name: images[0]?.name ?? '' })
+          : t('media.bulkReimportDescription', { count: images.length }),
+      confirmLabel: t('media.reimportConfirm'),
+      onConfirm: async () => {
+        const ids = images.map((item) => item._id)
+        setReimportingIds((current) => {
+          const next = new Set(current)
+          for (const id of ids) next.add(id)
+          return next
+        })
+
+        let successCount = 0
+        let failedCount = 0
+        let lastError: unknown
+
+        try {
+          for (const item of images) {
+            try {
+              await managerClient.request('manager.media.reimport', {
+                id: item._id,
+                optimizeOptions,
+              })
+              successCount += 1
+            } catch (error) {
+              failedCount += 1
+              lastError = error
+            }
+          }
+
+          if (successCount > 0) {
+            await refetch()
+            clearBulkSelection()
+            toast.success(
+              images.length === 1
+                ? t('media.reimported')
+                : t('media.bulkReimported', { count: successCount }),
+            )
+          }
+
+          if (failedCount > 0) {
+            toast.error(
+              t('media.reimportError', {
+                reason:
+                  failedCount === 1
+                    ? getActionErrorMessage(lastError)
+                    : t('media.filesFailed', {
+                        count: failedCount,
+                        reason: getActionErrorMessage(lastError),
+                      }),
+              }),
+            )
+          }
+        } finally {
+          setReimportingIds((current) => {
+            const next = new Set(current)
+            for (const id of ids) next.delete(id)
+            return next
+          })
+        }
+      },
+    })
   }
 
   const handleConfirmBulkDelete = async () => {
@@ -804,14 +889,17 @@ export default function Previews() {
       bulkSelectedIds,
       bulkSelectedCount,
       canBulkSelect,
+      areAllVisibleSelected,
       onMediaClick: handleMediaClick,
       onToggleBulkSelection: toggleBulkSelection,
       onSelectVisible: selectVisible,
+      onToggleSelectAllVisible: toggleSelectAllVisible,
       onRequestSelect,
       onRequestBulkDelete: () => {
         void handleConfirmBulkDelete()
       },
       onRequestBulkMove,
+      onRequestBulkReimport,
       onClearSelection: clearBulkSelection,
       onRequestEdit,
       onRequestImageEdit,
@@ -836,12 +924,15 @@ export default function Previews() {
       bulkSelectedIds,
       bulkSelectedCount,
       canBulkSelect,
+      areAllVisibleSelected,
       selectedMediaIds,
       handleMediaClick,
       toggleBulkSelection,
       selectVisible,
+      toggleSelectAllVisible,
       onRequestSelect,
       onRequestBulkMove,
+      onRequestBulkReimport,
       clearBulkSelection,
       onRequestEdit,
       onRequestImageEdit,
@@ -855,7 +946,12 @@ export default function Previews() {
   )
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
+    <div
+      className={cn(
+        'flex min-h-0 w-full flex-col',
+        isModal ? 'h-full overflow-hidden' : 'h-auto max-lg:h-auto lg:h-full',
+      )}
+    >
       <MediaPreviewProvider value={mediaPreviewContextValue}>
         <div
           className="mb-2 flex w-full shrink-0 flex-wrap gap-2 p-1"
@@ -910,7 +1006,12 @@ export default function Previews() {
           onUpload={handleUpload}
           onFileReject={onFileReject}
           maxFiles={20}
-          className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden p-1"
+          className={cn(
+            'relative flex min-h-0 w-full flex-1 flex-col p-1',
+            isModal
+              ? 'overflow-hidden'
+              : 'max-lg:h-auto max-lg:overflow-visible lg:overflow-hidden',
+          )}
           multiple
           disabled={isUploading}
         >
@@ -937,10 +1038,20 @@ export default function Previews() {
             asChild
             tabIndex={-1}
             onClick={(event) => event.preventDefault()}
-            className="group/dropzone relative min-h-0 w-full flex-1 items-stretch justify-start gap-0 overflow-hidden rounded-xl border border-transparent p-0 hover:bg-transparent! focus-visible:bg-transparent! data-dragging:border-primary/40 data-dragging:bg-transparent!"
+            className={cn(
+              'group/dropzone relative min-h-0 w-full flex-1 items-stretch justify-start gap-0 rounded-xl border border-transparent p-0 hover:bg-transparent! focus-visible:bg-transparent! data-dragging:border-primary/40 data-dragging:bg-transparent!',
+              isModal
+                ? 'overflow-hidden'
+                : 'max-lg:flex-none max-lg:overflow-visible lg:overflow-hidden',
+            )}
           >
             <div
-              className="relative min-h-0 w-full items-stretch justify-start overflow-x-hidden overflow-y-auto overscroll-contain p-1"
+              className={cn(
+                'relative min-h-0 w-full items-stretch justify-start overflow-x-hidden p-1',
+                isModal
+                  ? 'overflow-y-auto overscroll-contain scrollbar-thin'
+                  : 'max-lg:overflow-y-visible lg:overflow-y-auto lg:overscroll-contain lg:scrollbar-thin',
+              )}
               data-tour="media-grid"
             >
               <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-background/50 opacity-0 backdrop-blur transition-opacity duration-200 ease-out group-data-dragging/dropzone:opacity-100">

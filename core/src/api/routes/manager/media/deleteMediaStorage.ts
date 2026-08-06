@@ -8,6 +8,10 @@ type MediaStorageTarget = {
   access: "public" | "private";
 };
 
+/** Seeded Next public assets live under this prefix and must not be deleted. */
+const isProtectedStaticMediaKey = (key: string) =>
+  key === "public/dynamic-data" || key.startsWith("public/dynamic-data/");
+
 const getSizeKeys = (sizes: unknown): string[] => {
   if (!Array.isArray(sizes)) return [];
 
@@ -36,6 +40,7 @@ export const deleteMediaStorage = async ({
   Logger.addTrace(`${traceName}: media service ready`);
 
   let objectCount = 0;
+  let skippedProtectedCount = 0;
 
   for (const media of mediaItems) {
     const keysToDelete = Array.from(
@@ -47,6 +52,14 @@ export const deleteMediaStorage = async ({
     ) as string[];
 
     for (const key of keysToDelete) {
+      if (isProtectedStaticMediaKey(key)) {
+        skippedProtectedCount += 1;
+        Logger.addTrace(`${traceName}: skipped protected static media key`, {
+          key,
+        });
+        continue;
+      }
+
       await mediaService.rawAdapter.deleteObject({
         key,
         access: media.access,
@@ -58,5 +71,6 @@ export const deleteMediaStorage = async ({
   Logger.addTrace(`${traceName}: storage objects deleted`, {
     mediaCount: mediaItems.length,
     objectCount,
+    skippedProtectedCount,
   });
 };

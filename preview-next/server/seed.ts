@@ -1,4 +1,7 @@
 import bcrypt from "bcrypt";
+import { copyFile, mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { MongoClient, type Db, type Document } from "mongodb";
 import {
   ContentTemplate,
@@ -41,6 +44,11 @@ import {
   UseCaseLayoutWithInfo,
   UseCaseNewsletter,
 } from "./content-types";
+
+const PREVIEW_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
 
 const now = () => new Date();
 const translatable = (
@@ -1111,6 +1119,11 @@ export const seedPreviewData = async ({
     await db.collection("ManagerUser").updateOne(
       { email: adminEmail },
       {
+        $set: {
+          tutorialsEnabled: false,
+          tutorialsPromptedAt: now(),
+          updatedAt: now(),
+        },
         $setOnInsert: {
           user: adminName,
           email: adminEmail,
@@ -1123,7 +1136,6 @@ export const seedPreviewData = async ({
           twoFactorEnabled: false,
           _type: "ManagerUser",
           createdAt: now(),
-          updatedAt: now(),
         },
       },
       { upsert: true },
@@ -1222,28 +1234,46 @@ export const seedPreviewData = async ({
     }
 
     const galleryMediaSources = [
-      { key: "public/dynamic-data/aurora.svg", name: "Aurora gradients" },
-      { key: "public/dynamic-data/borealis.svg", name: "Borealis forms" },
-      { key: "public/dynamic-data/canopy.svg", name: "Canopy composition" },
-      { key: "public/dynamic-data/ember.svg", name: "Ember landscape" },
-      { key: "public/dynamic-data/lagoon.svg", name: "Lagoon geometry" },
-      { key: "public/dynamic-data/studio.svg", name: "Studio still life" },
+      { file: "aurora.svg", name: "Aurora gradients" },
+      { file: "borealis.svg", name: "Borealis forms" },
+      { file: "canopy.svg", name: "Canopy composition" },
+      { file: "ember.svg", name: "Ember landscape" },
+      { file: "lagoon.svg", name: "Lagoon geometry" },
+      { file: "studio.svg", name: "Studio still life" },
     ];
-    const galleryMediaDefinitions = galleryMediaSources.flatMap((media) =>
-      Array.from({ length: 3 }, (_, index) => {
-        const copy = index + 1;
-        const key =
-          copy === 1
-            ? media.key
-            : media.key.replace(/\.svg$/, `-copy-${copy}.svg`);
+    const seedMediaDir = path.join(PREVIEW_ROOT, "public", "uploads", "seed");
+    await mkdir(seedMediaDir, { recursive: true });
+    const galleryMediaDefinitions = await Promise.all(
+      galleryMediaSources.flatMap((media) =>
+        Array.from({ length: 3 }, async (_, index) => {
+          const copy = index + 1;
+          const fileName =
+            copy === 1
+              ? media.file
+              : media.file.replace(/\.svg$/, `-copy-${copy}.svg`);
+          const sourcePath = path.join(
+            PREVIEW_ROOT,
+            "public",
+            "dynamic-data",
+            media.file,
+          );
+          const key = `public/uploads/seed/${fileName}`;
+          const destPath = path.join(PREVIEW_ROOT, key);
+          await copyFile(sourcePath, destPath);
+          await writeFile(
+            `${destPath}.meta.json`,
+            JSON.stringify({ mime: "image/svg+xml" }),
+          );
+          const mediaUrl = `/api/media/${key}`;
 
-        return {
-          key,
-          name: `${media.name} - copy ${copy}`,
-          sourceKey: media.key,
-          sourceUrl: `/${media.key.replace(/^public\//, "")}`,
-        };
-      }),
+          return {
+            key,
+            name: `${media.name} - copy ${copy}`,
+            originalName: media.file,
+            mediaUrl,
+          };
+        }),
+      ),
     );
     const seededGalleryMedia = await Promise.all(
       galleryMediaDefinitions.map((media) =>
@@ -1254,10 +1284,9 @@ export const seedPreviewData = async ({
               name: media.name,
               title: media.name,
               alt: media.name,
-              originalName: media.key.split("/").at(-1),
-              url: media.sourceUrl,
-              previewKey: media.sourceKey,
-              previewUrl: media.sourceUrl,
+              originalName: media.originalName,
+              url: media.mediaUrl,
+              previewUrl: media.mediaUrl,
               previewMime: "image/svg+xml",
               access: "public",
               mime: "image/svg+xml",
@@ -1268,6 +1297,9 @@ export const seedPreviewData = async ({
               orientation: "landscape",
               status: "uploaded",
               updatedAt: now(),
+            },
+            $unset: {
+              previewKey: "",
             },
             $setOnInsert: {
               key: media.key,
@@ -1334,7 +1366,7 @@ export const seedPreviewData = async ({
           excerpt: "Routeable source item used by the dynamic carousel title.",
           featured: true,
           category: "launch-campaigns",
-          images: ["public/dynamic-data/aurora.svg", "public/dynamic-data/borealis.svg"],
+          images: ["public/uploads/seed/aurora.svg", "public/uploads/seed/borealis.svg"],
         },
         {
           title: "Borealis workspace",
@@ -1342,7 +1374,7 @@ export const seedPreviewData = async ({
           excerpt: "Featured project mapped into carousel item summary.",
           featured: true,
           category: "launch-campaigns",
-          images: ["public/dynamic-data/borealis.svg", "public/dynamic-data/canopy.svg"],
+          images: ["public/uploads/seed/borealis.svg", "public/uploads/seed/canopy.svg"],
         },
         {
           title: "Canopy studio",
@@ -1350,7 +1382,7 @@ export const seedPreviewData = async ({
           excerpt: "Third featured project for list binding limits and hrefs.",
           featured: true,
           category: "creative-studios",
-          images: ["public/dynamic-data/canopy.svg", "public/dynamic-data/aurora.svg"],
+          images: ["public/uploads/seed/canopy.svg", "public/uploads/seed/aurora.svg"],
         },
         {
           title: "Draft lab",
@@ -1358,7 +1390,7 @@ export const seedPreviewData = async ({
           excerpt: "Non-featured project kept out by the binding filter.",
           featured: false,
           category: "creative-studios",
-          images: ["public/dynamic-data/studio.svg"],
+          images: ["public/uploads/seed/studio.svg"],
         },
       ].map((project) =>
         db.collection(Project.name).findOneAndUpdate(

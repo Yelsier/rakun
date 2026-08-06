@@ -16,6 +16,7 @@ const resolveMediaUrl = async ({
   access: MediaAccess;
   fallback?: string;
 }): Promise<string | undefined> => {
+  if (fallback?.startsWith("data:")) return fallback;
   if (typeof key !== "string" || !key.trim()) return fallback;
 
   try {

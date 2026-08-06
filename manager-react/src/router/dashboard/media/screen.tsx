@@ -23,8 +23,8 @@ export function ManagerMediaLibraryScreen() {
 
   return (
     <ManagerMediaProvider renderPicker={() => null}>
-      <div className="flex h-full min-h-0 flex-col">
-        <MediaLibrary className="min-h-0 flex-1" />
+      <div className="flex min-h-0 flex-col max-lg:h-auto lg:h-full">
+        <MediaLibrary className="min-h-0 max-lg:flex-none lg:flex-1" />
       </div>
     </ManagerMediaProvider>
   )

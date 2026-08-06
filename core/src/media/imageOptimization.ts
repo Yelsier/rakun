@@ -40,10 +40,8 @@ type UploadOptimizationOutput = {
   orientation?: "portrait" | "landscape";
   content: Buffer;
   preview?: {
-    key: string;
+    dataUrl: string;
     mime: string;
-    size: number;
-    content: Buffer;
   };
   sizes?: Array<{
     key: string;
@@ -85,11 +83,6 @@ const replaceExtension = (fileName: string, ext: string): string => {
 const replaceKeyExtension = (key: string, ext: string): string => {
   const parsed = path.posix.parse(key);
   return path.posix.join(parsed.dir, `${parsed.name}.${ext}`);
-};
-
-const buildPreviewKey = (key: string, ext: string): string => {
-  const parsed = path.posix.parse(key);
-  return path.posix.join(parsed.dir, `${parsed.name}.preview.${ext}`);
 };
 
 const buildSizeKey = (key: string, width: number, ext: string): string => {
@@ -194,6 +187,33 @@ const generateResponsiveSizes = async ({
   );
 };
 
+const PREVIEW_DATA_URL_QUALITY = 20;
+
+const generatePreviewDataUrl = async ({
+  content,
+  format,
+  maxWidth,
+}: {
+  content: Buffer;
+  format: NonNullable<FileOptimizeOptions["format"]>;
+  maxWidth: number;
+}): Promise<NonNullable<UploadOptimizationOutput["preview"]>> => {
+  const sharp = getSharp();
+  const targetMime = formatToMime[format];
+  const previewContent = await applyFormat(
+    sharp(content, { failOn: "none" })
+      .rotate()
+      .resize({ width: maxWidth, withoutEnlargement: true }),
+    format,
+    PREVIEW_DATA_URL_QUALITY,
+  ).toBuffer();
+
+  return {
+    dataUrl: `data:${targetMime};base64,${previewContent.toString("base64")}`,
+    mime: targetMime,
+  };
+};
+
 export async function optimizeImageUpload(
   input: UploadOptimizationInput,
 ): Promise<UploadOptimizationOutput> {
@@ -231,6 +251,13 @@ export async function optimizeImageUpload(
           widths: options.responsiveSizes,
         })
       : [];
+    const preview = options.generatePreview
+      ? await generatePreviewDataUrl({
+          content: input.buffer,
+          format: targetFormat,
+          maxWidth: options.previewMaxWidth,
+        })
+      : undefined;
 
     return {
       key: input.key,
@@ -241,6 +268,7 @@ export async function optimizeImageUpload(
       originalSize,
       ...dimensions,
       content: input.buffer,
+      preview,
       sizes: sizes.length ? sizes : undefined,
     };
   }
@@ -266,30 +294,13 @@ export async function optimizeImageUpload(
     ? replaceExtension(input.fileName, finalExt)
     : input.fileName;
 
-  let preview:
-    | {
-        key: string;
-        mime: string;
-        size: number;
-        content: Buffer;
-      }
-    | undefined;
-
-  if (options.generatePreview) {
-    const previewContent = await applyFormat(
-      sharp(finalBuffer, { failOn: "none" })
-        .rotate()
-        .resize({ width: options.previewMaxWidth, withoutEnlargement: true }),
-      targetFormat,
-      quality,
-    ).toBuffer();
-    preview = {
-      key: buildPreviewKey(finalKey, targetExt),
-      mime: targetMime,
-      size: previewContent.length,
-      content: previewContent,
-    };
-  }
+  const preview = options.generatePreview
+    ? await generatePreviewDataUrl({
+        content: finalBuffer,
+        format: targetFormat,
+        maxWidth: options.previewMaxWidth,
+      })
+    : undefined;
 
   const dimensions = await resolveDimensions(finalMime, finalBuffer);
   const sizes = options.generateSizes

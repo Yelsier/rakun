@@ -248,6 +248,9 @@ The media manager can reimport an existing image with its currently selected
 optimization settings. Rakun writes the replacement and responsive variants
 under new storage keys, updates the existing `Media` record in place, and only
 then removes the previous objects, so content relations keep the same media ID.
+When `generatePreview` is enabled, optimization stores a tiny `data:image/...`
+LQIP string on `previewUrl` instead of uploading a separate preview object.
+Older media that still have a `previewKey` continue to resolve normally.
 
 ## Manager languages and user-facing text
 

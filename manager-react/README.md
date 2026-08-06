@@ -101,7 +101,10 @@ restores them before saving media metadata.
 
 With optimization enabled in the media toolbar, an image's context menu offers
 `Reimport with current optimization`. It regenerates the configured variants
-while retaining the existing media record and all relations to it.
+while retaining the existing media record and all relations to it. Multi-select
+supports the same reimport action from the selection toolbar. Optimization is
+on by default, and generated previews are stored as inline `data:image/...`
+LQIP values on the media record.
 
 ## Dynamic data mappings
 

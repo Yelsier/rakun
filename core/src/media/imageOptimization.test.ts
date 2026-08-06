@@ -34,7 +34,7 @@ describe("optimizeImageUpload responsive sizes", () => {
         generateSizes: true,
         responsiveSizes: [1280, 320, 640, 2500, 2000],
         minBytesToOptimize: 1,
-        previewMaxWidth: 480,
+        previewMaxWidth: 32,
       },
     });
 
@@ -68,11 +68,37 @@ describe("optimizeImageUpload responsive sizes", () => {
         generateSizes: false,
         responsiveSizes: [320, 640],
         minBytesToOptimize: 1,
-        previewMaxWidth: 480,
+        previewMaxWidth: 32,
       },
     });
 
     expect(result.sizes).toBeUndefined();
+  });
+
+  it("embeds a tiny data-url preview when generatePreview is enabled", async () => {
+    const result = await optimizeImageUpload({
+      buffer: await makeImage(),
+      mime: "image/jpeg",
+      fileName: "hero.jpg",
+      key: "public/uploads/hero.jpg",
+      optimizeOptions: {
+        format: "webp",
+        quality: 80,
+        generatePreview: true,
+        generateSizes: false,
+        responsiveSizes: [320],
+        minBytesToOptimize: 1,
+        previewMaxWidth: 32,
+      },
+    });
+
+    expect(result.preview?.mime).toBe("image/webp");
+    expect(result.preview?.dataUrl.startsWith("data:image/webp;base64,")).toBe(
+      true,
+    );
+    expect(result.preview?.dataUrl.length).toBeGreaterThan(
+      "data:image/webp;base64,".length,
+    );
   });
 
   it("does not generate responsive variants for non-images", async () => {
@@ -88,7 +114,7 @@ describe("optimizeImageUpload responsive sizes", () => {
         generateSizes: true,
         responsiveSizes: [320, 640],
         minBytesToOptimize: 1,
-        previewMaxWidth: 480,
+        previewMaxWidth: 32,
       },
     });
 
@@ -133,5 +159,34 @@ describe("deleteMediaStorage", () => {
       "public/uploads/hero.320w.webp",
       "public/uploads/hero.640w.webp",
     ]);
+  });
+
+  it("skips deleting protected Next public static media keys", async () => {
+    const deletedKeys: string[] = [];
+    const adapter: StorageAdapter = {
+      createPresignedPut: async (input) => ({ url: "", key: input.key }),
+      putObject: async () => undefined,
+      headObject: async () => ({ size: 0 }),
+      createPresignedGet: async () => ({ url: "", expiresAt: new Date() }),
+      deleteObject: async (input) => {
+        deletedKeys.push(input.key);
+      },
+      publicUrl: () => null,
+    };
+    createMediaService({ adapter });
+
+    await deleteMediaStorage({
+      mediaItems: [
+        {
+          key: "public/dynamic-data/aurora.svg",
+          previewKey: "public/dynamic-data/aurora.svg",
+          access: "public",
+          sizes: [{ key: "public/uploads/aurora.320w.webp" }],
+        },
+      ],
+      traceName: "test",
+    });
+
+    expect(deletedKeys).toEqual(["public/uploads/aurora.320w.webp"]);
   });
 });

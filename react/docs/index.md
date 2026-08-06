@@ -90,6 +90,22 @@ Plugin ids and module names must be unique. A web plugin does not register its
 server content types or operations; register the corresponding core plugin in
 server bootstrap separately.
 
+## Images
+
+`Image` / `RakunImage` builds a responsive `srcSet` from media `sizes` and
+accepts a layout `sizes` attribute so the browser picks an appropriate width.
+When `previewUrl` is a `data:image/...` LQIP string, it is used as the image
+background while the full asset loads. Pass `usePreview` to render the preview
+string/URL as the primary `src` instead.
+
+```tsx
+import { Image } from '@rakun-kit/react'
+
+export function HeroImage({ image }) {
+  return <Image image={image} sizes="(max-width: 768px) 100vw, 50vw" />
+}
+```
+
 ## Public entrypoints and constraints
 
 - `@rakun-kit/react`: registries and module/page renderers.

@@ -64,9 +64,7 @@ export const ManagerDashboardLayout = ({
   headerEnd,
 }: ManagerDashboardLayoutProps) => {
   const hasInternalPageScroll =
-    route?.kind === 'content-create' ||
-    route?.kind === 'content-edit' ||
-    route?.kind === 'media-library'
+    route?.kind === 'content-create' || route?.kind === 'content-edit'
 
   return (
     <SidebarProvider className="fixed inset-0 min-h-0 overflow-hidden">

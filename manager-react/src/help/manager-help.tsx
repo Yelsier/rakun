@@ -161,8 +161,9 @@ export function ManagerHelpProvider({ route, children }: ManagerHelpProviderProp
 
   useEffect(() => {
     if (user.tutorialsEnabled !== undefined) return
+    if (user.tutorialsPromptedAt) return
     setPromptOpen(true)
-  }, [user.tutorialsEnabled])
+  }, [user.tutorialsEnabled, user.tutorialsPromptedAt])
 
   useEffect(() => {
     if (!currentTour) return
@@ -175,12 +176,16 @@ export function ManagerHelpProvider({ route, children }: ManagerHelpProviderProp
   }, [autoStartedTourIds, currentTour, startTour, user.seenTours, user.tutorialsEnabled])
 
   const handleTutorialPreference = async (enabled: boolean) => {
-    const updated = await updateTutorialPreferences.mutateAsync({ enabled })
-    setUser(updated)
     setPromptOpen(false)
+    try {
+      const updated = await updateTutorialPreferences.mutateAsync({ enabled })
+      setUser(updated)
 
-    if (enabled) {
-      startTour(currentTour)
+      if (enabled) {
+        startTour(currentTour)
+      }
+    } catch {
+      setPromptOpen(true)
     }
   }
 
@@ -198,7 +203,7 @@ export function ManagerHelpProvider({ route, children }: ManagerHelpProviderProp
       {children}
 
       <Dialog open={promptOpen}>
-        <DialogContent className="sm:max-w-md" onClick={() => void handleTutorialPreference(false)}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t('help.tutorialsPromptTitle')}</DialogTitle>
             <DialogDescription>

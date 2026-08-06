@@ -77,7 +77,7 @@ export default function PreviewsListView({ media }: PreviewsListViewProps) {
               }
               className={cn(
                 listColumns,
-                'w-full border-b px-3 py-2 text-left last:border-b-0 hover:bg-accent/40 data-[selected=true]:bg-accent/40 data-[state=open]:bg-accent/60 data-[state=open]:ring-1 data-[state=open]:ring-primary/30',
+                'w-full border-b px-3 py-2 text-left last:border-b-0 hover:bg-accent/40 data-[selected=true]:bg-accent/40 data-[selected=true]:shadow-[inset_3px_0_0_0_var(--primary)] data-[state=open]:bg-accent/60 data-[state=open]:ring-1 data-[state=open]:ring-primary/30',
               )}
               onClick={() => onMediaClick(item)}
               onKeyDown={(event) => {

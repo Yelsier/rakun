@@ -27,7 +27,9 @@ const resolveImageSrc = async (
   media: MediaRecord,
   request: ReturnType<typeof useManagerClient>['request'],
 ) => {
-  if (media.previewUrl) return media.previewUrl
+  if (media.previewUrl && !media.previewUrl.startsWith('data:')) {
+    return media.previewUrl
+  }
   if (media.url) return media.url
 
   const key = media.previewKey || media.key

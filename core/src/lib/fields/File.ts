@@ -30,7 +30,7 @@ export type FileOptimizeFormat = (typeof fileOptimizeFormats)[number];
 export const FileOptimizeOptionsSchema = z.object({
   format: z.enum(fileOptimizeFormats).default("webp"),
   quality: z.number().int().min(1).max(100).default(80),
-  generatePreview: z.boolean().default(false),
+  generatePreview: z.boolean().default(true),
   generateSizes: z.boolean().default(true),
   responsiveSizes: z
     .array(z.number().int().positive())
@@ -40,7 +40,7 @@ export const FileOptimizeOptionsSchema = z.object({
     .int()
     .positive()
     .default(350 * 1024),
-  previewMaxWidth: z.number().int().positive().default(480),
+  previewMaxWidth: z.number().int().positive().default(32),
 });
 
 export type FileOptimizeOptions = z.infer<typeof FileOptimizeOptionsSchema>;

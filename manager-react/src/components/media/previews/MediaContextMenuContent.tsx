@@ -32,17 +32,25 @@ export default function MediaContextMenuContent({
   const {
     canBulkSelect,
     bulkSelectedIds,
+    bulkSelectedCount,
     onRequestSelect,
     onRequestEdit,
     onRequestImageEdit,
     canReimportWithOptimization,
     isReimporting,
     onRequestReimport,
+    onRequestBulkReimport,
     onRequestMove,
     onRequestDelete,
   } = useMediaPreview()
   const isMediaItem = '_type' in item && item._type === 'Media'
   const isImageItem = isMediaItem && item.mime.startsWith('image/')
+  const selectedImageCount =
+    isMediaItem && bulkSelectedIds.has(item._id)
+      ? Math.max(bulkSelectedCount, 1)
+      : 1
+  const reimportSelected =
+    isImageItem && selectedImageCount > 1 && bulkSelectedIds.has(item._id)
 
   return (
     <ContextMenuContent>
@@ -69,18 +77,27 @@ export default function MediaContextMenuContent({
           </ContextMenuItem>
           <ContextMenuItem
             disabled={
-              !canReimportWithOptimization || isReimporting(item._id)
+              !canReimportWithOptimization ||
+              (reimportSelected
+                ? false
+                : isReimporting(item._id))
             }
-            onSelect={() => onRequestReimport(item)}
+            onSelect={() => {
+              if (reimportSelected) {
+                onRequestBulkReimport()
+                return
+              }
+              onRequestReimport(item)
+            }}
           >
             {isReimporting(item._id) ? (
               <LoaderCircle className='size-4 animate-spin' />
             ) : (
               <RefreshCw className='size-4' />
             )}
-            {canReimportWithOptimization
-              ? t('media.reimportWithOptimization')
-              : t('media.enableOptimizationToReimport')}
+            {!canReimportWithOptimization
+              ? t('media.enableOptimizationToReimport')
+              : t('media.reimportConfirm')}
           </ContextMenuItem>
         </>
       ) : null}

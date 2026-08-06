@@ -257,7 +257,7 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'media.filesFailed': '{count} {count, plural, one {archivo} other {archivos}} fallaron. {reason}',
   'media.openImageEditorError': 'No se pudo abrir el editor de imagen',
   'media.editedImageSaved': 'Imagen editada guardada',
-  'media.reimportWithOptimization': 'Reimportar con la optimización actual',
+  'media.reimportWithOptimization': 'Reimportar',
   'media.enableOptimizationToReimport': 'Activa la optimización para reimportar',
   'media.reimportTitle': '¿Reimportar imagen?',
   'media.reimportDescription':
@@ -265,6 +265,14 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'media.reimportConfirm': 'Reimportar',
   'media.reimported': 'Imagen reimportada',
   'media.reimportError': 'No se pudo reimportar la imagen: {reason}',
+  'media.bulkReimportTitle': '¿Reimportar imágenes seleccionadas?',
+  'media.bulkReimportDescription':
+    'Se volverán a procesar {count} {count, plural, one {imagen seleccionada} other {imágenes seleccionadas}} con los ajustes de optimización de la barra de medios. Se conservarán sus referencias y detalles.',
+  'media.bulkReimported':
+    'Se reimportaron {count} {count, plural, one {imagen} other {imágenes}}',
+  'media.bulkReimportNoImages':
+    'Selecciona al menos una imagen para reimportar',
+  'media.reimportSelectedCount': 'Reimportar',
   'media.saveEditedImageError': 'No se pudo guardar la imagen editada',
   'media.imageDetailsSaved': 'Detalles de la imagen guardados',
   'media.saveImageDetailsError': 'No se pudieron guardar los detalles de la imagen',

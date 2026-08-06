@@ -23,12 +23,15 @@ type MediaPreviewContextValue = {
   bulkSelectedIds: Set<string>
   bulkSelectedCount: number
   canBulkSelect: boolean
+  areAllVisibleSelected: boolean
   onMediaClick: (media: MediaRecord) => void
   onToggleBulkSelection: (media: MediaRecord) => void
   onSelectVisible: (media: MediaRecord[], selected: boolean) => void
+  onToggleSelectAllVisible: () => void
   onRequestSelect: (item: MediaRecord) => void
   onRequestBulkDelete: () => void
   onRequestBulkMove: () => void
+  onRequestBulkReimport: () => void
   onClearSelection: () => void
   onRequestEdit: (item: MediaRecord | FolderItem) => void
   onRequestImageEdit: (item: MediaRecord) => void

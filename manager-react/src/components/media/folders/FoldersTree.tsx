@@ -225,7 +225,7 @@ export default function FoldersTree({ isModal = false }: { isModal?: boolean }) 
   return (
     <div
       className={cn(
-        'relative min-h-0 min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain border-b border-r p-4 max-lg:max-h-[40svh] lg:h-full lg:min-w-56 lg:border-b-0',
+        'relative min-h-0 min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain scrollbar-thin border-b border-r p-4 lg:h-full lg:min-w-56 lg:border-b-0',
         isModal && 'max-lg:max-h-[30svh]'
       )}
     >

@@ -64,7 +64,14 @@ upload headers and restored by core before metadata is saved.
 When optimization is enabled, right-click an image and select `Reimport with
 current optimization` to regenerate its optimized source, preview, and
 responsive sizes. The action keeps the existing media ID, title, alt text,
-folder, and content references.
+folder, and content references. You can also multi-select images and use the
+selection toolbar reimport action. Optimization is enabled by default in the
+media library; generated previews are stored as inline `data:image/...`
+strings on the media record for LQIP use.
+
+Gallery and file-field image previews use `@rakun-kit/react` `Image` with a
+layout-appropriate `sizes` value so responsive variants are selected when
+available.
 
 ## Manager plugins
 

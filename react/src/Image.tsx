@@ -167,6 +167,7 @@ export function RakunImage({
   priority = false,
   loading = "lazy",
   decoding = "async",
+  style,
   ...imgProps
 }: RakunImageProps) {
   const resolvedImgProps: ImageElementProps = {
@@ -209,6 +210,12 @@ export function RakunImage({
         mediaPublicPath,
         includeOriginal: includeOriginalInSrcSet,
       }));
+  const inlinePreviewSrc =
+    !usePreview &&
+    resolvedPreviewSrc &&
+    resolvedPreviewSrc.startsWith("data:")
+      ? resolvedPreviewSrc
+      : undefined;
 
   return (
     <img
@@ -222,6 +229,16 @@ export function RakunImage({
       height={resolvedHeight ?? undefined}
       loading={priority ? "eager" : loading}
       decoding={decoding}
+      style={
+        inlinePreviewSrc
+          ? {
+              ...style,
+              backgroundImage: `url("${inlinePreviewSrc}")`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }
+          : style
+      }
     />
   );
 }

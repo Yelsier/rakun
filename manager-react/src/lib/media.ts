@@ -121,6 +121,7 @@ export async function uploadFileToPresignedUrl(params: {
   height?: number;
   orientation?: "portrait" | "landscape";
   previewKey?: string;
+  previewUrl?: string;
   previewMime?: string;
   sizes?: MediaSizeRecord[];
   optimized: boolean;
@@ -182,6 +183,7 @@ export async function uploadFileToPresignedUrl(params: {
     height?: number;
     orientation?: "portrait" | "landscape";
     previewKey?: string;
+    previewUrl?: string;
     previewMime?: string;
     sizes?: MediaSizeRecord[];
     optimized: boolean;
@@ -260,6 +262,7 @@ export async function uploadMediaFile(
       mime: uploaded.mime,
       size: uploaded.size,
       previewKey: uploaded.previewKey,
+      previewUrl: uploaded.previewUrl,
       previewMime: uploaded.previewMime,
       sizes: uploaded.sizes,
       width: uploaded.width,

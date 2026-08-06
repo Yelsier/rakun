@@ -2,6 +2,7 @@
 
 import { ExternalLink } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { Image as RakunImage } from '@rakun-kit/react'
 
 import { Button } from '../../../ui/button'
 import {
@@ -96,9 +97,25 @@ export default function ExpandedPreviewDialog({
             {!preview || !previewUrl ? (
               <Skeleton className="h-full w-full" />
             ) : isImage(preview.mime) ? (
-              <img
-                src={previewUrl}
-                alt={preview.alt || preview.title || preview.name}
+              <RakunImage
+                image={{
+                  key:
+                    preview.previewUrl && !preview.previewUrl.startsWith('data:')
+                      ? preview.previewKey || preview.key
+                      : preview.key,
+                  access: preview.access,
+                  url: previewUrl || preview.url,
+                  previewUrl: preview.previewUrl?.startsWith('data:')
+                    ? preview.previewUrl
+                    : undefined,
+                  name: preview.name,
+                  title: preview.title,
+                  alt: preview.alt,
+                  width: preview.width,
+                  height: preview.height,
+                  sizes: preview.sizes,
+                }}
+                sizes="min(90vw, 960px)"
                 className="h-full w-full object-contain"
               />
             ) : isVideo(preview.mime) ? (

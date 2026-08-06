@@ -261,24 +261,6 @@ export async function handleMediaBinaryUpload(
       size: optimized.content.length,
     });
 
-    if (optimized.preview) {
-      await assertObjectDoesNotExist({
-        key: optimized.preview.key,
-        access: parsedHeaders.access,
-      });
-      await media.rawAdapter.putObject({
-        key: optimized.preview.key,
-        access: parsedHeaders.access,
-        mime: optimized.preview.mime,
-        content: optimized.preview.content,
-      });
-      Logger.addTrace("manager.media.uploadBinary: preview stored", {
-        key: optimized.preview.key,
-        access: parsedHeaders.access,
-        size: optimized.preview.content.length,
-      });
-    }
-
     if (optimized.sizes?.length) {
       await Promise.all(
         optimized.sizes.map((size) =>
@@ -314,7 +296,7 @@ export async function handleMediaBinaryUpload(
       height: optimized.height,
       orientation: optimized.orientation,
       sizes: optimized.sizes?.map(({ content: _, ...size }) => size),
-      previewKey: optimized.preview?.key,
+      previewUrl: optimized.preview?.dataUrl,
       previewMime: optimized.preview?.mime,
       optimized: optimized.optimized,
       optimizedFormat: optimized.optimizedFormat,

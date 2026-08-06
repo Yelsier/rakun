@@ -383,7 +383,7 @@ export const managerMessages = {
   },
   'media.editedImageSaved': { defaultMessage: 'Edited image saved' },
   'media.reimportWithOptimization': {
-    defaultMessage: 'Reimport with current optimization',
+    defaultMessage: 'Reimport',
   },
   'media.enableOptimizationToReimport': {
     defaultMessage: 'Enable optimization to reimport',
@@ -397,6 +397,24 @@ export const managerMessages = {
   'media.reimported': { defaultMessage: 'Image reimported' },
   'media.reimportError': {
     defaultMessage: 'Could not reimport the image: {reason}',
+  },
+  'media.bulkReimportTitle': { defaultMessage: 'Reimport selected images?' },
+  'media.bulkReimportDescription': {
+    defaultMessage:
+      'Reprocess {count} selected {count, plural, one {image} other {images}} with the optimization settings currently selected in the media toolbar. Existing references and details will be preserved.',
+    params: { count: 'number' },
+  },
+  'media.bulkReimported': {
+    defaultMessage:
+      'Reimported {count} {count, plural, one {image} other {images}}',
+    params: { count: 'number' },
+  },
+  'media.bulkReimportNoImages': {
+    defaultMessage: 'Select at least one image to reimport',
+  },
+  'media.reimportSelectedCount': {
+    defaultMessage: 'Reimport',
+    params: { count: 'number' },
   },
   'media.saveEditedImageError': {
     defaultMessage: 'Could not save edited image',

@@ -84,7 +84,6 @@ export const storeReimportedImage = async ({
         mime: optimized.mime,
         content: optimized.content,
       },
-      ...(optimized.preview ? [optimized.preview] : []),
       ...(optimized.sizes ?? []),
     ];
 
@@ -139,15 +138,16 @@ export const reimportMediaHandler = async ({
   });
   const sourceResponse = await fetch(sourceUrl.url);
   if (!sourceResponse.ok) {
-    throwAppError("INTERNAL", {
-      message: "Failed to read the source media",
+    throwAppError("NOT_FOUND", {
+      resource: "Media",
+      id: input.id,
     });
   }
 
   const source = Buffer.from(await sourceResponse.arrayBuffer());
   if (source.length === 0) {
     throwAppError("VALIDATION", {
-      errors: [{ message: "The source media is empty" }],
+      errors: [{ message: "The source media is empty or unreadable" }],
     });
   }
 
@@ -162,7 +162,7 @@ export const reimportMediaHandler = async ({
   const sizes = optimized.sizes?.map(({ content: _, ...size }) => size);
   const newStorage = {
     key: optimized.key,
-    previewKey: optimized.preview?.key,
+    previewKey: undefined as string | undefined,
     sizes,
     access: existing.access,
   };
@@ -185,8 +185,8 @@ export const reimportMediaHandler = async ({
         size: optimized.size,
         etag: finalized.etag ?? null,
         url: null,
-        previewKey: optimized.preview?.key ?? null,
-        previewUrl: null,
+        previewKey: null,
+        previewUrl: optimized.preview?.dataUrl ?? null,
         previewMime: optimized.preview?.mime ?? null,
         sizes: sizes?.length ? sizes : null,
         width: optimized.width ?? null,
