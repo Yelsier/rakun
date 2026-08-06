@@ -56,10 +56,8 @@ export default function PreviewsToolbar() {
 
   return (
     <div className="space-y-2" data-tour="media-toolbar">
-      <p className="text-muted-foreground text-sm">
-        {t('media.fileCount', { count: mediaCount })}
-      </p>
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
+      <p className="text-muted-foreground text-sm">{t('media.fileCount', { count: mediaCount })}</p>
+      <div className="flex w-full justify-between flex-wrap items-center gap-2">
         <SearchInput
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
@@ -67,105 +65,106 @@ export default function PreviewsToolbar() {
           className="h-8 min-w-56 max-w-xs flex-1 basis-56"
           data-tour="media-search"
         />
-        <FileUploadTrigger asChild>
-          <Button size="sm" variant="outline">
-            <Upload className="size-4" />
-            {t('common.upload')}
-          </Button>
-        </FileUploadTrigger>
-        <FileUploadClear className="inline-flex h-8 items-center rounded-md border px-3 font-medium text-sm hover:bg-accent/40">
-          {t('common.clear')}
-        </FileUploadClear>
-        {canBulkSelect && mediaCount > 0 ? (
-          <Button size="sm" variant="outline" onClick={onToggleSelectAllVisible}>
-            {areAllVisibleSelected ? t('common.deselect') : t('common.selectAll')}
-          </Button>
-        ) : null}
-        <Popover>
-          <PopoverTrigger asChild>
+        <div className="flex flex-wrap items-center gap-2">
+          <FileUploadTrigger asChild>
             <Button size="sm" variant="outline">
-              <SlidersHorizontal className="size-4" />
-              {t('media.optimization')}
+              <Upload className="size-4" />
+              {t('common.upload')}
             </Button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-80 space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <p className="font-medium text-sm">{t('media.enableOptimization')}</p>
-              <Switch
-                checked={optimizeEnabled}
-                disabled={optimizeLocked}
-                onCheckedChange={setOptimizeEnabled}
-              />
-            </div>
-            {optimizeLocked ? (
-              <p className="text-muted-foreground text-xs">
-                {t('media.optimizationEnforced')}
-              </p>
-            ) : null}
-            <div className="space-y-2">
-              <p className="text-muted-foreground text-xs">{t('media.format')}</p>
-              <Select
-                value={optimizeOptions.format}
-                disabled={!optimizeEnabled}
-                onValueChange={(value) =>
-                  setOptimizeOptions({
-                    format: value as 'webp' | 'jpeg' | 'png' | 'avif',
-                  })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t('media.selectFormat')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {OPTIMIZE_FORMATS.map((format) => (
-                    <SelectItem key={format} value={format}>
-                      {format}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <p className="text-muted-foreground text-xs">{t('media.qualityRange')}</p>
-              <Input
-                type="number"
-                min={1}
-                max={100}
-                disabled={!optimizeEnabled}
-                value={optimizeOptions.quality}
-                onChange={(event) => {
-                  const parsed = Number(event.target.value)
-                  if (!Number.isFinite(parsed)) return
-                  const value = Math.max(1, Math.min(100, Math.round(parsed)))
-                  setOptimizeOptions({ quality: value })
-                }}
-              />
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm">{t('media.generatePreview')}</p>
-              <Switch
-                checked={optimizeOptions.generatePreview}
-                disabled={!optimizeEnabled}
-                onCheckedChange={(value) => setOptimizeOptions({ generatePreview: value })}
-              />
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm">{t('media.generateResponsiveSizes')}</p>
-              <Switch
-                checked={optimizeOptions.generateSizes ?? true}
-                disabled={!optimizeEnabled}
-                onCheckedChange={(value) => setOptimizeOptions({ generateSizes: value })}
-              />
-            </div>
-          </PopoverContent>
-        </Popover>
-        {isUploading ? (
-          <span className="inline-flex items-center gap-1 text-muted-foreground text-sm">
-            <Loader2 className="size-4 animate-spin" />
-            {t('media.uploading')}
-          </span>
-        ) : null}
-
+          </FileUploadTrigger>
+          <FileUploadClear className="inline-flex h-8 items-center rounded-md border px-3 font-medium text-sm hover:bg-accent/40">
+            {t('common.clear')}
+          </FileUploadClear>
+          {canBulkSelect && mediaCount > 0 ? (
+            <Button size="sm" variant="outline" onClick={onToggleSelectAllVisible}>
+              {areAllVisibleSelected ? t('common.deselect') : t('common.selectAll')}
+            </Button>
+          ) : null}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="outline">
+                <SlidersHorizontal className="size-4" />
+                {t('media.optimization')}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-medium text-sm">{t('media.enableOptimization')}</p>
+                <Switch
+                  checked={optimizeEnabled}
+                  disabled={optimizeLocked}
+                  onCheckedChange={setOptimizeEnabled}
+                />
+              </div>
+              {optimizeLocked ? (
+                <p className="text-muted-foreground text-xs">{t('media.optimizationEnforced')}</p>
+              ) : null}
+              <div className="space-y-2">
+                <p className="text-muted-foreground text-xs">{t('media.format')}</p>
+                <Select
+                  value={optimizeOptions.format}
+                  disabled={!optimizeEnabled}
+                  onValueChange={(value) =>
+                    setOptimizeOptions({
+                      format: value as 'webp' | 'jpeg' | 'png' | 'avif',
+                    })
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t('media.selectFormat')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {OPTIMIZE_FORMATS.map((format) => (
+                      <SelectItem key={format} value={format}>
+                        {format}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <p className="text-muted-foreground text-xs">{t('media.qualityRange')}</p>
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  disabled={!optimizeEnabled}
+                  value={optimizeOptions.quality}
+                  onChange={(event) => {
+                    const parsed = Number(event.target.value)
+                    if (!Number.isFinite(parsed)) return
+                    const value = Math.max(1, Math.min(100, Math.round(parsed)))
+                    setOptimizeOptions({ quality: value })
+                  }}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm">{t('media.generatePreview')}</p>
+                <Switch
+                  checked={optimizeOptions.generatePreview}
+                  disabled={!optimizeEnabled}
+                  onCheckedChange={(value) => setOptimizeOptions({ generatePreview: value })}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm">{t('media.generateResponsiveSizes')}</p>
+                <Switch
+                  checked={optimizeOptions.generateSizes ?? true}
+                  disabled={!optimizeEnabled}
+                  onCheckedChange={(value) => setOptimizeOptions({ generateSizes: value })}
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
+          {isUploading ? (
+            <span className="inline-flex items-center gap-1 text-muted-foreground text-sm">
+              <Loader2 className="size-4 animate-spin" />
+              {t('media.uploading')}
+            </span>
+          ) : null}
+        </div>
+      </div>
+      <div className="flex min-w-0 flex-wrap items-center gap-2 justify-end">
         {!isMediaTypeFilterLocked ? (
           <ToggleGroup
             type="single"
