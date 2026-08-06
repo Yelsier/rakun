@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title description">
-  <title id="title">Canopy composition</title>
-  <desc id="description">Abstract leaf shapes in cream, red and green.</desc>
-  <rect width="1200" height="900" fill="#efe8d4"/>
-  <path d="M70 770C120 300 400 50 730 70c30 350-180 660-660 700Z" fill="#173f35"/>
-  <path d="M1130 850C720 820 500 570 520 250c340-20 610 180 610 600Z" fill="#dd563e" opacity=".94"/>
-  <path d="M170 730C390 580 530 400 650 150" fill="none" stroke="#f8f1dd" stroke-width="28" stroke-linecap="round"/>
-  <circle cx="865" cy="246" r="128" fill="#f3b647"/>
-</svg>
