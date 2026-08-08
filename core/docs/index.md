@@ -184,6 +184,16 @@ Use `@rakun-kit/core/web` for framework-neutral web types/utilities. Use the
 Next or React manual for actual rendering. Route changes can affect configured
 redirects, sitemap, robots output, preview, and adapter behavior.
 
+The public `web.staticPaths` query returns `{ path, ttl }` entries only for
+route-map records whose configured page route has `dynamic: false`. Framework
+adapters use it to generate static params and choose an ISR lifetime without
+giving application code direct database access.
+
+Set `revalidate: { url, token }` in bootstrap to notify the web host after a
+manager mutation changes a public path. Core sends an authenticated `POST`
+containing `{ path }`; the host adapter is responsible for invalidating its
+page and data caches.
+
 ## Custom operations
 
 Define public API behavior with the operation helpers and Zod input/output

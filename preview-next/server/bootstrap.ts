@@ -17,6 +17,8 @@ import { apiOperations } from './api-operations'
 import { createOpenAITranslationServiceConfig } from '@rakun-kit/openai'
 import { createResendMailServiceConfig } from '@rakun-kit/resend'
 
+import { getPreviewRevalidateToken } from './web-config'
+
 export const getPreviewMongoUri = () =>
   process.env.MONGO_URI ?? 'mongodb://127.0.0.1:27017/rakun_preview'
 
@@ -156,5 +158,9 @@ export const createPreviewBootstrap = () =>
       level: 'info',
       prettify: true,
       verbose: true,
+    },
+    revalidate: {
+      url: process.env.RAKUN_REVALIDATE_URL ?? 'http://127.0.0.1:3000/api/revalidate',
+      token: getPreviewRevalidateToken(),
     },
   }) satisfies RakunBootstrapOptions

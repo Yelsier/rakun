@@ -6,7 +6,7 @@ export default function BackendPage(props: RakunManagerPageProps) {
       {...props}
       apiBaseUrl="/api/rakun"
       basePath="/backend"
-      preview={{ webBaseUrl: '/' }}
+      preview={{ webBaseUrl: '/rakun-preview' }}
     />
   )
 }

@@ -1,76 +1,75 @@
-import type { RakunOperationImplementationMap } from "./types";
-import { mergeOperationContracts } from "./types";
-import { traceOperationMap } from "./tracing";
-import { createWebOperationContracts } from "./web-contract";
-import {
-  getCustomApiOperationDefinitions,
-  mergeOperationMaps,
-} from "./custom";
-import { getLanguages } from "../utils/getLanguages";
-import { getPage } from "../routes/web/page";
-import { getPreviewPage } from "../routes/web/previewPage";
-import { getRobots } from "../routes/web/robots";
-import { getSitemap } from "../routes/web/sitemap";
+import type { RakunOperationImplementationMap } from './types'
+import { mergeOperationContracts } from './types'
+import { traceOperationMap } from './tracing'
+import { createWebOperationContracts } from './web-contract'
+import { getCustomApiOperationDefinitions, mergeOperationMaps } from './custom'
+import { getLanguages } from '../utils/getLanguages'
+import { getPage } from '../routes/web/page'
+import { getPreviewPage } from '../routes/web/previewPage'
+import { getRobots } from '../routes/web/robots'
+import { getSitemap } from '../routes/web/sitemap'
+import { getStaticPaths } from '../routes/web/staticPaths'
 
 const getStringHeaders = (
-  headers: Record<string, string | string[] | undefined>,
+  headers: Record<string, string | string[] | undefined>
 ): Record<string, string> | undefined => {
   const values = Object.entries(headers).flatMap(([key, value]) => {
-    if (typeof value === "string") {
-      return [[key, value] as const];
+    if (typeof value === 'string') {
+      return [[key, value] as const]
     }
 
     if (Array.isArray(value)) {
-      return value.length > 0 && typeof value[0] === "string"
-        ? [[key, value[0]] as const]
-        : [];
+      return value.length > 0 && typeof value[0] === 'string' ? [[key, value[0]] as const] : []
     }
 
-    return [];
-  });
+    return []
+  })
 
   if (values.length === 0) {
-    return undefined;
+    return undefined
   }
 
-  return Object.fromEntries(values);
-};
+  return Object.fromEntries(values)
+}
 
 export const createWebOperationDefinitions = () => {
-  const contracts = createWebOperationContracts();
+  const contracts = createWebOperationContracts()
   const implementations: RakunOperationImplementationMap<typeof contracts> = {
-    "web.languages": {
+    'web.languages': {
       resolve: async () => await getLanguages(),
     },
-    "web.page": {
+    'web.page': {
       resolve: async ({ input, ctx }) =>
         await getPage({
           ...input,
           headers: input.headers ?? getStringHeaders(ctx.req?.headers ?? {}),
         }),
     },
-    "web.previewPage": {
+    'web.previewPage': {
       resolve: async ({ input, ctx }) =>
         await getPreviewPage({
           ...input,
           headers: input.headers ?? getStringHeaders(ctx.req?.headers ?? {}),
         }),
     },
-    "web.sitemap": {
+    'web.sitemap': {
       resolve: async ({ input }) => await getSitemap(input),
     },
-    "web.robots": {
+    'web.staticPaths': {
+      resolve: async () => await getStaticPaths(),
+    },
+    'web.robots': {
       resolve: async () => await getRobots(),
     },
-    "web.test": {
+    'web.test': {
       resolve: async () => ({ ok: true }),
     },
-  };
+  }
 
   return traceOperationMap(
     mergeOperationMaps(
       mergeOperationContracts(contracts, implementations),
-      getCustomApiOperationDefinitions("web"),
-    ),
-  );
-};
+      getCustomApiOperationDefinitions('web')
+    )
+  )
+}

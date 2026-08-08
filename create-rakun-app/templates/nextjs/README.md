@@ -23,10 +23,19 @@ page as the homepage in the route settings.
 
 - `server/content-types.ts`: minimal content model.
 - `server/bootstrap.ts`: Rakun, MongoDB, login, and public route configuration.
+- `server/web-config.ts`: web API and revalidation environment helpers.
 - `app/api/rakun/[[...rakun]]/route.ts`: Rakun API.
 - `app/backend/[[...slug]]/page.tsx`: manager.
 - `app/[[...slug]]/page.tsx`: public page renderer.
+- `app/rakun-preview/[[...slug]]/page.tsx`: uncached manager preview renderer.
+- `app/api/revalidate/route.ts`: authenticated Next cache invalidation webhook.
 - `modules`: React components rendered by Rakun pages.
 
 Rakun's installed AI manuals start at
 `node_modules/@rakun-kit/core/dist/docs/index.md`.
+
+`RAKUN_API_URL` must be an absolute Rakun API URL. During a production build it
+must point to an already reachable deployment because Next does not run local
+Route Handlers during `next build`. `RAKUN_REVALIDATE_URL` must point to this
+application's `/api/revalidate` handler, and `RAKUN_REVALIDATE_TOKEN` must be a
+long random secret shared by bootstrap and that handler.

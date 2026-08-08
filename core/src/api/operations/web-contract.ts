@@ -1,8 +1,8 @@
-import z from "zod";
+import z from 'zod'
 
-import type { RakunOperationContractMap } from "./types";
-import { defineOperationContract } from "./types";
-import { Language } from "../../internal-content-types";
+import type { RakunOperationContractMap } from './types'
+import { defineOperationContract } from './types'
+import { Language } from '../../internal-content-types'
 import {
   pageInput,
   pageOutput,
@@ -10,54 +10,62 @@ import {
   previewPageOutput,
   sitemapInput,
   sitemapOutput,
+  staticPathsOutput,
   robotsOutput,
-} from "../../contracts";
+} from '../../contracts'
 
 export const createWebOperationContracts = () =>
   ({
-    "web.languages": defineOperationContract({
-      access: "public",
-      kind: "query",
-      method: "get",
-      description: "Get all available languages",
+    'web.languages': defineOperationContract({
+      access: 'public',
+      kind: 'query',
+      method: 'get',
+      description: 'Get all available languages',
       output: z.array(Language.getOutputSchema()),
     }),
-    "web.page": defineOperationContract({
-      access: "public",
-      kind: "query",
-      method: "get",
-      description: "Get page data for a given path",
+    'web.page': defineOperationContract({
+      access: 'public',
+      kind: 'query',
+      method: 'get',
+      description: 'Get page data for a given path',
       input: pageInput,
       output: pageOutput,
     }),
-    "web.previewPage": defineOperationContract({
-      access: "public",
-      kind: "query",
-      method: "get",
-      description: "Get temporary preview page data for a token",
+    'web.previewPage': defineOperationContract({
+      access: 'public',
+      kind: 'query',
+      method: 'get',
+      description: 'Get temporary preview page data for a token',
       input: previewPageInput,
       output: previewPageOutput,
     }),
-    "web.sitemap": defineOperationContract({
-      access: "public",
-      kind: "query",
-      method: "get",
-      description: "Get public page paths for sitemap generation",
+    'web.sitemap': defineOperationContract({
+      access: 'public',
+      kind: 'query',
+      method: 'get',
+      description: 'Get public page paths for sitemap generation',
       input: sitemapInput,
       output: sitemapOutput,
     }),
-    "web.robots": defineOperationContract({
-      access: "public",
-      kind: "query",
-      method: "get",
-      description: "Get robots.txt content",
+    'web.staticPaths': defineOperationContract({
+      access: 'public',
+      kind: 'query',
+      method: 'get',
+      description: 'Get public paths configured for static rendering',
+      output: staticPathsOutput,
+    }),
+    'web.robots': defineOperationContract({
+      access: 'public',
+      kind: 'query',
+      method: 'get',
+      description: 'Get robots.txt content',
       output: robotsOutput,
     }),
-    "web.test": defineOperationContract({
-      access: "public",
-      kind: "query",
-      method: "get",
-      description: "Test route to verify that the router is working",
+    'web.test': defineOperationContract({
+      access: 'public',
+      kind: 'query',
+      method: 'get',
+      description: 'Test route to verify that the router is working',
       output: z.object({ ok: z.boolean() }),
     }),
-  }) satisfies RakunOperationContractMap;
+  }) satisfies RakunOperationContractMap

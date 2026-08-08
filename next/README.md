@@ -10,7 +10,7 @@ Create a catch-all App Router route and export the methods returned by
 
 ```ts
 // app/api/rakun/[...slug]/route.ts
-import { rakunNext } from "@rakun-kit/next";
+import { rakunNext } from '@rakun-kit/next'
 
 export const { GET, POST, PUT } = rakunNext({
   bootstrap: {
@@ -20,7 +20,7 @@ export const { GET, POST, PUT } = rakunNext({
       MONGO_URI: process.env.MONGO_URI!,
     },
   },
-});
+})
 ```
 
 By default, the handler:
@@ -35,10 +35,10 @@ Options:
 
 ```ts
 type RakunNextOptions = {
-  bootstrap?: RakunBootstrapOptions;
-  healthPath?: string | false;
-  integrations?: RakunNextIntegration[];
-};
+  bootstrap?: RakunBootstrapOptions
+  healthPath?: string | false
+  integrations?: RakunNextIntegration[]
+}
 ```
 
 Use `integrations` for extra handlers. Each integration receives the Fetch
@@ -51,20 +51,20 @@ Mount a tRPC router in the same catch-all route with `@rakun-kit/next/trpc`:
 
 ```ts
 // app/api/rakun/[...slug]/route.ts
-import { rakunNext, rakunNextCrud } from "@rakun-kit/next";
-import { rakunNextTrpc } from "@rakun-kit/next/trpc";
-import { appRouter } from "@/server/trpc";
+import { rakunNext, rakunNextCrud } from '@rakun-kit/next'
+import { rakunNextTrpc } from '@rakun-kit/next/trpc'
+import { appRouter } from '@/server/trpc'
 
 export const { GET, POST, PUT } = rakunNext({
   bootstrap,
   integrations: [
     rakunNextCrud(),
     rakunNextTrpc({
-      path: "trpc",
+      path: 'trpc',
       router: appRouter,
     }),
   ],
-});
+})
 ```
 
 The tRPC integration creates a Rakun request context from Fetch API headers,
@@ -87,42 +87,29 @@ Fetch Rakun page data from a Next Server Component with `@rakun-kit/next/web`:
 ```tsx
 // app/[[...slug]]/page.tsx
 import {
+  createRakunGenerateStaticParams,
   createRakunPageMetadata,
-  getRakunPage,
-  getRakunPathFromParams,
+  getRakunPageFromProps,
   RakunPageRenderer,
-  type RakunNextPageParams,
-  type RakunNextPageSearchParams,
-} from "@rakun-kit/next/web";
+  type RakunNextPageProps,
+} from '@rakun-kit/next/web'
 
-type Props = {
-  params: Promise<RakunNextPageParams>;
-  searchParams: Promise<RakunNextPageSearchParams>;
-};
+const apiBaseUrl = process.env.RAKUN_API_URL!
 
-export async function generateMetadata({ params, searchParams }: Props) {
-  const page = await getRakunPage({
-    path: getRakunPathFromParams({ params: await params }),
-    search: await searchParams,
-    apiBaseUrl: "/api/rakun",
-  });
+export const generateStaticParams = createRakunGenerateStaticParams({
+  apiBaseUrl,
+})
 
-  return createRakunPageMetadata(page);
+export async function generateMetadata(props: RakunNextPageProps) {
+  const page = await getRakunPageFromProps(props, { apiBaseUrl })
+
+  return createRakunPageMetadata(page)
 }
 
-export default async function Page({ params, searchParams }: Props) {
-  const page = await getRakunPage({
-    path: getRakunPathFromParams({ params: await params }),
-    search: await searchParams,
-    apiBaseUrl: "/api/rakun",
-  });
+export default async function Page(props: RakunNextPageProps) {
+  const page = await getRakunPageFromProps(props, { apiBaseUrl })
 
-  return (
-    <RakunPageRenderer
-      page={page}
-      loadModule={(name) => import(`@/modules/${name}`)}
-    />
-  );
+  return <RakunPageRenderer page={page} loadModule={(name) => import(`@/modules/${name}`)} />
 }
 ```
 
@@ -138,7 +125,7 @@ Module files should export either `default` or `component`:
 ```tsx
 // modules/Hero.tsx
 export default function Hero({ title }: { title: string }) {
-  return <section>{title}</section>;
+  return <section>{title}</section>
 }
 ```
 
@@ -146,10 +133,7 @@ Web plugin registries can be converted into the loader expected by the Next
 renderer:
 
 ```tsx
-import {
-  createRakunPageModuleLoader,
-  RakunPageRenderer,
-} from '@rakun-kit/next/web'
+import { createRakunPageModuleLoader, RakunPageRenderer } from '@rakun-kit/next/web'
 
 const loadModule = createRakunPageModuleLoader({
   plugins: [marketingWebPlugin],
@@ -159,18 +143,54 @@ const loadModule = createRakunPageModuleLoader({
 return <RakunPageRenderer page={page} loadModule={loadModule} />
 ```
 
-`getRakunPage` forwards request headers by default, including cookies, so
-redirects, preview state, locale, and auth-aware logic can use request context.
-It defaults to `cache: "no-store"`. Pass `fetchOptions` for ISR/cache control:
+`createRakunGenerateStaticParams` reads the public `web.staticPaths` endpoint,
+which only returns paths configured with `dynamic: false`. Its `apiBaseUrl`
+must be absolute and reachable during `next build`; Next does not serve its own
+Route Handlers while building.
+
+In production, `getRakunPage` and `getRakunPageFromProps` automatically cache
+those static page queries with Rakun's TTL. Dynamic pages and previews remain
+`no-store`, and development queries are not cached. Cacheable queries do not
+forward request cookies or headers. Explicit fetch caching options override
+automatic selection:
 
 ```ts
 await getRakunPage({
-  path: "/",
+  path: '/',
   fetchOptions: {
-    next: { revalidate: 86400, tags: ["rakun-page:/"] },
+    next: { revalidate: 86400 },
   },
-});
+})
 ```
+
+`getRakunPageFromProps` deliberately awaits `searchParams` only for dynamic
+routes; doing so for a static route would opt it into dynamic rendering. Keep
+preview rendering in a separate dynamic route.
+
+### On-demand revalidation
+
+Mount the Next revalidation helper:
+
+```ts
+// app/api/revalidate/route.ts
+import { createRakunRevalidateHandler } from '@rakun-kit/next/revalidate'
+
+export const POST = createRakunRevalidateHandler({
+  token: process.env.RAKUN_REVALIDATE_TOKEN!,
+})
+```
+
+Then configure the same endpoint and token in Rakun bootstrap:
+
+```ts
+revalidate: {
+  url: process.env.RAKUN_REVALIDATE_URL!,
+  token: process.env.RAKUN_REVALIDATE_TOKEN!,
+}
+```
+
+Manager mutations invalidate the affected Next path and expire the cached
+static-path list, including when a page is created, moved, or deleted.
 
 ## Web API Client
 
@@ -180,22 +200,22 @@ it to bootstrap, and import its type in the client:
 
 ```ts
 // server/api-operations.ts
-import { defineOperation } from "@rakun-kit/next";
-import { z } from "zod";
+import { defineOperation } from '@rakun-kit/next'
+import { z } from 'zod'
 
 export const apiOperations = {
-  "demo.helloWorld": defineOperation<
+  'demo.helloWorld': defineOperation<
     { text: string },
     { message: string },
-    "query",
-    "get",
-    "public"
+    'query',
+    'get',
+    'public'
   >({
-    access: "public",
-    kind: "query",
-    method: "get",
+    access: 'public',
+    kind: 'query',
+    method: 'get',
     input: z.object({
-      text: z.string().default("world"),
+      text: z.string().default('world'),
     }),
     output: z.object({
       message: z.string(),
@@ -204,41 +224,38 @@ export const apiOperations = {
       message: `Hello ${input.text}`,
     }),
   }),
-};
+}
 ```
 
 ```ts
 // app/api/rakun/[...slug]/route.ts
-import { rakunNext } from "@rakun-kit/next";
-import { apiOperations } from "@/server/api-operations";
+import { rakunNext } from '@rakun-kit/next'
+import { apiOperations } from '@/server/api-operations'
 
 export const { GET, POST, PUT } = rakunNext({
   bootstrap: {
     // ...
     apiOperations,
   },
-});
+})
 ```
 
 ```tsx
 // modules/HelloWorld.tsx
-"use client";
+'use client'
 
-import {
-  createRakunApiClient,
-  type GetClient,
-} from "@rakun-kit/next/web/client";
-import type { apiOperations } from "@/server/api-operations";
+import { createRakunApiClient, type GetClient } from '@rakun-kit/next/web/client'
+import type { apiOperations } from '@/server/api-operations'
 
-type ApiClient = GetClient<typeof apiOperations>;
+type ApiClient = GetClient<typeof apiOperations>
 
 const apiClient: ApiClient = createRakunApiClient<typeof apiOperations>({
-  baseUrl: "/api/rakun",
-});
+  baseUrl: '/api/rakun',
+})
 
-const result = await apiClient.query("demo.helloWorld", {
-  text: "Rakun",
-});
+const result = await apiClient.query('demo.helloWorld', {
+  text: 'Rakun',
+})
 ```
 
 `query` only accepts operations declared with `kind: "query"`. `mutation` only
@@ -255,18 +272,12 @@ import {
   createRakunManagerMetadata,
   RakunManagerPage,
   type RakunManagerPageProps,
-} from "@rakun-kit/next/manager";
+} from '@rakun-kit/next/manager'
 
-export const metadata = createRakunManagerMetadata();
+export const metadata = createRakunManagerMetadata()
 
 export default function Page(props: RakunManagerPageProps) {
-  return (
-    <RakunManagerPage
-      {...props}
-      apiBaseUrl="/api/rakun"
-      basePath="/backend"
-    />
-  );
+  return <RakunManagerPage {...props} apiBaseUrl="/api/rakun" basePath="/backend" />
 }
 ```
 
@@ -278,12 +289,12 @@ description, and `noindex` robots.
 Pass a locale pack (or just the SEO keys) to translate the copy:
 
 ```tsx
-import { esManagerMessages } from "@rakun-kit/manager-locales/es";
-import { createRakunManagerMetadata } from "@rakun-kit/next/manager";
+import { esManagerMessages } from '@rakun-kit/manager-locales/es'
+import { createRakunManagerMetadata } from '@rakun-kit/next/manager'
 
 export const metadata = createRakunManagerMetadata({
   messages: esManagerMessages,
-});
+})
 ```
 
 Shared helpers also live at `@rakun-kit/manager-react/seo` for non-Next hosts.
@@ -324,22 +335,22 @@ config:
 
 ```ts
 // app/api/rakun/[...slug]/route.ts
-import path from "node:path";
-import { rakunNext } from "@rakun-kit/next";
-import { createLocalMediaServiceConfig } from "@rakun-kit/next/media";
+import path from 'node:path'
+import { rakunNext } from '@rakun-kit/next'
+import { createLocalMediaServiceConfig } from '@rakun-kit/next/media'
 
 export const { GET, POST, PUT } = rakunNext({
   bootstrap: {
     // ...
     media: createLocalMediaServiceConfig({
-      rootDir: path.join(process.cwd(), ".rakun/media"),
-      baseUrl: "/api/rakun",
-      publicBaseUrl: "/api/rakun",
+      rootDir: path.join(process.cwd(), '.rakun/media'),
+      baseUrl: '/api/rakun',
+      publicBaseUrl: '/api/rakun',
       tokenSecret: process.env.RAKUN_MEDIA_TOKEN_SECRET!,
-      defaultAccess: "private",
+      defaultAccess: 'private',
     }),
   },
-});
+})
 ```
 
 When this config is detected, `rakunNext` serves:
@@ -356,6 +367,7 @@ When this config is detected, `rakunNext` serves:
 - `@rakun-kit/next/manager`: `RakunManagerPage`, `createRakunManagerMetadata`, and manager page types.
 - `@rakun-kit/next/web`: `getRakunPage`, `RakunPageRenderer`, and page path helpers.
 - `@rakun-kit/next/web/client`: Rakun React renderers and typed API client helpers for client components.
+- `@rakun-kit/next/revalidate`: authenticated Next cache invalidation handler.
 
 ## Build
 

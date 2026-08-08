@@ -1,6 +1,7 @@
 import type { RakunBootstrapOptions } from '@rakun-kit/core'
 
 import { Hero, Page } from './content-types'
+import { getRakunRevalidateToken, getRakunRevalidateUrl } from './web-config'
 
 export const getMongoUri = () => {
   const mongoUri = process.env.MONGO_URI?.trim()
@@ -32,5 +33,9 @@ export const createRakunBootstrap = () =>
     logger: {
       level: 'info',
       prettify: process.env.NODE_ENV !== 'production',
+    },
+    revalidate: {
+      url: getRakunRevalidateUrl(),
+      token: getRakunRevalidateToken(),
     },
   }) satisfies RakunBootstrapOptions

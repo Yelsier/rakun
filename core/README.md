@@ -7,12 +7,7 @@
 Typical imports:
 
 ```ts
-import {
-  ContentType,
-  f,
-  rakunBootstrap,
-  ensureRakunInitialized,
-} from "@rakun-kit/core";
+import { ContentType, f, rakunBootstrap, ensureRakunInitialized } from '@rakun-kit/core'
 ```
 
 The main entrypoint exports:
@@ -46,15 +41,15 @@ rakunBootstrap({
   apiOperations,
   mongo: {
     MONGO_URI: process.env.MONGO_URI!,
-    ENVIRONMENT: process.env.NODE_ENV === "test" ? "test" : "production",
+    ENVIRONMENT: process.env.NODE_ENV === 'test' ? 'test' : 'production',
   },
   media,
   logger: {
-    level: "info",
+    level: 'info',
     prettify: true,
   },
   syncRoutes: true,
-});
+})
 ```
 
 Options:
@@ -84,9 +79,9 @@ import {
   createGoogleLoginAdapter,
   createMicrosoftLoginAdapter,
   rakunBootstrap,
-} from "@rakun-kit/core";
+} from '@rakun-kit/core'
 
-const callbackUrl = "https://cms.example.com/backend/login/callback";
+const callbackUrl = 'https://cms.example.com/backend/login/callback'
 
 rakunBootstrap({
   // ...
@@ -107,11 +102,11 @@ rakunBootstrap({
         clientId: process.env.MICROSOFT_CLIENT_ID!,
         clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
         redirectUri: callbackUrl,
-        tenant: "common",
+        tenant: 'common',
       }),
     ],
   },
-});
+})
 ```
 
 Register the exact callback URL in each provider console. External identities
@@ -155,8 +150,8 @@ configured. The reset URL must point to the manager's public
 `/reset-password` screen and preserve the token as the `token` query parameter:
 
 ```ts
-import { rakunBootstrap } from "@rakun-kit/core";
-import { createResendMailServiceConfig } from "@rakun-kit/resend";
+import { rakunBootstrap } from '@rakun-kit/core'
+import { createResendMailServiceConfig } from '@rakun-kit/resend'
 
 rakunBootstrap({
   // ...
@@ -171,7 +166,7 @@ rakunBootstrap({
         `https://cms.example.com/backend/reset-password?token=${encodeURIComponent(token)}`,
     },
   },
-});
+})
 ```
 
 Core uses its branded HTML and plain-text password-reset template by default.
@@ -202,20 +197,20 @@ rakunBootstrap({
   // ...
   routes: [
     {
-      key: "pages",
-      contentType: "Page",
-      field: "slug",
+      key: 'pages',
+      contentType: 'Page',
+      field: 'slug',
       hasPage: true,
       dynamic: false,
-      defaultBasePath: "",
+      defaultBasePath: '',
       layout: [
-        { key: "header", contentType: "Header" },
-        { type: "content" },
-        { key: "footer", contentType: "Footer" },
+        { key: 'header', contentType: 'Header' },
+        { type: 'content' },
+        { key: 'footer', contentType: 'Footer' },
       ],
     },
   ],
-});
+})
 ```
 
 The web page response includes an ordered `layout` array containing module slots
@@ -229,19 +224,19 @@ manager browser; relative URLs are also supported:
 
 ```ts
 const Hero = new ContentType({
-  name: "Hero",
+  name: 'Hero',
   modulePicker: {
-    title: "Hero section",
-    description: "Large introduction with heading, copy, and CTA.",
-    category: "Marketing",
-    icon: "PanelTop",
-    preview: "/images/modules/hero.webp",
-    keywords: ["banner", "cover"],
+    title: 'Hero section',
+    description: 'Large introduction with heading, copy, and CTA.',
+    category: 'Marketing',
+    icon: 'PanelTop',
+    preview: '/images/modules/hero.webp',
+    keywords: ['banner', 'cover'],
   },
   fields: {
     title: f.string().required(),
   },
-});
+})
 ```
 
 When `preview` is omitted or cannot be loaded, the picker displays a neutral
@@ -264,12 +259,12 @@ the public `manager.uiLocales` operation returns configured packs to the
 manager client:
 
 ```ts
-import { esManagerLocalePack } from "@rakun-kit/manager-locales/es";
+import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'
 
 rakunBootstrap({
   // ...
   managerLanguages: [esManagerLocalePack],
-});
+})
 ```
 
 `managerLanguages` may also extend locales with arbitrary project keys. This is
@@ -277,28 +272,28 @@ useful for translatable content-type titles and categories without adding host
 keys to the manager's static `ManagerMessageKey` union:
 
 ```ts
-import { extendManagerLanguagePack } from "@rakun-kit/core/contracts";
-import { esManagerLocalePack } from "@rakun-kit/manager-locales/es";
+import { extendManagerLanguagePack } from '@rakun-kit/core/contracts'
+import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'
 
 rakunBootstrap({
   // ...
   managerLanguages: [
     {
-      code: "en",
-      name: "English",
+      code: 'en',
+      name: 'English',
       messages: {
-        "field.title": "Title",
-        "layoutModule.header": "Header",
-        "project.contentTypes.article.menu": "Articles",
+        'field.title': 'Title',
+        'layoutModule.header': 'Header',
+        'project.contentTypes.article.menu': 'Articles',
       },
     },
     extendManagerLanguagePack(esManagerLocalePack, {
-      "field.title": "Título",
-      "layoutModule.header": "Cabecera",
-      "project.contentTypes.article.menu": "Artículos",
+      'field.title': 'Título',
+      'layoutModule.header': 'Cabecera',
+      'project.contentTypes.article.menu': 'Artículos',
     }),
   ],
-});
+})
 ```
 
 Content-type field labels automatically use `field.<fieldName>` from these
@@ -314,26 +309,26 @@ Trusted server plugins contribute to the same bootstrap registry without couplin
 core to React:
 
 ```ts
-import { defineRakunPlugin, rakunBootstrap } from "@rakun-kit/core";
+import { defineRakunPlugin, rakunBootstrap } from '@rakun-kit/core'
 
 export const analyticsPlugin = defineRakunPlugin({
-  id: "@acme/rakun-analytics",
+  id: '@acme/rakun-analytics',
   contentTypes: [AnalyticsEvent],
   routes: analyticsRoutes,
   apiOperations: analyticsOperations,
-  permissions: ["plugin.analytics.view"],
+  permissions: ['plugin.analytics.view'],
   literals: {},
   initialize: async ({ db }) => {
     // Services and migrations are ready here. Keep initialization idempotent.
   },
-});
+})
 
 rakunBootstrap({
   plugins: [analyticsPlugin],
   contentTypes: [],
   literals: {},
   mongo,
-});
+})
 ```
 
 Plugin ids and contributed content types, routes, operations, literals, and
@@ -351,21 +346,21 @@ A `ContentType` defines a logical collection:
 
 ```ts
 const Post = new ContentType({
-  name: "Post",
+  name: 'Post',
   menu: {
-    title: "Posts",
-    icon: "newspaper",
-    category: "Content",
+    title: 'Posts',
+    icon: 'newspaper',
+    category: 'Content',
   },
   fields: {
     title: f.string().required(),
-    slug: f.string().type("Slug").required(),
-    body: f.string().type("RichText"),
+    slug: f.string().type('Slug').required(),
+    body: f.string().type('RichText'),
     published: f.boolean(),
   },
-  uniques: [["slug"]],
-  listFields: ["title", "slug", "published"],
-});
+  uniques: [['slug']],
+  listFields: ['title', 'slug', 'published'],
+})
 ```
 
 Page-like content types can define ordered page modules with `iterator` outside
@@ -373,18 +368,18 @@ Page-like content types can define ordered page modules with `iterator` outside
 
 ```ts
 const Page = new ContentType({
-  name: "Page",
+  name: 'Page',
   fields: {
     title: f.string().required(),
-    slug: f.string().type("Slug").required(),
+    slug: f.string().type('Slug').required(),
   },
   iterator: [
-    { contentType: PageSection, type: "new" },
-    { contentType: Hero, type: "new" },
-    { contentType: LayoutWithInfo, type: "new" },
-    { contentType: Newsletter, type: "new" },
+    { contentType: PageSection, type: 'new' },
+    { contentType: Hero, type: 'new' },
+    { contentType: LayoutWithInfo, type: 'new' },
+    { contentType: Newsletter, type: 'new' },
   ],
-});
+})
 ```
 
 `iterator` always belongs to the individual document and is edited in the
@@ -441,10 +436,10 @@ Hooks run around DB mutations and public output resolution:
 
 ```ts
 const User = new ContentType({
-  name: "User",
+  name: 'User',
   fields: {
-    email: f.string().type("Email").required(),
-    password: f.string().type("Password").required().managerOnly(),
+    email: f.string().type('Email').required(),
+    password: f.string().type('Password').required().managerOnly(),
   },
 }).withHooks({
   beforeInsert: ({ data }) => ({
@@ -453,9 +448,9 @@ const User = new ContentType({
   }),
   onGet: ({ data }) => ({
     ...data,
-    displayName: String(data.email).split("@")[0],
+    displayName: String(data.email).split('@')[0],
   }),
-});
+})
 ```
 
 Dynamic data turns a content type into a reusable layout. The manager can bind
@@ -476,27 +471,27 @@ configured route with `hasPage: true`.
 
 ```ts
 const Project = new ContentType({
-  name: "Project",
+  name: 'Project',
   dynamicDataSource: true,
   fields: {
     title: f.string().required(),
-    slug: f.string().type("Slug").required(),
+    slug: f.string().type('Slug').required(),
   },
-});
+})
 
 const Carousel = new ContentType({
-  name: "Carousel",
+  name: 'Carousel',
   fields: {
     title: f.string().required(),
     internalNote: f.string().noDynamic(),
     items: f.blocks([
       {
-        name: "CarouselItem",
-        field: f.relation(CarouselItem, "new"),
+        name: 'CarouselItem',
+        field: f.relation(CarouselItem, 'new'),
       },
     ]),
   },
-});
+})
 ```
 
 List bindings append dynamic items to manually stored items instead of replacing
@@ -516,19 +511,19 @@ const headerBindings = {
     categories: {
       contentType: LinkItem.name,
       source: {
-        kind: "currentDocument",
+        kind: 'currentDocument',
         contentType: Project.name,
-        path: "categories",
-        itemName: "Category",
+        path: 'categories',
+        itemName: 'Category',
       },
-      itemName: "Category",
+      itemName: 'Category',
       map: {
-        title: { contentType: LinkItem.name, path: "title" },
-        href: { contentType: LinkItem.name, path: "href" },
+        title: { contentType: LinkItem.name, path: 'title' },
+        href: { contentType: LinkItem.name, path: 'href' },
       },
     },
   },
-};
+}
 ```
 
 List query conditions can compare a source field with a value from the current
@@ -589,40 +584,40 @@ can create one item per `Category` and collect the images of its related
 
 ```ts
 const Category = new ContentType({
-  name: "Category",
+  name: 'Category',
   dynamicDataSource: true,
   fields: {
     title: f.string().required(),
   },
-});
+})
 
 const Project = new ContentType({
-  name: "Project",
+  name: 'Project',
   dynamicDataSource: true,
   fields: {
-    category: f.relation(Category, "existing").required(),
-    images: f.file().type("Image").multiple().required(),
+    category: f.relation(Category, 'existing').required(),
+    images: f.file().type('Image').multiple().required(),
   },
-});
+})
 
 const galleryBindings = {
   lists: {
     items: {
       contentType: Category.name,
-      itemName: "CategoriesGalleryItem",
+      itemName: 'CategoriesGalleryItem',
       map: {
-        title: { contentType: Category.name, path: "title" },
+        title: { contentType: Category.name, path: 'title' },
         images: {
-          kind: "relatedCollection",
+          kind: 'relatedCollection',
           contentType: Project.name,
-          relation: "category",
-          path: "images",
+          relation: 'category',
+          path: 'images',
           limit: 10,
         },
       },
     },
   },
-};
+}
 ```
 
 The related collection query matches `Project.category._id` against the current
@@ -653,19 +648,19 @@ a backward-compatible alias and references the same object.
 Main factories:
 
 ```ts
-f.string();
-f.number();
-f.boolean();
-f.date();
-f.select(["draft", "published"]);
-f.relation(Post);
-f.contentReference("Post");
-f.selfRelation();
-f.blocks([{ name: "title", field: f.string() }]);
-f.array(f.string());
-f.link();
-f.file();
-f.breadcrums();
+f.string()
+f.number()
+f.boolean()
+f.date()
+f.select(['draft', 'published'])
+f.relation(Post)
+f.contentReference('Post')
+f.selfRelation()
+f.blocks([{ name: 'title', field: f.string() }])
+f.array(f.string())
+f.link()
+f.file()
+f.breadcrums()
 ```
 
 Common modifiers:
@@ -717,13 +712,13 @@ Notable fields:
 `core/src/orm` implements `DBService` on top of MongoDB:
 
 ```ts
-const db = await getMongoService();
+const db = await getMongoService()
 
 const post = await db.create(Post, {
-  _type: "Post",
-  title: "Hello",
-  slug: "hello",
-});
+  _type: 'Post',
+  title: 'Hello',
+  slug: 'hello',
+})
 ```
 
 Operations:
@@ -751,9 +746,9 @@ Connection:
 
 ```ts
 type MongoConfig = {
-  MONGO_URI: string;
-  ENVIRONMENT?: "local" | "development" | "test" | "production";
-};
+  MONGO_URI: string
+  ENVIRONMENT?: 'local' | 'development' | 'test' | 'production'
+}
 ```
 
 In environments other than `test`, the connection creates indexes defined by `createIndexes`.
@@ -768,7 +763,11 @@ In environments other than `test`, the connection creates indexes defined by `cr
   `manager.comments.markRead`, `manager.comments.unreadCount`,
   `manager.users.mentions`,
   `manager.notifications.list`, and `manager.notifications.markRead`.
-- Web: page resolution.
+- Web: page resolution, static paths, sitemap, robots, and preview.
+
+`web.staticPaths` returns `{ path, ttl }` only for route-map entries backed by
+page routes configured with `dynamic: false`. Adapters can use this operation
+for static generation without querying Rakun's database directly.
 
 Main helpers:
 
@@ -791,7 +790,7 @@ import {
   getManagerOperationMeta,
   type ManagerOperationInput,
   type ManagerOperationOutput,
-} from "@rakun-kit/core/manager";
+} from '@rakun-kit/core/manager'
 ```
 
 ### Custom Operations
@@ -801,23 +800,23 @@ bootstrap, and reuse its type on the frontend:
 
 ```ts
 // server/api-operations.ts
-import { defineOperation } from "@rakun-kit/core";
-import { z } from "zod";
+import { defineOperation } from '@rakun-kit/core'
+import { z } from 'zod'
 
 export const apiOperations = {
-  "demo.helloWorld": defineOperation<
+  'demo.helloWorld': defineOperation<
     { text: string },
     { message: string },
-    "query",
-    "get",
-    "public"
+    'query',
+    'get',
+    'public'
   >({
-    access: "public",
-    kind: "query",
-    method: "get",
-    description: "Return a hello world message with the provided text",
+    access: 'public',
+    kind: 'query',
+    method: 'get',
+    description: 'Return a hello world message with the provided text',
     input: z.object({
-      text: z.string().default("world"),
+      text: z.string().default('world'),
     }),
     output: z.object({
       message: z.string(),
@@ -826,17 +825,17 @@ export const apiOperations = {
       message: `Hello ${input.text}`,
     }),
   }),
-};
+}
 ```
 
 ```ts
 // bootstrap
-import { apiOperations } from "./server/api-operations";
+import { apiOperations } from './server/api-operations'
 
 rakunBootstrap({
   // ...
   apiOperations,
-});
+})
 ```
 
 Operation names define their HTTP path: `demo.helloWorld` becomes
@@ -860,20 +859,20 @@ converted to JSON Schema for display.
 `@rakun-kit/core/web` exposes a small typed HTTP client for operation maps:
 
 ```ts
-import { createRakunApiClient, type GetClient } from "@rakun-kit/core/web";
-import type { apiOperations } from "./server/api-operations";
+import { createRakunApiClient, type GetClient } from '@rakun-kit/core/web'
+import type { apiOperations } from './server/api-operations'
 
-type ApiClient = GetClient<typeof apiOperations>;
+type ApiClient = GetClient<typeof apiOperations>
 
 const client: ApiClient = createRakunApiClient<typeof apiOperations>({
-  baseUrl: "/api",
-});
+  baseUrl: '/api',
+})
 
-const result = await client.query("demo.helloWorld", {
-  text: "Rakun",
-});
+const result = await client.query('demo.helloWorld', {
+  text: 'Rakun',
+})
 
-result.message;
+result.message
 ```
 
 The client exposes:
@@ -896,7 +895,7 @@ const ctx = await createRequestContext({
     setHeader: res.setHeader.bind(res),
     cookie: res.cookie.bind(res),
   },
-});
+})
 ```
 
 The resulting context includes:
@@ -915,10 +914,10 @@ Media uses a storage adapter:
 ```ts
 createMediaService({
   adapter,
-  defaultAccess: "private",
+  defaultAccess: 'private',
   defaultGetExpiresInSeconds: 300,
-  uploadUrl: "/api/rakun/manager/media/upload",
-});
+  uploadUrl: '/api/rakun/manager/media/upload',
+})
 ```
 
 APIs:
@@ -939,28 +938,28 @@ The event log keeps events immutable and defaults to a MongoDB collection
 with indexes for time, type, category, outcome, severity, correlation and tags:
 
 ```ts
-import { recordEvent, queryEvents } from "@rakun-kit/core";
+import { recordEvent, queryEvents } from '@rakun-kit/core'
 
 await recordEvent({
-  type: "content.article.published",
-  category: "content",
-  outcome: "success",
-  actor: { type: "manager-user", id: userId },
-  resource: { type: "Article", id: articleId },
+  type: 'content.article.published',
+  category: 'content',
+  outcome: 'success',
+  actor: { type: 'manager-user', id: userId },
+  resource: { type: 'Article', id: articleId },
   correlationId: requestId,
-  tags: ["editorial"],
+  tags: ['editorial'],
   data: {
-    locale: "es",
+    locale: 'es',
     changedFields: 3,
   },
-});
+})
 
 const page = await queryEvents({
-  categories: ["content"],
-  outcomes: ["success"],
-  from: new Date("2026-01-01T00:00:00.000Z"),
+  categories: ['content'],
+  outcomes: ['success'],
+  from: new Date('2026-01-01T00:00:00.000Z'),
   limit: 50,
-});
+})
 ```
 
 `data` accepts nested JSON values. Event queries use cursor pagination and can
@@ -969,24 +968,24 @@ required tags and a date range. A custom persistence implementation can be
 plugged in globally:
 
 ```ts
-import type { EventLogAdapter } from "@rakun-kit/core";
+import type { EventLogAdapter } from '@rakun-kit/core'
 
 const adapter: EventLogAdapter = {
   async append(event) {
-    return customStore.append(event);
+    return customStore.append(event)
   },
   async query(filters) {
-    return customStore.query(filters);
+    return customStore.query(filters)
   },
   async deleteBefore(before) {
-    return customStore.deleteBefore(before);
+    return customStore.deleteBefore(before)
   },
-};
+}
 
 rakunBootstrap({
   // ...
   eventLog: { adapter },
-});
+})
 ```
 
 Plugins receive the resolved `eventLog` service in their initialization
@@ -1020,42 +1019,42 @@ Mail providers receive normalized, already-rendered messages through
 engine:
 
 ```ts
-import type { MailAdapter } from "@rakun-kit/core";
+import type { MailAdapter } from '@rakun-kit/core'
 
 const adapter: MailAdapter = {
   async send(message) {
-    const result = await provider.send(message);
-    return { id: result.id };
+    const result = await provider.send(message)
+    return { id: result.id }
   },
-};
+}
 
 rakunBootstrap({
   // ...
   mail: {
     adapter,
-    defaultFrom: "hello@example.com",
-    defaultReplyTo: "support@example.com",
+    defaultFrom: 'hello@example.com',
+    defaultReplyTo: 'support@example.com',
   },
-});
+})
 ```
 
 Send rendered content directly:
 
 ```ts
-import { sendMail } from "@rakun-kit/core";
+import { sendMail } from '@rakun-kit/core'
 
 await sendMail({
-  to: "ada@example.com",
-  subject: "Welcome",
-  html: "<p>Hello Ada</p>",
-  text: "Hello Ada",
-});
+  to: 'ada@example.com',
+  subject: 'Welcome',
+  html: '<p>Hello Ada</p>',
+  text: 'Hello Ada',
+})
 ```
 
 Or create a typed application template registry:
 
 ```ts
-import { createMailSender, defineMailTemplate } from "@rakun-kit/core";
+import { createMailSender, defineMailTemplate } from '@rakun-kit/core'
 
 const mail = createMailSender({
   templates: {
@@ -1067,13 +1066,13 @@ const mail = createMailSender({
       }),
     }),
   },
-});
+})
 
 await mail.send({
-  template: "welcome",
-  props: { name: "Ada" },
-  to: "ada@example.com",
-});
+  template: 'welcome',
+  props: { name: 'Ada' },
+  to: 'ada@example.com',
+})
 ```
 
 The common contract supports To/CC/BCC/Reply-To, custom headers and in-memory
