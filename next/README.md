@@ -82,32 +82,36 @@ Content-Security-Policy: frame-ancestors 'self' https://manager.example.com
 
 ## Web Pages
 
-Fetch Rakun page data from a Next Server Component with `@rakun-kit/next/web`:
+When the API and website live in the same Next.js application, create a
+database-backed helper from the same Rakun bootstrap:
+
+```ts
+// server/web.ts
+import { createRakunDatabaseWeb } from '@rakun-kit/next/web'
+import { createRakunBootstrap } from './bootstrap'
+
+export const rakunWeb = createRakunDatabaseWeb({ bootstrap: createRakunBootstrap })
+```
 
 ```tsx
 // app/[[...slug]]/page.tsx
 import {
-  createRakunGenerateStaticParams,
   createRakunPageMetadata,
-  getRakunPageFromProps,
   RakunPageRenderer,
   type RakunNextPageProps,
 } from '@rakun-kit/next/web'
+import { rakunWeb } from '@/server/web'
 
-const apiBaseUrl = process.env.RAKUN_API_URL!
-
-export const generateStaticParams = createRakunGenerateStaticParams({
-  apiBaseUrl,
-})
+export const generateStaticParams = rakunWeb.generateStaticParams
 
 export async function generateMetadata(props: RakunNextPageProps) {
-  const page = await getRakunPageFromProps(props, { apiBaseUrl })
+  const page = await rakunWeb.getPageFromProps(props)
 
   return createRakunPageMetadata(page)
 }
 
 export default async function Page(props: RakunNextPageProps) {
-  const page = await getRakunPageFromProps(props, { apiBaseUrl })
+  const page = await rakunWeb.getPageFromProps(props)
 
   return <RakunPageRenderer page={page} loadModule={(name) => import(`@/modules/${name}`)} />
 }
@@ -143,10 +147,14 @@ const loadModule = createRakunPageModuleLoader({
 return <RakunPageRenderer page={page} loadModule={loadModule} />
 ```
 
-`createRakunGenerateStaticParams` reads the public `web.staticPaths` endpoint,
-which only returns paths configured with `dynamic: false`. Its `apiBaseUrl`
-must be absolute and reachable during `next build`; Next does not serve its own
-Route Handlers while building.
+`createRakunDatabaseWeb` initializes Rakun and reads pages and static paths
+directly from MongoDB, so `next build` does not depend on the application's own
+Route Handlers. Static pages use Next's data cache with Rakun's TTL; dynamic
+and preview pages remain uncached.
+
+For a separately deployed API, keep using `createRakunGenerateStaticParams`,
+`getRakunPage`, and `getRakunPageFromProps`. The absolute `apiBaseUrl` must be
+reachable during `next build`.
 
 In production, `getRakunPage` and `getRakunPageFromProps` automatically cache
 those static page queries with Rakun's TTL. Dynamic pages and previews remain
@@ -365,7 +373,8 @@ When this config is detected, `rakunNext` serves:
 - `@rakun-kit/next/trpc`: `rakunNextTrpc`.
 - `@rakun-kit/next/media`: `LocalAdapter`, local media config, and local HTTP handlers.
 - `@rakun-kit/next/manager`: `RakunManagerPage`, `createRakunManagerMetadata`, and manager page types.
-- `@rakun-kit/next/web`: `getRakunPage`, `RakunPageRenderer`, and page path helpers.
+- `@rakun-kit/next/web`: HTTP helpers, `createRakunDatabaseWeb`,
+  `RakunPageRenderer`, and page path helpers.
 - `@rakun-kit/next/web/client`: Rakun React renderers and typed API client helpers for client components.
 - `@rakun-kit/next/revalidate`: authenticated Next cache invalidation handler.
 

@@ -1,21 +1,15 @@
 import {
-  createRakunGenerateStaticParams,
   createRakunPageMetadata,
-  getRakunPageFromProps,
   RakunPageRenderer,
   type RakunNextPageProps,
 } from '@rakun-kit/next/web'
-import { getRakunApiBaseUrl } from '../../server/web-config'
+import { rakunWeb } from '../../server/web'
 
 type Props = RakunNextPageProps
 
-const apiBaseUrl = getRakunApiBaseUrl()
+export const generateStaticParams = rakunWeb.generateStaticParams
 
-export const generateStaticParams = createRakunGenerateStaticParams({
-  apiBaseUrl,
-})
-
-const loadPage = async (props: Props) => getRakunPageFromProps(props, { apiBaseUrl })
+const loadPage = async (props: Props) => await rakunWeb.getPageFromProps(props)
 
 export async function generateMetadata(props: Props) {
   return createRakunPageMetadata(await loadPage(props))

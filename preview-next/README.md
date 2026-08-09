@@ -182,7 +182,9 @@ and recipient data are intentionally excluded.
 
 ## Rendering
 
-The page route uses `RakunPageRenderer` from `@rakun-kit/next/web`:
+The page route uses `createRakunDatabaseWeb` with the same bootstrap as the API,
+so builds and server rendering read MongoDB directly instead of fetching the
+preview's own Route Handler. It renders the result with `RakunPageRenderer`:
 
 ```tsx
 <RakunPageRenderer page={page} loadModule={(name) => import(`../../modules/${name}`)} />

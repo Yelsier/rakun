@@ -1,12 +1,11 @@
 import {
-  getRakunPage,
   getRakunPathFromParams,
   RakunPageRenderer,
   type RakunNextPageParams,
   type RakunNextPageSearchParams,
 } from '@rakun-kit/next/web'
 
-import { getRakunApiBaseUrl } from '../../../server/web-config'
+import { rakunWeb } from '../../../server/web'
 
 type Props = {
   params: Promise<RakunNextPageParams>
@@ -22,10 +21,9 @@ export const metadata = {
 }
 
 export default async function PreviewPage({ params, searchParams }: Props) {
-  const page = await getRakunPage({
+  const page = await rakunWeb.getPage({
     path: getRakunPathFromParams({ params: await params }),
     search: await searchParams,
-    apiBaseUrl: getRakunApiBaseUrl(),
   })
 
   return <RakunPageRenderer page={page} loadModule={(name) => import(`../../../modules/${name}`)} />

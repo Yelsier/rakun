@@ -59,6 +59,13 @@ describe('create-rakun-app', () => {
     expect(
       await stat(path.join(result.targetDirectory, 'app/api/rakun/[[...rakun]]/route.ts'))
     ).toBeTruthy()
+    expect(await stat(path.join(result.targetDirectory, 'server/web.ts'))).toBeTruthy()
+    expect(await readFile(path.join(result.targetDirectory, 'server/web.ts'), 'utf8')).toContain(
+      'createRakunDatabaseWeb'
+    )
+    expect(await readFile(path.join(result.targetDirectory, '.env.local'), 'utf8')).not.toContain(
+      'RAKUN_API_URL'
+    )
     expect(await stat(path.join(result.targetDirectory, '.env.local'))).toBeTruthy()
   })
 

@@ -60,45 +60,58 @@ server/client serialization boundary.
 
 ## Web page route
 
+When the Rakun API and the website live in the same Next.js application, create
+a database-backed web helper from the same bootstrap used by `rakunNext`:
+
+```ts
+// server/web.ts
+import { createRakunDatabaseWeb } from '@rakun-kit/next/web'
+import { createRakunBootstrap } from './bootstrap'
+
+export const rakunWeb = createRakunDatabaseWeb({
+  bootstrap: createRakunBootstrap,
+})
+```
+
 ```tsx
 // app/[[...slug]]/page.tsx
 import {
-  createRakunGenerateStaticParams,
   createRakunPageMetadata,
-  getRakunPageFromProps,
   RakunPageRenderer,
   type RakunNextPageProps,
 } from '@rakun-kit/next/web'
+import { rakunWeb } from '@/server/web'
 
-const apiBaseUrl = process.env.RAKUN_API_URL!
-
-export const generateStaticParams = createRakunGenerateStaticParams({
-  apiBaseUrl,
-})
+export const generateStaticParams = rakunWeb.generateStaticParams
 
 export async function generateMetadata(props: RakunNextPageProps) {
-  const page = await getRakunPageFromProps(props, { apiBaseUrl })
+  const page = await rakunWeb.getPageFromProps(props)
   return createRakunPageMetadata(page)
 }
 
 export default async function Page(props: RakunNextPageProps) {
-  const page = await getRakunPageFromProps(props, { apiBaseUrl })
+  const page = await rakunWeb.getPageFromProps(props)
   return <RakunPageRenderer page={page} loadModule={(name) => import(`@/modules/${name}`)} />
 }
 ```
 
 Module files export `default` or `component`. They are server components by
 default; put `'use client'` in only the modules that need browser APIs or hooks.
-`createRakunGenerateStaticParams` calls the public `web.staticPaths` endpoint
-and converts its paths for a catch-all segment. `apiBaseUrl` must be absolute:
-the API must already be reachable while `next build` runs because Next does not
-serve the application's own Route Handlers during a build.
+`createRakunDatabaseWeb` initializes core and reads pages and static paths from
+MongoDB. It uses Next's data cache for static routes and the same cache tag as
+the revalidation handler, but stays uncached in development and for dynamic or
+preview pages. It is server-only and must not be imported by client components.
 
-In production, `getRakunPage` and `getRakunPageFromProps` use the same endpoint to identify
-`dynamic: false` routes, caches their page query with the returned TTL, and
-keeps dynamic routes and previews on `no-store`. Development remains
-uncached. Explicit `fetchOptions.cache` or `fetchOptions.next.revalidate`
-overrides automatic selection; set `autoCache: false` to disable it.
+When the API is a separate deployment, use `createRakunGenerateStaticParams`,
+`getRakunPage`, and `getRakunPageFromProps` with an absolute `apiBaseUrl`.
+That API must be reachable during `next build`; Next does not serve the current
+application's Route Handlers while building.
+
+In production, the HTTP helpers use `web.staticPaths` to identify
+`dynamic: false` routes, cache their page query with the returned TTL, and keep
+dynamic routes and previews on `no-store`. Development remains uncached.
+Explicit `fetchOptions.cache` or `fetchOptions.next.revalidate` overrides
+automatic selection; set `autoCache: false` to disable it.
 
 Pass unresolved page props to `getRakunPageFromProps`: it reads `searchParams`
 only for dynamic routes because Next treats that prop as request-time data.
@@ -150,6 +163,7 @@ outside public directories, and provide a strong `tokenSecret`.
 - `@rakun-kit/next`: API route and integration utilities.
 - `/trpc`, `/media`, `/manager`, `/web`, `/web/client`, and `/revalidate` for
   the features above.
+- `/web` also exports `createRakunDatabaseWeb` for monolithic Next applications.
 - `/translation`, `/dev`, `/internal-content-types` for their focused public
   helpers; import only when the application specifically needs them.
 

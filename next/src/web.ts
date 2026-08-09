@@ -1,5 +1,13 @@
 import { headers as nextHeaders } from 'next/headers'
+import { unstable_cache } from 'next/cache'
 import type { Metadata, MetadataRoute } from 'next'
+import {
+  ensureRakunInitialized,
+  getRakunWebPage,
+  getRakunWebPreviewPage,
+  getRakunWebStaticPaths,
+  type RakunBootstrapOptions,
+} from '@rakun-kit/core'
 import {
   DEFAULT_STATIC_PAGE_TTL,
   type PageOutput,
@@ -26,6 +34,7 @@ export {
 
 import { markRakunPreviewPage } from './web-preview'
 import { RAKUN_STATIC_PATHS_CACHE_TAG } from './web-cache'
+import { applyRakunBootstrap } from './bootstrap'
 
 export { RAKUN_STATIC_PATHS_CACHE_TAG } from './web-cache'
 
@@ -84,6 +93,22 @@ export type CreateRakunGenerateStaticParamsOptions = GetRakunStaticPathsOptions 
   basePath?: string
 }
 
+export type CreateRakunDatabaseWebOptions = {
+  bootstrap: RakunBootstrapOptions | (() => RakunBootstrapOptions)
+  paramKey?: string
+  basePath?: string
+}
+
+export type GetRakunDatabasePageOptions = Pick<
+  GetRakunPageOptions,
+  'path' | 'search' | 'previewTokenParam' | 'headers' | 'forwardHeaders' | 'autoCache'
+>
+
+export type GetRakunDatabasePageFromPropsOptions = Omit<
+  GetRakunDatabasePageOptions,
+  'path' | 'search'
+>
+
 export type GetRakunPageFromPropsOptions = Omit<GetRakunPageOptions, 'path' | 'search'> & {
   paramKey?: string
   basePath?: string
@@ -139,6 +164,8 @@ type RakunMetadataImage = {
 const defaultApiBaseUrl = '/api/rakun'
 const defaultParamKey = 'slug'
 const defaultPreviewTokenParam = 'rakun_preview'
+const isProductionRendering = () =>
+  process.env.NODE_ENV === 'production' || process.env.NEXT_PHASE === 'phase-production-build'
 
 const blockedForwardHeaders = new Set(['connection', 'content-length', 'host', 'transfer-encoding'])
 
@@ -154,6 +181,8 @@ const normalizeComparablePath = (path: string): string => {
   const normalized = normalizePath(path).replace(/\/+$/g, '')
   return normalized || '/'
 }
+
+const normalizeJsonOutput = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
 
 const searchToString = (search: GetRakunPageOptions['search']): string | undefined => {
   if (!search) return undefined
@@ -323,7 +352,7 @@ export const getRakunParamsFromPath = ({
 }
 
 const getDefaultStaticPathsFetchOptions = (): RakunNextFetchOptions =>
-  process.env.NODE_ENV === 'production'
+  isProductionRendering()
     ? {
         cache: 'force-cache',
         next: {
@@ -391,6 +420,152 @@ export const createRakunGenerateStaticParams = ({
   }
 }
 
+/**
+ * Creates server-only web helpers for a Next.js application that owns the
+ * Rakun API and database. These helpers avoid fetching the application's own
+ * Route Handlers while `next build` is running.
+ */
+export const createRakunDatabaseWeb = ({
+  bootstrap,
+  paramKey = defaultParamKey,
+  basePath = '',
+}: CreateRakunDatabaseWebOptions) => {
+  let initialization: Promise<void> | null = null
+
+  const initialize = async () => {
+    initialization ??= (async () => {
+      applyRakunBootstrap(bootstrap)
+      await ensureRakunInitialized()
+    })()
+
+    try {
+      await initialization
+    } catch (error) {
+      initialization = null
+      throw error
+    }
+  }
+
+  const loadStaticPaths = async (): Promise<StaticPathOutput[]> => {
+    await initialize()
+    return (await getRakunWebStaticPaths()).items
+  }
+  const loadCachedStaticPaths = unstable_cache(loadStaticPaths, ['rakun:database:static-paths'], {
+    revalidate: DEFAULT_STATIC_PAGE_TTL,
+    tags: [RAKUN_STATIC_PATHS_CACHE_TAG],
+  })
+  const getStaticPaths = async (): Promise<StaticPathOutput[]> =>
+    isProductionRendering() ? await loadCachedStaticPaths() : await loadStaticPaths()
+
+  const generateStaticParams = async (): Promise<RakunNextPageParams[]> => {
+    const paths = await getStaticPaths()
+
+    return paths.flatMap((item) => {
+      const params = getRakunParamsFromPath({
+        path: item.path,
+        paramKey,
+        basePath,
+      })
+      return params ? [params] : []
+    })
+  }
+
+  const getPage = async ({
+    path,
+    search,
+    previewTokenParam = defaultPreviewTokenParam,
+    headers,
+    forwardHeaders,
+    autoCache = true,
+  }: GetRakunDatabasePageOptions): Promise<PageOutput> => {
+    const preview = extractPreviewSearch(search, previewTokenParam)
+    const normalizedPath = normalizePath(path)
+    const searchValue = searchToString(preview.search)
+    let staticPath: StaticPathOutput | undefined
+
+    if (!preview.token && autoCache) {
+      staticPath = (await getStaticPaths()).find(
+        (item) => normalizeComparablePath(item.path) === normalizeComparablePath(normalizedPath)
+      )
+    }
+
+    const staticPage =
+      !!staticPath && !searchValue && !headers && forwardHeaders !== true && !preview.token
+    const cachePage = staticPage && isProductionRendering()
+    const requestHeaders = await createRequestHeaders({
+      headers,
+      forwardHeaders: forwardHeaders ?? !staticPage,
+    })
+    const requestHeaderEntries = Array.from(requestHeaders.entries())
+    const input = {
+      path: normalizedPath,
+      search: searchValue,
+      headers:
+        requestHeaderEntries.length > 0 ? Object.fromEntries(requestHeaderEntries) : undefined,
+    }
+
+    await initialize()
+
+    if (preview.token) {
+      return normalizeJsonOutput(
+        await getRakunWebPreviewPage({
+          ...input,
+          token: preview.token,
+        })
+      )
+    }
+
+    if (!cachePage || !staticPath) {
+      return normalizeJsonOutput(await getRakunWebPage(input))
+    }
+
+    return await unstable_cache(
+      async () => normalizeJsonOutput(await getRakunWebPage(input)),
+      ['rakun:database:page', normalizeComparablePath(normalizedPath)],
+      { revalidate: staticPath.ttl }
+    )()
+  }
+
+  const getPageFromProps = async (
+    { params, searchParams }: RakunNextPageProps,
+    options: GetRakunDatabasePageFromPropsOptions = {}
+  ): Promise<PageOutput> => {
+    const path = getRakunPathFromParams({
+      params: await params,
+      paramKey,
+      basePath,
+    })
+    let search: RakunNextPageSearchParams | undefined
+
+    if (searchParams) {
+      let staticPage = false
+
+      if (options.autoCache !== false) {
+        staticPage = (await getStaticPaths()).some(
+          (item) => normalizeComparablePath(item.path) === normalizeComparablePath(path)
+        )
+      }
+
+      if (!staticPage) {
+        search = await searchParams
+      }
+    }
+
+    return await getPage({
+      ...options,
+      path,
+      search,
+    })
+  }
+
+  return {
+    generateStaticParams,
+    getPage,
+    getPageFromProps,
+    getStaticPaths,
+  }
+}
+
 export const getRakunPageFromProps = async (
   { params, searchParams }: RakunNextPageProps,
   {
@@ -416,7 +591,7 @@ export const getRakunPageFromProps = async (
   if (searchParams) {
     let staticPage = false
 
-    if (!hasExplicitCache && autoCache && process.env.NODE_ENV === 'production') {
+    if (!hasExplicitCache && autoCache && isProductionRendering()) {
       const paths = await getRakunStaticPaths({
         apiBaseUrl,
         forwardHeaders: false,
@@ -483,7 +658,7 @@ export const getRakunPage = async ({
       cache: 'no-store',
       next: undefined,
     }
-  } else if (!hasExplicitCache && autoCache && process.env.NODE_ENV === 'production') {
+  } else if (!hasExplicitCache && autoCache && isProductionRendering()) {
     const staticPaths = await getRakunStaticPaths({
       apiBaseUrl: baseUrl,
       forwardHeaders: false,

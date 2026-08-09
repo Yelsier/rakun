@@ -767,7 +767,9 @@ In environments other than `test`, the connection creates indexes defined by `cr
 
 `web.staticPaths` returns `{ path, ttl }` only for route-map entries backed by
 page routes configured with `dynamic: false`. Adapters can use this operation
-for static generation without querying Rakun's database directly.
+for static generation without querying Rakun's database directly. Monolithic
+server adapters can instead call `getRakunWebStaticPaths`, `getRakunWebPage`,
+and `getRakunWebPreviewPage` after bootstrapping and initializing core.
 
 Main helpers:
 

@@ -186,8 +186,11 @@ redirects, sitemap, robots output, preview, and adapter behavior.
 
 The public `web.staticPaths` query returns `{ path, ttl }` entries only for
 route-map records whose configured page route has `dynamic: false`. Framework
-adapters use it to generate static params and choose an ISR lifetime without
-giving application code direct database access.
+adapters use it to generate static params and choose an ISR lifetime. A
+monolithic server adapter may instead call the server-only
+`getRakunWebStaticPaths`, `getRakunWebPage`, and `getRakunWebPreviewPage`
+exports after bootstrap and initialization, avoiding an HTTP request to itself
+during a framework build.
 
 Set `revalidate: { url, token }` in bootstrap to notify the web host after a
 manager mutation changes a public path. Core sends an authenticated `POST`
@@ -275,6 +278,9 @@ Project-defined manager labels may use arbitrary keys. Field labels follow
 ## Public entrypoints
 
 - `@rakun-kit/core`: bootstrap and the main domain/runtime API.
+- The main server entry also exports `getRakunWebPage`,
+  `getRakunWebPreviewPage`, and `getRakunWebStaticPaths` for server adapters
+  that share Rakun's process and database.
 - `@rakun-kit/core/contracts`: shared schemas, operation and locale contracts.
 - `@rakun-kit/core/client`: browser-safe client types and utilities.
 - `@rakun-kit/core/manager`: manager operation metadata and types.

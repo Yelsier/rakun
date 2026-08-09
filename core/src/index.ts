@@ -430,6 +430,9 @@ export {
   type RakunOperationMap,
   type RakunOperationSuccessArgs,
 } from "./api/operations";
+export { getPage as getRakunWebPage } from "./api/routes/web/page";
+export { getPreviewPage as getRakunWebPreviewPage } from "./api/routes/web/previewPage";
+export { getStaticPaths as getRakunWebStaticPaths } from "./api/routes/web/staticPaths";
 export {
   createRequestContext,
   type CookieOptions,

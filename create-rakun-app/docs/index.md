@@ -31,6 +31,8 @@ workspace versions.
 - `server/content-types.ts` defines a minimal `Page` and `Hero` with `f.*`.
 - `server/bootstrap.ts` configures MongoDB and one page route. Rakun's built-in
   password login uses its default behavior.
+- `server/web.ts` creates database-backed Next web helpers from that bootstrap,
+  avoiding requests to the application's own API during `next build`.
 - `app/api/rakun/[[...rakun]]/route.ts` mounts `rakunNext`.
 - `app/backend/[[...slug]]/page.tsx` mounts the manager at `/backend`.
 - `app/[[...slug]]/page.tsx` resolves and renders public Rakun pages.
