@@ -7,6 +7,7 @@ import { getLanguages } from '../utils/getLanguages'
 import { getPage } from '../routes/web/page'
 import { getPreviewPage } from '../routes/web/previewPage'
 import { getRobots } from '../routes/web/robots'
+import { getLlmsTxt } from '../routes/web/llms'
 import { getSitemap } from '../routes/web/sitemap'
 import { getStaticPaths } from '../routes/web/staticPaths'
 
@@ -60,6 +61,9 @@ export const createWebOperationDefinitions = () => {
     },
     'web.robots': {
       resolve: async () => await getRobots(),
+    },
+    'web.llms': {
+      resolve: async ({ input }) => await getLlmsTxt(input),
     },
     'web.test': {
       resolve: async () => ({ ok: true }),

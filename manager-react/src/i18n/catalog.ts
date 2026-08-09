@@ -28,6 +28,7 @@ export const managerMessages = {
   'sidebar.apiRoutes': { defaultMessage: 'API Routes' },
   'sidebar.debugging': { defaultMessage: 'Debugging' },
   'sidebar.settings': { defaultMessage: 'Settings' },
+  'sidebar.visitSite': { defaultMessage: 'Visit site' },
   'sidebar.help': { defaultMessage: 'Help' },
   'sidebar.plugins': { defaultMessage: 'Plugins' },
   'sidebar.contentTypes': { defaultMessage: 'Content types' },
@@ -163,6 +164,7 @@ export const managerMessages = {
   'settings.redirects': { defaultMessage: 'Redirects' },
   'settings.robots': { defaultMessage: 'Robots' },
   'settings.seo': { defaultMessage: 'SEO' },
+  'settings.llms': { defaultMessage: 'AI content' },
   'settings.logs': { defaultMessage: 'Logs' },
   'settings.logs.description': {
     defaultMessage:
@@ -588,6 +590,7 @@ export const managerMessages = {
   'contentEdit.tabSeo': { defaultMessage: 'Seo' },
   'contentEdit.tabVariants': { defaultMessage: 'Variants' },
   'contentEdit.tabHistory': { defaultMessage: 'History' },
+  'contentEdit.viewPage': { defaultMessage: 'View page' },
   'contentEdit.templateContent': { defaultMessage: 'Content' },
   'contentEdit.templateContentDescription': {
     defaultMessage: 'Renders the modules from this document’s Content tab here.',
@@ -785,6 +788,9 @@ export const managerMessages = {
   },
   'linkPicker.routeRequired': { defaultMessage: 'Choose a page type.' },
   'linkPicker.itemRequired': { defaultMessage: 'Choose an item.' },
+  'linkPicker.publishedRequired': {
+    defaultMessage: 'Only published pages are included in AI content.',
+  },
   'contentEdit.addExisting': { defaultMessage: 'Add existing' },
   'contentEdit.addNew': { defaultMessage: 'Add new' },
   'contentEdit.createQuoted': {
@@ -916,6 +922,14 @@ export const managerMessages = {
 
   'comments.title': { defaultMessage: 'Comments' },
   'comments.unread': { defaultMessage: 'Unread' },
+  'comments.unreadMessages': {
+    defaultMessage: '{count, plural, one {# unread message} other {# unread messages}}',
+    params: { count: 'number' },
+  },
+  'comments.unreadMentions': {
+    defaultMessage: '{count, plural, one {# unread mention} other {# unread mentions}}',
+    params: { count: 'number' },
+  },
   'comments.moreReactions': { defaultMessage: 'More reactions' },
   'comments.messages': { defaultMessage: 'Messages' },
   'comments.loading': { defaultMessage: 'Loading comments...' },
@@ -1563,6 +1577,34 @@ export const managerMessages = {
   },
   'settings.seo.saved': { defaultMessage: 'SEO settings saved' },
   'settings.seo.saveError': { defaultMessage: 'Error saving SEO settings' },
+
+  'settings.llms.title': { defaultMessage: 'llms.txt' },
+  'settings.llms.description': {
+    defaultMessage:
+      'Publish a curated Markdown guide to the site and its most useful public resources.',
+  },
+  'settings.llms.save': { defaultMessage: 'Save llms.txt settings' },
+  'settings.llms.fixErrors': {
+    defaultMessage: 'Please fix llms.txt settings errors',
+  },
+  'settings.llms.saved': { defaultMessage: 'llms.txt settings saved' },
+  'settings.llms.saveError': { defaultMessage: 'Error saving llms.txt settings' },
+  'settings.llms.section': { defaultMessage: 'Section' },
+  'settings.llms.entry': { defaultMessage: 'Link' },
+  'field.llmsEnabled': { defaultMessage: 'Publish llms.txt' },
+  'field.llmsTitle': { defaultMessage: 'Site title' },
+  'field.llmsSummary': { defaultMessage: 'Site summary' },
+  'field.llmsDetails': { defaultMessage: 'Additional guidance' },
+  'field.llmsSections': { defaultMessage: 'Sections' },
+  'field.llmsSectionTitle': { defaultMessage: 'Section title' },
+  'field.llmsOptional': { defaultMessage: 'Secondary content' },
+  'field.llmsOptionalDescription': {
+    defaultMessage: 'AI tools may skip these links to save context.',
+  },
+  'field.llmsEntries': { defaultMessage: 'Links' },
+  'field.llmsLink': { defaultMessage: 'Page or URL' },
+  'field.llmsLinkTitle': { defaultMessage: 'Title override' },
+  'field.llmsLinkDescription': { defaultMessage: 'Description' },
 
   'settings.system.createBackup': { defaultMessage: 'Create backup' },
   'settings.system.backups': { defaultMessage: 'Backups' },

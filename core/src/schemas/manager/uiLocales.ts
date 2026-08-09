@@ -23,6 +23,7 @@ export const extendManagerLanguagePack = (
 
 export const ManagerUiLocalesOutputSchema = z.object({
   locales: z.array(ManagerLanguagePackSchema),
+  siteUrl: z.string().optional(),
   features: z.object({
     passwordRecovery: z.boolean(),
     login: z.object({

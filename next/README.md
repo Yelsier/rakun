@@ -201,6 +201,27 @@ revalidate: {
 Manager mutations invalidate the affected Next path and expire the cached
 static-path list, including when a page is created, moved, or deleted.
 
+## llms.txt
+
+Expose the manager-curated site guide with a Route Handler:
+
+```ts
+// app/llms.txt/route.ts
+import { createRakunLlmsTxtRouteHandler } from '@rakun-kit/next/web'
+
+export const dynamic = 'force-dynamic'
+
+export const GET = createRakunLlmsTxtRouteHandler({
+  apiBaseUrl: '/api/rakun',
+})
+```
+
+It returns UTF-8 plain text, or 404 while llms.txt publishing is disabled. The
+root file is the normal site-wide document. Sites that intentionally publish a
+localized variant can use `createRakunLocaleLlmsTxtRouteHandler()` from a route
+such as `app/[language]/llms.txt/route.ts`; its `paramKey` defaults to
+`language`. Use an absolute `apiBaseUrl` when the API is a separate deployment.
+
 ## Web API Client
 
 Use `@rakun-kit/next/web/client` from client components that need to call

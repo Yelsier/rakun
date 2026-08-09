@@ -51,6 +51,7 @@ export const localeVariantAssignment = z.object({
   languageId: z.string(),
   language: Language.getOutputSchema(),
   documentId: z.string(),
+  path: z.string().optional(),
 });
 
 export const localeVariantDocument = z.object({

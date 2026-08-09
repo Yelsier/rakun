@@ -60,6 +60,30 @@ app.use(
 );
 ```
 
+## llms.txt
+
+Mount the public file at the site root, separately from the Rakun API router:
+
+```ts
+import { createRakunLlmsTxtHandler } from "@rakun-kit/express";
+
+app.get("/llms.txt", createRakunLlmsTxtHandler());
+```
+
+The handler reads the manager configuration directly from core, returns
+`text/plain; charset=utf-8`, and responds with 404 until publishing is enabled
+and a title is available. For a localized route, pass `language` or derive it
+from the request:
+
+```ts
+app.get(
+  "/:language/llms.txt",
+  createRakunLlmsTxtHandler({
+    resolveLanguage: (request) => request.params.language,
+  }),
+);
+```
+
 ## tRPC
 
 Mount tRPC with `@rakun-kit/express/trpc`:

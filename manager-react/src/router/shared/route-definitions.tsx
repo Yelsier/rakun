@@ -119,7 +119,7 @@ export const renderManagerRoute = (args: {
   props: ManagerRouteRendererProps;
 }) => {
   const { definition, route, props } = args;
-  const { pathname, basePath, contentTypes = [] } = props;
+  const { pathname, basePath, siteUrl, contentTypes = [] } = props;
 
   const matchedContentType =
     "contentType" in route
@@ -140,6 +140,7 @@ export const renderManagerRoute = (args: {
         route,
         pathname,
         basePath,
+        siteUrl,
         contentTypes,
       }) ?? <ManagerAuthLayout>{children}</ManagerAuthLayout>
     );
@@ -159,6 +160,7 @@ export const renderManagerRoute = (args: {
         contentTypes={contentTypes}
         pathname={pathname}
         basePath={basePath}
+        siteUrl={siteUrl}
         headerEnd={headerEnd}
       >
         {children}

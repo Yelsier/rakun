@@ -1,4 +1,12 @@
-import { Bug, HelpCircle, Images, Settings, User, type LucideIcon } from 'lucide-react'
+import {
+  Bug,
+  ExternalLink,
+  HelpCircle,
+  Images,
+  Settings,
+  User,
+  type LucideIcon,
+} from 'lucide-react'
 import type { EncodedContentType, Permission } from '@rakun-kit/core/client'
 import * as React from 'react'
 
@@ -24,6 +32,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
 } from './ui/sidebar'
@@ -104,6 +113,7 @@ const getDefaultSecondaryNavItems = (
       'content.Redirect.readAny',
       'content.RobotsRule.readAny',
       'content.SeoSettings.readAny',
+      'content.LlmsSettings.readAny',
     ],
     permissionMode: 'any',
   },
@@ -191,12 +201,14 @@ export function AppSidebar({
   contentTypes,
   pathname,
   basePath = '',
+  siteUrl,
   secondaryItems,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   contentTypes: EncodedContentType[]
   pathname?: string
   basePath?: string
+  siteUrl?: string
   secondaryItems?: ManagerSidebarItem[]
 }) {
   const t = useTranslations()
@@ -287,6 +299,18 @@ export function AppSidebar({
                 </div>
               </ManagerLink>
             </SidebarMenuButton>
+            <SidebarMenuAction asChild>
+              <a
+                aria-label={t('sidebar.visitSite')}
+                href={siteUrl || '/'}
+                rel="noreferrer"
+                target="_blank"
+                title={t('sidebar.visitSite')}
+              >
+                <ExternalLink />
+                <span className="sr-only">{t('sidebar.visitSite')}</span>
+              </a>
+            </SidebarMenuAction>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>

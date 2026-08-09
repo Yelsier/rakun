@@ -16,10 +16,12 @@ export const ManagerContentTypeEditScreen = ({
   contentType,
   id,
   preview,
+  siteUrl,
 }: {
   contentType?: EncodedContentType
   id: string
   preview?: ManagerPreviewConfig
+  siteUrl?: string
 }) => {
   const { user, hasAnyPermission, hasPermissions } = useSession()
   const itemQuery = useManagerQuery({
@@ -81,6 +83,7 @@ export const ManagerContentTypeEditScreen = ({
       defaultData={defaultData}
       contentType={contentType}
       preview={preview}
+      siteUrl={siteUrl}
       onAfterRestore={() => itemQuery.refetch()}
     />
   )

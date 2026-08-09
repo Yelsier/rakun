@@ -861,6 +861,16 @@ export const ContentCommentsDrawer = ({
     })
   }
 
+  const unreadLabels: string[] = []
+  if (unreadCommentsCount) {
+    unreadLabels.push(t('comments.unreadMessages', { count: unreadCommentsCount }))
+  }
+  if (unreadNotifications) {
+    unreadLabels.push(t('comments.unreadMentions', { count: unreadNotifications }))
+  }
+  const commentsAriaLabel = [t('comments.title'), ...unreadLabels].join(', ')
+  const commentsTooltip = unreadLabels.length ? unreadLabels.join(' · ') : t('comments.title')
+
   return (
     <Drawer direction="right" open={open} onOpenChange={setOpen}>
       {trigger ? (
@@ -868,13 +878,7 @@ export const ContentCommentsDrawer = ({
           <TooltipTrigger asChild>
             <DrawerTrigger asChild>
               <Button
-                aria-label={
-                  unreadCommentsCount || unreadNotifications
-                    ? `Comments, ${unreadCommentsCount} unread messages${
-                        unreadNotifications ? `, ${unreadNotifications} unread mentions` : ''
-                      }`
-                    : 'Comments'
-                }
+                aria-label={commentsAriaLabel}
                 className="relative"
                 variant="outline"
                 size="icon"
@@ -898,13 +902,7 @@ export const ContentCommentsDrawer = ({
               </Button>
             </DrawerTrigger>
           </TooltipTrigger>
-          <TooltipContent>
-            {unreadCommentsCount || unreadNotifications
-              ? `${unreadCommentsCount} unread messages${
-                  unreadNotifications ? ` · ${unreadNotifications} unread mentions` : ''
-                }`
-              : 'Comments'}
-          </TooltipContent>
+          <TooltipContent>{commentsTooltip}</TooltipContent>
         </Tooltip>
       ) : null}
       <DrawerContent className="h-full data-[vaul-drawer-direction=right]:w-full data-[vaul-drawer-direction=right]:max-w-none md:data-[vaul-drawer-direction=right]:w-[min(92vw,520px)] md:data-[vaul-drawer-direction=right]:max-w-[520px]">

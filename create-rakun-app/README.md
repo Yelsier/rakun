@@ -22,7 +22,8 @@ the generated `package.json`. Supporting build and runtime packages are also
 pinned exactly, while version resolution keeps TypeScript and native packages
 on the compatible release lines validated by the template. The starter contains
 a minimal content model, API route, manager, web renderer, MongoDB config, and
-administrator seed command.
+administrator seed command. It also mounts `/llms.txt`; the route remains a 404
+until an editor enables and curates it from Manager Settings.
 
 ## Options
 

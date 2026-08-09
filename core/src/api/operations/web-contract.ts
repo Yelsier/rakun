@@ -12,6 +12,8 @@ import {
   sitemapOutput,
   staticPathsOutput,
   robotsOutput,
+  llmsInput,
+  llmsOutput,
 } from '../../contracts'
 
 export const createWebOperationContracts = () =>
@@ -60,6 +62,14 @@ export const createWebOperationContracts = () =>
       method: 'get',
       description: 'Get robots.txt content',
       output: robotsOutput,
+    }),
+    'web.llms': defineOperationContract({
+      access: 'public',
+      kind: 'query',
+      method: 'get',
+      description: 'Get the curated llms.txt content',
+      input: llmsInput,
+      output: llmsOutput,
     }),
     'web.test': defineOperationContract({
       access: 'public',

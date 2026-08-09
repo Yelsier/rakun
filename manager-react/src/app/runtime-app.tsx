@@ -131,6 +131,7 @@ export const ManagerRuntimeApp = ({
   const queryClient = useMemo(() => createManagerQueryClient(), []);
   const [localePacks, setLocalePacks] = useState<ManagerLocaleInputPack[]>([]);
   const [managerUiLoaded, setManagerUiLoaded] = useState(false);
+  const [siteUrl, setSiteUrl] = useState<string>();
   const [passwordRecoveryEnabled, setPasswordRecoveryEnabled] = useState(false);
   const [login, setLogin] = useState<{
     password: boolean;
@@ -173,6 +174,7 @@ export const ManagerRuntimeApp = ({
         if (cancelled) return;
         const uiConfig = result as {
           locales?: ManagerLocaleInputPack[];
+          siteUrl?: string;
           features?: {
             passwordRecovery?: boolean;
             login?: {
@@ -183,6 +185,7 @@ export const ManagerRuntimeApp = ({
         };
         const locales = uiConfig.locales;
         setLocalePacks(Array.isArray(locales) ? locales : []);
+        setSiteUrl(uiConfig.siteUrl);
         setPasswordRecoveryEnabled(
           uiConfig.features?.passwordRecovery === true,
         );
@@ -197,6 +200,7 @@ export const ManagerRuntimeApp = ({
       .catch(() => {
         if (cancelled) return;
         setLocalePacks([]);
+        setSiteUrl(undefined);
         setPasswordRecoveryEnabled(false);
         setLogin({ password: true, adapters: [] });
         setManagerUiLoaded(true);
@@ -360,6 +364,7 @@ export const ManagerRuntimeApp = ({
                               searchParams={searchParams}
                               passwordRecoveryEnabled={passwordRecoveryEnabled}
                               login={login}
+                              siteUrl={siteUrl}
                               preview={preview}
                               plugins={plugins}
                               {...overrides}
@@ -386,6 +391,7 @@ export const ManagerRuntimeApp = ({
                                 authenticated
                                 passwordRecoveryEnabled={passwordRecoveryEnabled}
                                 login={login}
+                                siteUrl={siteUrl}
                                 preview={preview}
                                 plugins={plugins}
                                 {...overrides}

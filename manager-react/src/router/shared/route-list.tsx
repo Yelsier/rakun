@@ -20,6 +20,7 @@ import { ManagerSettingsLiteralsScreen } from "../dashboard/settings/literals";
 import { ManagerSettingsRedirectsScreen } from "../dashboard/settings/redirects";
 import { ManagerSettingsRobotsScreen } from "../dashboard/settings/robots";
 import { ManagerSettingsSeoScreen } from "../dashboard/settings/seo";
+import { ManagerSettingsLlmsScreen } from "../dashboard/settings/llms";
 import { ManagerSettingsRoutePathsScreen } from "../dashboard/settings/routes/paths";
 import { ManagerSettingsRoutesScreen } from "../dashboard/settings/routes";
 import { ManagerSettingsHomeScreen } from "../dashboard/settings";
@@ -291,6 +292,13 @@ export const managerRouteDefinitions = [
     render: () => <ManagerSettingsSeoScreen />,
   }),
   defineManagerRoute({
+    kind: "settings-llms",
+    path: "/settings/llms",
+    layout: "dashboard",
+    parse: () => ({ kind: "settings-llms" }),
+    render: () => <ManagerSettingsLlmsScreen />,
+  }),
+  defineManagerRoute({
     kind: "content-create",
     path: "/:contentType/create",
     layout: "dashboard",
@@ -332,6 +340,7 @@ export const managerRouteDefinitions = [
           contentType={contentType}
           id={route.id}
           preview={props.preview}
+          siteUrl={props.siteUrl}
         />
       ),
   }),

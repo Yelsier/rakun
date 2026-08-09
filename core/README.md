@@ -256,7 +256,8 @@ bun add @rakun-kit/manager-locales
 
 Import the required language subpath and register it with `managerLanguages`;
 the public `manager.uiLocales` operation returns configured packs to the
-manager client:
+manager client. Its safe runtime configuration also includes the public SEO
+`siteUrl`, when configured, so the manager can expose its Visit site action:
 
 ```ts
 import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'
@@ -781,13 +782,29 @@ In environments other than `test`, the connection creates indexes defined by `cr
   `manager.comments.markRead`, `manager.comments.unreadCount`,
   `manager.users.mentions`,
   `manager.notifications.list`, and `manager.notifications.markRead`.
-- Web: page resolution, static paths, sitemap, robots, and preview.
+- Web: page resolution, static paths, sitemap, robots, `llms.txt`, and preview.
 
 `web.staticPaths` returns `{ path, ttl }` only for route-map entries backed by
 page routes configured with `dynamic: false`. Adapters can use this operation
 for static generation without querying Rakun's database directly. Monolithic
 server adapters can instead call `getRakunWebStaticPaths`, `getRakunWebPage`,
 and `getRakunWebPreviewPage` after bootstrapping and initializing core.
+
+`web.llms` returns the optional site-level `llms.txt` document configured in
+Manager Settings. Rakun renders a curated Markdown title, summary, guidance,
+sections, and links; it does not dump the sitemap automatically. Internal links
+are resolved for the requested language and become absolute when SEO `siteUrl`
+is configured. Links without a public route are omitted without hiding their
+section heading. Optional sections retain their titles beneath the conventional
+`## Optional` heading. The llms title and summary fall back to SEO `siteName` and the
+default SEO description. The result is `null` while publishing is disabled or
+there is no usable title. Server adapters can call `getRakunWebLlmsTxt`
+directly after initialization.
+
+`manager.localeVariants.list` includes an optional `path` on each language
+assignment when that exact assigned document is published and has a generated
+page route. Manager clients can use it for a contextual public-page link without
+granting editors direct access to internal `RouteMap` records.
 
 Main helpers:
 

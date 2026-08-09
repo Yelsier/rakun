@@ -36,6 +36,8 @@ workspace versions.
 - `app/api/rakun/[[...rakun]]/route.ts` mounts `rakunNext`.
 - `app/backend/[[...slug]]/page.tsx` mounts the manager at `/backend`.
 - `app/[[...slug]]/page.tsx` resolves and renders public Rakun pages.
+- `app/llms.txt/route.ts` exposes the optional guide configured in Manager
+  Settings and returns 404 until publishing is enabled.
 - `modules/` contains the matching React page modules and fallbacks.
 - `server/seed.ts` creates or updates the initial administrator from local env.
 - `AGENTS.md` points agents to the installed Rakun and Next.js manuals.

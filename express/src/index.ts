@@ -109,4 +109,8 @@ export const rakunExpress = (
 };
 
 export { rakunExpressCrud } from "./crud";
+export {
+  createRakunLlmsTxtHandler,
+  type RakunExpressLlmsTxtOptions,
+} from "./web";
 export * from "./media";

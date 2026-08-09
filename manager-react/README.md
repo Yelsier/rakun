@@ -117,6 +117,22 @@ SEO field mappings can use compatible fields from the full current document.
 New documents also honor core string-field `.seo('<seoField>')` configuration
 as an editable initial dynamic data binding.
 
+## llms.txt settings
+
+Settings → AI content manages the optional, site-level `llms.txt` Markdown guide served to
+AI tools. Editors can enable publishing, override the SEO-derived title and
+summary, add guidance, and order sections containing internal pages or external
+URLs. Marking a section as Secondary content places it under `## Optional`
+while preserving its title as a subsection in the generated document. For content types with publication states, the internal
+page picker only offers published documents. Nothing is added automatically
+from the sitemap.
+
+Authenticated manager layouts place a Visit site action at the top-right of the
+logo block. It opens SEO `siteUrl` in a new tab, falling back to `/` on the
+manager host until that setting is configured. A published document with a
+resolved page route also gets a contextual View page button in its edit toolbar;
+the URL follows the selected manager language and locale variant.
+
 ## Styles
 
 Import the package stylesheet once:

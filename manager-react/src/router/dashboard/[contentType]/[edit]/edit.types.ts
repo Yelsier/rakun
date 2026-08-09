@@ -56,5 +56,6 @@ export type EditPageProps = {
   contentType: EncodedContentType
   defaultData?: Record<string, FieldValue>
   preview?: ManagerPreviewConfig
+  siteUrl?: string
   onAfterRestore?: () => Promise<unknown> | unknown
 }

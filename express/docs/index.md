@@ -44,6 +44,21 @@ app.use(
 )
 ```
 
+## llms.txt
+
+Mount the public file on the host application, outside the API router:
+
+```ts
+import { createRakunLlmsTxtHandler } from '@rakun-kit/express'
+
+app.get('/llms.txt', createRakunLlmsTxtHandler())
+```
+
+The handler initializes core, reads `LlmsSettings`, returns UTF-8 plain text,
+and responds with 404 when publishing is disabled or no title can be resolved.
+Use `createRakunLlmsTxtHandler({ language })` for a fixed locale, or
+`resolveLanguage(request)` for a route such as `/:language/llms.txt`.
+
 Import `rakunExpressTrpc` from `@rakun-kit/express/trpc`. It maps Express
 headers, cookies and response state into the Rakun/tRPC context.
 

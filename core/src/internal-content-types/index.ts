@@ -9,6 +9,7 @@ export * from "./ContentReviewPolicy";
 export * from "./ContentVersion";
 export * from "./Language";
 export * from "./LiteralTranslation";
+export * from "./LlmsSettings";
 export * from './LoginIpBlock'
 export * from "./ContentTemplate";
 export * from "./TemplateContent";

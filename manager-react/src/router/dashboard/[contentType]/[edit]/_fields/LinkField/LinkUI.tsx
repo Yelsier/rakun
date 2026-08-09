@@ -184,6 +184,14 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
   const selectedDocumentLabel = selectedDocument
     ? getDocumentLabel(selectedDocument as LinkDocument, selectedContentType)
     : null
+  const requiresPublishedPage = props.parentContentType?.name === 'LlmsSettings'
+  const selectedPageIsNotPublished = Boolean(
+    requiresPublishedPage &&
+      internalValue &&
+      selectedContentType?.documentVisibility &&
+      selectedDocument &&
+      (selectedDocument as LinkDocument)._visibility !== 'published'
+  )
   const displayValue =
     typeof value === 'string'
       ? value
@@ -192,8 +200,12 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
         : (selectedDocumentLabel ??
           pendingSelectedLabel ??
           (internalValue?.contentTypeId ? t('linkPicker.selected') : ''))
-  const routeItems = ((routeItemsData as { items?: LinkDocument[] } | undefined)?.items ??
+  const allRouteItems = ((routeItemsData as { items?: LinkDocument[] } | undefined)?.items ??
     []) as LinkDocument[]
+  const routeItems =
+    props.parentContentType?.name === 'LlmsSettings' && activeContentType?.documentVisibility
+      ? allRouteItems.filter((document) => document._visibility === 'published')
+      : allRouteItems
   const error = errors.find((item) => item.id === id)?.error
 
   const closePicker = () => {
@@ -422,6 +434,9 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
               )}
             </PopoverContent>
           </Popover>
+          {selectedPageIsNotPublished ? (
+            <p className="text-sm text-destructive">{t('linkPicker.publishedRequired')}</p>
+          ) : null}
         </div>
       </div>
     </FieldWrapper>

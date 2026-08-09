@@ -1,5 +1,8 @@
 import { getRakunBootstrapOptions } from "../../../bootstrapState";
-import { RouteLocaleVariant } from "../../../internal-content-types";
+import {
+  RouteLocaleVariant,
+  RouteMap,
+} from "../../../internal-content-types";
 import { throwAppError } from "../../../lib/errors";
 import type ContentType from "../../../lib/ContentType";
 import { getContentPermission } from "../../../lib/Permissions";
@@ -63,6 +66,32 @@ const SYSTEM_CLONE_FIELDS = new Set([
   "updatedAt",
   "updatedBy",
 ]);
+
+export const getPublishedRoutePath = ({
+  documentVisibility,
+  document,
+  languageId,
+  routeMaps,
+}: {
+  documentVisibility: boolean;
+  document: { _id: string; _visibility?: unknown };
+  languageId: string;
+  routeMaps: Array<{
+    contentTypeId: string;
+    languageId: string;
+    path: string;
+  }>;
+}) => {
+  if (documentVisibility && document._visibility !== "published") {
+    return undefined;
+  }
+
+  return routeMaps.find(
+    (routeMap) =>
+      String(routeMap.contentTypeId) === String(document._id) &&
+      String(routeMap.languageId) === String(languageId),
+  )?.path;
+};
 
 export const cloneForLocaleVariant = (
   contentType: ContentType,
@@ -200,7 +229,32 @@ export const buildLocaleVariantList = async ({
       options: { limit: "all" },
     })
   ).items as Array<Record<string, unknown> & { _id: string }>;
+  const routeMapsByGroup = await db.list(RouteMap, {
+    filter: {
+      routeId: route._id,
+      variantGroupId: groupId,
+    },
+    options: { limit: "all", fields: ["contentTypeId", "languageId", "path"] },
+  });
+  const routeMaps =
+    routeMapsByGroup.items.length > 0
+      ? routeMapsByGroup.items
+      : (
+          await db.list(RouteMap, {
+            filter: {
+              routeId: route._id,
+              contentTypeId: { $in: documents.map((document) => document._id) },
+            },
+            options: {
+              limit: "all",
+              fields: ["contentTypeId", "languageId", "path"],
+            },
+          })
+        ).items;
   const languageById = new Map(languages.map((language) => [language._id, language]));
+  const documentById = new Map(
+    documents.map((document) => [String(document._id), document]),
+  );
   const assignmentsByDocument = new Map<string, typeof languages>();
 
   for (const assignment of assignments) {
@@ -222,6 +276,15 @@ export const buildLocaleVariantList = async ({
       .map((assignment) => {
         const language = languageById.get(assignment.languageId);
         if (!language) return null;
+        const document = documentById.get(String(assignment.documentId));
+        const path = document
+          ? getPublishedRoutePath({
+              documentVisibility: Boolean(contentTypeRecord.documentVisibility),
+              document,
+              languageId: assignment.languageId,
+              routeMaps,
+            })
+          : undefined;
 
         return {
           _id: assignment._id,
@@ -232,6 +295,7 @@ export const buildLocaleVariantList = async ({
           languageId: assignment.languageId,
           language,
           documentId: assignment.documentId,
+          ...(path ? { path } : {}),
         };
       })
       .filter((item): item is LocaleVariantListOutput["assignments"][number] =>

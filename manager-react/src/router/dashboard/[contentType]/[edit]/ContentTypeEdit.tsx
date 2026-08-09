@@ -473,7 +473,7 @@ const ContentTypeEdit = forwardRef<
                     </FieldTags>
                   </CardTitle>
                   {description ? (
-                    <p className="text-sm text-muted-foreground">{description}</p>
+                    <p className="text-sm text-muted-foreground">{t(description)}</p>
                   ) : null}
                   {dynamicDialog}
                 </div>

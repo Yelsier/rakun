@@ -26,6 +26,7 @@ export type ManagerLayoutRendererProps = {
   route: { kind: string }
   pathname?: string
   basePath?: string
+  siteUrl?: string
   contentTypes?: EncodedContentType[]
   headerEnd?: ReactNode
 }
@@ -46,6 +47,7 @@ export type ManagerDashboardLayoutProps = {
   contentTypes: EncodedContentType[]
   pathname?: string
   basePath?: string
+  siteUrl?: string
   secondaryItems?: ManagerSidebarItem[]
   sidebar?: ReactNode
   headerStart?: ReactNode
@@ -58,6 +60,7 @@ export const ManagerDashboardLayout = ({
   contentTypes,
   pathname,
   basePath = '',
+  siteUrl,
   secondaryItems,
   sidebar,
   headerStart,
@@ -74,6 +77,7 @@ export const ManagerDashboardLayout = ({
             contentTypes={contentTypes}
             pathname={pathname}
             basePath={basePath}
+            siteUrl={siteUrl}
             secondaryItems={secondaryItems}
           />
         )}

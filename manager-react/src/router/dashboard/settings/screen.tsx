@@ -1,5 +1,6 @@
 import {
   Bot,
+  BotMessageSquare,
   Database,
   Languages,
   Route,
@@ -79,6 +80,13 @@ const cards: Array<{
     icon: <Search size="80" />,
     link: '/settings/seo',
     tour: 'settings-link-seo',
+  },
+  {
+    titleKey: 'settings.llms',
+    icon: <BotMessageSquare size="80" />,
+    link: '/settings/llms',
+    tour: 'settings-link-llms',
+    permission: 'content.LlmsSettings.readAny',
   },
 ]
 

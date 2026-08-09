@@ -433,6 +433,7 @@ export {
 export { getPage as getRakunWebPage } from "./api/routes/web/page";
 export { getPreviewPage as getRakunWebPreviewPage } from "./api/routes/web/previewPage";
 export { getStaticPaths as getRakunWebStaticPaths } from "./api/routes/web/staticPaths";
+export { getLlmsTxt as getRakunWebLlmsTxt } from "./api/routes/web/llms";
 export {
   createRequestContext,
   type CookieOptions,
@@ -479,6 +480,7 @@ export { slugify } from "./lib/utils/slugify";
 export * from "./api/utils";
 export {
   Language,
+  LlmsSettings,
   ManagerUser,
   Seo,
   SeoSettings,

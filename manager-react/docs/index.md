@@ -120,6 +120,14 @@ Built-in manager copy must use the static manager translation catalog. Project
 labels may use arbitrary project keys. Fields resolve `field.<fieldName>` and
 layout slots resolve `layoutModule.<layoutKey>` with fallbacks.
 
+The authenticated sidebar places Visit site at the top-right of its logo block.
+It opens the validated SEO `siteUrl` in a new tab and falls back to `/` on the
+current manager host when the setting is empty. Custom dashboard layout
+renderers receive `siteUrl` in their layout props and should preserve an
+equivalent action. On a published routed document, the edit toolbar also shows
+View page for the exact selected language and locale variant. Draft, hidden,
+trashed, and route-less documents do not show that contextual action.
+
 ## Content and template tabs
 
 For a routeable content type with `iterator`, Content edits the `_iterator`
@@ -148,6 +156,16 @@ document (including fields edited in Info), while the reserved `_seo` relation
 itself stays excluded as a source. On create forms, string fields configured in
 core with `.seo('<seoField>')` appear as normal preconfigured dynamic bindings;
 editors can replace or clear them before the first save.
+
+## llms.txt settings
+
+Settings → AI content edits the optional site-level `llms.txt` guide. Publishing is off
+by default. Editors may override the SEO-derived site title and summary, add
+Markdown guidance, and curate ordered sections of internal pages or external
+URLs. Sections marked as Secondary content appear as titled subsections under
+`## Optional`; Rakun never copies the complete sitemap into this document automatically. Internal page choices
+are limited to published documents when their content type uses publication
+states.
 
 ## Confirmations
 

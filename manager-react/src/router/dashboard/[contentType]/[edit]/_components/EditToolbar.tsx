@@ -5,6 +5,7 @@ import {
   Copy,
   Eye,
   EyeOff,
+  ExternalLink,
   GitBranch,
   Globe,
   Languages,
@@ -231,6 +232,7 @@ export const EditToolbar = () => {
     openMoveToTrashDialog,
     openPermanentDeleteDialog,
     previewState,
+    publicUrl,
     routeLayout,
     sections,
     showSaveErrorTooltip,
@@ -416,6 +418,18 @@ export const EditToolbar = () => {
             </TooltipContent>
           </Tooltip>
         )}
+        {publicUrl ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button asChild aria-label={t('contentEdit.viewPage')} size="icon" variant="outline">
+                <a href={publicUrl} rel="noreferrer" target="_blank">
+                  <ExternalLink />
+                </a>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t('contentEdit.viewPage')}</TooltipContent>
+          </Tooltip>
+        ) : null}
         {commentsEnabled ? (
           <ContentCommentsDrawer open={commentsOpen} onOpenChange={setCommentsOpen} />
         ) : null}

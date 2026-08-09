@@ -192,6 +192,25 @@ Use `@rakun-kit/core/web` for framework-neutral web types/utilities. Use the
 Next or React manual for actual rendering. Route changes can affect configured
 redirects, sitemap, robots output, preview, and adapter behavior.
 
+The built-in `LlmsSettings` record backs an optional site-level `llms.txt`.
+Editors curate a title, summary, free-form guidance, ordered sections, and
+internal or external links in Manager Settings. Core renders the Markdown via
+the public `web.llms` query; `getRakunWebLlmsTxt` provides the equivalent
+server-only call. It resolves internal links for the requested language, uses
+SEO `siteUrl` to make links absolute, and falls back to SEO `siteName` and the
+default SEO description when title or summary is omitted. Disabled or unusable
+configuration returns `null`. Only explicitly selected resources are included;
+internal links without a public route are omitted while their section heading
+remains. In Manager, routeable content types with document
+visibility expose only published documents in this picker. Entries marked
+optional are grouped under the conventional `## Optional` heading and retain
+their section titles as third-level headings.
+
+The authenticated `manager.localeVariants.list` result exposes `path` on a
+language assignment only when its exact document is published and has a route
+map. This is the supported manager-facing way to build a contextual View page
+action; do not query hidden `RouteMap` records from manager UI code.
+
 The public `web.staticPaths` query returns `{ path, ttl }` entries only for
 route-map records whose configured page route has `dynamic: false`. Framework
 adapters use it to generate static params and choose an ISR lifetime. A
@@ -282,6 +301,8 @@ optional packs such as Spanish through `@rakun-kit/manager-locales/es` and
 
 Project-defined manager labels may use arbitrary keys. Field labels follow
 `field.<fieldName>` and layout slots follow `layoutModule.<layoutKey>`.
+The public `manager.uiLocales` response also exposes a validated HTTP(S) SEO
+`siteUrl` for manager chrome; no other SEO settings are included.
 
 ## Public entrypoints
 

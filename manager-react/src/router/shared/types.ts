@@ -40,6 +40,7 @@ export type ManagerResolvedRoute =
   | { kind: "settings-redirects" }
   | { kind: "settings-robots" }
   | { kind: "settings-seo" }
+  | { kind: "settings-llms" }
   | { kind: "content-list"; contentType: string }
   | { kind: "content-create"; contentType: string }
   | { kind: "content-edit"; contentType: string; id: string }
@@ -79,6 +80,7 @@ export type ManagerRouteRendererProps = {
   contentTypes?: EncodedContentType[];
   pathname?: string;
   basePath?: string;
+  siteUrl?: string;
   preview?: ManagerPreviewConfig;
   plugins?: readonly RakunManagerPluginDefinition[];
   searchParams?: ManagerSearchParams;

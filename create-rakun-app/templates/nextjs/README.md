@@ -30,6 +30,8 @@ page as the homepage in the route settings.
 - `app/[[...slug]]/page.tsx`: public page renderer.
 - `app/rakun-preview/[[...slug]]/page.tsx`: uncached manager preview renderer.
 - `app/api/revalidate/route.ts`: authenticated Next cache invalidation webhook.
+- `app/llms.txt/route.ts`: optional public AI-oriented site guide configured
+  from the manager.
 - `modules`: React components rendered by Rakun pages.
 
 Rakun's installed AI manuals start at

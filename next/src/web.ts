@@ -11,6 +11,7 @@ import {
 import {
   DEFAULT_STATIC_PAGE_TTL,
   type PageOutput,
+  type LlmsOutput,
   type RobotsOutput,
   type SitemapOutput,
   type StaticPathOutput,
@@ -145,6 +146,19 @@ export type GetRakunRobotsTxtOptions = {
   forwardHeaders?: boolean
   fetchOptions?: RakunNextFetchOptions
   fetch?: typeof globalThis.fetch
+}
+
+export type GetRakunLlmsTxtOptions = {
+  apiBaseUrl?: string | URL
+  language?: string
+  headers?: HeadersInit
+  forwardHeaders?: boolean
+  fetchOptions?: RakunNextFetchOptions
+  fetch?: typeof globalThis.fetch
+}
+
+export type CreateRakunLocaleLlmsTxtRouteHandlerOptions = GetRakunLlmsTxtOptions & {
+  paramKey?: string
 }
 
 export type GetRakunPathFromParamsOptions = {
@@ -1003,3 +1017,68 @@ export const createRakunRobotsTxtRouteHandler =
         'Content-Type': 'text/plain; charset=utf-8',
       },
     })
+
+export const getRakunLlmsTxt = async ({
+  apiBaseUrl = defaultApiBaseUrl,
+  language,
+  headers,
+  forwardHeaders = true,
+  fetchOptions,
+  fetch: fetchFn = globalThis.fetch,
+}: GetRakunLlmsTxtOptions = {}): Promise<string | null> => {
+  const baseUrl = await resolveApiBaseUrl(apiBaseUrl)
+  const url = new URL(`${baseUrl.pathname.replace(/\/$/, '')}/web/llms`, baseUrl)
+  if (language) {
+    url.searchParams.set('language', language)
+  }
+
+  const response = await fetchFn(url, {
+    cache: 'no-store',
+    ...fetchOptions,
+    method: 'GET',
+    headers: await createRequestHeaders({
+      headers,
+      forwardHeaders,
+    }),
+  })
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new Error(
+      `Rakun llms.txt request failed with ${response.status}: ${text.slice(0, 200)}`
+    )
+  }
+
+  return ((await response.json()) as LlmsOutput)?.content ?? null
+}
+
+const createLlmsTxtResponse = (content: string | null): Response =>
+  content === null
+    ? new Response(null, { status: 404 })
+    : new Response(content, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+        },
+      })
+
+export const createRakunLlmsTxtRouteHandler =
+  (options: GetRakunLlmsTxtOptions = {}) =>
+  async (): Promise<Response> =>
+    createLlmsTxtResponse(await getRakunLlmsTxt(options))
+
+export const createRakunLocaleLlmsTxtRouteHandler =
+  ({
+    paramKey = 'language',
+    ...options
+  }: CreateRakunLocaleLlmsTxtRouteHandlerOptions = {}) =>
+  async (_request: Request, context: RakunSitemapRouteHandlerContext): Promise<Response> => {
+    const params = await context.params
+    const language = getStringParam(params, paramKey)
+
+    return createLlmsTxtResponse(
+      await getRakunLlmsTxt({
+        ...options,
+        language,
+      })
+    )
+  }

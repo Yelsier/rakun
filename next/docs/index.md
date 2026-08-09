@@ -119,6 +119,24 @@ Pass unresolved page props to `getRakunPageFromProps`: it reads `searchParams`
 only for dynamic routes because Next treats that prop as request-time data.
 Mount manager previews on a separate dynamic route.
 
+## llms.txt
+
+Expose the optional site-wide guide through an App Router Route Handler:
+
+```ts
+// app/llms.txt/route.ts
+import { createRakunLlmsTxtRouteHandler } from '@rakun-kit/next/web'
+
+export const dynamic = 'force-dynamic'
+export const GET = createRakunLlmsTxtRouteHandler({ apiBaseUrl: '/api/rakun' })
+```
+
+The handler fetches the public `web.llms` operation with `cache: 'no-store'`,
+returns UTF-8 plain text, and returns 404 while publishing is disabled. Keep one
+root `/llms.txt` for the normal site-wide document. If the host deliberately
+publishes localized variants, use `createRakunLocaleLlmsTxtRouteHandler()` in
+`app/[language]/llms.txt/route.ts`; `paramKey` defaults to `language`.
+
 Expose the authenticated revalidation handler:
 
 ```ts

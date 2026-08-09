@@ -1,6 +1,23 @@
 import { describe, expect, test } from 'bun:test'
 
-import { resolveManagerUiFeatures } from './uiLocales'
+import { resolveManagerSiteUrl, resolveManagerUiFeatures } from './uiLocales'
+
+describe('resolveManagerSiteUrl', () => {
+  test('accepts public HTTP URLs and normalizes them', () => {
+    expect(resolveManagerSiteUrl(' https://example.com/site ')).toBe(
+      'https://example.com/site',
+    )
+    expect(resolveManagerSiteUrl('http://localhost:3000')).toBe(
+      'http://localhost:3000/',
+    )
+  })
+
+  test('rejects empty, relative, and unsafe URLs', () => {
+    expect(resolveManagerSiteUrl('')).toBeUndefined()
+    expect(resolveManagerSiteUrl('/site')).toBeUndefined()
+    expect(resolveManagerSiteUrl('javascript:alert(1)')).toBeUndefined()
+  })
+})
 
 describe('resolveManagerUiFeatures', () => {
   test('disables password recovery without a mail service', () => {

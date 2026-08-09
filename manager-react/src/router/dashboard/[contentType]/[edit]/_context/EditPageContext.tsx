@@ -246,6 +246,7 @@ type EditPageContextValue = {
   openMoveToTrashDialog: () => void
   openPermanentDeleteDialog: () => void
   previewState: ReturnType<typeof useContentPreview>
+  publicUrl?: string
   localeVariantRoute?: ContentTypeRouteMeta
   routeLayout: ReturnType<typeof useRouteLayoutData>
   sections: ReturnType<typeof useContentTypeSections>
@@ -313,6 +314,7 @@ export const EditPageProvider = ({
   contentType,
   defaultData,
   preview,
+  siteUrl,
   onAfterRestore,
 }: PropsWithChildren<EditPageProps>) => {
   const t = useTranslations()
@@ -478,6 +480,18 @@ export const EditPageProvider = ({
     languageList,
   })
   const previewRoute = localeVariantRoute
+  const publicPath = (
+    localeVariantsQuery.data as LocaleVariantListOutput | undefined
+  )?.assignments.find(
+    (assignment) =>
+      assignment.documentId === contentTypeId &&
+      assignment.language.code === language.code,
+  )?.path
+  const publicUrl = publicPath && !isTrashed
+    ? siteUrl
+      ? new URL(publicPath, siteUrl).toString()
+      : publicPath
+    : undefined
   const canPreview = Boolean(preview && previewRoute && !isTrashed)
   const targetLocaleVariantDocumentId = useMemo(
     () =>
@@ -734,6 +748,7 @@ export const EditPageProvider = ({
           })
         },
         previewState,
+        publicUrl,
         localeVariantRoute,
         routeLayout,
         sections,

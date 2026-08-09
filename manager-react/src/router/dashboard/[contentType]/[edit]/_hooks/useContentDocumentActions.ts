@@ -292,6 +292,7 @@ export const useContentDocumentActions = ({
       setVisibility('published')
       await Promise.all([
         invalidateContentListQueries(),
+        invalidateLocaleVariantQueries(),
         invalidateVersions(),
         contentVersionsQuery.refetch(),
         onAfterRestore?.(),
@@ -404,6 +405,7 @@ export const useContentDocumentActions = ({
 
     await invalidateVersions()
     await invalidateContentListQueries()
+    await invalidateLocaleVariantQueries()
     await refreshReviewState()
     toast.success(t('contentEdit.updatedSuccessfully'))
   }

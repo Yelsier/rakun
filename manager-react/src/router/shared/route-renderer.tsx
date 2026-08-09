@@ -39,6 +39,7 @@ const ManagerPluginRouteRenderer = (props: ManagerRouteRendererProps) => {
       route,
       pathname: props.pathname,
       basePath: props.basePath,
+      siteUrl: props.siteUrl,
       contentTypes: props.contentTypes,
       headerEnd: definition.headerEnd,
     }) ?? (
@@ -47,6 +48,7 @@ const ManagerPluginRouteRenderer = (props: ManagerRouteRendererProps) => {
         contentTypes={props.contentTypes ?? []}
         pathname={props.pathname}
         basePath={props.basePath}
+        siteUrl={props.siteUrl}
         headerEnd={definition.headerEnd}
       >
         {children}
