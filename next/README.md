@@ -150,7 +150,8 @@ return <RakunPageRenderer page={page} loadModule={loadModule} />
 `createRakunDatabaseWeb` initializes Rakun and reads pages and static paths
 directly from MongoDB, so `next build` does not depend on the application's own
 Route Handlers. Static pages use Next's data cache with Rakun's TTL; dynamic
-and preview pages remain uncached.
+and preview pages remain uncached. The root of an optional catch-all is emitted
+as `{ slug: [] }`, as required for Next to retain the complete generated set.
 
 For a separately deployed API, keep using `createRakunGenerateStaticParams`,
 `getRakunPage`, and `getRakunPageFromProps`. The absolute `apiBaseUrl` must be

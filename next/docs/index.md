@@ -100,7 +100,9 @@ default; put `'use client'` in only the modules that need browser APIs or hooks.
 `createRakunDatabaseWeb` initializes core and reads pages and static paths from
 MongoDB. It uses Next's data cache for static routes and the same cache tag as
 the revalidation handler, but stays uncached in development and for dynamic or
-preview pages. It is server-only and must not be imported by client components.
+preview pages. For an optional catch-all, the root path is emitted as
+`{ slug: [] }`, which keeps every generated param valid in Next.js. The helper
+is server-only and must not be imported by client components.
 
 When the API is a separate deployment, use `createRakunGenerateStaticParams`,
 `getRakunPage`, and `getRakunPageFromProps` with an absolute `apiBaseUrl`.

@@ -36,7 +36,7 @@ describe('Rakun static params', () => {
   })
 
   it('converts paths for an optional catch-all segment', () => {
-    expect(getRakunParamsFromPath({ path: '/' })).toEqual({})
+    expect(getRakunParamsFromPath({ path: '/' })).toEqual({ slug: [] })
     expect(getRakunParamsFromPath({ path: '/projects/rakun/' })).toEqual({
       slug: ['projects', 'rakun'],
     })
@@ -59,7 +59,10 @@ describe('Rakun static params', () => {
       fetch: fetchStaticPaths,
     })
 
-    expect(await generateStaticParams()).toEqual([{}, { slug: ['projects', 'rakun'] }])
+    expect(await generateStaticParams()).toEqual([
+      { slug: [] },
+      { slug: ['projects', 'rakun'] },
+    ])
   })
 
   it('uses ISR for static Rakun pages in production', async () => {

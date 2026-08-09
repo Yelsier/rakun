@@ -348,7 +348,7 @@ export const getRakunParamsFromPath = ({
   }
 
   const segments = pathSegments.slice(baseSegments.length)
-  return segments.length > 0 ? { [paramKey]: segments } : {}
+  return { [paramKey]: segments }
 }
 
 const getDefaultStaticPathsFetchOptions = (): RakunNextFetchOptions =>
