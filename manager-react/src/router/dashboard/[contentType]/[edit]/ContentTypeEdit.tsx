@@ -45,6 +45,7 @@ import {
   type ManagerFieldEditorRef,
 } from '@/plugins'
 import MissingUI from './_fields/Missing'
+import { getInitialSeoBindings } from './_fields/seoBindings'
 
 const REQUIRED_MARK = '*'
 
@@ -63,6 +64,7 @@ type FieldComponentProps = EncodedFieldUnknown & {
   ref: React.Ref<FieldRef>
   collapsible?: boolean
   parentContentType?: EncodedContentType
+  initializeSeoBindings?: boolean
 }
 
 type FieldComponent = (config: FieldComponentProps) => React.ReactElement
@@ -214,6 +216,7 @@ const ContentTypeEdit = forwardRef<
     id: string
     defaultData?: { [key: string]: FieldValue }
     parentContentType?: EncodedContentType
+    initializeSeoBindings?: boolean
     collapsible?: boolean
     hideTitle?: boolean
   }
@@ -250,8 +253,11 @@ const ContentTypeEdit = forwardRef<
       ),
     [formState, props.defaultData]
   )
-  const [dynamicBindings, setDynamicBindings] = useState<DynamicDocumentBindings | undefined>(
-    getDefaultBindings(props.defaultData)
+  const [dynamicBindings, setDynamicBindings] = useState<DynamicDocumentBindings | undefined>(() =>
+    getDefaultBindings(props.defaultData) ??
+    (props.initializeSeoBindings
+      ? getInitialSeoBindings({ contentType, parentContentType: props.parentContentType })
+      : undefined)
   )
   const [dynamicEditorOpen, setDynamicEditorOpen] = useState<string | null>(null)
   const allItems = useMemo(
@@ -373,6 +379,7 @@ const ContentTypeEdit = forwardRef<
               defaultData={defaultDataExtractor(fieldName, props.defaultData)}
               dynamicFallbackPlaceholder={dynamicFallbackPlaceholder}
               parentContentType={dynamicSourceContentType}
+              initializeSeoBindings={props.initializeSeoBindings}
             />
           ) : (
             <MissingUI field={fieldValue.config} />

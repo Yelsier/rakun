@@ -113,6 +113,8 @@ export const EditTabPanels = () => {
               defaultData={form.draft.current}
               ref={form.seoRef}
               contentType={sections.seo}
+              parentContentType={contentType}
+              initializeSeoBindings={!contentTypeId}
               id={contentTypeName}
               hideTitle
             />

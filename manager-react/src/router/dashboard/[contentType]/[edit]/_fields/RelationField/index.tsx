@@ -14,6 +14,7 @@ export type RelationProps = EncodedRelationField &
   DefaultProps & {
     collapsible?: boolean
     parentContentType?: EncodedContentType
+    initializeSeoBindings?: boolean
   }
 
 export type RelationPropsRef = RelationProps & RefAttributes<FieldRef>

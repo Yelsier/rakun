@@ -110,6 +110,14 @@ blocks and array/list forms. Chain field modifiers such as `.required()`,
 Special manager editors are selected with `.type(...)`, for example `Slug`,
 `RichText`, `Email`, `Password` and `Image`.
 
+Routeable content types can initialize SEO string fields from the document being
+created. Add `.seo('<seoField>')` to a source string field; the argument is
+restricted to string properties of Rakun's built-in SEO model. For example,
+`title: f.string().required().seo('title')` initializes `seo.title` as a dynamic
+data binding to the document's `title`. This only initializes create forms: it
+does not modify existing documents, and editors can change or clear the binding
+before saving.
+
 Date fields support the `Date`, `DateTime` and `Time` manager modes. `Date` and
 `DateTime` persist JavaScript `Date` values; their write schema also accepts the
 ISO datetime strings produced when those values cross JSON and normalizes them

@@ -29,6 +29,23 @@ export const stringUis = [
 
 export type StringUI = (typeof stringUis)[number];
 
+export const seoStringFields = [
+  "title",
+  "description",
+  "canonicalUrl",
+  "imageAlt",
+  "openGraphTitle",
+  "openGraphDescription",
+  "openGraphUrl",
+  "openGraphSiteName",
+  "openGraphImageAlt",
+  "twitterTitle",
+  "twitterDescription",
+  "twitterImageAlt",
+] as const;
+
+export type SeoStringField = (typeof seoStringFields)[number];
+
 type StringValue<Ui extends StringUI> = Ui extends "RichText"
   ? Record<string, unknown>
   : string;
@@ -38,12 +55,14 @@ export type StringMeta<Ui extends StringUI = StringUI> = {
   ui: Ui;
   minLength?: number;
   maxLength?: number;
+  seo?: SeoStringField;
 };
 
 type StringOptions<Ui extends StringUI> = {
   ui: Ui;
   minLength?: number;
   maxLength?: number;
+  seo?: SeoStringField;
 };
 
 export type StringField<
@@ -69,6 +88,10 @@ type StringFieldCore<
   max: <TThis extends StringFieldBase<Ui, FieldState>>(
     this: TThis,
     length: number,
+  ) => StringField<Ui, FieldStateOf<TThis>>;
+  seo: <TThis extends StringFieldBase<Ui, FieldState>>(
+    this: Ui extends "RichText" ? never : TThis,
+    field: SeoStringField,
   ) => StringField<Ui, FieldStateOf<TThis>>;
 };
 
@@ -98,6 +121,7 @@ function makeStringField<Ui extends StringUI, State extends FieldState>(
     ui: options.ui,
     minLength: options.minLength,
     maxLength: options.maxLength,
+    seo: options.seo,
   } as const satisfies StringMeta<Ui>;
 
   const field: StringFieldCore<Ui, State> = {
@@ -110,6 +134,10 @@ function makeStringField<Ui extends StringUI, State extends FieldState>(
       TThis extends StringFieldBase<Ui, FieldState>,
       NextUi extends StringUI,
     >(this: TThis, ui: NextUi) {
+      if (ui === "RichText" && options.seo) {
+        throw new Error("RichText fields cannot initialize string SEO fields.");
+      }
+
       return makeStringField(
         { ...options, ui },
         this.state as FieldStateOf<TThis>,
@@ -130,6 +158,19 @@ function makeStringField<Ui extends StringUI, State extends FieldState>(
     ) {
       return makeStringField(
         { ...options, maxLength: length },
+        this.state as FieldStateOf<TThis>,
+      );
+    },
+    seo: function <TThis extends StringFieldBase<Ui, FieldState>>(
+      this: TThis,
+      seo: SeoStringField,
+    ) {
+      if (options.ui === "RichText") {
+        throw new Error("RichText fields cannot initialize string SEO fields.");
+      }
+
+      return makeStringField(
+        { ...options, seo },
         this.state as FieldStateOf<TThis>,
       );
     },

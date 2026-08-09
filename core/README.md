@@ -427,6 +427,9 @@ Main properties:
 - `withHooks()`: attaches lifecycle hooks such as `beforeInsert`, `beforeUpdate`, and `onGet`.
 - Dynamic data bindings are available on manager-visible fields by default; use
   field-level `.noDynamic()` to opt out.
+- A string field can initialize a new document's SEO dynamic data with
+  `.seo('title')`, `.seo('description')`, or another string field from Rakun's
+  built-in SEO model. This does not change existing documents.
 
 When a content type has a configured route with `hasPage: true`, Rakun adds an
 optional reserved `_seo` relation automatically. If that content type has an
@@ -468,6 +471,21 @@ booleans. Object-like source fields are traversed so nested leaf fields can be
 selected, while reserved SEO metadata is omitted from dynamic data mappings.
 The generated `href` source is only shown for content types that have a
 configured route with `hasPage: true`.
+
+For example, a routeable category can pre-link its SEO title when a new category
+is created:
+
+```ts
+const Category = new ContentType({
+  name: 'Category',
+  fields: {
+    title: f.string().required().seo('title'),
+  },
+})
+```
+
+The manager stores this as a normal editable dynamic data binding from
+`seo.title` to `Current document · title`.
 
 ```ts
 const Project = new ContentType({

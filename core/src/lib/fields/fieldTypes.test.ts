@@ -435,6 +435,23 @@ describe("field type inference", () => {
     expect(encoded?.fields.title.isDynamic).toBe(false);
   });
 
+  it("encodes automatic SEO bindings for string fields", () => {
+    const SeoBindingEncodedCT = new ContentType({
+      name: "SeoBindingEncoded",
+      fields: {
+        title: Fields.string().required().seo("title"),
+      },
+    });
+
+    registerContentType(SeoBindingEncodedCT);
+
+    const encoded = getContentTypesForManager().find(
+      (contentType) => contentType.name === SeoBindingEncodedCT.name,
+    );
+
+    expect(encoded?.fields.title.config.seo).toBe("title");
+  });
+
   it("encodes module picker metadata for the manager", () => {
     const ModulePickerEncodedCT = new ContentType({
       name: "ModulePickerEncoded",

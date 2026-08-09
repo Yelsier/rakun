@@ -40,6 +40,7 @@ const NewRelation: React.FC<RelationPropsRef> = ({ ref, ...props }) => {
         ref={innerRef}
         contentType={props.contentType}
         parentContentType={props.parentContentType}
+        initializeSeoBindings={props.initializeSeoBindings}
         collapsible={props.collapsible}
       />
     </FieldWrapper>

@@ -113,6 +113,10 @@ The list mapping editor supports recursive `blocks` targets. Select
 filters, item type, and field mapping. `Current document` query values inside
 that nested editor resolve against the parent source item.
 
+SEO field mappings can use compatible fields from the full current document.
+New documents also honor core string-field `.seo('<seoField>')` configuration
+as an editable initial dynamic data binding.
+
 ## Styles
 
 Import the package stylesheet once:

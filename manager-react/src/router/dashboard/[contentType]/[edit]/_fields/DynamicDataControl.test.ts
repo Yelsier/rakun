@@ -141,6 +141,29 @@ describe('dynamic data source field options', () => {
     expect(values).toContain('category._id')
     expect(values).toContain('category.slug')
   })
+
+  test('offers the current document info fields to SEO string targets', () => {
+    const routeableProject = {
+      ...project,
+      routes: [{ key: 'project', hasPage: true }],
+      fields: {
+        ...project.fields,
+        _seo: {
+          ...fieldState,
+          config: { type: 'Relation', ui: 'ContentType' },
+          contentType: {
+            name: 'Seo',
+            uniques: [],
+            fields: { title: stringField },
+          },
+        } as EncodedRelationField,
+      },
+    } as EncodedContentType
+
+    expect(sourceFieldOptions(routeableProject, stringField).map(({ value }) => value)).toEqual(
+      expect.arrayContaining(['$href', 'title', 'category.slug']),
+    )
+  })
 })
 
 describe('current document list source options', () => {

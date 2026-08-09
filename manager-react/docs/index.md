@@ -143,6 +143,12 @@ document` to read the root document. This supports mappings such as Category ->
 gallery item -> Project -> image card, and the editor can repeat the flow for
 deeper block structures.
 
+In the SEO tab, `Current document` exposes compatible fields from the complete
+document (including fields edited in Info), while the reserved `_seo` relation
+itself stays excluded as a source. On create forms, string fields configured in
+core with `.seo('<seoField>')` appear as normal preconfigured dynamic bindings;
+editors can replace or clear them before the first save.
+
 ## Confirmations
 
 Use the shared async confirm API instead of ad-hoc yes/no dialogs:
