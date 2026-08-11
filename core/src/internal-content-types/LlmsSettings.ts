@@ -11,7 +11,6 @@ export const LlmsEntry = new ContentType({
   },
   fields: {
     llmsLink: Fields.link().required(),
-    llmsLinkTitle: Fields.string().translatable(),
     llmsLinkDescription: Fields.string().type("Textarea").translatable(),
   },
 }).hideFromManager();

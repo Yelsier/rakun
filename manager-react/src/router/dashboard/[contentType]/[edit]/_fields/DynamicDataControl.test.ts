@@ -5,14 +5,18 @@ import type {
   EncodedFileField,
   EncodedListField,
   EncodedRelationField,
+  EncodedSimpleListField,
 } from '@rakun-kit/core/client'
 
 import {
   buildFilter,
   currentDocumentListSourceOptions,
   isDynamicFallbackRequired,
+  isMappableDynamicListField,
+  listItemTargetFields,
   readFilterState,
   sourceFieldOptions,
+  targetMappingFields,
 } from './DynamicDataControl'
 
 const fieldState = {
@@ -142,6 +146,17 @@ describe('dynamic data source field options', () => {
     expect(values).toContain('category.slug')
   })
 
+  test('offers complete links only to link targets', () => {
+    const linkField = project.fields.website
+    const values = sourceFieldOptions(project, linkField).map(
+      (option) => option.value,
+    )
+
+    expect(values).toContain('website')
+    expect(values).not.toContain('website.href')
+    expect(values).not.toContain('website.title')
+  })
+
   test('offers the current document info fields to SEO string targets', () => {
     const routeableProject = {
       ...project,
@@ -163,6 +178,49 @@ describe('dynamic data source field options', () => {
     expect(sourceFieldOptions(routeableProject, stringField).map(({ value }) => value)).toEqual(
       expect.arrayContaining(['$href', 'title', 'category.slug']),
     )
+  })
+})
+
+describe('dynamic data target mapping fields', () => {
+  test('expands link targets into independently mapped properties', () => {
+    expect(targetMappingFields(project).map(([path]) => path)).toEqual([
+      'title',
+      'featuredImage',
+      'document',
+      'featuredImages',
+      'website.title',
+      'website.href',
+      'category',
+    ])
+  })
+
+  test('maps structured homogeneous arrays but keeps primitive arrays direct', () => {
+    const linkArray = {
+      ...fieldState,
+      config: { type: 'List', ui: 'SimpleList' },
+      field: project.fields.website,
+    } as EncodedSimpleListField
+    const relationArray = {
+      ...fieldState,
+      config: { type: 'List', ui: 'SimpleList' },
+      field: project.fields.category,
+    } as EncodedSimpleListField
+    const stringArray = {
+      ...fieldState,
+      config: { type: 'List', ui: 'SimpleList' },
+      field: stringField,
+    } as EncodedSimpleListField
+
+    expect(isMappableDynamicListField(linkArray)).toBe(true)
+    expect(isMappableDynamicListField(relationArray)).toBe(true)
+    expect(isMappableDynamicListField(stringArray)).toBe(false)
+    expect(listItemTargetFields(linkArray, 'Link').map(([path]) => path)).toEqual([
+      'title',
+      'href',
+    ])
+    expect(
+      listItemTargetFields(relationArray, 'Category').map(([path]) => path),
+    ).toEqual(['slug'])
   })
 })
 

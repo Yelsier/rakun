@@ -124,6 +124,7 @@ type CurrentDocumentListSourceOption = {
   path: string
   itemName?: string
 }
+type MappableListField = EncodedListField | EncodedSimpleListField
 
 const CURRENT_DOCUMENT_ID = '__rakun_current_document__'
 
@@ -154,6 +155,18 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isListField = (field: EncodedFieldUnknown) =>
   field.config.ui === 'List' || field.config.ui === 'Iterator'
 
+export const isMappableDynamicListField = (
+  field: EncodedFieldUnknown,
+): field is MappableListField => {
+  if (isListField(field)) return true
+  if (field.config.ui !== 'SimpleList') return false
+
+  const itemField = (field as EncodedSimpleListField).field
+  return (
+    itemField.config.type === 'Link' || itemField.config.type === 'Relation'
+  )
+}
+
 const isRelatedCollectionSource = (
   source: ListMapSource,
 ): source is DynamicRelatedCollectionSource =>
@@ -164,9 +177,9 @@ const isNestedListSource = (
 ): source is DynamicNestedListSource =>
   !!source && 'kind' in source && source.kind === 'list'
 
-const asListField = (field: EncodedFieldUnknown) =>
-  field.config.ui === 'List' || field.config.ui === 'Iterator'
-    ? (field as EncodedListField)
+const asMappableListField = (field: EncodedFieldUnknown) =>
+  isMappableDynamicListField(field)
+    ? field
     : undefined
 
 const isDynamicVisibleField = (field: EncodedFieldUnknown) =>
@@ -176,6 +189,41 @@ const isSelectableDynamicField = (
   name: string,
   field: EncodedFieldUnknown,
 ) => name !== ITERATOR_FIELD_NAME && isDynamicVisibleField(field)
+
+const linkPropertyTargetField = (field: EncodedFieldUnknown) =>
+  ({
+    ...field,
+    config: { type: 'String', ui: 'Text' },
+  }) as EncodedFieldUnknown
+
+const linkItemMappingFields = (
+  field: EncodedFieldUnknown,
+): Array<[string, EncodedFieldUnknown]> => {
+  const propertyField = linkPropertyTargetField(field)
+  return [
+    ['title', propertyField],
+    ['href', propertyField],
+  ]
+}
+
+export const targetMappingFields = (
+  contentType?: EncodedContentType,
+): Array<[string, EncodedFieldUnknown]> =>
+  contentType
+    ? Object.entries(contentType.fields).flatMap(([name, field]) => {
+        if (!isSelectableDynamicField(name, field)) return []
+
+        if (field.config.type === 'Link') {
+          const propertyField = linkPropertyTargetField(field)
+          return [
+            [`${name}.title`, propertyField],
+            [`${name}.href`, propertyField],
+          ]
+        }
+
+        return [[name, field]]
+      })
+    : []
 
 export const isDynamicFieldEnabled = (
   contentType: EncodedContentType,
@@ -191,7 +239,7 @@ const getFieldKind = (field: EncodedFieldUnknown): SourceFieldKind => {
   if (field.config.type === 'String') {
     return field.config.ui === 'RichText' ? 'richText' : 'string'
   }
-  if (field.config.type === 'Link') return 'string'
+  if (field.config.type === 'Link') return 'object'
   if (field.config.type === 'Number') return 'number'
   if (field.config.type === 'Boolean') return 'boolean'
   if (field.config.type === 'Date') {
@@ -1004,13 +1052,51 @@ const FieldBindingEditor = ({
 }
 
 const getListTargetContentType = (
-  field: EncodedListField,
+  field: MappableListField,
   itemName: string,
 ) => {
-  const entry = field.fields.find((item) => item.name === itemName)
+  if (field.config.ui === 'SimpleList') {
+    const itemField = (field as EncodedSimpleListField).field
+    return itemField.config.type === 'Relation'
+      ? (itemField as EncodedRelationField).contentType
+      : undefined
+  }
+
+  const listField = field as EncodedListField
+  const entry = listField.fields.find((item) => item.name === itemName)
   if (!entry || entry.field.config.type !== 'Relation') return undefined
 
   return (entry.field as EncodedRelationField).contentType
+}
+
+const getListItemOptions = (field: MappableListField) => {
+  if (field.config.ui !== 'SimpleList') {
+    return (field as EncodedListField).fields.filter(
+      (item) => item.name !== ITERATOR_FIELD_NAME,
+    )
+  }
+
+  const itemField = (field as EncodedSimpleListField).field
+  const name =
+    itemField.config.type === 'Relation'
+      ? (itemField as EncodedRelationField).contentType.name
+      : 'Link'
+
+  return [{ name, field: itemField }]
+}
+
+export const listItemTargetFields = (
+  field: MappableListField,
+  itemName: string,
+) => {
+  if (field.config.ui === 'SimpleList') {
+    const itemField = (field as EncodedSimpleListField).field
+    if (itemField.config.type === 'Link') {
+      return linkItemMappingFields(itemField)
+    }
+  }
+
+  return targetMappingFields(getListTargetContentType(field, itemName))
 }
 
 const getRelationContentType = (field: EncodedFieldUnknown) => {
@@ -1175,7 +1261,7 @@ const MappingSourceEditor = ({
   onChange: (source: ListMapSource) => void
 }) => {
   const t = useTranslations()
-  const nestedListTarget = asListField(targetField)
+  const nestedListTarget = asMappableListField(targetField)
   const nestedSource = isNestedListSource(source) ? source : undefined
   const relatedSource = isRelatedCollectionSource(source) ? source : undefined
   const directSource =
@@ -1207,9 +1293,9 @@ const MappingSourceEditor = ({
   const sortDirection = sortEntry?.[1] ?? 'desc'
 
   const createNestedSource = (): DynamicNestedListSource | undefined => {
-    const nestedItemName = nestedListTarget?.fields.find(
-      (item) => item.name !== ITERATOR_FIELD_NAME,
-    )?.name
+    const nestedItemName = nestedListTarget
+      ? getListItemOptions(nestedListTarget)[0]?.name
+      : undefined
     if (!nestedItemName) return undefined
 
     return {
@@ -1555,14 +1641,12 @@ const ListBindingEditor = ({
   rootDocumentContentType: EncodedContentType
   currentItemContentType?: EncodedContentType
   currentDocumentSourceEnabled: boolean
-  field: EncodedListField
+  field: MappableListField
   binding: DynamicListBinding | undefined
   onChange: (binding: DynamicListBinding | undefined) => void
 }) => {
   const t = useTranslations()
-  const itemOptions = field.fields.filter(
-    (item) => item.name !== ITERATOR_FIELD_NAME,
-  )
+  const itemOptions = getListItemOptions(field)
   const documentSourceOptions = currentDocumentSourceEnabled
     ? currentDocumentListSourceOptions(documentContentType)
     : []
@@ -1589,16 +1673,9 @@ const ListBindingEditor = ({
   const selectedSource =
     selectedDocumentSource?.contentType ??
     contentTypes.find((ct) => ct.name === sourceType)
-  const targetContentType = getListTargetContentType(field, itemName)
   const targetFields = useMemo(
-    () =>
-      targetContentType
-        ? Object.entries(targetContentType.fields).filter(
-            ([targetFieldName, targetField]) =>
-              isSelectableDynamicField(targetFieldName, targetField),
-          )
-        : [],
-    [targetContentType],
+    () => listItemTargetFields(field, itemName),
+    [field, itemName],
   )
   const sortFieldOptions = selectedSource
     ? getSortFieldOptions(selectedSource)
@@ -2234,6 +2311,90 @@ const ListBindingEditor = ({
   )
 }
 
+const StructuredArrayBindingEditor = ({
+  contentTypes,
+  fieldContentTypes,
+  documentContentType,
+  currentDocumentSourceEnabled,
+  field,
+  fieldBinding,
+  listBinding,
+  onFieldChange,
+  onListChange,
+}: {
+  contentTypes: EncodedContentType[]
+  fieldContentTypes: EncodedContentType[]
+  documentContentType: EncodedContentType
+  currentDocumentSourceEnabled: boolean
+  field: EncodedSimpleListField
+  fieldBinding: FieldBinding
+  listBinding: DynamicListBinding | undefined
+  onFieldChange: (binding: FieldBinding) => void
+  onListChange: (binding: DynamicListBinding | undefined) => void
+}) => {
+  const t = useTranslations()
+  const [mode, setMode] = useState<'field' | 'list'>(
+    listBinding ? 'list' : 'field',
+  )
+
+  useEffect(() => {
+    if (listBinding) setMode('list')
+    else if (fieldBinding) setMode('field')
+  }, [fieldBinding, listBinding])
+
+  return (
+    <div className='grid gap-3'>
+      <div className='grid max-w-sm content-start gap-1.5'>
+        <ControlLabel help={t('dynamicData.nestedListHelp')}>
+          {t('dynamicData.mappingMode')}
+        </ControlLabel>
+        <Select
+          value={mode}
+          onValueChange={(value) => {
+            if (value === 'list') {
+              setMode('list')
+              onListChange(undefined)
+              return
+            }
+
+            setMode('field')
+            onFieldChange(undefined)
+          }}
+        >
+          <SelectTrigger className='w-full'>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='field'>{t('dynamicData.directField')}</SelectItem>
+            <SelectItem value='list'>{t('dynamicData.nestedList')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {mode === 'list' ? (
+        <ListBindingEditor
+          contentTypes={contentTypes}
+          documentContentType={documentContentType}
+          rootDocumentContentType={documentContentType}
+          currentDocumentSourceEnabled={currentDocumentSourceEnabled}
+          field={field}
+          binding={listBinding}
+          onChange={onListChange}
+        />
+      ) : (
+        <FieldBindingEditor
+          contentTypes={fieldContentTypes}
+          documentContentType={documentContentType}
+          currentDocumentSourceEnabled={currentDocumentSourceEnabled}
+          targetField={field}
+          binding={fieldBinding}
+          onChange={onFieldChange}
+        />
+      )}
+    </div>
+  )
+}
+
 export const DynamicDataControl = ({
   contentType,
   documentContentType,
@@ -2264,7 +2425,8 @@ export const DynamicDataControl = ({
   >(() => cloneDynamicBindings(bindings))
   const wasOpenRef = useRef(open ?? internalOpen)
 
-  const list = isListField(field)
+  const list = isMappableDynamicListField(field)
+  const structuredArray = list && field.config.ui === 'SimpleList'
   const isOpen = open ?? internalOpen
 
   useEffect(() => {
@@ -2315,9 +2477,14 @@ export const DynamicDataControl = ({
       )
   const fieldBinding = activeBindings?.fields?.[fieldName]
   const listBinding = activeBindings?.lists?.[fieldName]
-  const bound = list ? !!listBinding : !!fieldBinding
+  const bound = structuredArray
+    ? !!fieldBinding || !!listBinding
+    : list
+      ? !!listBinding
+      : !!fieldBinding
+  const usesListBinding = list && !!listBinding
   const summary = bindingSummary({
-    list,
+    list: usesListBinding,
     fieldBinding,
     listBinding,
     documentContentTypeName: currentDocumentContentType.name,
@@ -2340,8 +2507,41 @@ export const DynamicDataControl = ({
       lists: Object.keys(lists).length ? lists : undefined,
     })
   }
-  const clearBinding = () =>
-    list ? updateListBinding(undefined) : updateFieldBinding(undefined)
+  const updateStructuredFieldBinding = (binding: FieldBinding) => {
+    const fields = { ...(activeBindings?.fields ?? {}) }
+    const lists = { ...(activeBindings?.lists ?? {}) }
+    if (binding) fields[fieldName] = binding
+    else delete fields[fieldName]
+    delete lists[fieldName]
+    commitBindings({
+      ...(activeBindings ?? {}),
+      fields: Object.keys(fields).length ? fields : undefined,
+      lists: Object.keys(lists).length ? lists : undefined,
+    })
+  }
+  const updateStructuredListBinding = (
+    binding: DynamicListBinding | undefined,
+  ) => {
+    const fields = { ...(activeBindings?.fields ?? {}) }
+    const lists = { ...(activeBindings?.lists ?? {}) }
+    delete fields[fieldName]
+    if (binding) lists[fieldName] = binding
+    else delete lists[fieldName]
+    commitBindings({
+      ...(activeBindings ?? {}),
+      fields: Object.keys(fields).length ? fields : undefined,
+      lists: Object.keys(lists).length ? lists : undefined,
+    })
+  }
+  const clearBinding = () => {
+    if (structuredArray) {
+      updateStructuredListBinding(undefined)
+      return
+    }
+
+    if (list) updateListBinding(undefined)
+    else updateFieldBinding(undefined)
+  }
   const triggerLabel = bound ? 'Edit dynamic data link' : 'Link dynamic data'
   const helpDescription = list
     ? 'Dynamic data fills this list from another content source. Use it when modules should stay synced with page, route, or related content instead of being edited manually here.'
@@ -2369,7 +2569,7 @@ export const DynamicDataControl = ({
                 variant='secondary'
                 className='max-w-80 min-w-0 gap-1.5 rounded-md px-2 py-1 hover:bg-secondary/80'
               >
-                {list ? (
+                {usesListBinding ? (
                   <ListFilter className='h-3.5 w-3.5 shrink-0' />
                 ) : (
                   <Link2 className='h-3.5 w-3.5 shrink-0' />
@@ -2413,13 +2613,25 @@ export const DynamicDataControl = ({
     </div>
   )
 
-  const editor = list ? (
+  const editor = structuredArray ? (
+    <StructuredArrayBindingEditor
+      contentTypes={sourceContentTypes}
+      fieldContentTypes={fieldSourceContentTypes}
+      documentContentType={currentDocumentContentType}
+      currentDocumentSourceEnabled={currentDocumentSourceEnabled}
+      field={field as EncodedSimpleListField}
+      fieldBinding={fieldBinding}
+      listBinding={listBinding}
+      onFieldChange={updateStructuredFieldBinding}
+      onListChange={updateStructuredListBinding}
+    />
+  ) : list ? (
     <ListBindingEditor
       contentTypes={sourceContentTypes}
       documentContentType={currentDocumentContentType}
       rootDocumentContentType={currentDocumentContentType}
       currentDocumentSourceEnabled={currentDocumentSourceEnabled}
-      field={field as EncodedListField}
+      field={field as MappableListField}
       binding={listBinding}
       onChange={updateListBinding}
     />

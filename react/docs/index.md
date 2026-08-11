@@ -95,8 +95,9 @@ server bootstrap separately.
 `Image` / `RakunImage` builds a responsive `srcSet` from media `sizes` and
 accepts a layout `sizes` attribute so the browser picks an appropriate width.
 When `previewUrl` is a `data:image/...` LQIP string, it is used as the image
-background while the full asset loads. Pass `usePreview` to render the preview
-string/URL as the primary `src` instead.
+background with a blur while the full asset loads. The blur is removed after
+the final image fires `load`. Pass `usePreview` to render the preview string/URL
+as the primary `src` instead.
 
 ```tsx
 import { Image } from '@rakun-kit/react'

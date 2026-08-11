@@ -179,14 +179,7 @@ export const ProjectHeader = new ContentType({
   name: 'ProjectHeader',
   fields: {
     title: f.string().translatable().required(),
-    categories: f
-      .blocks([
-        {
-          name: 'Category',
-          field: f.relation(LinkItem, 'new'),
-        },
-      ])
-      .required(),
+    categories: f.array(f.link()).required(),
     company: f.string().translatable().required(),
   },
 })

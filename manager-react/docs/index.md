@@ -48,8 +48,8 @@ pasted URL is stored as `{ href, title }`. Opening the destination picker
 exposes the home page and configured page-route types with their content type
 icons; selecting an item fills an empty title from its manager label and stores
 `{ routeId, contentTypeId, title }` so core can resolve localized paths.
-Existing string and untitled reference values remain editable and are upgraded
-to the titled shape when changed.
+Persisted string values are normalized to `{ href, title: '' }` when loaded;
+untitled internal references also remain editable.
 
 Compound arrays such as `f.array(f.link())` render each value as a reorderable
 card in the Info editor. Use the drag handle to change their persisted order;
@@ -150,6 +150,17 @@ filter, and mapping editor for that property. Nested query conditions can select
 document` to read the root document. This supports mappings such as Category ->
 gallery item -> Project -> image card, and the editor can repeat the flow for
 deeper block structures.
+
+Homogeneous arrays of links or relations can use either `Direct field` for the
+complete array or `Nested list` for per-item mapping. This also covers core
+`relation().multiple()` fields. Link items expose `title` and `href`, while
+relation items expose their target content type fields; their result remains a
+flat array rather than the heterogeneous `{ name, value }` shape used by
+`blocks`.
+
+Target link fields are expanded into visible `<field>.title` and `<field>.href`
+rows. Each property can select its own compatible source and core reconstructs
+the mapped link object.
 
 In the SEO tab, `Current document` exposes compatible fields from the complete
 document (including fields edited in Info), while the reserved `_seo` relation

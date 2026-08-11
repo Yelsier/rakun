@@ -1603,7 +1603,6 @@ export const managerMessages = {
   },
   'field.llmsEntries': { defaultMessage: 'Links' },
   'field.llmsLink': { defaultMessage: 'Page or URL' },
-  'field.llmsLinkTitle': { defaultMessage: 'Title override' },
   'field.llmsLinkDescription': { defaultMessage: 'Description' },
 
   'settings.system.createBackup': { defaultMessage: 'Create backup' },

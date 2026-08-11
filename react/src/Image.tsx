@@ -1,6 +1,6 @@
 "use client";
 
-import type { ImgHTMLAttributes } from "react";
+import { useEffect, useRef, useState, type ImgHTMLAttributes } from "react";
 
 type ImageFetchPriority = "high" | "low" | "auto";
 type ImageElementProps = ImgHTMLAttributes<HTMLImageElement> & {
@@ -168,6 +168,7 @@ export function RakunImage({
   loading = "lazy",
   decoding = "async",
   style,
+  onLoad,
   ...imgProps
 }: RakunImageProps) {
   const resolvedImgProps: ImageElementProps = {
@@ -216,9 +217,37 @@ export function RakunImage({
     resolvedPreviewSrc.startsWith("data:")
       ? resolvedPreviewSrc
       : undefined;
+  const imageRef = useRef<HTMLImageElement>(null);
+  const [loadedSrc, setLoadedSrc] = useState<string>();
+  const isLoaded = !!resolvedSrc && loadedSrc === resolvedSrc;
+
+  useEffect(() => {
+    const element = imageRef.current;
+    if (resolvedSrc && element?.complete && element.naturalWidth > 0) {
+      setLoadedSrc(resolvedSrc);
+    }
+  }, [resolvedSrc]);
+
+  const previewStyle = inlinePreviewSrc
+    ? {
+        ...style,
+        backgroundImage: isLoaded
+          ? style?.backgroundImage
+          : `url("${inlinePreviewSrc}")`,
+        backgroundSize: isLoaded ? style?.backgroundSize : "cover",
+        backgroundPosition: isLoaded ? style?.backgroundPosition : "center",
+        filter: isLoaded
+          ? style?.filter
+          : [style?.filter, "blur(20px)"].filter(Boolean).join(" "),
+        transition: [style?.transition, "filter 250ms ease-out"]
+          .filter(Boolean)
+          .join(", "),
+      }
+    : style;
 
   return (
     <img
+      ref={imageRef}
       {...resolvedImgProps}
       src={resolvedSrc}
       srcSet={responsiveSrcSet || undefined}
@@ -229,16 +258,11 @@ export function RakunImage({
       height={resolvedHeight ?? undefined}
       loading={priority ? "eager" : loading}
       decoding={decoding}
-      style={
-        inlinePreviewSrc
-          ? {
-              ...style,
-              backgroundImage: `url("${inlinePreviewSrc}")`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }
-          : style
-      }
+      style={previewStyle}
+      onLoad={(event) => {
+        setLoadedSrc(resolvedSrc);
+        onLoad?.(event);
+      }}
     />
   );
 }

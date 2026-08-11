@@ -972,7 +972,6 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
     'Las herramientas de IA pueden omitir estos enlaces para ahorrar contexto.',
   'field.llmsEntries': 'Enlaces',
   'field.llmsLink': 'Página o URL',
-  'field.llmsLinkTitle': 'Título alternativo',
   'field.llmsLinkDescription': 'Descripción',
   'settings.system.createBackup': 'Crear copia de seguridad',
   'settings.system.backups': 'Copias de seguridad',

@@ -126,10 +126,11 @@ back to `Date`. `Time` stores an ISO time string.
 The `f.link()` manager editor stores a direct `{ href, title }` value or an
 internal `{ routeId, contentTypeId, title }` reference. Web output for these
 values is `{ href, title }`, with internal `href` values localized by route.
-`DataFront` always exposes that object shape. Legacy URL strings and untitled
-internal references remain accepted for writes and persisted data, then receive
-an empty `title` when normalized for web output. Dynamic data exposes link
-properties as `<field>.href` and `<field>.title`.
+`DataInput` and `DataFront` use those object shapes. Persisted legacy URL strings
+remain readable, then receive an empty `title` when loaded in the manager or
+normalized for web output. Dynamic data exposes link source properties as
+`<field>.href` and `<field>.title`; list mapping targets expose those same two
+paths independently and reconstruct the link object from their mapped values.
 
 `f.breadcrums()` declares a computed, API-only field intended for modules such
 as heroes. When the module is rendered in a routable page, the field returns
@@ -172,14 +173,22 @@ rename them without a data migration and a review of manager and web consumers.
 Use `.withHooks(...)` for lifecycle behavior; keep mutations and secrets out of
 `onGet` transformations unless that behavior is explicitly intended.
 
-Dynamic data list mappings may map a target `blocks` field recursively. A map
-entry with `kind: 'list'` contains the same `contentType`, optional `source` or
-`query`, `itemName`, and `map` shape as a top-level list binding. In its query,
+Dynamic data list mappings may map a target `blocks`, link-array, or
+relation-array field recursively. A map entry with `kind: 'list'` contains the
+same `contentType`, optional `source` or `query`, `itemName`, and `map` shape as
+a top-level list binding. In its query,
 `{ $current: 'path' }` resolves against the parent source item and
 `{ $document: 'path' }` resolves against the root document. The manager exposes
 these values as `Current item` and `Current document`, respectively, supporting
 flows such as Category -> gallery item -> related Project -> nested image card.
 Source and target dynamic-field rules are enforced at every level.
+
+Homogeneous link and relation arrays also accept per-item list mappings, at the
+top level or recursively. This includes `f.relation(...).multiple()`, which is
+the relation-array shorthand. Link items map `title` and `href`; relation items
+map fields from their target content type. These arrays resolve to flat items,
+while `f.blocks(...)` remains heterogeneous and resolves each item as
+`{ name, value }`. A structured array may still use a direct whole-field binding.
 
 ## Routes and web output
 

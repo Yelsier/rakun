@@ -39,6 +39,7 @@ import {
   DynamicDataControl,
   isDynamicFallbackRequired,
   isDynamicFieldEnabled,
+  isMappableDynamicListField,
 } from './_fields/DynamicDataControl'
 import {
   useManagerPlugins,
@@ -364,10 +365,12 @@ const ContentTypeEdit = forwardRef<
           const FieldComponent = customEditor
             ? pluginRegistry.fieldEditors[customEditor]
             : (fieldsMap[fieldValue.config.type] as FieldComponent | undefined)
-          const dynamicBinding =
-            fieldValue.config.ui === 'List' || fieldValue.config.ui === 'Iterator'
-              ? dynamicBindings?.lists?.[fieldName]
-              : dynamicBindings?.fields?.[fieldName]
+          const dynamicBinding = isMappableDynamicListField(fieldValue)
+            ? fieldValue.config.ui === 'SimpleList'
+              ? dynamicBindings?.lists?.[fieldName] ??
+                dynamicBindings?.fields?.[fieldName]
+              : dynamicBindings?.lists?.[fieldName]
+            : dynamicBindings?.fields?.[fieldName]
           const dynamicFallbackPlaceholder =
             showDynamicData && dynamicBinding ? t('contentEdit.fallbackValue') : undefined
           const field = FieldComponent ? (

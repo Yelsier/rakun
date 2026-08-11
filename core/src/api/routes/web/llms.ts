@@ -182,7 +182,6 @@ const buildRenderedEntry = ({
   if (!href) return undefined;
 
   const title =
-    getLocalizedString(entry.llmsLinkTitle, language, languages) ||
     (link ? getLocalizedString(link.title, language, languages) : "") ||
     href;
   const description = getLocalizedString(

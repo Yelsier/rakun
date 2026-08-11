@@ -36,6 +36,13 @@ import {
   LocaleVariantRole,
 } from "./localeVariants";
 
+const isStructuredDynamicArray = (field: AnyField) => {
+  if (field.meta.ui !== "SimpleList" || !("field" in field)) return false;
+
+  const itemField = field.field as AnyField;
+  return itemField.meta.type === "Link" || itemField.meta.type === "Relation";
+};
+
 export const Menu = z
   .object({
     title: z.string(),
@@ -879,9 +886,12 @@ export default class ContentType<
     );
     if (!bindings) return false;
 
-    const ui = field.getConfig().ui;
-    return ui === "List" || ui === "Iterator"
-      ? !!bindings.lists?.[key]
+    if (field.meta.ui === "List" || field.meta.ui === "Iterator") {
+      return !!bindings.lists?.[key];
+    }
+
+    return isStructuredDynamicArray(field)
+      ? !!bindings.lists?.[key] || !!bindings.fields?.[key]
       : !!bindings.fields?.[key];
   }
 }

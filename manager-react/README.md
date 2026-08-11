@@ -88,7 +88,8 @@ or type a direct URL, choose the home page, or browse configured page-route
 types and select one of their entries. Internal selections automatically use
 the item label when the title is empty. Direct links are stored as
 `{ href, title }`; internal links as `{ routeId, contentTypeId, title }` so core
-can resolve localized paths. Legacy values remain editable.
+can resolve localized paths. Persisted legacy URL strings are normalized to
+`{ href, title: '' }` when loaded and remain editable.
 
 Compound arrays such as `f.array(f.link())` are reorderable from their drag
 handles in the Info editor, without losing unsaved values inside each item.
@@ -112,6 +113,15 @@ The list mapping editor supports recursive `blocks` targets. Select
 `Nested list` for a mapped list property to configure its own source, query,
 filters, item type, and field mapping. `Current document` query values inside
 that nested editor resolve against the parent source item.
+
+Arrays of links and arrays of relations, including `relation().multiple()`, can
+choose `Direct field` to bind the whole array or `Nested list` to map every
+source item. Link items show `title` and `href`; relation items show the fields
+of the related content type. Unlike `blocks`, these homogeneous arrays do not
+add a `{ name, value }` wrapper to resolved items.
+
+A target link appears as separate `<field>.title` and `<field>.href` mapping
+rows, so its label and destination can come from different source fields.
 
 SEO field mappings can use compatible fields from the full current document.
 New documents also honor core string-field `.seo('<seoField>')` configuration

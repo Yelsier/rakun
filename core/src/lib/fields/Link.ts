@@ -24,11 +24,9 @@ const directLinkInputSchema = z.object({
   title: z.string(),
 });
 
-const linkInputSchema = z.union([
-  z.string().min(1),
-  internalLinkInputSchema,
-  directLinkInputSchema,
-]);
+const linkInputSchema = z.union([internalLinkInputSchema, directLinkInputSchema]);
+
+const linkDbSchema = z.union([z.string().min(1), linkInputSchema]);
 
 const resolvedLinkSchema = z.object({
   href: z.string(),
@@ -42,6 +40,7 @@ const linkOutputSchema = z
   );
 
 type LinkInput = z.infer<typeof linkInputSchema>;
+type LinkDb = z.infer<typeof linkDbSchema>;
 type LinkOutput = z.infer<typeof linkOutputSchema>;
 
 export type LinkfieldValue = LinkInput;
@@ -58,7 +57,7 @@ export type LinkField<
 
 type LinkFieldCore<State extends FieldState> = FieldLike<
   LinkInput,
-  LinkInput,
+  LinkDb,
   LinkOutput,
   LinkMeta,
   State
@@ -76,7 +75,7 @@ function makeLinkField<State extends FieldState>(state: State): LinkField<State>
     state,
     schemas: {
       input: () => linkInputSchema,
-      db: () => linkInputSchema,
+      db: () => linkDbSchema,
       output: () => linkOutputSchema,
     },
   });

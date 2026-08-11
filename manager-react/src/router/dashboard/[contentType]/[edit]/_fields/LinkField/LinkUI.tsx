@@ -11,6 +11,7 @@ import type { LinkPropsRef } from '.'
 import { errorStyle } from '../../edit.styles'
 import { useFieldValues } from '../shared'
 import { FieldWrapper } from '../shared/FieldWrapper'
+import { transformLinkDefaultData } from './linkValue'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -65,10 +66,9 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
     id,
     isRequired: props.isRequired,
     isTranslatable: props.isTranslatable,
-    defaultData: props.defaultData as LinkfieldValue,
+    defaultData: transformLinkDefaultData(props.defaultData),
     defaultValue: EMPTY_LINK,
     validateValue: (nextValue) => {
-      if (typeof nextValue === 'string') return null
       if (isDirectLinkValue(nextValue)) {
         if (!nextValue.href) {
           return props.isRequired || nextValue.title ? t('linkPicker.destinationRequired') : null
@@ -192,14 +192,11 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
       selectedDocument &&
       (selectedDocument as LinkDocument)._visibility !== 'published'
   )
-  const displayValue =
-    typeof value === 'string'
-      ? value
-      : directValue
-        ? directValue.href
-        : (selectedDocumentLabel ??
-          pendingSelectedLabel ??
-          (internalValue?.contentTypeId ? t('linkPicker.selected') : ''))
+  const displayValue = directValue
+    ? directValue.href
+    : (selectedDocumentLabel ??
+      pendingSelectedLabel ??
+      (internalValue?.contentTypeId ? t('linkPicker.selected') : ''))
   const allRouteItems = ((routeItemsData as { items?: LinkDocument[] } | undefined)?.items ??
     []) as LinkDocument[]
   const routeItems =
@@ -230,11 +227,6 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
   }
 
   const updateTitle = (title: string) => {
-    if (typeof value === 'string') {
-      onValueChange({ href: value, title })
-      return
-    }
-
     onValueChange({ ...value, title })
   }
 

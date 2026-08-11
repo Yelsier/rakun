@@ -130,6 +130,111 @@ describe("dynamic data output", () => {
     expect(resolved.modules[0]?.value.eyebrow).toBe("Parent title");
   });
 
+  it("maps link and relation arrays item by item without block wrappers", async () => {
+    const ArrayMappingSource = new ContentType({
+      name: "ArrayMappingSource",
+      dynamicDataSource: true,
+      fields: {
+        title: Fields.string().required(),
+        href: Fields.string().required(),
+      },
+    });
+    const ArrayMappingCard = new ContentType({
+      name: "ArrayMappingCard",
+      fields: {
+        title: Fields.string().required(),
+        link: Fields.link().required(),
+      },
+    });
+    const ArrayMappingSection = new ContentType({
+      name: "ArrayMappingSection",
+      fields: {
+        sources: Fields.relation(ArrayMappingSource, "new").multiple(),
+        links: Fields.array(Fields.link().required()),
+        cards: Fields.relation(ArrayMappingCard, "new").multiple(),
+      },
+    });
+    registerContentType(ArrayMappingSource);
+    registerContentType(ArrayMappingCard);
+
+    const source = {
+      kind: "currentDocument" as const,
+      contentType: ArrayMappingSection.name,
+      path: "sources",
+    };
+    const resolved = await resolveDynamicData(
+      {
+        _type: ArrayMappingSection.name,
+        sources: [
+        {
+          _id: "source-1",
+          _type: ArrayMappingSource.name,
+          title: "Documentation",
+          href: "/docs/",
+        },
+        ],
+        links: [{ href: "/manual/", title: "Manual" }],
+        cards: [],
+        _bindings: {
+          lists: {
+            links: {
+              contentType: ArrayMappingSource.name,
+              source,
+              itemName: "Link",
+              map: {
+                title: {
+                  contentType: ArrayMappingSource.name,
+                  path: "title",
+                },
+                href: {
+                  contentType: ArrayMappingSource.name,
+                  path: "href",
+                },
+              },
+            },
+            cards: {
+              contentType: ArrayMappingSource.name,
+              source,
+              itemName: ArrayMappingCard.name,
+              map: {
+                title: {
+                  contentType: ArrayMappingSource.name,
+                  path: "title",
+                },
+                "link.title": {
+                  contentType: ArrayMappingSource.name,
+                  path: "title",
+                },
+                "link.href": {
+                  contentType: ArrayMappingSource.name,
+                  path: "href",
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        db: {} as never,
+        contentType: ArrayMappingSection,
+        surface: "web",
+      },
+    );
+
+    expect(resolved.links).toEqual([
+      { href: "/docs/", title: "Documentation" },
+      { href: "/manual/", title: "Manual" },
+    ]);
+    expect(resolved.cards).toEqual([
+      {
+        _id: `${ArrayMappingCard.name}:source-1`,
+        _type: ArrayMappingCard.name,
+        title: "Documentation",
+        link: { href: "/docs/", title: "Documentation" },
+      },
+    ]);
+  });
+
   it("builds a nested list from an array on the current document", async () => {
     const CurrentDocumentLinkItem = new ContentType({
       name: "CurrentDocumentLinkItem",
@@ -262,8 +367,7 @@ describe("dynamic data output", () => {
       name: "NestedDynamicGalleryImage",
       fields: {
         title: Fields.string().required(),
-        href: Fields.string().required(),
-        linkTitle: Fields.string().required(),
+        link: Fields.link().required(),
         image: Fields.file().type("Image").required(),
       },
     });
@@ -383,11 +487,11 @@ describe("dynamic data output", () => {
                             contentType: NestedSourceImage.name,
                             path: "title",
                           },
-                          href: {
+                          "link.href": {
                             contentType: NestedSourceImage.name,
                             path: "link.href",
                           },
-                          linkTitle: {
+                          "link.title": {
                             contentType: NestedSourceImage.name,
                             path: "link.title",
                           },
@@ -426,8 +530,10 @@ describe("dynamic data output", () => {
                 _id: "GalleryImage:image-1",
                 _type: NestedGalleryImage.name,
                 title: "Aurora launch",
-                href: "/projects/aurora-launch",
-                linkTitle: "View Aurora launch",
+                link: {
+                  href: "/projects/aurora-launch",
+                  title: "View Aurora launch",
+                },
                 image,
               },
             },

@@ -22,11 +22,15 @@ const _title: string = _front.link.title
 
 const _input: DataInput<typeof LinkPage> = {
   _type: 'TypedLinkPage',
+  link: { href: '/docs/', title: 'Documentation' },
+  links: [{ href: '/contact/', title: 'Contact' }],
+}
+
+const _invalidInput: DataInput<typeof LinkPage> = {
+  _type: 'TypedLinkPage',
+  // @ts-expect-error New link input uses the titled object shape.
   link: '/legacy-docs/',
-  links: [
-    '/legacy-about/',
-    { href: '/contact/', title: 'Contact' },
-  ],
+  links: [],
 }
 
 const _db: DBOutput<typeof LinkPage> = {

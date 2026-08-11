@@ -54,7 +54,10 @@ describe("field type inference", () => {
   it("accepts direct URLs and internal route references in link fields", () => {
     const link = Fields.link().required();
 
-    expect(link.getInputSchema().parse("https://example.com/docs")).toBe(
+    expect(
+      link.getInputSchema().safeParse("https://example.com/docs").success,
+    ).toBe(false);
+    expect(link.getSchema().parse("https://example.com/docs")).toBe(
       "https://example.com/docs",
     );
     expect(
@@ -264,6 +267,53 @@ describe("field type inference", () => {
         },
       })._bindings?.fields?.title?.path,
     ).toBe("title");
+  });
+
+  it("accepts direct and item mappings for required structured arrays", () => {
+    const DynamicArrayItem = new ContentType({
+      name: "DynamicArrayItem",
+      fields: {
+        title: Fields.string().required(),
+      },
+    });
+    const DynamicArrays = new ContentType({
+      name: "DynamicArrays",
+      fields: {
+        links: Fields.array(Fields.link().required()).required(),
+        relations: Fields.relation(DynamicArrayItem, "new")
+          .multiple()
+          .required(),
+      },
+    });
+
+    const parsed = DynamicArrays.validate({
+      _type: DynamicArrays.name,
+      _bindings: {
+        fields: {
+          links: {
+            contentType: "Navigation",
+            path: "links",
+          },
+        },
+        lists: {
+          relations: {
+            contentType: "Article",
+            itemName: DynamicArrayItem.name,
+            map: {
+              title: {
+                contentType: "Article",
+                path: "title",
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(parsed._bindings?.fields?.links?.path).toBe("links");
+    expect(parsed._bindings?.lists?.relations?.itemName).toBe(
+      DynamicArrayItem.name,
+    );
   });
 
   it("keeps dynamic required fields required without a binding", () => {

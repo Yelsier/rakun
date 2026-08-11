@@ -473,6 +473,18 @@ selected, while reserved SEO metadata is omitted from dynamic data mappings.
 The generated `href` source is only shown for content types that have a
 configured route with `hasPage: true`.
 
+In list mappings, a target `f.link()` is exposed as two independent target
+paths, `<field>.title` and `<field>.href`. Mapping those paths reconstructs the
+target link object instead of assigning a URL string to the complete field.
+
+Homogeneous `f.array(f.link())` and `f.array(f.relation(...))` targets can keep
+using a direct array field binding or switch to per-item list mapping.
+`f.relation(...).multiple()` is the same relation-array model and has the same
+mapping support. Link arrays expose `title` and `href` for every item; relation
+arrays expose the related content type's fields. Their resolved items stay flat,
+whereas heterogeneous `f.blocks(...)` items keep their `{ name, value }`
+wrapper.
+
 For example, a routeable category can pre-link its SEO title when a new category
 is created:
 
@@ -567,10 +579,10 @@ dynamic field rules before the query runs. `_id` is also available for relation
 queries.
 
 List mappings can be nested recursively when a mapped target field is itself a
-`blocks` list. Use `kind: "list"` for that map entry and configure its source,
-query, item type, and field map exactly like a top-level list binding. Inside
-the nested query, `$current` refers to the source item being mapped by the
-parent list:
+`blocks` list, link array, or relation array. Use `kind: "list"` for that map
+entry and configure its source, query, item type, and field map exactly like a
+top-level list binding. Inside the nested query, `$current` refers to the source
+item being mapped by the parent list:
 
 ```ts
 map: {
@@ -702,9 +714,9 @@ Notable fields:
 - `LinkField`: the manager stores a direct `{ href, title }` value or an
   internal `{ routeId, contentTypeId, title }` reference. Titled links resolve
   to `{ href, title }` in web output, with internal `href` values localized by
-  route. Web output always uses that object shape. Legacy direct URL strings
-  and untitled internal references remain accepted as input and persisted data;
-  they are normalized to an empty `title` on output.
+  route. New input and web output always use an object shape. Persisted legacy
+  direct URL strings remain readable and receive an empty `title` when loaded
+  by the manager or normalized for web output.
 - `BreadcrumsField`: `f.breadcrums()` is a computed, API-only field for page
   modules. In web and preview output it returns the localized route hierarchy as
   `{ label, href }[]`, ordered from the highest ancestor to the current page. It
