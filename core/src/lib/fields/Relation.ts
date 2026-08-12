@@ -186,8 +186,8 @@ function makeRelationField<
       ).required();
       let list: unknown = simpleListField(relation);
 
-      if (this.state.required) {
-        list = (list as SimpleListField).required();
+      if (!this.state.required) {
+        list = (list as SimpleListField).optional();
       }
 
       if (this.state.translatable) {

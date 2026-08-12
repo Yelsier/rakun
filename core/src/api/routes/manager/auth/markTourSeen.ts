@@ -26,4 +26,10 @@ export const markTourSeenHandler = async ({
 export const getUpdatedSeenTours = (
   seenTours: (string | undefined)[] | undefined,
   tourId: string,
-) => Array.from(new Set([...(seenTours ?? []).filter(Boolean), tourId]));
+): string[] =>
+  Array.from(
+    new Set([
+      ...(seenTours ?? []).filter((item): item is string => !!item),
+      tourId,
+    ]),
+  );

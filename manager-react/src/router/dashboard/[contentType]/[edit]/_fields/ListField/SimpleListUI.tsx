@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { fieldsMap, type FieldRef } from '../../ContentTypeEdit'
 import { FieldValue, useFieldValues } from '../shared'
 import { FieldWrapper } from '../shared/FieldWrapper'
+import { ItemLimitStatus } from '../shared/ItemLimitStatus'
 import {
   snapshotSimpleListOrder,
   type SimpleListItem,
@@ -140,6 +141,12 @@ const RelationSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) 
       defaultData: defaultIds as never,
       defaultValue: [],
       validateValue: (nextValue) => {
+        if (props.minItems !== undefined && nextValue.length < props.minItems) {
+          return t('contentEdit.minimumItemsError', { count: props.minItems })
+        }
+        if (props.maxItems !== undefined && nextValue.length > props.maxItems) {
+          return t('contentEdit.maximumItemsError', { count: props.maxItems })
+        }
         if (props.isRequired && nextValue.length === 0) {
           return 'This field is required'
         }
@@ -230,6 +237,7 @@ const RelationSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) 
       handleRemove(toggleId)
       return
     }
+    if (props.maxItems !== undefined && value.length >= props.maxItems) return
     onValueChange([...value, toggleId])
     cleanErrors()
     removeRelatedErrors(id)
@@ -243,40 +251,52 @@ const RelationSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) 
       getState={getRelationState}
       ref={ref}
     >
-      <Tags>
-        <TagsTrigger>
-          {value.map((selectedId) => (
-            <TagsValue key={selectedId} onRemove={() => handleRemove(selectedId)}>
-              {labelsById.get(selectedId) || selectedId}
-            </TagsValue>
-          ))}
-        </TagsTrigger>
-        <TagsContent>
-          <TagsInput
-            placeholder={
-              props.dynamicFallbackPlaceholder ??
-              `Search ${relationField.contentType.name}...`
-            }
-          />
-          <TagsList>
-            <TagsEmpty />
-            <TagsGroup>
-              {options.map((option) => (
-                <TagsItem
-                  key={option.value}
-                  value={option.value}
-                  onSelect={handleToggle}
-                >
-                  {option.label}
-                  {value.includes(option.value) ? (
-                    <CheckIcon className='text-muted-foreground' size={14} />
-                  ) : null}
-                </TagsItem>
-              ))}
-            </TagsGroup>
-          </TagsList>
-        </TagsContent>
-      </Tags>
+      <div className='grid gap-1.5'>
+        <Tags>
+          <TagsTrigger>
+            {value.map((selectedId) => (
+              <TagsValue key={selectedId} onRemove={() => handleRemove(selectedId)}>
+                {labelsById.get(selectedId) || selectedId}
+              </TagsValue>
+            ))}
+          </TagsTrigger>
+          <TagsContent>
+            <TagsInput
+              placeholder={
+                props.dynamicFallbackPlaceholder ??
+                `Search ${relationField.contentType.name}...`
+              }
+            />
+            <TagsList>
+              <TagsEmpty />
+              <TagsGroup>
+                {options.map((option) => (
+                  <TagsItem
+                    disabled={
+                      !value.includes(option.value) &&
+                      props.maxItems !== undefined &&
+                      value.length >= props.maxItems
+                    }
+                    key={option.value}
+                    value={option.value}
+                    onSelect={handleToggle}
+                  >
+                    {option.label}
+                    {value.includes(option.value) ? (
+                      <CheckIcon className='text-muted-foreground' size={14} />
+                    ) : null}
+                  </TagsItem>
+                ))}
+              </TagsGroup>
+            </TagsList>
+          </TagsContent>
+        </Tags>
+        <ItemLimitStatus
+          count={value.length}
+          minItems={props.minItems}
+          maxItems={props.maxItems}
+        />
+      </div>
     </FieldWrapper>
   )
 }
@@ -300,6 +320,12 @@ const PrimitiveSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props })
       defaultData: defaultValues as never,
       defaultValue: [],
       validateValue: (nextValue) => {
+        if (props.minItems !== undefined && nextValue.length < props.minItems) {
+          return t('contentEdit.minimumItemsError', { count: props.minItems })
+        }
+        if (props.maxItems !== undefined && nextValue.length > props.maxItems) {
+          return t('contentEdit.maximumItemsError', { count: props.maxItems })
+        }
         if (props.isRequired && nextValue.length === 0) {
           return 'This field is required'
         }
@@ -381,6 +407,7 @@ const PrimitiveSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props })
       setQuery('')
       return
     }
+    if (props.maxItems !== undefined && value.length >= props.maxItems) return
     onValueChange([...value, token])
     cleanErrors()
     removeRelatedErrors(id)
@@ -391,7 +418,10 @@ const PrimitiveSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props })
     item.toLowerCase().includes(query.toLowerCase()),
   )
   const normalizedQuery = normalizeToken(query, { silent: true })
-  const canCreate = !!normalizedQuery && !value.includes(normalizedQuery)
+  const canCreate =
+    !!normalizedQuery &&
+    !value.includes(normalizedQuery) &&
+    (props.maxItems === undefined || value.length < props.maxItems)
 
   return (
     <FieldWrapper
@@ -401,49 +431,53 @@ const PrimitiveSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props })
       getState={getPrimitiveState}
       ref={ref}
     >
-      <Tags value={query} setValue={setQuery}>
-        <TagsTrigger>
-          {value.map((item) => (
-            <TagsValue key={item} onRemove={() => handleRemove(item)}>
-              {item}
-            </TagsValue>
-          ))}
-        </TagsTrigger>
-        <TagsContent>
-          <TagsInput
-            placeholder={
-              props.dynamicFallbackPlaceholder ??
-              `Add ${isNumberField ? 'number' : 'value'}...`
-            }
-            value={query}
-            onValueChange={setQuery}
-            onKeyDown={(event) => {
-              if (event.key !== 'Enter') return
-              event.preventDefault()
-              handleAdd(query)
-            }}
-          />
-          <TagsList>
-            <TagsEmpty />
-            <TagsGroup>
-              {canCreate ? (
-                <TagsItem
-                  value={query}
-                  onSelect={() => handleAdd(query)}
-                >
-                  {t('contentEdit.createQuoted', { query: query.trim() })}
-                </TagsItem>
-              ) : null}
-              {filteredExisting.map((item) => (
-                <TagsItem key={item} value={item} onSelect={() => handleRemove(item)}>
-                  {item}
-                  <CheckIcon className='text-muted-foreground' size={14} />
-                </TagsItem>
-              ))}
-            </TagsGroup>
-          </TagsList>
-        </TagsContent>
-      </Tags>
+      <div className='grid gap-1.5'>
+        <Tags value={query} setValue={setQuery}>
+          <TagsTrigger>
+            {value.map((item) => (
+              <TagsValue key={item} onRemove={() => handleRemove(item)}>
+                {item}
+              </TagsValue>
+            ))}
+          </TagsTrigger>
+          <TagsContent>
+            <TagsInput
+              placeholder={
+                props.dynamicFallbackPlaceholder ??
+                `Add ${isNumberField ? 'number' : 'value'}...`
+              }
+              value={query}
+              onValueChange={setQuery}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter') return
+                event.preventDefault()
+                handleAdd(query)
+              }}
+            />
+            <TagsList>
+              <TagsEmpty />
+              <TagsGroup>
+                {canCreate ? (
+                  <TagsItem value={query} onSelect={() => handleAdd(query)}>
+                    {t('contentEdit.createQuoted', { query: query.trim() })}
+                  </TagsItem>
+                ) : null}
+                {filteredExisting.map((item) => (
+                  <TagsItem key={item} value={item} onSelect={() => handleRemove(item)}>
+                    {item}
+                    <CheckIcon className='text-muted-foreground' size={14} />
+                  </TagsItem>
+                ))}
+              </TagsGroup>
+            </TagsList>
+          </TagsContent>
+        </Tags>
+        <ItemLimitStatus
+          count={value.length}
+          minItems={props.minItems}
+          maxItems={props.maxItems}
+        />
+      </div>
     </FieldWrapper>
   )
 }
@@ -468,6 +502,12 @@ const GenericSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) =
       : undefined,
     defaultValue: [],
     validateValue: (value) => {
+      if (props.minItems !== undefined && value.length < props.minItems) {
+        return t('contentEdit.minimumItemsError', { count: props.minItems })
+      }
+      if (props.maxItems !== undefined && value.length > props.maxItems) {
+        return t('contentEdit.maximumItemsError', { count: props.maxItems })
+      }
       const values = value.map((item) => refs.current[item.uid]?.getValue())
       if (values.some((v) => typeof v === 'object' && v && '_error' in v)) {
         return 'Please fix the errors above'
@@ -565,9 +605,21 @@ const GenericSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) =
       getState={getStateWithNested}
       ref={ref}
     >
-      <Button onClick={handleAddItem} variant={'outline'} type='button'>
+      <Button
+        disabled={
+          props.maxItems !== undefined && value.length >= props.maxItems
+        }
+        onClick={handleAddItem}
+        variant={'outline'}
+        type='button'
+      >
         <Plus /> {t('common.add')} {relationName}
       </Button>
+      <ItemLimitStatus
+        count={value.length}
+        minItems={props.minItems}
+        maxItems={props.maxItems}
+      />
 
       {value.length > 0 ? (
         <Sortable

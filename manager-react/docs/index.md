@@ -158,6 +158,11 @@ relation items expose their target content type fields; their result remains a
 flat array rather than the heterogeneous `{ name, value }` shape used by
 `blocks`.
 
+Core `.min(count)` and `.max(count)` limits on `f.array(...)` and `.multiple()`
+relation, file, select, and content-reference fields appear below the manager
+control with its live item count. The control reports minimum/maximum validation
+errors and prevents adding or confirming items beyond the maximum.
+
 Target link fields are expanded into visible `<field>.title` and `<field>.href`
 rows. Each property can select its own compatible source and core reconstructs
 the mapped link object.

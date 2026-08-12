@@ -123,7 +123,7 @@ export type FieldState = {
 };
 
 export type DefaultFieldState = {
-  required: false;
+  required: true;
   translatable: false;
   visibility: "all";
   dynamic: true;
@@ -132,7 +132,7 @@ export type DefaultFieldState = {
 };
 
 export const defaultFieldState: DefaultFieldState = {
-  required: false,
+  required: true,
   translatable: false,
   visibility: "all",
   dynamic: true,
@@ -140,6 +140,10 @@ export const defaultFieldState: DefaultFieldState = {
 
 export type SetRequired<State extends FieldState> = Omit<State, "required"> & {
   required: true;
+};
+
+export type SetOptional<State extends FieldState> = Omit<State, "required"> & {
+  required: false;
 };
 
 export type SetTranslatable<State extends FieldState> = Omit<
@@ -242,6 +246,7 @@ export type FieldLike<
 
 type FieldModifierKeys =
   | "required"
+  | "optional"
   | "translatable"
   | "apiOnly"
   | "managerOnly"
@@ -309,6 +314,7 @@ type RebindPopulatedField<
 
 export type FieldWithModifiers<F extends AnyFieldLike> = F & {
   required: () => WithFieldState<F, SetRequired<FieldStateOf<F>>>;
+  optional: () => WithFieldState<F, SetOptional<FieldStateOf<F>>>;
   translatable: () => WithFieldState<F, SetTranslatable<FieldStateOf<F>>>;
   apiOnly: () => WithFieldState<F, SetVisibility<FieldStateOf<F>, "api">>;
   managerOnly: () => WithFieldState<
@@ -506,6 +512,11 @@ export function withFieldModifiers<F extends AnyFieldLike>(params: {
         ...field.state,
         required: true,
       } as SetRequired<FieldStateOf<F>>),
+    optional: () =>
+      rebuild({
+        ...field.state,
+        required: false,
+      } as SetOptional<FieldStateOf<F>>),
     translatable: () =>
       rebuild({
         ...field.state,

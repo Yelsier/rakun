@@ -27,11 +27,15 @@ export type SelectMeta<
   ui: Multiple extends true ? "MultiSelect" : "Select";
   options: Options;
   isMultiple: Multiple;
+  minItems?: number;
+  maxItems?: number;
 };
 
 export type EncodedSelectField = EncodedField & {
   options: string[];
   isMultiple: boolean;
+  minItems?: number;
+  maxItems?: number;
 };
 
 type SelectOptions<
@@ -40,6 +44,8 @@ type SelectOptions<
 > = {
   options: Options;
   multiple: Multiple;
+  minItems?: number;
+  maxItems?: number;
 };
 
 export type SelectField<
@@ -58,6 +64,14 @@ type SelectFieldCore<
   >(
     this: TThis,
   ) => SelectField<Options, true, FieldStateOf<TThis>>;
+  min: <TThis extends SelectFieldBase<Options, Multiple, FieldState>>(
+    this: Multiple extends true ? TThis : never,
+    count: number,
+  ) => SelectField<Options, Multiple, FieldStateOf<TThis>>;
+  max: <TThis extends SelectFieldBase<Options, Multiple, FieldState>>(
+    this: Multiple extends true ? TThis : never,
+    count: number,
+  ) => SelectField<Options, Multiple, FieldStateOf<TThis>>;
 };
 
 type SelectFieldBase<
@@ -96,6 +110,8 @@ function makeSelectField<
         >["ui"],
         options: options.options,
         isMultiple: options.multiple,
+        minItems: options.minItems,
+        maxItems: options.maxItems,
       },
       state,
       schemas: sameSchemas(() => buildSelectSchema(options)),
@@ -105,6 +121,22 @@ function makeSelectField<
     >(this: TThis) {
       return makeSelectField(
         { ...options, multiple: true },
+        this.state as FieldStateOf<TThis>,
+      );
+    },
+    min: function <
+      TThis extends SelectFieldBase<Options, Multiple, FieldState>,
+    >(this: Multiple extends true ? TThis : never, count: number) {
+      return makeSelectField(
+        { ...options, minItems: count },
+        this.state as FieldStateOf<TThis>,
+      );
+    },
+    max: function <
+      TThis extends SelectFieldBase<Options, Multiple, FieldState>,
+    >(this: Multiple extends true ? TThis : never, count: number) {
+      return makeSelectField(
+        { ...options, maxItems: count },
         this.state as FieldStateOf<TThis>,
       );
     },
@@ -128,7 +160,11 @@ function buildSelectSchema<
     options.options.length ? options.options : [""],
   ) as z.ZodType<Options[number]>;
 
-  return (
-    options.multiple ? z.array(literal) : literal
-  ) as z.ZodType<SelectValue<Options, Multiple>>;
+  let list = z.array(literal);
+  if (options.minItems !== undefined) list = list.min(options.minItems);
+  if (options.maxItems !== undefined) list = list.max(options.maxItems);
+
+  return (options.multiple ? list : literal) as z.ZodType<
+    SelectValue<Options, Multiple>
+  >;
 }

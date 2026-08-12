@@ -33,12 +33,12 @@ export const UserMfa = new ContentType({
   fields: {
     user: Fields.relation(ManagerUser).required(),
     enabled: Fields.boolean().required(),
-    preferredMethod: Fields.select(["totp", "webauthn"]),
-    totpSecret: Fields.string(),
-    totpSecretPending: Fields.string(),
-    totpVerifiedAt: Fields.date(),
-    recoveryCodeHashes: Fields.array(Fields.string()),
-    recoveryCodesGeneratedAt: Fields.date(),
+    preferredMethod: Fields.select(["totp", "webauthn"]).optional(),
+    totpSecret: Fields.string().optional(),
+    totpSecretPending: Fields.string().optional(),
+    totpVerifiedAt: Fields.date().optional(),
+    recoveryCodeHashes: Fields.array(Fields.string()).optional(),
+    recoveryCodesGeneratedAt: Fields.date().optional(),
   },
   uniques: [["user"]],
 })

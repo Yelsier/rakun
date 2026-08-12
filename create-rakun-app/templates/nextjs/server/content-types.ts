@@ -9,7 +9,7 @@ export const Hero = new ContentType({
   },
   fields: {
     heading: f.string().required(),
-    text: f.string().type('Textarea'),
+    text: f.string().type('Textarea').optional(),
   },
   listFields: ['heading'],
 })

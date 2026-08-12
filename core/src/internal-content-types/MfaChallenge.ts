@@ -11,8 +11,8 @@ export const MfaChallenge = new ContentType({
     method: Fields.select(["totp", "webauthn"]).required(),
     expiresAt: Fields.date().required(),
     attempts: Fields.number().required(),
-    consumedAt: Fields.date(),
-    webAuthnChallenge: Fields.string(),
+    consumedAt: Fields.date().optional(),
+    webAuthnChallenge: Fields.string().optional(),
   },
   uniques: [["token"]],
 }).hideFromManager();

@@ -10,7 +10,7 @@ export const WebAuthnRegChallenge = new ContentType({
     user: Fields.relation(ManagerUser).required(),
     challenge: Fields.string().required(),
     expiresAt: Fields.date().required(),
-    consumedAt: Fields.date(),
+    consumedAt: Fields.date().optional(),
   },
   uniques: [["token"]],
 }).hideFromManager();

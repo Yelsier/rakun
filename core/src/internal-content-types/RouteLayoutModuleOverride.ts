@@ -11,7 +11,7 @@ export const RouteLayoutModuleOverride = new ContentType({
     contentTypeId: Fields.string().type("Id").required(),
     key: Fields.string().required(),
     contentType: Fields.string().required(),
-    moduleId: Fields.string(),
+    moduleId: Fields.string().optional(),
   },
   uniques: [["routeId", "contentTypeId", "key"]],
   listFields: ["routeKey", "key", "contentType"],

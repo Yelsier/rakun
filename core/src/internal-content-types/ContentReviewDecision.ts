@@ -10,7 +10,7 @@ export const ContentReviewDecision = new ContentType({
     reviewId: Fields.string().type('Id').required(),
     reviewer: Fields.relation(ManagerUser, 'existing').required(),
     decision: Fields.select(['approve', 'request_changes']).required(),
-    feedback: Fields.string().type('Textarea'),
+    feedback: Fields.string().type('Textarea').optional(),
   },
   uniques: [['reviewId', 'reviewer']],
 }).hideFromManager()

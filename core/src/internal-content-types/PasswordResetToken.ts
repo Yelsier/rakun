@@ -33,7 +33,7 @@ export const PasswordResetToken = new ContentType({
     tokenHash: Fields.string().required(),
     user: Fields.relation(ManagerUser).required(),
     expiresAt: Fields.date().required(),
-    consumedAt: Fields.date(),
+    consumedAt: Fields.date().optional(),
   },
   uniques: [['tokenHash']],
 })

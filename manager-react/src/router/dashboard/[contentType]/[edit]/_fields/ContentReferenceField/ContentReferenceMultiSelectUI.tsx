@@ -4,8 +4,10 @@ import { CheckIcon } from 'lucide-react'
 
 import { useFieldValues, type DefaultDataTypes } from '../shared'
 import { FieldWrapper } from '../shared/FieldWrapper'
+import { ItemLimitStatus } from '../shared/ItemLimitStatus'
 import type { ContentReferencePropsRef } from '.'
 import { useContentReferenceOptions } from '.'
+import { useTranslations } from '@/i18n'
 
 import {
   Tags,
@@ -27,7 +29,10 @@ const ContentReferenceMultiSelectUI: React.FC<ContentReferencePropsRef> = ({
   dynamicFallbackPlaceholder,
   ref,
   contentType,
+  minItems,
+  maxItems,
 }) => {
+  const t = useTranslations()
   const { value, getValue, errors, cleanErrors, getState, onValueChange } =
     useFieldValues<string[]>({
       id,
@@ -36,6 +41,12 @@ const ContentReferenceMultiSelectUI: React.FC<ContentReferencePropsRef> = ({
       defaultData: defaultData as DefaultDataTypes<string[]>,
       defaultValue: [],
       validateValue: (nextValue) => {
+        if (minItems !== undefined && nextValue.length < minItems) {
+          return t('contentEdit.minimumItemsError', { count: minItems })
+        }
+        if (maxItems !== undefined && nextValue.length > maxItems) {
+          return t('contentEdit.maximumItemsError', { count: maxItems })
+        }
         if (isRequired && nextValue.length === 0) {
           return 'This field is required'
         }
@@ -58,6 +69,7 @@ const ContentReferenceMultiSelectUI: React.FC<ContentReferencePropsRef> = ({
       handleRemove(toggleId)
       return
     }
+    if (maxItems !== undefined && value.length >= maxItems) return
 
     onValueChange([...value, toggleId])
     cleanErrors()
@@ -71,6 +83,7 @@ const ContentReferenceMultiSelectUI: React.FC<ContentReferencePropsRef> = ({
       getState={getState}
       ref={ref}
     >
+      <div className='grid gap-1.5'>
       <Tags>
         <TagsTrigger>
           {value.map((selectedId) => (
@@ -88,6 +101,11 @@ const ContentReferenceMultiSelectUI: React.FC<ContentReferencePropsRef> = ({
             <TagsGroup>
               {options.map((option) => (
                 <TagsItem
+                  disabled={
+                    !value.includes(option.value) &&
+                    maxItems !== undefined &&
+                    value.length >= maxItems
+                  }
                   key={option.value}
                   value={option.value}
                   onSelect={handleToggle}
@@ -102,6 +120,12 @@ const ContentReferenceMultiSelectUI: React.FC<ContentReferencePropsRef> = ({
           </TagsList>
         </TagsContent>
       </Tags>
+        <ItemLimitStatus
+          count={value.length}
+          minItems={minItems}
+          maxItems={maxItems}
+        />
+      </div>
     </FieldWrapper>
   )
 }

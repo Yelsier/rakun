@@ -29,8 +29,8 @@ const TestCT = new ContentType({
   name: "Test",
   fields: {
     test: Fields.string().required(),
-    relation: Fields.relation(RelationCT),
-    test2: Fields.string().translatable(),
+    relation: Fields.relation(RelationCT).optional(),
+    test2: Fields.string().translatable().optional(),
   },
 });
 

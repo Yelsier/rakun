@@ -28,11 +28,15 @@ export type ContentReferenceMeta<
   ui: Multiple extends true ? "ContentTypeMultiSelect" : "ContentTypeSelect";
   contentType: Name;
   isMultiple: Multiple;
+  minItems?: number;
+  maxItems?: number;
 };
 
 export type EncodedContentReferenceField = EncodedField & {
   contentType: Pick<EncodedContentType, "name" | "listFields">;
   isMultiple: boolean;
+  minItems?: number;
+  maxItems?: number;
 };
 
 type ContentReferenceOptions<
@@ -41,6 +45,8 @@ type ContentReferenceOptions<
 > = {
   contentType: Name;
   multiple: Multiple;
+  minItems?: number;
+  maxItems?: number;
 };
 
 export type ContentReferenceField<
@@ -61,6 +67,14 @@ type ContentReferenceFieldCore<
   >(
     this: TThis,
   ) => ContentReferenceField<Name, true, FieldStateOf<TThis>>;
+  min: <TThis extends ContentReferenceFieldBase<Name, Multiple, FieldState>>(
+    this: Multiple extends true ? TThis : never,
+    count: number,
+  ) => ContentReferenceField<Name, Multiple, FieldStateOf<TThis>>;
+  max: <TThis extends ContentReferenceFieldBase<Name, Multiple, FieldState>>(
+    this: Multiple extends true ? TThis : never,
+    count: number,
+  ) => ContentReferenceField<Name, Multiple, FieldStateOf<TThis>>;
 };
 
 type ContentReferenceFieldBase<
@@ -104,15 +118,33 @@ function makeContentReferenceField<
         >["ui"],
         contentType: options.contentType,
         isMultiple: options.multiple,
+        minItems: options.minItems,
+        maxItems: options.maxItems,
       },
       state,
-      schemas: sameSchemas(() => buildContentReferenceSchema(options.multiple)),
+      schemas: sameSchemas(() => buildContentReferenceSchema(options)),
     }),
     multiple: function <
       TThis extends ContentReferenceFieldBase<Name, Multiple, FieldState>,
     >(this: TThis) {
       return makeContentReferenceField(
         { ...options, multiple: true },
+        this.state as FieldStateOf<TThis>,
+      );
+    },
+    min: function <
+      TThis extends ContentReferenceFieldBase<Name, Multiple, FieldState>,
+    >(this: Multiple extends true ? TThis : never, count: number) {
+      return makeContentReferenceField(
+        { ...options, minItems: count },
+        this.state as FieldStateOf<TThis>,
+      );
+    },
+    max: function <
+      TThis extends ContentReferenceFieldBase<Name, Multiple, FieldState>,
+    >(this: Multiple extends true ? TThis : never, count: number) {
+      return makeContentReferenceField(
+        { ...options, maxItems: count },
         this.state as FieldStateOf<TThis>,
       );
     },
@@ -128,10 +160,17 @@ function makeContentReferenceField<
   });
 }
 
-function buildContentReferenceSchema<Multiple extends boolean>(
-  multiple: Multiple,
+function buildContentReferenceSchema<
+  Name extends string,
+  Multiple extends boolean,
+>(
+  options: ContentReferenceOptions<Name, Multiple>,
 ) {
-  return (multiple ? z.array(Id) : Id) as unknown as z.ZodType<
+  let list = z.array(Id);
+  if (options.minItems !== undefined) list = list.min(options.minItems);
+  if (options.maxItems !== undefined) list = list.max(options.maxItems);
+
+  return (options.multiple ? list : Id) as unknown as z.ZodType<
     ContentReferenceValue<Multiple>
   >;
 }

@@ -798,6 +798,26 @@ export const managerMessages = {
     params: { query: 'string' },
   },
   'contentEdit.invalidNumber': { defaultMessage: 'Invalid number' },
+  'contentEdit.itemsCount': {
+    defaultMessage: '{count} items',
+    params: { count: 'number' },
+  },
+  'contentEdit.minimumItems': {
+    defaultMessage: 'Minimum {count}',
+    params: { count: 'number' },
+  },
+  'contentEdit.maximumItems': {
+    defaultMessage: 'Maximum {count}',
+    params: { count: 'number' },
+  },
+  'contentEdit.minimumItemsError': {
+    defaultMessage: 'Add at least {count} items',
+    params: { count: 'number' },
+  },
+  'contentEdit.maximumItemsError': {
+    defaultMessage: 'Add no more than {count} items',
+    params: { count: 'number' },
+  },
   'contentEdit.selectAnOption': { defaultMessage: 'Select an option' },
   'contentEdit.reorderMedia': { defaultMessage: 'Reorder media' },
   'contentEdit.reorderItem': { defaultMessage: 'Reorder item' },

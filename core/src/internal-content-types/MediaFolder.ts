@@ -9,8 +9,8 @@ export const MediaFolder = new ContentType({
     name: Fields.string().required(),
     slug: Fields.string().type("Slug").required(),
     path: Fields.string().required(),
-    parent: Fields.selfRelation(),
-    description: Fields.string().type("Textarea"),
+    parent: Fields.selfRelation().optional(),
+    description: Fields.string().type("Textarea").optional(),
   },
   uniques: [["path"]],
 }).hideFromManager();

@@ -10,6 +10,7 @@ import {
   type FieldLike,
   type FieldOutput,
   type FieldState,
+  type FieldStateOf,
   type InferDb,
   type InferInput,
   type InferOutput,
@@ -29,10 +30,14 @@ export type SimpleListMeta<F extends AnyFieldLike = AnyFieldLike> = {
   type: "List";
   ui: "SimpleList";
   field: F["meta"];
+  minItems?: number;
+  maxItems?: number;
 };
 
 export type EncodedSimpleListField = EncodedField & {
   field: EncodedFieldUnknown;
+  minItems?: number;
+  maxItems?: number;
 };
 
 export type SimpleListField<
@@ -52,16 +57,30 @@ type SimpleListFieldCore<
 > &
   PopulatableFieldLike<SimpleListPopulated<F>, State> & {
     field: F;
+    min: <TThis extends SimpleListFieldCore<F, FieldState>>(
+      this: TThis,
+      count: number,
+    ) => SimpleListField<F, FieldStateOf<TThis>>;
+    max: <TThis extends SimpleListFieldCore<F, FieldState>>(
+      this: TThis,
+      count: number,
+    ) => SimpleListField<F, FieldStateOf<TThis>>;
   };
+
+type SimpleListOptions = {
+  minItems?: number;
+  maxItems?: number;
+};
 
 export function simpleListField<F extends AnyFieldLike>(
   field: F,
 ): SimpleListField<F> {
-  return makeSimpleListField(field, defaultFieldState);
+  return makeSimpleListField(field, {}, defaultFieldState);
 }
 
 function makeSimpleListField<F extends AnyFieldLike, State extends FieldState>(
   field: F,
+  options: SimpleListOptions,
   state: State,
 ): SimpleListField<F, State> {
   const core: SimpleListFieldCore<F, State> = {
@@ -70,33 +89,84 @@ function makeSimpleListField<F extends AnyFieldLike, State extends FieldState>(
         type: "List",
         ui: "SimpleList",
         field: field.meta,
+        minItems: options.minItems,
+        maxItems: options.maxItems,
       },
       state,
       schemas: {
-        input: () => z.array(field.getInputSchema()) as z.ZodType<SimpleListInput<F>>,
-        db: () => z.array(field.getSchema()) as z.ZodType<SimpleListDb<F>>,
+        input: () =>
+          applySimpleListLimits(
+            z.array(field.getInputSchema()),
+            options,
+          ) as z.ZodType<SimpleListInput<F>>,
+        db: () =>
+          applySimpleListLimits(
+            z.array(field.getSchema()),
+            options,
+          ) as z.ZodType<SimpleListDb<F>>,
         output: () =>
-          z.array(field.getOutputSchema()) as z.ZodType<SimpleListOutput<F>>,
+          applySimpleListLimits(
+            z.array(field.getOutputSchema()),
+            options,
+          ) as z.ZodType<SimpleListOutput<F>>,
       },
     }),
     getPopulatedSchema: () =>
       applySimpleListOutputPresence(
-        z.array(getFieldPopulatedSchema(field)) as z.ZodType<
-          SimpleListPopulated<F>
-        >,
+        applySimpleListLimits(
+          z.array(getFieldPopulatedSchema(field)),
+          options,
+        ) as z.ZodType<SimpleListPopulated<F>>,
         state,
       ) as z.ZodType<FieldOutput<SimpleListPopulated<F>, State>>,
     field,
+    min: function <TThis extends SimpleListFieldCore<F, FieldState>>(
+      this: TThis,
+      count: number,
+    ) {
+      return makeSimpleListField(
+        field,
+        { ...options, minItems: count },
+        this.state as FieldStateOf<TThis>,
+      );
+    },
+    max: function <TThis extends SimpleListFieldCore<F, FieldState>>(
+      this: TThis,
+      count: number,
+    ) {
+      return makeSimpleListField(
+        field,
+        { ...options, maxItems: count },
+        this.state as FieldStateOf<TThis>,
+      );
+    },
   };
 
   return withFieldModifiers({
     field: core,
     rebuild: <NextState extends FieldState>(nextState: NextState) =>
-      makeSimpleListField(field, nextState) as WithFieldState<
+      makeSimpleListField(field, options, nextState) as WithFieldState<
         SimpleListFieldCore<F, State>,
         NextState
       >,
   });
+}
+
+function applySimpleListLimits<Item extends z.ZodTypeAny>(
+  schema: z.ZodArray<Item>,
+  options: SimpleListOptions,
+) {
+  let next = schema;
+
+  if (options.minItems !== undefined) {
+    next = next.min(options.minItems);
+  }
+
+  if (options.maxItems !== undefined) {
+    next = next.max(options.maxItems);
+  }
+
+  return next;
 }
 
 function hasPopulatedSchema(

@@ -11,7 +11,7 @@ export const LlmsEntry = new ContentType({
   },
   fields: {
     llmsLink: Fields.link().required(),
-    llmsLinkDescription: Fields.string().type("Textarea").translatable(),
+    llmsLinkDescription: Fields.string().type("Textarea").translatable().optional(),
   },
 }).hideFromManager();
 
@@ -23,16 +23,16 @@ export const LlmsSection = new ContentType({
     title: "settings.llms.section",
   },
   fields: {
-    llmsSectionTitle: Fields.string().translatable(),
+    llmsSectionTitle: Fields.string().translatable().optional(),
     llmsOptional: Fields.boolean().description(
       "field.llmsOptionalDescription",
-    ),
+    ).optional(),
     llmsEntries: Fields.blocks([
       {
         name: LlmsEntry.name,
         field: Fields.relation(LlmsEntry, "new"),
       },
-    ]),
+    ]).optional(),
   },
 }).hideFromManager();
 
@@ -43,15 +43,15 @@ export const LlmsSettings = new ContentType({
   fields: {
     key: Fields.string().required(),
     llmsEnabled: Fields.boolean().required(),
-    llmsTitle: Fields.string().translatable(),
-    llmsSummary: Fields.string().type("Textarea").translatable(),
-    llmsDetails: Fields.string().type("Textarea").translatable(),
+    llmsTitle: Fields.string().translatable().optional(),
+    llmsSummary: Fields.string().type("Textarea").translatable().optional(),
+    llmsDetails: Fields.string().type("Textarea").translatable().optional(),
     llmsSections: Fields.blocks([
       {
         name: LlmsSection.name,
         field: Fields.relation(LlmsSection, "new"),
       },
-    ]),
+    ]).optional(),
   },
   uniques: [["key"]],
   listFields: ["key"],

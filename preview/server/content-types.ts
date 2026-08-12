@@ -9,8 +9,8 @@ export const Header = new ContentType({
   },
   fields: {
     brand: Fields.string().required(),
-    primaryLinkLabel: Fields.string(),
-    primaryLinkHref: Fields.string().type("Url"),
+    primaryLinkLabel: Fields.string().optional(),
+    primaryLinkHref: Fields.string().type("Url").optional(),
   },
   listFields: ["brand", "primaryLinkLabel"],
 });
@@ -24,9 +24,9 @@ export const Footer = new ContentType({
   },
   fields: {
     brand: Fields.string().required(),
-    copyright: Fields.string(),
-    primaryLinkLabel: Fields.string(),
-    primaryLinkHref: Fields.string().type("Url"),
+    copyright: Fields.string().optional(),
+    primaryLinkLabel: Fields.string().optional(),
+    primaryLinkHref: Fields.string().type("Url").optional(),
   },
   listFields: ["brand", "copyright"],
 });
@@ -40,7 +40,7 @@ export const PageSection = new ContentType({
   },
   fields: {
     title: Fields.string().required().translatable(),
-    body: Fields.string().type("RichText").translatable(),
+    body: Fields.string().type("RichText").translatable().optional(),
   },
   listFields: ["title"],
 });
@@ -71,8 +71,8 @@ export const Author = new ContentType({
   },
   fields: {
     name: Fields.string().required(),
-    email: Fields.string().type("Email"),
-    bio: Fields.string().type("Textarea"),
+    email: Fields.string().type("Email").optional(),
+    bio: Fields.string().type("Textarea").optional(),
   },
   listFields: ["name", "email"],
 });
@@ -87,11 +87,11 @@ export const Article = new ContentType({
   fields: {
     title: Fields.string().required(),
     slug: Fields.string().type("Slug").required(),
-    excerpt: Fields.string().type("Textarea"),
-    published: Fields.boolean(),
-    author: Fields.relation(Author),
-    body: Fields.string().type("RichText"),
-    tags: Fields.array(Fields.string()),
+    excerpt: Fields.string().type("Textarea").optional(),
+    published: Fields.boolean().optional(),
+    author: Fields.relation(Author).optional(),
+    body: Fields.string().type("RichText").optional(),
+    tags: Fields.array(Fields.string()).optional(),
   },
   uniques: [["slug"]],
   listFields: ["title", "slug", "published", "author.name"],
@@ -110,21 +110,23 @@ export const ConditionalDemo = new ContentType({
     advancedEnabled: Fields.boolean().condition({
       field: "intent",
       equals: "advanced",
-    }),
-    priority: Fields.number(),
+    }).optional(),
+    priority: Fields.number().optional(),
     priorityNotes: Fields.string().type("Textarea").condition({
       field: "priority",
       gte: 5,
-    }),
-    flags: Fields.select(["featured", "sponsored", "archived"] as const).multiple(),
+    }).optional(),
+    flags: Fields.select(["featured", "sponsored", "archived"] as const)
+      .optional()
+      .multiple(),
     featuredLabel: Fields.string().condition({
       field: "flags",
       includes: "featured",
-    }),
+    }).optional(),
     multiFlagSummary: Fields.string().type("Textarea").condition({
       field: "flags",
       length: { gte: 2 },
-    }),
+    }).optional(),
   },
   listFields: ["title", "intent", "priority"],
 });

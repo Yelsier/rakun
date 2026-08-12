@@ -6,13 +6,13 @@ export const Backup = new ContentType({
   name: "Backup",
   permissions: "Backup",
   fields: {
-    reason: Fields.string().type("Textarea"),
+    reason: Fields.string().type("Textarea").optional(),
     contentTypes: Fields.array(Fields.string()).required(),
     createdAt: Fields.date().type("DateTime").required(),
-    createdBy: Fields.string().type("Id"),
+    createdBy: Fields.string().type("Id").optional(),
     documentCount: Fields.number().required(),
     status: Fields.select(["completed", "failed"]).required(),
-    error: Fields.string().type("Textarea"),
+    error: Fields.string().type("Textarea").optional(),
   },
 }).hideFromManager();
 

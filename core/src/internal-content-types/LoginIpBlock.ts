@@ -9,7 +9,7 @@ export const LoginIpBlock = new ContentType({
     ip: Fields.string().required(),
     failedAttempts: Fields.number().required(),
     lastFailedAt: Fields.date().required(),
-    blockedAt: Fields.date(),
+    blockedAt: Fields.date().optional(),
   },
   uniques: [['ip']],
 }).hideFromManager()

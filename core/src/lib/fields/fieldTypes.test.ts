@@ -42,6 +42,29 @@ describe("field type inference", () => {
     expect(f).toBe(Fields);
   });
 
+  it("makes fields required by default and supports explicit optional fields", () => {
+    const PresenceDefaults = new ContentType({
+      name: "PresenceDefaults",
+      fields: {
+        title: Fields.string(),
+        description: Fields.string().optional(),
+      },
+    });
+    const encoded = encodeContentTypeForManager(PresenceDefaults);
+
+    expect(() =>
+      PresenceDefaults.validate({ _type: PresenceDefaults.name }),
+    ).toThrow("Required field is missing");
+    expect(
+      PresenceDefaults.validate({
+        _type: PresenceDefaults.name,
+        title: "Required by default",
+      }).description,
+    ).toBeUndefined();
+    expect(encoded.fields.title.isRequired).toBe(true);
+    expect(encoded.fields.description.isRequired).toBe(false);
+  });
+
   it("keeps translatable string fields runtime-compatible", () => {
     expect(
       TypeRegressionCT.getInputSchema().parse({
@@ -116,6 +139,103 @@ describe("field type inference", () => {
     expect(time.getInputSchema().safeParse("not-a-time").success).toBe(false);
   });
 
+  it("limits arrays and multiple fields by item count", () => {
+    const LimitedItem = new ContentType({
+      name: "LimitedItem",
+      fields: {
+        title: Fields.string().required(),
+      },
+    });
+    const LimitedCollections = new ContentType({
+      name: "LimitedCollections",
+      fields: {
+        tags: Fields.array(Fields.string().required()).min(2).max(3).required(),
+        items: Fields.relation(LimitedItem, "existing")
+          .multiple()
+          .required()
+          .min(1)
+          .max(2),
+        files: Fields.file().multiple().min(1).max(2),
+        choices: Fields.select(["one", "two", "three"])
+          .multiple()
+          .min(1)
+          .max(2),
+        references: Fields.contentReference(LimitedItem.name)
+          .multiple()
+          .min(1)
+          .max(2),
+      },
+    });
+    const tags = LimitedCollections.fields.tags;
+    const items = LimitedCollections.fields.items;
+    const encoded = encodeContentTypeForManager(LimitedCollections);
+
+    expect(tags.getInputSchema().safeParse(["one"]).success).toBe(false);
+    expect(tags.getInputSchema().safeParse(["one", "two"]).success).toBe(
+      true,
+    );
+    expect(
+      tags.getSchema().safeParse(["one", "two", "three", "four"]).success,
+    ).toBe(false);
+    expect(
+      items.getInputSchema().safeParse([
+        {
+          type: "existing",
+          _id: "64f0c0000000000000000001",
+          contentType: LimitedItem.name,
+        },
+        {
+          type: "existing",
+          _id: "64f0c0000000000000000002",
+          contentType: LimitedItem.name,
+        },
+        {
+          type: "existing",
+          _id: "64f0c0000000000000000003",
+          contentType: LimitedItem.name,
+        },
+      ]).success,
+    ).toBe(false);
+    expect(encoded.fields.tags.minItems).toBe(2);
+    expect(encoded.fields.tags.maxItems).toBe(3);
+    expect(encoded.fields.items.minItems).toBe(1);
+    expect(encoded.fields.items.maxItems).toBe(2);
+    expect(
+      LimitedCollections.fields.files.getInputSchema().safeParse([
+        {
+          type: "existing",
+          _id: "64f0c0000000000000000001",
+          contentType: "Media",
+        },
+        {
+          type: "existing",
+          _id: "64f0c0000000000000000002",
+          contentType: "Media",
+        },
+        {
+          type: "existing",
+          _id: "64f0c0000000000000000003",
+          contentType: "Media",
+        },
+      ]).success,
+    ).toBe(false);
+    expect(
+      LimitedCollections.fields.choices.getInputSchema().safeParse([]).success,
+    ).toBe(false);
+    expect(
+      LimitedCollections.fields.references
+        .getInputSchema()
+        .safeParse([
+          "64f0c0000000000000000001",
+          "64f0c0000000000000000002",
+          "64f0c0000000000000000003",
+        ]).success,
+    ).toBe(false);
+    expect(encoded.fields.files.maxItems).toBe(2);
+    expect(encoded.fields.choices.minItems).toBe(1);
+    expect(encoded.fields.references.maxItems).toBe(2);
+  });
+
   it("adds iterator fields from content type params", () => {
     const IteratorParamCT = new ContentType({
       name: "IteratorParam",
@@ -134,6 +254,15 @@ describe("field type inference", () => {
     expect(IteratorParamCT.fields[ITERATOR_FIELD_NAME]?.meta.ui).toBe(
       "Iterator",
     );
+    expect(
+      IteratorParamCT.fields[ITERATOR_FIELD_NAME]?.getIsRequired(),
+    ).toBe(false);
+    expect(
+      IteratorParamCT.validate({
+        _type: "IteratorParam",
+        title: "Page without modules",
+      })[ITERATOR_FIELD_NAME],
+    ).toBeUndefined();
 
     expect(
       IteratorParamCT.validate({

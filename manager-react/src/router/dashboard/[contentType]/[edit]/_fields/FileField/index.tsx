@@ -12,6 +12,7 @@ import type { TranslatableValue } from '@rakun-kit/core/types'
 
 import { FieldRef } from '../../ContentTypeEdit'
 import { FieldWrapper } from '../shared/FieldWrapper'
+import { ItemLimitStatus } from '../shared/ItemLimitStatus'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -422,6 +423,21 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
 
   const getValue = () => {
     if (props.isMultiple) {
+      if (props.minItems !== undefined && valueList.length < props.minItems) {
+        const _error = t('contentEdit.minimumItemsError', {
+          count: props.minItems,
+        })
+        addError(props.id, _error)
+        return { _error }
+      }
+      if (props.maxItems !== undefined && valueList.length > props.maxItems) {
+        const _error = t('contentEdit.maximumItemsError', {
+          count: props.maxItems,
+        })
+        addError(props.id, _error)
+        return { _error }
+      }
+
       if (props.isTranslatable) {
         const normalized = {
           ...translationsList,
@@ -586,6 +602,12 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
         toast.error(t('contentEdit.invalidMediaFiles', { mediaType: props.mediaType }))
         return
       }
+      if (props.maxItems !== undefined && mediaList.length > props.maxItems) {
+        toast.error(
+          t('contentEdit.maximumItemsError', { count: props.maxItems }),
+        )
+        return
+      }
 
       removeRelatedErrors(props.id)
       setSelectedMediaList(mediaList)
@@ -693,6 +715,13 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
             </Button>
           ) : null}
         </div>
+        {props.isMultiple ? (
+          <ItemLimitStatus
+            count={valueList.length}
+            minItems={props.minItems}
+            maxItems={props.maxItems}
+          />
+        ) : null}
         {props.isMultiple ? (
           valueList.length > 0 ? (
             <Card className="p-3 text-sm">

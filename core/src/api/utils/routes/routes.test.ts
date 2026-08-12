@@ -115,7 +115,7 @@ describe.serial("routes", () => {
         slug: Fields.string().translatable().required(),
         items: Fields.blocks([
           { name: "name", field: Fields.string().required() },
-        ]),
+        ]).optional(),
       },
     });
 
@@ -126,7 +126,7 @@ describe.serial("routes", () => {
         slug: Fields.string().translatable().required(),
         items: Fields.blocks([
           { name: "name", field: Fields.string().required() },
-        ]),
+        ]).optional(),
       },
     });
 

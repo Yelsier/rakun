@@ -354,10 +354,10 @@ const Post = new ContentType({
     category: 'Content',
   },
   fields: {
-    title: f.string().required(),
-    slug: f.string().type('Slug').required(),
-    body: f.string().type('RichText'),
-    published: f.boolean(),
+    title: f.string(),
+    slug: f.string().type('Slug'),
+    body: f.string().type('RichText').optional(),
+    published: f.boolean().optional(),
   },
   uniques: [['slug']],
   listFields: ['title', 'slug', 'published'],
@@ -371,8 +371,8 @@ Page-like content types can define ordered page modules with `iterator` outside
 const Page = new ContentType({
   name: 'Page',
   fields: {
-    title: f.string().required(),
-    slug: f.string().type('Slug').required(),
+    title: f.string(),
+    slug: f.string().type('Slug'),
   },
   iterator: [
     { contentType: PageSection, type: 'new' },
@@ -696,7 +696,9 @@ f.breadcrums()
 
 Common modifiers:
 
-- `.required()`: marks field as required.
+- Fields are required by default. Use `.optional()` when a value may be omitted.
+- `.required()` explicitly marks a field as required. It remains available for
+  clarity and backward compatibility.
 - `.translatable()`: stores values per language with shape `{ _tag: "Translatable", ... }`.
 - `.apiOnly()`: available for API/persistence, hidden from manager.
 - `.managerOnly()`: visible to manager, excluded from API output.
@@ -724,7 +726,7 @@ Notable fields:
   never accepted as input, persisted, or rendered in the manager.
 - `FileField`: integrates media and optimization options.
 - `f.blocks(...)`: heterogeneous ordered list. Each item stores a `name` and a `value`, and the value can match one of the named field shapes. Use it for block-like content where different item types can appear in the same list.
-- `f.array(...)`: homogeneous ordered list. Every item uses the same field shape. Multi-value fields such as relation `.multiple()` use this backing model.
+- `f.array(...)`: homogeneous ordered list. Every item uses the same field shape. Chain `.min(count)` and `.max(count)` to validate its item count. The same limits are available after `.multiple()` on relation, file, select, and content-reference fields, for example `f.file().multiple().min(1).max(4)`.
 - `IteratorField`: repeatable structure based on content type entries.
 
 ## Derived Types

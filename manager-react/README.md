@@ -120,6 +120,11 @@ source item. Link items show `title` and `href`; relation items show the fields
 of the related content type. Unlike `blocks`, these homogeneous arrays do not
 add a `{ name, value }` wrapper to resolved items.
 
+When an array or `.multiple()` relation, file, select, or content-reference field
+declares core `.min(count)` or `.max(count)` limits, its editor shows the current
+count and configured range. It reports values outside that range and prevents
+confirming or adding beyond the maximum.
+
 A target link appears as separate `<field>.title` and `<field>.href` mapping
 rows, so its label and destination can come from different source fields.
 

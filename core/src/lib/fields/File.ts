@@ -101,6 +101,8 @@ export type FileMeta<
   ui: "File";
   mediaType: MediaType;
   isMultiple: Multiple;
+  minItems?: number;
+  maxItems?: number;
   uploadMethod: FileUploadMethod;
   optimizeOptions?: FileOptimizeOptions;
 };
@@ -108,6 +110,8 @@ export type FileMeta<
 export type EncodedFileField = EncodedField & {
   mediaType: FileMediaType;
   isMultiple: boolean;
+  minItems?: number;
+  maxItems?: number;
   uploadMethod?: FileUploadMethod;
   optimizeOptions?: FileOptimizeOptions;
 };
@@ -121,6 +125,8 @@ type FileOptions<
 > = {
   mediaType: MediaType;
   multiple: Multiple;
+  minItems?: number;
+  maxItems?: number;
   uploadMethod: FileUploadMethod;
   optimizeOptions?: FileOptimizeOptions;
 };
@@ -149,6 +155,14 @@ type FileFieldCore<
     >(
       this: TThis,
     ) => FileField<MediaType, true, FieldStateOf<TThis>>;
+    min: <TThis extends FileFieldBase<MediaType, Multiple, FieldState>>(
+      this: Multiple extends true ? TThis : never,
+      count: number,
+    ) => FileField<MediaType, Multiple, FieldStateOf<TThis>>;
+    max: <TThis extends FileFieldBase<MediaType, Multiple, FieldState>>(
+      this: Multiple extends true ? TThis : never,
+      count: number,
+    ) => FileField<MediaType, Multiple, FieldStateOf<TThis>>;
     optimize: <
       TThis extends FileFieldBase<MediaType, Multiple, FieldState>,
     >(
@@ -191,19 +205,21 @@ function makeFileField<
         ui: "File",
         mediaType: options.mediaType,
         isMultiple: options.multiple,
+        minItems: options.minItems,
+        maxItems: options.maxItems,
         uploadMethod: options.uploadMethod,
         optimizeOptions: options.optimizeOptions,
       },
       state,
       schemas: {
-        input: () => buildFileRelationSchema(options.multiple),
-        db: () => buildFileRelationSchema(options.multiple),
-        output: () => buildFileOutputSchema(options.multiple),
+        input: () => buildFileRelationSchema(options),
+        db: () => buildFileRelationSchema(options),
+        output: () => buildFileOutputSchema(options),
       },
     }),
     getPopulatedSchema: () =>
       applyFileOutputPresence(
-        buildFileOutputSchema(options.multiple),
+        buildFileOutputSchema(options),
         state,
       ) as z.ZodType<
         FieldOutput<MaybeMultiple<FileOutputValue, Multiple>, State>
@@ -222,6 +238,22 @@ function makeFileField<
     >(this: TThis) {
       return makeFileField(
         { ...options, multiple: true },
+        this.state as FieldStateOf<TThis>,
+      );
+    },
+    min: function <
+      TThis extends FileFieldBase<MediaType, Multiple, FieldState>,
+    >(this: Multiple extends true ? TThis : never, count: number) {
+      return makeFileField(
+        { ...options, minItems: count },
+        this.state as FieldStateOf<TThis>,
+      );
+    },
+    max: function <
+      TThis extends FileFieldBase<MediaType, Multiple, FieldState>,
+    >(this: Multiple extends true ? TThis : never, count: number) {
+      return makeFileField(
+        { ...options, maxItems: count },
         this.state as FieldStateOf<TThis>,
       );
     },
@@ -251,16 +283,36 @@ function makeFileField<
   });
 }
 
-function buildFileRelationSchema<Multiple extends boolean>(multiple: Multiple) {
-  return (
-    multiple ? z.array(fileRelationSchema) : fileRelationSchema
-  ) as unknown as z.ZodType<MaybeMultiple<FileRelation, Multiple>>;
+function buildFileRelationSchema<
+  MediaType extends FileMediaType,
+  Multiple extends boolean,
+>(options: FileOptions<MediaType, Multiple>) {
+  return (options.multiple
+    ? applyFileListLimits(z.array(fileRelationSchema), options)
+    : fileRelationSchema) as unknown as z.ZodType<
+    MaybeMultiple<FileRelation, Multiple>
+  >;
 }
 
-function buildFileOutputSchema<Multiple extends boolean>(multiple: Multiple) {
-  return (
-    multiple ? z.array(fileOutputSchema) : fileOutputSchema
-  ) as unknown as z.ZodType<MaybeMultiple<FileOutputValue, Multiple>>;
+function buildFileOutputSchema<
+  MediaType extends FileMediaType,
+  Multiple extends boolean,
+>(options: FileOptions<MediaType, Multiple>) {
+  return (options.multiple
+    ? applyFileListLimits(z.array(fileOutputSchema), options)
+    : fileOutputSchema) as unknown as z.ZodType<
+    MaybeMultiple<FileOutputValue, Multiple>
+  >;
+}
+
+function applyFileListLimits<Item extends z.ZodTypeAny>(
+  schema: z.ZodArray<Item>,
+  options: Pick<FileOptions<FileMediaType, boolean>, "minItems" | "maxItems">,
+) {
+  let next = schema;
+  if (options.minItems !== undefined) next = next.min(options.minItems);
+  if (options.maxItems !== undefined) next = next.max(options.maxItems);
+  return next;
 }
 
 function applyFileOutputPresence<Value, State extends FieldState>(

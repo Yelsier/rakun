@@ -13,13 +13,13 @@ export const Migration = new ContentType({
     migrationId: Fields.string().required(),
     from: Fields.number().required(),
     to: Fields.number().required(),
-    description: Fields.string().type("Textarea"),
+    description: Fields.string().type("Textarea").optional(),
     status: Fields.select(["running", "completed", "failed"]).required(),
-    backupId: Fields.string().type("Id"),
+    backupId: Fields.string().type("Id").optional(),
     startedAt: Fields.date().type("DateTime").required(),
-    completedAt: Fields.date().type("DateTime"),
-    failedAt: Fields.date().type("DateTime"),
-    error: Fields.string().type("Textarea"),
+    completedAt: Fields.date().type("DateTime").optional(),
+    failedAt: Fields.date().type("DateTime").optional(),
+    error: Fields.string().type("Textarea").optional(),
   },
 }).hideFromManager();
 

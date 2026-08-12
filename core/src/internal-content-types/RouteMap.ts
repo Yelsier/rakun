@@ -12,10 +12,10 @@ export const RouteMap = new ContentType({
     path: Fields.string().required(),
     contentType: Fields.string().required(),
     contentTypeId: Fields.string().type("Id").required(),
-    variantGroupId: Fields.string().type("Id"),
+    variantGroupId: Fields.string().type("Id").optional(),
     routeId: Fields.string().type("Id").required(),
     languageId: Fields.string().type("Id").required(),
-    lastModified: Fields.date().type("DateTime"),
+    lastModified: Fields.date().type("DateTime").optional(),
   },
   uniques: [["path"]],
 }).hideFromManager();

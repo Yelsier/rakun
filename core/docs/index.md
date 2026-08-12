@@ -65,9 +65,9 @@ const Article = new ContentType({
   name: 'Article',
   menu: { title: 'Articles', icon: 'newspaper', category: 'Content' },
   fields: {
-    title: f.string().required(),
-    slug: f.string().type('Slug').required(),
-    body: f.string().type('RichText'),
+    title: f.string(),
+    slug: f.string().type('Slug'),
+    body: f.string().type('RichText').optional(),
   },
   uniques: [['slug']],
   listFields: ['title', 'slug'],
@@ -105,10 +105,18 @@ shapes. Use `f` factories rather than handwritten storage schemas.
 same object, but new code and examples should prefer `f`.
 
 Common factories include string, number, boolean, date, object, relation, file,
-blocks and array/list forms. Chain field modifiers such as `.required()`,
-`.multiple()`, `.managerOnly()`, `.apiOnly()` and `.noDynamic()` when applicable.
+blocks and array/list forms. Fields are required by default; chain `.optional()`
+when a value may be omitted. `.required()` remains available as an
+explicit, backward-compatible modifier. Other modifiers include `.multiple()`,
+`.managerOnly()`, `.apiOnly()` and `.noDynamic()` when applicable.
 Special manager editors are selected with `.type(...)`, for example `Slug`,
 `RichText`, `Email`, `Password` and `Image`.
+
+Homogeneous `f.array(...)` fields accept `.min(count)` and `.max(count)` item
+limits. These methods are also available after `.multiple()` on relation, file,
+select, and content-reference fields, for example
+`f.file().multiple().min(1).max(4)`. Core enforces them on input, stored data and
+output schemas, and exposes `minItems`/`maxItems` to the manager.
 
 Routeable content types can initialize SEO string fields from the document being
 created. Add `.seo('<seoField>')` to a source string field; the argument is

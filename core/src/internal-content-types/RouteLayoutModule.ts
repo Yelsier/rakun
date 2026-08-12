@@ -12,7 +12,7 @@ export const RouteLayoutModule = new ContentType({
     key: Fields.string().required(),
     contentType: Fields.string().required(),
     order: Fields.number().required(),
-    moduleId: Fields.string(),
+    moduleId: Fields.string().optional(),
   },
   uniques: [["routeId", "key"]],
   listFields: ["routeKey", "key", "contentType"],

@@ -23,7 +23,7 @@ const { translateDocumentHandler } = await import("./translateDocument");
 const HandlerPage = new ContentType({
   name: "TranslateHandlerPage",
   fields: {
-    title: Fields.string().translatable(),
+    title: Fields.string().translatable().optional(),
   },
 }).versioned();
 

@@ -1,4 +1,8 @@
-import { defaultFieldState } from "./Field";
+import {
+  defaultFieldState,
+  type DefaultFieldState,
+  type SetOptional,
+} from "./Field";
 import {
   makeListField,
   type Entry,
@@ -32,7 +36,7 @@ type IteratorEntries<Items extends readonly EntryContentType[]> = {
 
 export type IteratorField<
   Items extends readonly EntryContentType[] = readonly EntryContentType[],
-> = ListField<IteratorEntries<Items>>;
+> = ListField<IteratorEntries<Items>, SetOptional<DefaultFieldState>>;
 
 export function iteratorField<const Items extends readonly EntryContentType[]>(
   fields: Items,
@@ -44,6 +48,6 @@ export function iteratorField<const Items extends readonly EntryContentType[]>(
 
   return makeListField(
     { fields: entries, ui: "Iterator" },
-    defaultFieldState,
+    { ...defaultFieldState, required: false },
   ) as IteratorField<Items>;
 }

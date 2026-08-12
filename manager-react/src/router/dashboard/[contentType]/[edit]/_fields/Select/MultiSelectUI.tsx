@@ -4,7 +4,9 @@ import { CheckIcon } from 'lucide-react'
 
 import { useFieldValues, type DefaultDataTypes } from '../shared'
 import { FieldWrapper } from '../shared/FieldWrapper'
+import { ItemLimitStatus } from '../shared/ItemLimitStatus'
 import type { SelectPropsRef } from '.'
+import { useTranslations } from '@/i18n'
 
 import {
   Tags,
@@ -23,10 +25,13 @@ const MultiSelectUI: React.FC<SelectPropsRef> = ({
   isRequired,
   isTranslatable,
   options,
+  minItems,
+  maxItems,
   defaultData,
   dynamicFallbackPlaceholder,
   ref,
 }) => {
+  const t = useTranslations()
   const { value, getValue, errors, cleanErrors, getState, onValueChange } =
     useFieldValues<string[]>({
       id,
@@ -35,6 +40,12 @@ const MultiSelectUI: React.FC<SelectPropsRef> = ({
       defaultData: defaultData as DefaultDataTypes<string[]>,
       defaultValue: [],
       validateValue: (value) => {
+        if (minItems !== undefined && value.length < minItems) {
+          return t('contentEdit.minimumItemsError', { count: minItems })
+        }
+        if (maxItems !== undefined && value.length > maxItems) {
+          return t('contentEdit.maximumItemsError', { count: maxItems })
+        }
         if (isRequired && value.length === 0) {
           return 'This field is required'
         }
@@ -55,6 +66,7 @@ const MultiSelectUI: React.FC<SelectPropsRef> = ({
       handleRemove(select)
       return
     }
+    if (maxItems !== undefined && value.length >= maxItems) return
     onValueChange([...value, select])
     cleanErrors()
   }
@@ -67,6 +79,7 @@ const MultiSelectUI: React.FC<SelectPropsRef> = ({
       getState={getState}
       ref={ref}
     >
+      <div className='grid gap-1.5'>
       <Tags>
         <TagsTrigger>
           {value.map((tag) => (
@@ -81,7 +94,16 @@ const MultiSelectUI: React.FC<SelectPropsRef> = ({
             <TagsEmpty />
             <TagsGroup>
               {options.map((tag) => (
-                <TagsItem key={tag} onSelect={handleSelect} value={tag}>
+                <TagsItem
+                  disabled={
+                    !value.includes(tag) &&
+                    maxItems !== undefined &&
+                    value.length >= maxItems
+                  }
+                  key={tag}
+                  onSelect={handleSelect}
+                  value={tag}
+                >
                   {tag}
                   {value.includes(tag) && (
                     <CheckIcon className='text-muted-foreground' size={14} />
@@ -92,6 +114,12 @@ const MultiSelectUI: React.FC<SelectPropsRef> = ({
           </TagsList>
         </TagsContent>
       </Tags>
+        <ItemLimitStatus
+          count={value.length}
+          minItems={minItems}
+          maxItems={maxItems}
+        />
+      </div>
     </FieldWrapper>
   )
 }

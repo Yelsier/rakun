@@ -8,8 +8,8 @@ export const ContentReviewPolicy = new ContentType({
   permissions: false,
   fields: {
     role: Fields.relation(ManagerRole, 'existing').required(),
-    contentType: Fields.string(),
-    contentTypes: Fields.array(Fields.string()),
+    contentType: Fields.string().optional(),
+    contentTypes: Fields.array(Fields.string()).optional(),
     reviewerRoles: Fields.relation(ManagerRole, 'existing').multiple().required(),
     requiredApprovals: Fields.number().min(1).required(),
   },

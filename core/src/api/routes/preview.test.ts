@@ -19,6 +19,7 @@ import {
   TemplateContent,
 } from "../../internal-content-types";
 import ContentType from "../../lib/ContentType";
+import { ADMIN_ROLE_NAME } from "../../lib/ManagerRolePolicy";
 import { throwAppError } from "../../lib/errors";
 import { Fields } from "../../lib/fields";
 import { createLogger } from "../../lib/Logger";
@@ -43,7 +44,7 @@ const PreviewModule = new ContentType({
   name: "PreviewTestModule",
   fields: {
     text: Fields.string().translatable().required(),
-    eyebrow: Fields.string(),
+    eyebrow: Fields.string().optional(),
   },
 });
 
@@ -52,7 +53,7 @@ const PreviewPage = new ContentType({
   fields: {
     title: Fields.string().translatable().required(),
     slug: Fields.string().type("Slug").translatable().required(),
-    credits: Fields.string(),
+    credits: Fields.string().optional(),
   },
   iterator: [
     {
@@ -70,7 +71,7 @@ const user = {
   role: {
     _id: "64f0c0000000000000000002",
     _type: "ManagerRole",
-    name: "Admin",
+    name: ADMIN_ROLE_NAME,
     permissions: [],
   },
   twoFactorEnabled: false,

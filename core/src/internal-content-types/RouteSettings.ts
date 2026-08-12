@@ -8,7 +8,7 @@ export const RouteSettings = new ContentType({
   permissions: "Route",
   fields: {
     key: Fields.string().required(),
-    homePage: Fields.relation(Page, "existing"),
+    homePage: Fields.relation(Page, "existing").optional(),
   },
   uniques: [["key"]],
   listFields: ["key"],

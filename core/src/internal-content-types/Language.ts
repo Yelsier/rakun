@@ -9,7 +9,7 @@ export const Language = new ContentType({
     code: Fields.string().required().min(2),
     name: Fields.string().required(),
     default: Fields.boolean().required(),
-    parent: Fields.selfRelation(),
+    parent: Fields.selfRelation().optional(),
   },
   uniques: [["code"]],
 }).hideFromManager();

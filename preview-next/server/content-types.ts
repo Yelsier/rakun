@@ -11,9 +11,9 @@ export const Header = new ContentType({
   },
   fields: {
     brand: f.string().required(),
-    primaryLinkLabel: f.string(),
-    primaryLinkHref: f.string().type('Url'),
-    internalLinks: f.array(f.link()),
+    primaryLinkLabel: f.string().optional(),
+    primaryLinkHref: f.string().type('Url').optional(),
+    internalLinks: f.array(f.link()).optional(),
   },
   listFields: ['brand', 'primaryLinkLabel'],
 })
@@ -27,10 +27,10 @@ export const Footer = new ContentType({
   },
   fields: {
     brand: f.string().required(),
-    copyright: f.string(),
-    primaryLinkLabel: f.string(),
-    primaryLinkHref: f.string().type('Url'),
-    internalLink: f.link(),
+    copyright: f.string().optional(),
+    primaryLinkLabel: f.string().optional(),
+    primaryLinkHref: f.string().type('Url').optional(),
+    internalLink: f.link().optional(),
   },
   listFields: ['brand', 'copyright'],
 })
@@ -44,7 +44,7 @@ export const PageSection = new ContentType({
   },
   fields: {
     title: f.string().required().translatable(),
-    body: f.string().type('RichText').translatable(),
+    body: f.string().type('RichText').translatable().optional(),
   },
   listFields: ['title'],
 })
@@ -57,9 +57,9 @@ export const UseCaseContent = new ContentType({
     icon: 'FileText',
   },
   fields: {
-    eyebrow: f.string(),
+    eyebrow: f.string().optional(),
     title: f.string().required(),
-    body: f.string().type('RichText'),
+    body: f.string().type('RichText').optional(),
   },
 }).hideFromManager()
 
@@ -71,9 +71,9 @@ export const UseCaseHero = new ContentType({
     icon: 'Sparkles',
   },
   fields: {
-    eyebrow: f.string(),
+    eyebrow: f.string().optional(),
     title: f.string().required(),
-    summary: f.string().type('Textarea'),
+    summary: f.string().type('Textarea').optional(),
   },
 }).hideFromManager()
 
@@ -85,10 +85,10 @@ export const UseCaseLayoutWithInfo = new ContentType({
     icon: 'PanelRight',
   },
   fields: {
-    asideEyebrow: f.string(),
+    asideEyebrow: f.string().optional(),
     asideTitle: f.string().required(),
-    asideBody: f.string().type('Textarea'),
-    blocks: f.blocks([]),
+    asideBody: f.string().type('Textarea').optional(),
+    blocks: f.blocks([]).optional(),
   },
 }).hideFromManager()
 
@@ -100,11 +100,11 @@ export const UseCaseNewsletter = new ContentType({
     icon: 'Mail',
   },
   fields: {
-    eyebrow: f.string(),
+    eyebrow: f.string().optional(),
     title: f.string().required(),
-    body: f.string().type('Textarea'),
-    buttonLabel: f.string(),
-    buttonHref: f.string().type('Url'),
+    body: f.string().type('Textarea').optional(),
+    buttonLabel: f.string().optional(),
+    buttonHref: f.string().type('Url').optional(),
   },
 }).hideFromManager()
 
@@ -195,12 +195,12 @@ export const Project = new ContentType({
   fields: {
     title: f.string().required(),
     slug: f.string().type('Slug').required(),
-    excerpt: f.string().type('Textarea'),
-    featured: f.boolean(),
+    excerpt: f.string().type('Textarea').optional(),
+    featured: f.boolean().optional(),
     category: f.relation(Category, 'existing').required(),
-    categories: f.relation(Category, 'existing').multiple(),
+    categories: f.relation(Category, 'existing').optional().multiple(),
     image: f.file().type('Image').required(),
-    images: f.file().type('Image').multiple(),
+    images: f.file().type('Image').optional().multiple(),
   },
   iterator: [
     {
@@ -216,8 +216,8 @@ export const FeatureCarouselItem = new ContentType({
   name: 'FeatureCarouselItem',
   fields: {
     title: f.string().required(),
-    summary: f.string().type('Textarea'),
-    href: f.string(),
+    summary: f.string().type('Textarea').optional(),
+    href: f.string().optional(),
   },
 }).hideFromManager()
 
@@ -232,7 +232,7 @@ export const FeatureCarousel = new ContentType({
     preview: '/dynamic-data/aurora.svg',
   },
   fields: {
-    eyebrow: f.string(),
+    eyebrow: f.string().optional(),
     title: f.string().required(),
     items: f.blocks([
       {
@@ -277,7 +277,7 @@ export const CategoriesGallery = new ContentType({
     category: 'preview.contentTypes.category.dynamicData',
   },
   fields: {
-    eyebrow: f.string(),
+    eyebrow: f.string().optional(),
     title: f.string().required(),
     items: f.blocks([
       {
@@ -329,8 +329,8 @@ export const Author = new ContentType({
   },
   fields: {
     name: f.string().required(),
-    email: f.string().type('Email'),
-    bio: f.string().type('Textarea'),
+    email: f.string().type('Email').optional(),
+    bio: f.string().type('Textarea').optional(),
   },
   listFields: ['name', 'email'],
 })
@@ -345,11 +345,11 @@ export const Article = new ContentType({
   fields: {
     title: f.string().required(),
     slug: f.string().type('Slug').required(),
-    excerpt: f.string().type('Textarea'),
-    published: f.boolean(),
-    author: f.relation(Author),
-    body: f.string().type('RichText'),
-    tags: f.array(f.string()),
+    excerpt: f.string().type('Textarea').optional(),
+    published: f.boolean().optional(),
+    author: f.relation(Author).optional(),
+    body: f.string().type('RichText').optional(),
+    tags: f.array(f.string()).min(1).max(5).optional(),
   },
   uniques: [['slug']],
   listFields: ['title', 'slug', 'published', 'author.name'],
@@ -359,9 +359,9 @@ export const RelationLevel3 = new ContentType({
   name: 'RelationLevel3',
   fields: {
     title: f.string().required(),
-    existingArticle: f.relation(Article, 'existing'),
-    flexibleArticle: f.relation(Article),
-    authors: f.relation(Author, 'existing').multiple(),
+    existingArticle: f.relation(Article, 'existing').optional(),
+    flexibleArticle: f.relation(Article).optional(),
+    authors: f.relation(Author, 'existing').optional().multiple(),
   },
   listFields: ['title', 'existingArticle.title', 'flexibleArticle.title'],
 }).hideFromManager()
@@ -376,10 +376,10 @@ export const RelationLevel2 = new ContentType({
   fields: {
     title: f.string().required(),
     existingArticle: f.relation(Article, 'existing').required(),
-    flexibleArticle: f.relation(Article),
-    existingArticles: f.relation(Article, 'existing').multiple(),
-    self: f.selfRelation(),
-    inlineItems: f.relation(RelationLevel3, 'new').multiple(),
+    flexibleArticle: f.relation(Article).optional(),
+    existingArticles: f.relation(Article, 'existing').optional().multiple(),
+    self: f.selfRelation().optional(),
+    inlineItems: f.relation(RelationLevel3, 'new').optional().multiple(),
   },
   listFields: ['title', 'existingArticle.title', 'flexibleArticle.title'],
 })
@@ -395,10 +395,10 @@ export const RelationPlayground = new ContentType({
     title: f.string().required(),
     slug: f.string().type('Slug').required(),
     existingAuthor: f.relation(Author, 'existing').required(),
-    flexibleArticle: f.relation(Article),
-    existingLevel2: f.relation(RelationLevel2, 'existing'),
-    existingLevel2List: f.relation(RelationLevel2, 'existing').multiple(),
-    inlineLevel3: f.relation(RelationLevel3, 'new'),
+    flexibleArticle: f.relation(Article).optional(),
+    existingLevel2: f.relation(RelationLevel2, 'existing').optional(),
+    existingLevel2List: f.relation(RelationLevel2, 'existing').optional().multiple(),
+    inlineLevel3: f.relation(RelationLevel3, 'new').optional(),
     sections: f.blocks([
       {
         name: 'level2',
@@ -412,7 +412,7 @@ export const RelationPlayground = new ContentType({
         name: 'level3',
         field: f.relation(RelationLevel3, 'new'),
       },
-    ]),
+    ]).optional(),
   },
   uniques: [['slug']],
   listFields: ['title', 'slug', 'existingAuthor.name', 'existingLevel2.title'],
@@ -427,8 +427,8 @@ export const ImagePlayground = new ContentType({
   },
   fields: {
     title: f.string().required(),
-    singleImage: f.file().type('Image'),
-    multipleImages: f.file().type('Image').multiple(),
+    singleImage: f.file().type('Image').optional(),
+    multipleImages: f.file().type('Image').optional().multiple(),
   },
   listFields: ['title'],
 })
@@ -442,9 +442,9 @@ export const DatePlayground = new ContentType({
   },
   fields: {
     title: f.string().required(),
-    date: f.date().type('Date'),
-    dateTime: f.date().type('DateTime'),
-    time: f.date().type('Time'),
+    date: f.date().type('Date').optional(),
+    dateTime: f.date().type('DateTime').optional(),
+    time: f.date().type('Time').optional(),
   },
   listFields: ['title', 'date', 'dateTime', 'time'],
 })
@@ -462,24 +462,28 @@ export const ConditionalDemo = new ContentType({
     advancedEnabled: f.boolean().condition({
       field: 'intent',
       equals: 'advanced',
-    }),
-    priority: f.number(),
+    }).optional(),
+    priority: f.number().optional(),
     priorityNotes: f.string().type('Textarea').condition({
       field: 'priority',
       gte: 5,
-    }),
-    flags: f.select(['featured', 'sponsored', 'archived'] as const).multiple(),
+    }).optional(),
+    flags: f
+      .select(['featured', 'sponsored', 'archived'] as const)
+      .optional()
+      .multiple(),
     featuredLabel: f.string().condition({
       field: 'flags',
       includes: 'featured',
-    }),
+    }).optional(),
     multiFlagSummary: f
       .string()
       .type('Textarea')
       .condition({
         field: 'flags',
         length: { gte: 2 },
-      }),
+      })
+      .optional(),
   },
   listFields: ['title', 'intent', 'priority'],
 })
@@ -494,13 +498,13 @@ export const TranslationPlayground = new ContentType({
   fields: {
     title: f.string().required().translatable(),
     slug: f.string().type('Slug').required().translatable(),
-    subtitle: f.string().translatable(),
-    excerpt: f.string().type('Textarea').translatable(),
-    body: f.string().type('RichText').translatable(),
-    callToActionLabel: f.string().translatable(),
-    callToActionUrl: f.string().type('Url').translatable(),
-    metaTitle: f.string().translatable(),
-    metaDescription: f.string().type('Textarea').translatable(),
+    subtitle: f.string().translatable().optional(),
+    excerpt: f.string().type('Textarea').translatable().optional(),
+    body: f.string().type('RichText').translatable().optional(),
+    callToActionLabel: f.string().translatable().optional(),
+    callToActionUrl: f.string().type('Url').translatable().optional(),
+    metaTitle: f.string().translatable().optional(),
+    metaDescription: f.string().type('Textarea').translatable().optional(),
   },
   uniques: [['slug']],
   listFields: ['title', 'slug', 'subtitle'],

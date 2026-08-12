@@ -17,9 +17,9 @@ export const Redirect = new ContentType({
       "308",
       "custom",
     ]).required(),
-    customStatus: Fields.number().min(300).max(399),
+    customStatus: Fields.number().min(300).max(399).optional(),
     preserveQuery: Fields.boolean().required(),
-    headerName: Fields.string(),
+    headerName: Fields.string().optional(),
     headerMatchMode: Fields.select([
       "none",
       "exists",
@@ -28,13 +28,13 @@ export const Redirect = new ContentType({
       "startsWith",
       "regex",
     ]).required(),
-    headerValue: Fields.string(),
+    headerValue: Fields.string().optional(),
     functionName: Fields.select([
       "none",
       "acceptLanguageToParam",
       "headerValueToParam",
     ]).required(),
-    functionConfig: Fields.string().type("Textarea"),
+    functionConfig: Fields.string().type("Textarea").optional(),
   },
   listFields: [
     "name",

@@ -286,7 +286,9 @@ export const rakunBootstrap = (options: RakunBootstrapOptions) => {
   for (const ct of Object.values(configuredInternalContentTypes)) {
     if (routeableContentTypes.has(ct.name)) {
       ct.enableDocumentVisibility();
-      ct.enableSeoField(Fields.relation(internalContentTypes.Seo, "new"));
+      ct.enableSeoField(
+        Fields.relation(internalContentTypes.Seo, "new").optional(),
+      );
       if (ct.hasIterator) ct.enableTemplate();
     }
     registerInternalContentType(ct, { override: true });
@@ -295,7 +297,9 @@ export const rakunBootstrap = (options: RakunBootstrapOptions) => {
   for (const ct of resolvedOptions.contentTypes) {
     if (routeableContentTypes.has(ct.name)) {
       ct.enableDocumentVisibility();
-      ct.enableSeoField(Fields.relation(internalContentTypes.Seo, "new"));
+      ct.enableSeoField(
+        Fields.relation(internalContentTypes.Seo, "new").optional(),
+      );
       if (ct.hasIterator) ct.enableTemplate();
     }
     registerContentType(ct, { override: true });

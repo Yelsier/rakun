@@ -10,12 +10,12 @@ export const ContentVersion = new ContentType({
     documentId: Fields.string().type("Id").required(),
     revision: Fields.number().required(),
     operation: Fields.select(["create", "update", "delete", "restore"]).required(),
-    actorId: Fields.string().type("Id"),
-    reason: Fields.string().type("Textarea"),
+    actorId: Fields.string().type("Id").optional(),
+    reason: Fields.string().type("Textarea").optional(),
     changedAt: Fields.date().type("DateTime").required(),
-    schemaVersion: Fields.number(),
+    schemaVersion: Fields.number().optional(),
     diff: Fields.string().type("RichText").required(),
-    snapshot: Fields.string().type("RichText"),
+    snapshot: Fields.string().type("RichText").optional(),
   },
 }).hideFromManager();
 

@@ -11,8 +11,8 @@ export const ContentComment = new ContentType({
     documentId: Fields.string().type("Id").required(),
     author: Fields.relation(ManagerUser, "existing").required(),
     text: Fields.string().type("Textarea").required(),
-    mentions: Fields.relation(ManagerUser, "existing").multiple(),
-    reactions: Fields.array(Fields.string()),
+    mentions: Fields.relation(ManagerUser, "existing").optional().multiple(),
+    reactions: Fields.array(Fields.string()).optional(),
   },
 }).hideFromManager();
 

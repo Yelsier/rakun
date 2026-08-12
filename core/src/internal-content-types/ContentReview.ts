@@ -15,7 +15,7 @@ export const ContentReview = new ContentType({
     author: Fields.relation(ManagerUser, 'existing').required(),
     subjectRole: Fields.relation(ManagerRole, 'existing').required(),
     reviewers: Fields.relation(ManagerUser, 'existing').multiple().required(),
-    reviewerRoles: Fields.relation(ManagerRole, 'existing').multiple(),
+    reviewerRoles: Fields.relation(ManagerRole, 'existing').optional().multiple(),
     requiredApprovals: Fields.number().min(1).required(),
     blocking: Fields.boolean().required(),
     status: Fields.select([
