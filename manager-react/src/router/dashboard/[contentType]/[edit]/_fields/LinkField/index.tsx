@@ -1,5 +1,6 @@
 import type { RefAttributes } from 'react'
 import type { EncodedContentType, EncodedLinkField } from '@rakun-kit/core/client'
+import type { LinkfieldValue } from '@rakun-kit/core/client'
 import type { FieldUIType } from '@rakun-kit/core/client'
 import type z from 'zod'
 
@@ -13,6 +14,7 @@ export type LinkProps = EncodedLinkField & {
   defaultData?: FieldValue
   dynamicFallbackPlaceholder?: string
   parentContentType?: EncodedContentType
+  onLinkValueChange?: (value: LinkfieldValue) => void
 }
 
 export type LinkPropsRef = LinkProps & RefAttributes<FieldRef>

@@ -13,7 +13,7 @@ export const Header = new ContentType({
     brand: f.string().required(),
     primaryLinkLabel: f.string().optional(),
     primaryLinkHref: f.string().type('Url').optional(),
-    internalLinks: f.array(f.link()).optional(),
+    navigation: f.menu().optional(),
   },
   listFields: ['brand', 'primaryLinkLabel'],
 })

@@ -116,6 +116,44 @@ describe("field type inference", () => {
     expect(link.getInputSchema().safeParse("").success).toBe(false);
   });
 
+  it("validates recursive menu fields and exposes their manager type", () => {
+    const Navigation = new ContentType({
+      name: "Navigation",
+      fields: {
+        items: Fields.menu(),
+      },
+    });
+    const menu = [
+      {
+        href: "/products/",
+        title: "Products",
+        children: [
+          {
+            routeId: "64f0c0000000000000000001",
+            contentTypeId: "64f0c0000000000000000002",
+            title: "Featured",
+            children: [],
+          },
+        ],
+      },
+    ];
+
+    expect(
+      Navigation.getInputSchema().parse({
+        _type: Navigation.name,
+        items: menu,
+      }).items,
+    ).toEqual(menu);
+    expect(
+      Navigation.fields.items.getInputSchema().safeParse([
+        { href: "/missing-children/", title: "Invalid" },
+      ]).success,
+    ).toBe(false);
+    expect(
+      encodeContentTypeForManager(Navigation).fields.items.config,
+    ).toEqual({ type: "Menu", ui: "Menu" });
+  });
+
   it("normalizes serialized date inputs and keeps persisted dates strict", () => {
     const serializedDate = "2026-08-06T00:00:00.000Z";
     const serializedDateTime = "2026-08-15T15:58:00.000Z";

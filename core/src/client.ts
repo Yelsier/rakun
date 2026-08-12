@@ -37,6 +37,7 @@ export * from "./lib/fields/File";
 export * from "./lib/fields/Iterator";
 export * from "./lib/fields/Link";
 export * from "./lib/fields/List";
+export * from "./lib/fields/Menu";
 export * from "./lib/fields/Number";
 export * from "./lib/fields/Relation";
 export * from "./lib/fields/Select";

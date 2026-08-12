@@ -240,6 +240,7 @@ const getFieldKind = (field: EncodedFieldUnknown): SourceFieldKind => {
     return field.config.ui === 'RichText' ? 'richText' : 'string'
   }
   if (field.config.type === 'Link') return 'object'
+  if (field.config.type === 'Menu') return 'array'
   if (field.config.type === 'Number') return 'number'
   if (field.config.type === 'Boolean') return 'boolean'
   if (field.config.type === 'Date') {

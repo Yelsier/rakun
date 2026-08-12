@@ -44,6 +44,7 @@ const LinkTestPage = new ContentType({
   fields: {
     primaryLink: Fields.link(),
     links: Fields.array(Fields.link()),
+    menu: Fields.menu(),
   },
 });
 
@@ -290,6 +291,60 @@ describe("populateLinks", () => {
       ],
     });
     expect(list).not.toHaveBeenCalled();
+  });
+
+  it("resolves internal links recursively inside menu fields", async () => {
+    const list = setRouteMaps([
+      makeRouteMap({
+        routeId: "route-products",
+        contentTypeId: "products-id",
+        languageId: "language-en",
+        path: "/products/",
+      }),
+      makeRouteMap({
+        routeId: "route-featured",
+        contentTypeId: "featured-id",
+        languageId: "language-en",
+        path: "/products/featured/",
+      }),
+    ]);
+
+    const result = await populateLinks({
+      _id: "page-id",
+      _type: LinkTestPage.name,
+      primaryLink: { href: "/", title: "Home" },
+      links: [],
+      menu: [
+        {
+          routeId: "route-products",
+          contentTypeId: "products-id",
+          title: "Products",
+          children: [
+            {
+              routeId: "route-featured",
+              contentTypeId: "featured-id",
+              title: "Featured",
+              children: [],
+            },
+          ],
+        },
+      ],
+    } as DBOutput<typeof LinkTestPage>);
+
+    expect(result.menu).toEqual([
+      {
+        href: { _tag: "Translatable", en: "/products/" },
+        title: "Products",
+        children: [
+          {
+            href: { _tag: "Translatable", en: "/products/featured/" },
+            title: "Featured",
+            children: [],
+          },
+        ],
+      },
+    ]);
+    expect(list).toHaveBeenCalledTimes(4);
   });
 
   it("resolves links through locale variant groups", async () => {

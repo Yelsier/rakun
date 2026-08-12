@@ -7,6 +7,7 @@ import type { EncodedDateField } from "./Date";
 import type { EncodedFileField } from "./File";
 import type { EncodedLinkField } from "./Link";
 import type { EncodedListField } from "./List";
+import type { EncodedMenuField } from "./Menu";
 import type { EncodedNumberField } from "./Number";
 import type { EncodedRelationField } from "./Relation";
 import type { EncodedSelectField } from "./Select";
@@ -34,6 +35,7 @@ export const FieldUIType = z.enum([
   "Id",
   "Url",
   "Link",
+  "Menu",
   "DateTime",
   "Time",
   "Iterator",
@@ -52,6 +54,7 @@ export const FieldType = z.enum([
   "Boolean",
   "List",
   "Link",
+  "Menu",
   "Date",
   "File",
   "ContentReference",
@@ -357,6 +360,7 @@ export type EncodedFieldUnknown =
   | EncodedFileField
   | EncodedLinkField
   | EncodedListField
+  | EncodedMenuField
   | EncodedNumberField
   | EncodedRelationField
   | EncodedSelectField

@@ -690,6 +690,7 @@ f.selfRelation()
 f.blocks([{ name: 'title', field: f.string() }])
 f.array(f.string())
 f.link()
+f.menu()
 f.file()
 f.breadcrums()
 ```
@@ -719,6 +720,12 @@ Notable fields:
   route. New input and web output always use an object shape. Persisted legacy
   direct URL strings remain readable and receive an empty `title` when loaded
   by the manager or normalized for web output.
+- `MenuField`: `f.menu()` stores an ordered navigation tree. Every node is an
+  internal or direct link plus `children`, for example
+  `{ title, href, children: [...] }`. Internal references use `routeId` and
+  `contentTypeId` while persisted and resolve recursively to localized `href`
+  values in web output. The manager supports drag-and-drop ordering and
+  unlimited nested levels.
 - `BreadcrumsField`: `f.breadcrums()` is a computed, API-only field for page
   modules. In web and preview output it returns the localized route hierarchy as
   `{ label, href }[]`, ordered from the highest ancestor to the current page. It

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import type { ListFieldValueItem } from '@rakun-kit/core/client'
 import { RelationFieldValue } from '@rakun-kit/core/client'
 import { LinkfieldValue } from '@rakun-kit/core/client'
+import type { MenuFieldValue } from '@rakun-kit/core/client'
 
 import { deepEqual } from '@/helpers/deepEqual'
 import { useEditErrorStore } from '@/hooks/app-store'
@@ -18,6 +19,7 @@ export type PossibleValues =
   | string[]
   | undefined
   | LinkfieldValue
+  | MenuFieldValue
   | ListFieldValueItem<FieldValue>[]
   | RelationFieldValue
 

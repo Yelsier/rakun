@@ -205,6 +205,11 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
       : allRouteItems
   const error = errors.find((item) => item.id === id)?.error
 
+  const commitValue = (nextValue: LinkfieldValue) => {
+    onValueChange(nextValue)
+    props.onLinkValueChange?.(nextValue)
+  }
+
   const closePicker = () => {
     setOpen(false)
   }
@@ -217,24 +222,24 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
   const selectDirectUrl = (url: string) => {
     setPendingSelectedLabel(null)
     setActiveRouteId(null)
-    onValueChange({ href: url, title: linkTitle })
+    commitValue({ href: url, title: linkTitle })
   }
 
   const clearLink = () => {
     setPendingSelectedLabel(null)
     setActiveRouteId(null)
-    onValueChange(EMPTY_LINK)
+    commitValue(EMPTY_LINK)
   }
 
   const updateTitle = (title: string) => {
-    onValueChange({ ...value, title })
+    commitValue({ ...value, title })
   }
 
   const selectInternalLink = (document: LinkDocument) => {
     if (!activeRoute) return
     const label = getDocumentLabel(document, activeContentType)
     setPendingSelectedLabel(label)
-    onValueChange({
+    commitValue({
       routeId: activeRoute._id,
       contentTypeId: document._id,
       title: linkTitle || label,
@@ -370,7 +375,7 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
                     <button
                       className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
                       onClick={() => {
-                        onValueChange({
+                        commitValue({
                           href: '/',
                           title: linkTitle || t('linkPicker.homepage'),
                         })

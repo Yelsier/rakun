@@ -8,6 +8,7 @@ export * from "./File";
 export * from "./Iterator";
 export * from "./Link";
 export * from "./List";
+export * from "./Menu";
 export * from "./Number";
 export * from "./Relation";
 export * from "./Select";

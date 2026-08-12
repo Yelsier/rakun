@@ -14,6 +14,7 @@ import DateField from './_fields/Date'
 import FileField from './_fields/FileField'
 import LinkField from './_fields/LinkField'
 import ListField from './_fields/ListField'
+import MenuField from './_fields/MenuField'
 import NumberField from './_fields/NumberField'
 import RelationField from './_fields/RelationField'
 import StringField from './_fields/StringField'
@@ -143,6 +144,7 @@ export const fieldsMap = {
   Boolean: BooleanField,
   List: ListField,
   Link: LinkField,
+  Menu: MenuField,
   Date: DateField,
   Select: SelectField,
   File: FileField,

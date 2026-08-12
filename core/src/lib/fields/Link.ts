@@ -13,35 +13,38 @@ import {
 } from "./Field";
 import { Id } from "../utils/id";
 
-const internalLinkInputSchema = z.object({
+export const InternalLinkInputSchema = z.object({
   routeId: Id,
   contentTypeId: Id,
   title: z.string().optional(),
 });
 
-const directLinkInputSchema = z.object({
+export const DirectLinkInputSchema = z.object({
   href: z.string().min(1),
   title: z.string(),
 });
 
-const linkInputSchema = z.union([internalLinkInputSchema, directLinkInputSchema]);
+export const LinkInputSchema = z.union([
+  InternalLinkInputSchema,
+  DirectLinkInputSchema,
+]);
 
-const linkDbSchema = z.union([z.string().min(1), linkInputSchema]);
+export const LinkDbSchema = z.union([z.string().min(1), LinkInputSchema]);
 
-const resolvedLinkSchema = z.object({
+export const ResolvedLinkSchema = z.object({
   href: z.string(),
   title: z.string(),
 });
 
-const linkOutputSchema = z
-  .union([z.string(), resolvedLinkSchema])
+export const LinkOutputSchema = z
+  .union([z.string(), ResolvedLinkSchema])
   .transform((value) =>
     typeof value === "string" ? { href: value, title: "" } : value,
   );
 
-type LinkInput = z.infer<typeof linkInputSchema>;
-type LinkDb = z.infer<typeof linkDbSchema>;
-type LinkOutput = z.infer<typeof linkOutputSchema>;
+type LinkInput = z.infer<typeof LinkInputSchema>;
+type LinkDb = z.infer<typeof LinkDbSchema>;
+type LinkOutput = z.infer<typeof LinkOutputSchema>;
 
 export type LinkfieldValue = LinkInput;
 export type LinkOutputValue = LinkOutput;
@@ -74,9 +77,9 @@ function makeLinkField<State extends FieldState>(state: State): LinkField<State>
     meta: { type: "Link", ui: "Link" },
     state,
     schemas: {
-      input: () => linkInputSchema,
-      db: () => linkDbSchema,
-      output: () => linkOutputSchema,
+      input: () => LinkInputSchema,
+      db: () => LinkDbSchema,
+      output: () => LinkOutputSchema,
     },
   });
 

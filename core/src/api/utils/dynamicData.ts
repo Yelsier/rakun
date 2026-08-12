@@ -200,7 +200,7 @@ const isArraySourceField = (
   field: ContentType["fields"][string] | undefined,
 ) => {
   if (!field) return false;
-  if (field.meta.type === "List") return true;
+  if (field.meta.type === "List" || field.meta.type === "Menu") return true;
 
   return "isMultiple" in field.meta && field.meta.isMultiple === true;
 };

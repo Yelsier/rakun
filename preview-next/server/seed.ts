@@ -2171,14 +2171,16 @@ export const seedPreviewData = async ({
         { _id: header._id },
         {
           $set: {
-            internalLinks: [
+            navigation: [
               {
                 ...pageLink(route, aboutPage),
                 title: "About",
+                children: [],
               },
               {
                 href: "https://github.com/Yelsier/rakun",
                 title: "GitHub",
+                children: [],
               },
             ],
             updatedAt: now(),

@@ -791,6 +791,19 @@ export const managerMessages = {
   'linkPicker.publishedRequired': {
     defaultMessage: 'Only published pages are included in AI content.',
   },
+  'menuField.addItem': { defaultMessage: 'Add menu item' },
+  'menuField.empty': { defaultMessage: 'Add the first item to build this menu.' },
+  'menuField.instructions': {
+    defaultMessage: 'Drag vertically to reorder and horizontally to change nesting.',
+  },
+  'menuField.dragItem': { defaultMessage: 'Drag menu item' },
+  'menuField.indentItem': { defaultMessage: 'Nest under previous item' },
+  'menuField.outdentItem': { defaultMessage: 'Move up one level' },
+  'menuField.removeItem': { defaultMessage: 'Remove item and its children' },
+  'menuField.untitledItem': { defaultMessage: 'Untitled menu item' },
+  'menuField.destinationRequired': {
+    defaultMessage: 'Every menu item must have a destination.',
+  },
   'contentEdit.addExisting': { defaultMessage: 'Add existing' },
   'contentEdit.addNew': { defaultMessage: 'Add new' },
   'contentEdit.createQuoted': {

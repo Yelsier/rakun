@@ -11,6 +11,7 @@ export const Header = new ContentType({
     brand: Fields.string().required(),
     primaryLinkLabel: Fields.string().optional(),
     primaryLinkHref: Fields.string().type("Url").optional(),
+    navigation: Fields.menu().optional(),
   },
   listFields: ["brand", "primaryLinkLabel"],
 });

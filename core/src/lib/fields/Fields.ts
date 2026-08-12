@@ -6,6 +6,7 @@ import { fileField } from "./File";
 import { iteratorField } from "./Iterator";
 import { linkField } from "./Link";
 import { listField } from "./List";
+import { menuField } from "./Menu";
 import { numberField } from "./Number";
 import { relationField } from "./Relation";
 import { selectField } from "./Select";
@@ -22,6 +23,7 @@ export const Fields = {
   boolean: booleanField,
   breadcrums: breadcrumsField,
   link: linkField,
+  menu: menuField,
   file: fileField,
   date: dateField,
   select: selectField,

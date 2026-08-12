@@ -510,6 +510,16 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'linkPicker.itemRequired': 'Elige un elemento.',
   'linkPicker.publishedRequired':
     'Solo las páginas publicadas se incluyen en Contenido para IA.',
+  'menuField.addItem': 'Añadir elemento',
+  'menuField.empty': 'Añade el primer elemento para construir este menú.',
+  'menuField.instructions':
+    'Arrastra verticalmente para ordenar y horizontalmente para cambiar el nivel.',
+  'menuField.dragItem': 'Arrastrar elemento del menú',
+  'menuField.indentItem': 'Anidar bajo el elemento anterior',
+  'menuField.outdentItem': 'Subir un nivel',
+  'menuField.removeItem': 'Eliminar el elemento y sus hijos',
+  'menuField.untitledItem': 'Elemento de menú sin título',
+  'menuField.destinationRequired': 'Cada elemento del menú debe tener un destino.',
   'contentEdit.addExisting': 'Añadir existente',
   'contentEdit.addNew': 'Añadir nuevo',
   'contentEdit.createQuoted': 'Crear "{query}"',

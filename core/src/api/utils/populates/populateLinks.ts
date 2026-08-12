@@ -160,6 +160,24 @@ export const populateLinks = async <T extends ContentType>(
       );
     }
 
+    if (field?.meta.type === "Menu" && Array.isArray(value)) {
+      const populateMenuItems = async (items: unknown[]): Promise<unknown[]> =>
+        Promise.all(
+          items.map(async (item) => {
+            if (!hasKeys(item)) return item;
+
+            return {
+              ...(await populateLinkValue(item) as Record<string, unknown>),
+              children: await populateMenuItems(
+                Array.isArray(item.children) ? item.children : [],
+              ),
+            };
+          }),
+        );
+
+      return populateMenuItems(value);
+    }
+
     if (field?.meta.type === "Link") {
       return populateLinkValue(value);
     }

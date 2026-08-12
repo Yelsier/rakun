@@ -140,6 +140,14 @@ normalized for web output. Dynamic data exposes link source properties as
 `<field>.href` and `<field>.title`; list mapping targets expose those same two
 paths independently and reconstruct the link object from their mapped values.
 
+Use `f.menu()` for header and navigation trees. Its value is an ordered array
+of link nodes with recursive `children`: direct nodes persist
+`{ href, title, children }`, while internal nodes persist
+`{ routeId, contentTypeId, title, children }`. Core validates every level and
+recursively resolves internal nodes for web output as
+`{ href, title, children }`. The manager can reorder and nest nodes with drag
+and drop; there is no fixed nesting-depth limit.
+
 `f.breadcrums()` declares a computed, API-only field intended for modules such
 as heroes. When the module is rendered in a routable page, the field returns
 `{ label, href }[]` from the highest route ancestor through the current page,

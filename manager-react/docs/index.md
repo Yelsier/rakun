@@ -55,6 +55,12 @@ Compound arrays such as `f.array(f.link())` render each value as a reorderable
 card in the Info editor. Use the drag handle to change their persisted order;
 current nested input values are preserved while an item is moved.
 
+`f.menu()` renders an ordered navigation tree for headers and similar modules.
+Each item reuses the internal/direct link picker and may contain unlimited child
+levels. Drag vertically to reorder; drag horizontally to nest or outdent. The
+level buttons expose equivalent keyboard actions. Removing a parent removes
+its complete subtree, and editor-only drag identifiers are never persisted.
+
 ## Media uploads
 
 The manager preserves Unicode original file names when uploading media. Names

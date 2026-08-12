@@ -94,6 +94,12 @@ can resolve localized paths. Persisted legacy URL strings are normalized to
 Compound arrays such as `f.array(f.link())` are reorderable from their drag
 handles in the Info editor, without losing unsaved values inside each item.
 
+`f.menu()` provides a navigation-tree editor intended especially for headers.
+Every item uses the same internal/direct destination picker as `f.link()` and
+can contain child items. Drag vertically to reorder and horizontally to nest or
+outdent; the level buttons provide the same operations for keyboard users.
+Removing an item also removes its descendant subtree.
+
 ## Media uploads
 
 Original file names may contain accents, non-Latin scripts, or emoji. The
