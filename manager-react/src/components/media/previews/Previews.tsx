@@ -935,50 +935,6 @@ export default function Previews() {
       )}
     >
       <MediaPreviewProvider value={mediaPreviewContextValue}>
-        <div className="mb-2 flex w-full shrink-0 flex-wrap gap-2 p-1" data-tour="media-folders">
-          <Button
-            variant="outline"
-            disabled={isCreatingFolder}
-            size="lg"
-            className="justify-start"
-            onClick={() => {
-              setIsCreateFolderDialogOpen(true)
-            }}
-          >
-            <FolderPlus className="size-4" />
-            <span className="truncate">{t('media.createFolder')}</span>
-          </Button>
-          {showChildFoldersSkeleton
-            ? Array.from({ length: 4 }).map((_, index) => (
-                <div
-                  key={`child-folder-skeleton-${index}`}
-                  className="flex items-center gap-2 rounded-lg border bg-card p-2"
-                >
-                  <Skeleton className="h-7 w-7 rounded-md" />
-                  <Skeleton className="h-4 flex-1" />
-                </div>
-              ))
-            : childFoldersData?.items?.length
-              ? childFoldersData.items.map((folder) => (
-                  <ContextMenu key={folder._id}>
-                    <ContextMenuTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="lg"
-                        className="justify-start data-[state=open]:bg-accent/60 data-[state=open]:ring-1 data-[state=open]:ring-primary/30"
-                        onClick={() => setCurrentFolderId(folder._id)}
-                      >
-                        <Folder className="size-4" />
-                        <span className="truncate">{folder.name}</span>
-                      </Button>
-                    </ContextMenuTrigger>
-                    <MediaContextMenuContent item={folder} />
-                  </ContextMenu>
-                ))
-              : null}
-        </div>
-
         <FileUpload
           value={files}
           onValueChange={setFiles}
@@ -995,7 +951,51 @@ export default function Previews() {
           disabled={isUploading}
         >
           <div className="shrink-0 space-y-3">
-            <PreviewsToolbar />
+            <PreviewsToolbar>
+              <div className="flex w-full flex-wrap gap-2 p-1" data-tour="media-folders">
+                <Button
+                  variant="outline"
+                  disabled={isCreatingFolder}
+                  size="lg"
+                  className="justify-start"
+                  onClick={() => {
+                    setIsCreateFolderDialogOpen(true)
+                  }}
+                >
+                  <FolderPlus className="size-4" />
+                  <span className="truncate">{t('media.createFolder')}</span>
+                </Button>
+                {showChildFoldersSkeleton
+                  ? Array.from({ length: 4 }).map((_, index) => (
+                      <div
+                        key={`child-folder-skeleton-${index}`}
+                        className="flex items-center gap-2 rounded-lg border bg-card p-2"
+                      >
+                        <Skeleton className="h-7 w-7 rounded-md" />
+                        <Skeleton className="h-4 flex-1" />
+                      </div>
+                    ))
+                  : childFoldersData?.items?.length
+                    ? childFoldersData.items.map((folder) => (
+                        <ContextMenu key={folder._id}>
+                          <ContextMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="lg"
+                              className="justify-start data-[state=open]:bg-accent/60 data-[state=open]:ring-1 data-[state=open]:ring-primary/30"
+                              onClick={() => setCurrentFolderId(folder._id)}
+                            >
+                              <Folder className="size-4" />
+                              <span className="truncate">{folder.name}</span>
+                            </Button>
+                          </ContextMenuTrigger>
+                          <MediaContextMenuContent item={folder} />
+                        </ContextMenu>
+                      ))
+                    : null}
+              </div>
+            </PreviewsToolbar>
 
             <FileUploadList>
               {files.map((file) => (

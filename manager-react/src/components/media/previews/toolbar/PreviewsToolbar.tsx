@@ -14,6 +14,7 @@ import {
   SlidersHorizontal,
   Trash2,
 } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 import { Button } from '../../../ui/button'
 import { FileUploadClear, FileUploadTrigger } from '../../../ui/file-upload'
@@ -30,7 +31,7 @@ import { useTranslations } from '@/i18n'
 
 const IMAGE_OPTIMIZE_FORMATS = ['webp', 'jpeg', 'png', 'avif'] as const
 
-export default function PreviewsToolbar() {
+export default function PreviewsToolbar({ children }: { children?: ReactNode }) {
   const t = useTranslations()
   const {
     mediaCount,
@@ -54,20 +55,33 @@ export default function PreviewsToolbar() {
     setOptimizeOptions,
     optimizationMediaType,
     setOptimizationMediaType,
+    currentFolderPath,
   } = useMediaLibrary()
 
   return (
-    <div className="space-y-2" data-tour="media-toolbar">
-      <p className="text-muted-foreground text-sm">{t('media.fileCount', { count: mediaCount })}</p>
-      <div className="flex w-full justify-between flex-wrap items-center gap-2">
+    <div
+      className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
+      data-tour="media-toolbar"
+    >
+      <p className="order-1 text-muted-foreground text-sm md:col-start-1 md:row-start-1">
+        {t('media.currentFolder')}{' '}
+        <span className="font-medium text-foreground">{currentFolderPath}</span>
+      </p>
+      {children ? (
+        <div className="order-3 min-w-0 md:col-span-2 md:row-start-2">{children}</div>
+      ) : null}
+      <p className="order-4 text-muted-foreground text-sm md:col-span-2 md:row-start-3">
+        {t('media.fileCount', { count: mediaCount })}
+      </p>
+      <div className="contents">
         <SearchInput
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
           placeholder={t('media.searchFiles')}
-          className="h-8 min-w-56 max-w-xs flex-1 basis-56"
+          className="order-5 h-8 w-full md:col-start-1 md:row-start-4 md:max-w-xs"
           data-tour="media-search"
         />
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="order-2 flex flex-wrap items-center gap-2 md:col-start-2 md:row-start-1 md:justify-end">
           <FileUploadTrigger asChild>
             <Button size="sm" variant="outline">
               <Upload className="size-4" />
@@ -207,7 +221,7 @@ export default function PreviewsToolbar() {
           ) : null}
         </div>
       </div>
-      <div className="flex min-w-0 flex-wrap items-center gap-2 justify-end">
+      <div className="order-6 flex w-full min-w-0 items-center justify-between gap-2 md:col-start-2 md:row-start-4 md:justify-end">
         {!isMediaTypeFilterLocked ? (
           <ToggleGroup
             type="single"
@@ -217,38 +231,38 @@ export default function PreviewsToolbar() {
               if (value) setMediaTypeFilter(value as 'all' | 'image' | 'video' | 'document')
             }}
             variant="outline"
-            className="max-w-full flex-wrap"
+            className="min-w-0 flex-1 sm:w-fit sm:flex-none"
           >
             <ToggleGroupItem
               value="all"
-              aria-label="All files"
-              className="flex-none whitespace-nowrap"
+              aria-label={t('common.all')}
+              className="whitespace-nowrap max-sm:px-2 sm:flex-none"
             >
               {t('common.all')}
             </ToggleGroupItem>
             <ToggleGroupItem
               value="image"
-              aria-label="Images"
-              className="flex-none whitespace-nowrap"
+              aria-label={t('media.filterImages')}
+              className="whitespace-nowrap max-sm:px-2 sm:flex-none"
             >
               <Image className="size-4" />
-              {t('media.filterImages')}
+              <span className="hidden sm:inline">{t('media.filterImages')}</span>
             </ToggleGroupItem>
             <ToggleGroupItem
               value="video"
-              aria-label="Videos"
-              className="flex-none whitespace-nowrap"
+              aria-label={t('media.filterVideos')}
+              className="whitespace-nowrap max-sm:px-2 sm:flex-none"
             >
               <FilmIcon className="size-4" />
-              {t('media.filterVideos')}
+              <span className="hidden sm:inline">{t('media.filterVideos')}</span>
             </ToggleGroupItem>
             <ToggleGroupItem
               value="document"
-              aria-label="Documents"
-              className="flex-none whitespace-nowrap"
+              aria-label={t('media.filterDocs')}
+              className="whitespace-nowrap max-sm:px-2 sm:flex-none"
             >
               <FileText className="size-4" />
-              {t('media.filterDocs')}
+              <span className="hidden sm:inline">{t('media.filterDocs')}</span>
             </ToggleGroupItem>
           </ToggleGroup>
         ) : null}
@@ -261,14 +275,15 @@ export default function PreviewsToolbar() {
             if (value) setViewMode(value as 'list' | 'grid-sm' | 'grid-lg')
           }}
           variant="outline"
+          className="shrink-0"
         >
-          <ToggleGroupItem value="list" aria-label="List view">
+          <ToggleGroupItem value="list" aria-label={t('media.listView')}>
             <List className="size-4" />
           </ToggleGroupItem>
-          <ToggleGroupItem value="grid-sm" aria-label="Small cards view">
+          <ToggleGroupItem value="grid-sm" aria-label={t('media.smallGridView')}>
             <Grid2x2 className="size-4" />
           </ToggleGroupItem>
-          <ToggleGroupItem value="grid-lg" aria-label="Large cards view">
+          <ToggleGroupItem value="grid-lg" aria-label={t('media.largeGridView')}>
             <LayoutGrid className="size-4" />
           </ToggleGroupItem>
         </ToggleGroup>

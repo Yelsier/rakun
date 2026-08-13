@@ -247,10 +247,6 @@ export default function MediaLibrary({
             isModal ? 'h-full' : 'lg:h-full',
           )}
         >
-          <p className="mb-4 shrink-0 text-muted-foreground text-sm">
-            {t('media.currentFolder')}{' '}
-            <span className="font-medium text-foreground">{currentFolder?.path || '/'}</span>
-          </p>
           <div className="min-h-0 flex-1">
             <Previews />
           </div>
