@@ -1,6 +1,7 @@
 import z from "zod";
 
 import { FileOptimizeOptionsSchema } from "../../../lib/fields/File";
+import type { FileOptimizeOptions } from "../../../lib/fields/File";
 import { mediaRecordOutput } from "./finalizeUpload";
 
 export const reimportMediaInput = z.object({
@@ -10,5 +11,8 @@ export const reimportMediaInput = z.object({
 
 export const reimportMediaOutput = mediaRecordOutput;
 
-export type ReimportMediaInput = z.infer<typeof reimportMediaInput>;
+export type ReimportMediaInput = {
+  id: string;
+  optimizeOptions: FileOptimizeOptions;
+};
 export type ReimportMediaOutput = z.infer<typeof reimportMediaOutput>;

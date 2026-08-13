@@ -67,13 +67,18 @@ The manager preserves Unicode original file names when uploading media. Names
 with accents, non-Latin scripts, or emoji are encoded into ASCII for the binary
 upload headers and restored by core before metadata is saved.
 
-When optimization is enabled, right-click an image and select `Reimport with
-current optimization` to regenerate its optimized source, preview, and
-responsive sizes. The action keeps the existing media ID, title, alt text,
-folder, and content references. You can also multi-select images and use the
-selection toolbar reimport action. Optimization is enabled by default in the
-media library; generated previews are stored as inline `data:image/...`
-strings on the media record for LQIP use.
+The optimization popover has a Format selector for Image and Video settings.
+Images retain their output-format, quality, preview, and responsive-size
+controls. Videos expose their own quality and are always converted to both MP4
+and WebM for browser compatibility.
+
+When optimization is enabled, right-click an image or video and select
+`Reimport` to regenerate its optimized outputs. The action keeps the existing
+media ID, title, alt text, folder, and content references. You can also
+multi-select images and videos and use the selection toolbar reimport action.
+Optimization is enabled by default in the media library; generated image
+previews are stored as inline `data:image/...` strings on the media record for
+LQIP use.
 
 Gallery and file-field image previews use `@rakun-kit/react` `Image` with a
 layout-appropriate `sizes` value so responsive variants are selected when

@@ -107,9 +107,29 @@ export function HeroImage({ image }) {
 }
 ```
 
+## Videos
+
+`Video` / `RakunVideo` renders Rakun media variants as native `<source>`
+elements. WebM sources are placed before MP4, so browsers that support WebM
+select it while the MP4 variant remains the fallback. Pass the populated media
+object directly; public storage keys are resolved with the same
+`mediaBaseUrl`/`mediaPublicPath` behavior as `Image`.
+
+```tsx
+import { Video } from '@rakun-kit/react'
+
+export function HeroVideo({ video }) {
+  return <Video video={video} controls playsInline />
+}
+```
+
+Use `sources` to override `video.sources`, or `src` and `type` for a standalone
+video. Private media must already contain resolved source URLs; storage keys
+for private objects are never converted into public URLs.
+
 ## Public entrypoints and constraints
 
-- `@rakun-kit/react`: registries and module/page renderers.
+- `@rakun-kit/react`: registries, module/page renderers, `Image`, and `Video`.
 - `@rakun-kit/react/plugins`: web plugin contracts and registry composition.
 - `@rakun-kit/react/translation`: React translation helpers.
 

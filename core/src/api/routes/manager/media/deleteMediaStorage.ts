@@ -5,6 +5,7 @@ type MediaStorageTarget = {
   key: string;
   previewKey?: string | null;
   sizes?: unknown;
+  sources?: unknown;
   access: "public" | "private";
 };
 
@@ -12,17 +13,17 @@ type MediaStorageTarget = {
 const isProtectedStaticMediaKey = (key: string) =>
   key === "public/dynamic-data" || key.startsWith("public/dynamic-data/");
 
-const getSizeKeys = (sizes: unknown): string[] => {
-  if (!Array.isArray(sizes)) return [];
+const getRelatedKeys = (items: unknown): string[] => {
+  if (!Array.isArray(items)) return [];
 
-  return sizes.flatMap((size) => {
+  return items.flatMap((item) => {
     if (
-      size &&
-      typeof size === "object" &&
-      "key" in size &&
-      typeof size.key === "string"
+      item &&
+      typeof item === "object" &&
+      "key" in item &&
+      typeof item.key === "string"
     ) {
-      return [size.key];
+      return [item.key];
     }
 
     return [];
@@ -45,9 +46,12 @@ export const deleteMediaStorage = async ({
   for (const media of mediaItems) {
     const keysToDelete = Array.from(
       new Set(
-        [media.key, media.previewKey, ...getSizeKeys(media.sizes)].filter(
-          Boolean,
-        ),
+        [
+          media.key,
+          media.previewKey,
+          ...getRelatedKeys(media.sizes),
+          ...getRelatedKeys(media.sources),
+        ].filter(Boolean),
       ),
     ) as string[];
 

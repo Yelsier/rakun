@@ -140,3 +140,14 @@ export function Page({ page }) {
 
 Given a layout like `header -> content -> footer`, only the content modules are
 wrapped in `<main>`.
+
+Media returned by Rakun can be rendered with the package's `Image` and `Video`
+components. `Video` puts WebM before MP4, allowing the browser to prefer WebM
+when it is supported and fall back to MP4 otherwise:
+
+```tsx
+import { Image, Video } from '@rakun-kit/react'
+
+<Image image={hero.image} sizes="100vw" />
+<Video video={hero.video} controls playsInline />
+```

@@ -50,11 +50,11 @@ type MediaLibraryContextValue = {
   optimizeOptions: FileOptimizeOptions
   setOptimizeEnabled: (value: boolean) => void
   setOptimizeOptions: (patch: Partial<FileOptimizeOptions>) => void
+  optimizationMediaType: 'image' | 'video'
+  setOptimizationMediaType: (value: 'image' | 'video') => void
 }
 
-const MediaLibraryContext = createContext<MediaLibraryContextValue | null>(
-  null,
-)
+const MediaLibraryContext = createContext<MediaLibraryContextValue | null>(null)
 
 export function MediaLibraryProvider({
   value,
@@ -63,11 +63,7 @@ export function MediaLibraryProvider({
   value: MediaLibraryContextValue
   children: React.ReactNode
 }) {
-  return (
-    <MediaLibraryContext.Provider value={value}>
-      {children}
-    </MediaLibraryContext.Provider>
-  )
+  return <MediaLibraryContext.Provider value={value}>{children}</MediaLibraryContext.Provider>
 }
 
 export function useMediaLibrary() {

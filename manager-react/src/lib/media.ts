@@ -39,6 +39,13 @@ export type MediaSizeRecord = {
   size: number;
 };
 
+export type MediaSourceRecord = {
+  key: string;
+  url?: string;
+  mime: "video/mp4" | "video/webm";
+  size: number;
+};
+
 export type MediaFolderRecord = {
   _id: string;
   _type: "MediaFolder";
@@ -71,6 +78,7 @@ export type MediaRecord = {
   previewUrl?: string;
   previewMime?: string;
   sizes?: MediaSizeRecord[];
+  sources?: MediaSourceRecord[];
   width?: number;
   height?: number;
   orientation?: "portrait" | "landscape";
@@ -124,6 +132,7 @@ export async function uploadFileToPresignedUrl(params: {
   previewUrl?: string;
   previewMime?: string;
   sizes?: MediaSizeRecord[];
+  sources?: MediaSourceRecord[];
   optimized: boolean;
   optimizedFormat?: string;
   optimizationQuality?: number;
@@ -145,10 +154,9 @@ export async function uploadFileToPresignedUrl(params: {
       "x-cms-upload-key": params.prepared.key,
       "x-cms-upload-access": params.prepared.access,
       "x-cms-upload-token": params.prepared.uploadToken,
-      "x-cms-upload-file-name":
-        encodeMediaUploadFileName(
-          params.file instanceof File ? params.file.name : "upload.bin",
-        ),
+      "x-cms-upload-file-name": encodeMediaUploadFileName(
+        params.file instanceof File ? params.file.name : "upload.bin",
+      ),
       "x-cms-upload-file-name-encoding": MEDIA_UPLOAD_FILE_NAME_ENCODING,
       ...(params.optimizeOptions
         ? {
@@ -186,6 +194,7 @@ export async function uploadFileToPresignedUrl(params: {
     previewUrl?: string;
     previewMime?: string;
     sizes?: MediaSizeRecord[];
+    sources?: MediaSourceRecord[];
     optimized: boolean;
     optimizedFormat?: string;
     optimizationQuality?: number;
@@ -265,6 +274,7 @@ export async function uploadMediaFile(
       previewUrl: uploaded.previewUrl,
       previewMime: uploaded.previewMime,
       sizes: uploaded.sizes,
+      sources: uploaded.sources,
       width: uploaded.width,
       height: uploaded.height,
       orientation: uploaded.orientation,

@@ -28,7 +28,7 @@ import { useMediaPreview } from '../context/MediaPreviewContext'
 import { SearchInput } from '@/components/search-input'
 import { useTranslations } from '@/i18n'
 
-const OPTIMIZE_FORMATS = ['webp', 'jpeg', 'png', 'avif'] as const
+const IMAGE_OPTIMIZE_FORMATS = ['webp', 'jpeg', 'png', 'avif'] as const
 
 export default function PreviewsToolbar() {
   const t = useTranslations()
@@ -52,6 +52,8 @@ export default function PreviewsToolbar() {
     optimizeOptions,
     setOptimizeEnabled,
     setOptimizeOptions,
+    optimizationMediaType,
+    setOptimizationMediaType,
   } = useMediaLibrary()
 
   return (
@@ -102,26 +104,51 @@ export default function PreviewsToolbar() {
               <div className="space-y-2">
                 <p className="text-muted-foreground text-xs">{t('media.format')}</p>
                 <Select
-                  value={optimizeOptions.format}
+                  value={optimizationMediaType}
                   disabled={!optimizeEnabled}
-                  onValueChange={(value) =>
-                    setOptimizeOptions({
-                      format: value as 'webp' | 'jpeg' | 'png' | 'avif',
-                    })
-                  }
+                  onValueChange={(value) => setOptimizationMediaType(value as 'image' | 'video')}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder={t('media.selectFormat')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {OPTIMIZE_FORMATS.map((format) => (
-                      <SelectItem key={format} value={format}>
-                        {format}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="image">{t('media.filterImages')}</SelectItem>
+                    <SelectItem value="video">{t('media.filterVideos')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              {optimizationMediaType === 'image' ? (
+                <div className="space-y-2">
+                  <p className="text-muted-foreground text-xs">{t('media.outputFormat')}</p>
+                  <Select
+                    value={optimizeOptions.format}
+                    disabled={!optimizeEnabled}
+                    onValueChange={(value) =>
+                      setOptimizeOptions({
+                        format: value as 'webp' | 'jpeg' | 'png' | 'avif',
+                      })
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={t('media.selectFormat')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {IMAGE_OPTIMIZE_FORMATS.map((format) => (
+                        <SelectItem key={format} value={format}>
+                          {format}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-muted-foreground text-xs">{t('media.outputFormats')}</p>
+                  <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                    {t('media.videoOutputFormats')}
+                  </div>
+                </div>
+              )}
               <div className="space-y-2">
                 <p className="text-muted-foreground text-xs">{t('media.qualityRange')}</p>
                 <Input
@@ -129,31 +156,47 @@ export default function PreviewsToolbar() {
                   min={1}
                   max={100}
                   disabled={!optimizeEnabled}
-                  value={optimizeOptions.quality}
+                  value={
+                    optimizationMediaType === 'video'
+                      ? (optimizeOptions.video?.quality ?? 80)
+                      : optimizeOptions.quality
+                  }
                   onChange={(event) => {
                     const parsed = Number(event.target.value)
                     if (!Number.isFinite(parsed)) return
                     const value = Math.max(1, Math.min(100, Math.round(parsed)))
-                    setOptimizeOptions({ quality: value })
+                    if (optimizationMediaType === 'video') {
+                      setOptimizeOptions({ video: { quality: value } })
+                    } else {
+                      setOptimizeOptions({ quality: value })
+                    }
                   }}
                 />
               </div>
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm">{t('media.generatePreview')}</p>
-                <Switch
-                  checked={optimizeOptions.generatePreview}
-                  disabled={!optimizeEnabled}
-                  onCheckedChange={(value) => setOptimizeOptions({ generatePreview: value })}
-                />
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm">{t('media.generateResponsiveSizes')}</p>
-                <Switch
-                  checked={optimizeOptions.generateSizes ?? true}
-                  disabled={!optimizeEnabled}
-                  onCheckedChange={(value) => setOptimizeOptions({ generateSizes: value })}
-                />
-              </div>
+              {optimizationMediaType === 'image' ? (
+                <>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm">{t('media.generatePreview')}</p>
+                    <Switch
+                      checked={optimizeOptions.generatePreview}
+                      disabled={!optimizeEnabled}
+                      onCheckedChange={(value) => setOptimizeOptions({ generatePreview: value })}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm">{t('media.generateResponsiveSizes')}</p>
+                    <Switch
+                      checked={optimizeOptions.generateSizes ?? true}
+                      disabled={!optimizeEnabled}
+                      onCheckedChange={(value) => setOptimizeOptions({ generateSizes: value })}
+                    />
+                  </div>
+                </>
+              ) : (
+                <p className="text-muted-foreground text-xs">
+                  {t('media.videoFormatsDescription')}
+                </p>
+              )}
             </PopoverContent>
           </Popover>
           {isUploading ? (

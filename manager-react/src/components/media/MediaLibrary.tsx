@@ -1,6 +1,6 @@
 'use client'
 
-import { startTransition, useCallback, useState } from 'react'
+import { startTransition, useCallback, useEffect, useState } from 'react'
 import { useManagerClient } from '@/client/react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -51,7 +51,17 @@ export default function MediaLibrary({
     responsiveSizes: [...DEFAULT_RESPONSIVE_IMAGE_WIDTHS],
     minBytesToOptimize: 350 * 1024,
     previewMaxWidth: 32,
+    video: { quality: 80 },
   })
+  const [optimizationMediaType, setOptimizationMediaType] = useState<'image' | 'video'>(
+    forcedMediaTypeFilter === 'video' ? 'video' : 'image',
+  )
+
+  useEffect(() => {
+    if (forcedMediaTypeFilter === 'image' || forcedMediaTypeFilter === 'video') {
+      setOptimizationMediaType(forcedMediaTypeFilter)
+    }
+  }, [forcedMediaTypeFilter])
   const [externalEditFolderRequest, setExternalEditFolderRequest] = useState<{
     id: string
     name: string
@@ -81,7 +91,7 @@ export default function MediaLibrary({
       const walk = async (parentId?: string) => {
         const response = (await managerClient.request(
           'manager.media.listFolders',
-          parentId ? { parentId } : {}
+          parentId ? { parentId } : {},
         )) as { items: FolderItem[] }
 
         for (const item of response.items) {
@@ -145,7 +155,7 @@ export default function MediaLibrary({
 
   const onUpload: NonNullable<FileUploadProps['onUpload']> = async (
     files,
-    { onProgress, onSuccess, onError }
+    { onProgress, onSuccess, onError },
   ) => {
     const effectiveOptimizeOptions = optimizeOptions
       ? optimizeOptions
@@ -170,14 +180,14 @@ export default function MediaLibrary({
           onError(file, uploadError)
           throw uploadError
         }
-      })
+      }),
     )
 
     const failedCount = results.filter((result) => result.status === 'rejected').length
 
     if (failedCount > 0) {
       throw new Error(
-        failedCount === 1 ? '1 file failed to upload' : `${failedCount} files failed to upload`
+        failedCount === 1 ? '1 file failed to upload' : `${failedCount} files failed to upload`,
       )
     }
   }
@@ -214,6 +224,8 @@ export default function MediaLibrary({
     setOptimizeOptions: (patch: Partial<FileOptimizeOptions>) => {
       setLibraryOptimizeOptions((prev) => ({ ...prev, ...patch }))
     },
+    optimizationMediaType,
+    setOptimizationMediaType,
   }
 
   return (
@@ -224,7 +236,7 @@ export default function MediaLibrary({
           isModal
             ? 'h-full min-h-0 grid-rows-[auto_minmax(0,1fr)]'
             : 'grid-rows-[auto_auto] lg:h-full lg:min-h-0 lg:grid-rows-[minmax(0,1fr)]',
-          className
+          className,
         )}
       >
         <FoldersTree isModal={isModal} />

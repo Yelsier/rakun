@@ -20,11 +20,19 @@ import { Id } from '../utils/id'
 export const fileMediaTypes = ['Image', 'Video', 'Document', 'Any'] as const
 export const fileUploadMethods = ['default', 'optimize'] as const
 export const fileOptimizeFormats = ['webp', 'jpeg', 'png', 'avif'] as const
+export const fileVideoOptimizeFormats = ['mp4', 'webm'] as const
 export const DEFAULT_RESPONSIVE_IMAGE_WIDTHS = [320, 640, 960, 1280, 1920] as const
 
 export type FileMediaType = (typeof fileMediaTypes)[number]
 export type FileUploadMethod = (typeof fileUploadMethods)[number]
 export type FileOptimizeFormat = (typeof fileOptimizeFormats)[number]
+export type FileVideoOptimizeFormat = (typeof fileVideoOptimizeFormats)[number]
+
+export const FileVideoOptimizeOptionsSchema = z.object({
+  quality: z.number().int().min(1).max(100).default(80),
+})
+
+export type FileVideoOptimizeOptions = z.infer<typeof FileVideoOptimizeOptionsSchema>
 
 export const FileOptimizeOptionsSchema = z.object({
   format: z.enum(fileOptimizeFormats).default('webp'),
@@ -40,14 +48,21 @@ export const FileOptimizeOptionsSchema = z.object({
     .positive()
     .default(350 * 1024),
   previewMaxWidth: z.number().int().positive().default(32),
+  video: FileVideoOptimizeOptionsSchema.default({ quality: 80 }),
 })
 
-export type FileOptimizeOptions = z.infer<typeof FileOptimizeOptionsSchema>
+type ParsedFileOptimizeOptions = z.infer<typeof FileOptimizeOptionsSchema>
+
+/** `video` stays optional in the public input type for existing image-only configs. */
+export type FileOptimizeOptions = Omit<ParsedFileOptimizeOptions, 'video'> & {
+  video?: FileVideoOptimizeOptions
+}
 
 const defaultOptimize: Partial<FileOptimizeOptions> = {
   format: 'webp',
   quality: 90,
   generatePreview: true,
+  video: { quality: 80 },
 }
 
 const fileRelationSchema = z.object({
@@ -77,6 +92,16 @@ const fileOutputSchema = z.object({
         url: z.string(),
         width: z.number().int().positive(),
         height: z.number().int().positive(),
+        mime: z.string(),
+        size: z.number().int().nonnegative(),
+      })
+    )
+    .optional(),
+  sources: z
+    .array(
+      z.object({
+        key: z.string(),
+        url: z.string(),
         mime: z.string(),
         size: z.number().int().nonnegative(),
       })

@@ -59,6 +59,7 @@ export function useMediaPreviewRenderer({
         item.url,
         item.previewUrl,
         item.sizes?.map((size) => size.url || size.key).join('|'),
+        item.sources?.map((source) => source.url || source.key).join('|'),
       ],
       queryFn: async () => {
         const display = getMediaDisplaySource(item)
@@ -102,11 +103,16 @@ export function useMediaPreviewRenderer({
     }
 
     if (isVideo(item.mime) && src) {
+      const sources = item.sources?.filter((source) => source.url)
       return (
         <video
-          src={src}
+          src={sources?.length ? undefined : src}
           className={cn('h-full w-full object-cover', className)}
-        />
+        >
+          {sources?.map((source) => (
+            <source key={source.key} src={source.url} type={source.mime} />
+          ))}
+        </video>
       )
     }
 

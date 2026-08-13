@@ -6,9 +6,15 @@ import {
 } from "../../../../lib/errors";
 import { Logger } from "../../../../lib/Logger";
 import { getMediaService } from "../../../../media";
-import { optimizeImageUpload } from "../../../../media/imageOptimization";
+import { optimizeMediaUpload } from "../../../../media/mediaOptimization";
 import { createRequestContext } from "../../../context";
+import {
+  recordApiError,
+  recordApiOperationSuccess,
+  setApiSuccessEventData,
+} from "../../../operations/apiEventLog";
 import { checkPermissions } from "../../../utils/checkPermissions";
+import type { RakunRequestContext } from "../../../context";
 import type { CookieOptions } from "../../../context";
 import { verifyMediaUploadToken } from "../../../utils/mediaUploadToken";
 import { decodeMediaUploadFileName } from "../../../utils/mediaUploadFileName";
@@ -122,16 +128,43 @@ const sendJson = (
   res.end(JSON.stringify(body));
 };
 
+const sendUploadError = async ({
+  res,
+  ctx,
+  statusCode,
+  body,
+}: {
+  res: MediaBinaryUploadResponse;
+  ctx: RakunRequestContext;
+  statusCode: number;
+  body: { message: string };
+}) => {
+  const error = new Error(body.message);
+  error.name = "MediaUploadError";
+  await recordApiError({
+    name: "manager.media.uploadBinary",
+    operation: { kind: "mutation", method: "POST" },
+    ctx,
+    error,
+    statusCode,
+    boundary: true,
+  });
+  sendJson(res, statusCode, body);
+};
+
 export async function handleMediaBinaryUpload(
   req: MediaBinaryUploadRequest,
   res: MediaBinaryUploadResponse,
 ) {
+  let requestContext: RakunRequestContext | undefined;
+
   try {
     const ctx = await createRequestContext({
       headers: req.headers,
       cookies: parseCookieHeader(getHeader(req, "cookie")),
       res,
     });
+    requestContext = ctx;
     const user = ctx.getUser();
 
     const rawHeaders = uploadHeadersSchema.parse({
@@ -154,8 +187,13 @@ export async function handleMediaBinaryUpload(
     };
     const tokenPayload = verifyMediaUploadToken(parsedHeaders.uploadToken);
     if (!tokenPayload) {
-      sendJson(res, 403, {
-        message: "Invalid or expired upload token",
+      await sendUploadError({
+        res,
+        ctx,
+        statusCode: 403,
+        body: {
+          message: "Invalid or expired upload token",
+        },
       });
       return;
     }
@@ -171,8 +209,13 @@ export async function handleMediaBinaryUpload(
       (tokenPayload.purpose ?? undefined) !==
         (parsedHeaders.purpose ?? undefined)
     ) {
-      sendJson(res, 403, {
-        message: "Upload token does not match upload metadata",
+      await sendUploadError({
+        res,
+        ctx,
+        statusCode: 403,
+        body: {
+          message: "Upload token does not match upload metadata",
+        },
       });
       return;
     }
@@ -190,14 +233,20 @@ export async function handleMediaBinaryUpload(
       size: rawBody.length,
     });
     if (rawBody.length === 0) {
-      sendJson(res, 400, {
-        message: "Empty upload body",
+      await sendUploadError({
+        res,
+        ctx,
+        statusCode: 400,
+        body: { message: "Empty upload body" },
       });
       return;
     }
     if (rawBody.length !== tokenPayload.size) {
-      sendJson(res, 400, {
-        message: "Upload size does not match signed size",
+      await sendUploadError({
+        res,
+        ctx,
+        statusCode: 400,
+        body: { message: "Upload size does not match signed size" },
       });
       return;
     }
@@ -219,8 +268,11 @@ export async function handleMediaBinaryUpload(
       : undefined;
     if (parsedHeaders.purpose === "profileAvatar") {
       if (!mime.startsWith("image/")) {
-        sendJson(res, 400, {
-          message: "Profile avatars must be images.",
+        await sendUploadError({
+          res,
+          ctx,
+          statusCode: 400,
+          body: { message: "Profile avatars must be images." },
         });
         return;
       }
@@ -228,14 +280,14 @@ export async function handleMediaBinaryUpload(
       checkPermissions(user, ["content.Media.own"]);
     }
 
-    const optimized = await optimizeImageUpload({
+    const optimized = await optimizeMediaUpload({
       buffer: rawBody,
       mime,
       fileName: parsedHeaders.fileName,
       key: parsedHeaders.key,
       optimizeOptions,
     });
-    Logger.addTrace("manager.media.uploadBinary: image optimization resolved", {
+    Logger.addTrace("manager.media.uploadBinary: media optimization resolved", {
       key: optimized.key,
       mime: optimized.mime,
       size: optimized.size,
@@ -245,45 +297,68 @@ export async function handleMediaBinaryUpload(
 
     const media = getMediaService();
     Logger.addTrace("manager.media.uploadBinary: media service ready");
-    await assertObjectDoesNotExist({
-      key: optimized.key,
-      access: parsedHeaders.access,
-    });
-    await media.rawAdapter.putObject({
-      key: optimized.key,
-      access: parsedHeaders.access,
-      mime: optimized.mime,
-      content: optimized.content,
-    });
-    Logger.addTrace("manager.media.uploadBinary: object stored", {
-      key: optimized.key,
-      access: parsedHeaders.access,
-      size: optimized.content.length,
+    const additionalSources = (optimized.sources ?? []).filter(
+      (source) => source.key !== optimized.key,
+    );
+    const objects = [
+      {
+        key: optimized.key,
+        mime: optimized.mime,
+        content: optimized.content,
+      },
+      ...(optimized.sizes ?? []),
+      ...additionalSources,
+    ];
+    await Promise.all(
+      objects.map((object) =>
+        assertObjectDoesNotExist({
+          key: object.key,
+          access: parsedHeaders.access,
+        }),
+      ),
+    );
+
+    const storedKeys: string[] = [];
+    try {
+      for (const object of objects) {
+        await media.rawAdapter.putObject({
+          key: object.key,
+          access: parsedHeaders.access,
+          mime: object.mime,
+          content: object.content,
+        });
+        storedKeys.push(object.key);
+      }
+    } catch (error) {
+      await Promise.allSettled(
+        storedKeys.map((key) =>
+          media.rawAdapter.deleteObject({
+            key,
+            access: parsedHeaders.access,
+          }),
+        ),
+      );
+      throw error;
+    }
+    Logger.addTrace("manager.media.uploadBinary: objects stored", {
+      count: objects.length,
+      responsiveSizes: optimized.sizes?.length ?? 0,
+      videoSources: optimized.sources?.length ?? 0,
     });
 
-    if (optimized.sizes?.length) {
-      await Promise.all(
-        optimized.sizes.map((size) =>
-          assertObjectDoesNotExist({
-            key: size.key,
-            access: parsedHeaders.access,
-          }),
-        ),
-      );
-      await Promise.all(
-        optimized.sizes.map((size) =>
-          media.rawAdapter.putObject({
-            key: size.key,
-            access: parsedHeaders.access,
-            mime: size.mime,
-            content: size.content,
-          }),
-        ),
-      );
-      Logger.addTrace("manager.media.uploadBinary: responsive sizes stored", {
-        count: optimized.sizes.length,
-      });
-    }
+    setApiSuccessEventData(ctx, {
+      inputMime: mime,
+      outputMime: optimized.mime,
+      optimized: optimized.optimized,
+      format: optimized.optimizedFormat ?? null,
+      generatedSizes: optimized.sizes?.length ?? 0,
+      generatedSources: optimized.sources?.length ?? 0,
+    });
+    await recordApiOperationSuccess({
+      name: "manager.media.uploadBinary",
+      operation: { kind: "mutation", method: "POST" },
+      ctx,
+    });
 
     Logger.addTrace("manager.media.uploadBinary: response ready");
     sendJson(res, 200, {
@@ -296,6 +371,7 @@ export async function handleMediaBinaryUpload(
       height: optimized.height,
       orientation: optimized.orientation,
       sizes: optimized.sizes?.map(({ content: _, ...size }) => size),
+      sources: optimized.sources?.map(({ content: _, ...source }) => source),
       previewUrl: optimized.preview?.dataUrl,
       previewMime: optimized.preview?.mime,
       optimized: optimized.optimized,
@@ -308,6 +384,23 @@ export async function handleMediaBinaryUpload(
     Logger.error("manager.media.uploadBinary failed", {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
+    });
+
+    const statusCode = isAppError(error)
+      ? (getAppErrorStatusCode(error) ?? 500)
+      : error instanceof z.ZodError
+        ? 400
+        : error instanceof Error &&
+            error.message === "Upload body exceeds signed size"
+          ? 413
+          : 500;
+    await recordApiError({
+      name: "manager.media.uploadBinary",
+      operation: { kind: "mutation", method: "POST" },
+      ctx: requestContext,
+      error,
+      statusCode,
+      boundary: true,
     });
 
     if (isAppError(error)) {

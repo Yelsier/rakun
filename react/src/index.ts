@@ -6,3 +6,4 @@ export * from './ServerModuleRenderer'
 export * from "./registry";
 export * from "./translation";
 export * from './plugins'
+export * from "./Video";

@@ -21,6 +21,17 @@ type ResolvedMediaSizeRecord = MediaSizeRecord & {
   url: string
 }
 
+type MediaSourceRecord = {
+  key: string
+  url?: string
+  mime: string
+  size: number
+}
+
+type ResolvedMediaSourceRecord = MediaSourceRecord & {
+  url: string
+}
+
 type PopulateRelationsOptions = {
   exposePrivateMedia?: boolean
 }
@@ -48,6 +59,32 @@ const toMediaSizeRecords = (value: unknown): MediaSizeRecord[] => {
         url: typeof record.url === 'string' ? record.url : undefined,
         width: record.width,
         height: record.height,
+        mime: record.mime,
+        size: record.size,
+      },
+    ]
+  })
+}
+
+const toMediaSourceRecords = (value: unknown): MediaSourceRecord[] => {
+  if (!Array.isArray(value)) return []
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== 'object') return []
+
+    const record = item as Record<string, unknown>
+    if (
+      typeof record.key !== 'string' ||
+      typeof record.mime !== 'string' ||
+      typeof record.size !== 'number'
+    ) {
+      return []
+    }
+
+    return [
+      {
+        key: record.key,
+        url: typeof record.url === 'string' ? record.url : undefined,
         mime: record.mime,
         size: record.size,
       },
@@ -174,11 +211,13 @@ export async function populateRelations<T extends ContentType>(
                 size: media.size ?? 0,
                 orientation: media.orientation ?? null,
                 sizes: undefined,
+                sources: undefined,
                 srcSet: null,
               }
             }
             const mediaService = getMediaService()
             const mediaSizes = toMediaSizeRecords((media as { sizes?: unknown }).sizes)
+            const mediaSources = toMediaSourceRecords((media as { sources?: unknown }).sources)
             const [resolved, resolvedPreview] = await Promise.all([
               mediaService
                 .getMediaUrl({
@@ -216,6 +255,25 @@ export async function populateRelations<T extends ContentType>(
                 })
               )
             ).filter((size): size is ResolvedMediaSizeRecord => size !== null)
+            const resolvedSources = (
+              await Promise.all(
+                mediaSources.map(async (source) => {
+                  const resolvedSource = await mediaService
+                    .getMediaUrl({
+                      key: source.key,
+                      access: media.access,
+                    })
+                    .catch(() => null)
+                  const url = resolvedSource?.url || source.url
+                  if (!url) return null
+
+                  return {
+                    ...source,
+                    url,
+                  }
+                })
+              )
+            ).filter((source): source is ResolvedMediaSourceRecord => source !== null)
             const originalUrl = resolved?.url || media.url || ''
 
             return {
@@ -233,6 +291,7 @@ export async function populateRelations<T extends ContentType>(
               size: media.size ?? 0,
               orientation: media.orientation ?? null,
               sizes: resolvedSizes.length ? resolvedSizes : undefined,
+              sources: resolvedSources.length ? resolvedSources : undefined,
               srcSet: buildSrcSet(resolvedSizes, {
                 url: originalUrl,
                 width: media.width,

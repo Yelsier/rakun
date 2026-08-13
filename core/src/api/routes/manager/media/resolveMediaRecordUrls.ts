@@ -32,39 +32,37 @@ const resolveMediaUrl = async ({
   }
 };
 
-const resolveSizes = async (
-  sizes: unknown,
+const resolveRelatedMedia = async (
+  items: unknown,
   access: MediaAccess,
 ): Promise<unknown> => {
-  if (!Array.isArray(sizes)) return sizes;
+  if (!Array.isArray(items)) return items;
 
   return Promise.all(
-    sizes.map(async (size) => {
-      if (!size || typeof size !== "object" || Array.isArray(size)) {
-        return size;
+    items.map(async (item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        return item;
       }
 
-      const sizeRecord = size as Record<string, unknown>;
+      const record = item as Record<string, unknown>;
 
       return {
-        ...sizeRecord,
+        ...record,
         url: await resolveMediaUrl({
-          key: sizeRecord.key,
+          key: record.key,
           access,
-          fallback: getStoredUrl(sizeRecord.url),
+          fallback: getStoredUrl(record.url),
         }),
       };
     }),
   );
 };
 
-export const resolveMediaRecordUrls = async <
-  T extends Record<string, unknown>,
->(
+export const resolveMediaRecordUrls = async <T extends Record<string, unknown>>(
   mediaRecord: T,
 ): Promise<T> => {
   const access = getMediaAccess(mediaRecord.access);
-  const [url, previewUrl, sizes] = await Promise.all([
+  const [url, previewUrl, sizes, sources] = await Promise.all([
     resolveMediaUrl({
       key: mediaRecord.key,
       access,
@@ -75,7 +73,8 @@ export const resolveMediaRecordUrls = async <
       access,
       fallback: getStoredUrl(mediaRecord.previewUrl),
     }),
-    resolveSizes(mediaRecord.sizes, access),
+    resolveRelatedMedia(mediaRecord.sizes, access),
+    resolveRelatedMedia(mediaRecord.sources, access),
   ]);
 
   return {
@@ -83,5 +82,6 @@ export const resolveMediaRecordUrls = async <
     url,
     previewUrl,
     sizes,
+    sources,
   };
 };

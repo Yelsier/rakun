@@ -106,12 +106,16 @@ Original file names may contain accents, non-Latin scripts, or emoji. The
 manager transports those names through ASCII-safe upload headers and core
 restores them before saving media metadata.
 
-With optimization enabled in the media toolbar, an image's context menu offers
-`Reimport with current optimization`. It regenerates the configured variants
-while retaining the existing media record and all relations to it. Multi-select
-supports the same reimport action from the selection toolbar. Optimization is
-on by default, and generated previews are stored as inline `data:image/...`
-LQIP values on the media record.
+The optimization popover separates Image and Video settings through its Format
+selector. Images retain their normal format and responsive-image controls;
+videos have their own quality and are converted to both MP4 and WebM.
+
+With optimization enabled in the media toolbar, an image or video's context
+menu offers `Reimport`. It regenerates the configured outputs while retaining
+the existing media record and all relations to it. Multi-select supports the
+same reimport action from the selection toolbar. Optimization is on by default,
+and generated image previews are stored as inline `data:image/...` LQIP values
+on the media record.
 
 ## Dynamic data mappings
 

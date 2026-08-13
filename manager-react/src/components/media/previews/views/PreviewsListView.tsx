@@ -40,7 +40,7 @@ export default function PreviewsListView({ media }: PreviewsListViewProps) {
   )
 
   return (
-    <div className='relative w-full overflow-hidden rounded-lg border'>
+    <div className='relative w-full shrink-0 overflow-hidden rounded-lg border'>
       <div
         className={cn(
           listColumns,

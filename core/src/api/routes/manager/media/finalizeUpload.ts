@@ -9,10 +9,7 @@ import {
   getMediaService,
 } from "../../../../media";
 import { getMongoService } from "../../../../orm";
-import {
-  DbErrorConflict,
-  DbErrorInvalidData,
-} from "../../../../orm/dbService";
+import { DbErrorConflict, DbErrorInvalidData } from "../../../../orm/dbService";
 import { RakunRequestContext } from "../../../context";
 import { checkPermissions } from "../../../utils/checkPermissions";
 import { isCompatibleMediaUploadKey } from "../../../utils/mediaUploadKey";
@@ -288,6 +285,8 @@ export const finalizeUploadHandler = async ({
     const previewUrl = input.previewUrl;
     const sizes = input.sizes?.filter((size) => size.key);
     const persistedSizes = sizes?.length ? sizes : undefined;
+    const sources = input.sources?.filter((source) => source.key);
+    const persistedSources = sources?.length ? sources : undefined;
     const createdMedia = await db.create(Media, {
       _type: "Media",
       name: input.name || resolvedOriginalName,
@@ -302,6 +301,7 @@ export const finalizeUploadHandler = async ({
       previewUrl,
       previewMime: input.previewMime,
       sizes: persistedSizes,
+      sources: persistedSources,
       width: input.width,
       height: input.height,
       orientation: input.orientation,
@@ -330,6 +330,7 @@ export const finalizeUploadHandler = async ({
     const mediaOutputBase: FinalizeUploadOutput["media"] = {
       ...createdMedia,
       sizes: persistedSizes,
+      sources: persistedSources,
       folder: createdMedia.folder
         ? {
             type: "existing",

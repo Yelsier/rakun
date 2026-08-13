@@ -1,14 +1,7 @@
 'use client'
 
 import { Folder, FolderPlus, Upload, X } from 'lucide-react'
-import {
-  startTransition,
-  useCallback,
-  useDeferredValue,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { keepPreviousData, useQueryClient } from '@tanstack/react-query'
 import {
   createManagerQueryKey,
@@ -106,7 +99,7 @@ export default function Previews() {
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid-sm')
   const [mediaTypeFilter, setMediaTypeFilter] = useState<'all' | 'image' | 'video' | 'document'>(
-    'all'
+    'all',
   )
   const [searchTerm, setSearchTerm] = useState('')
   const deferredSearchTerm = useDeferredValue(searchTerm)
@@ -129,14 +122,12 @@ export default function Previews() {
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(() => new Set())
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
-  const [reimportingIds, setReimportingIds] = useState<Set<string>>(
-    () => new Set(),
-  )
+  const [reimportingIds, setReimportingIds] = useState<Set<string>>(() => new Set())
 
   const getMediaQueryFilter = (
     folderId: string | null,
     mediaType: 'all' | 'image' | 'video' | 'document',
-    search: string
+    search: string,
   ) => {
     const folderFilter = folderId ? { 'folder._id': folderId } : { folder: { $exists: false } }
 
@@ -178,11 +169,7 @@ export default function Previews() {
   const mediaListInput = {
     contentType: 'Media' as const,
     query: {
-      filter: getMediaQueryFilter(
-        currentFolderId,
-        effectiveMediaTypeFilter,
-        trimmedSearch
-      ),
+      filter: getMediaQueryFilter(currentFolderId, effectiveMediaTypeFilter, trimmedSearch),
       options: {
         limit: 'all' as const,
         sort: {
@@ -225,7 +212,7 @@ export default function Previews() {
       { _id: null, name: 'Base folder', path: '/' },
       ...[...(folders ?? [])].sort((a, b) => a.path.localeCompare(b.path)),
     ],
-    [folders]
+    [folders],
   )
 
   const { files, setFiles, isUploading, handleUpload, onFileReject } = useMediaUpload({
@@ -233,8 +220,7 @@ export default function Previews() {
     refetchMedia: refetch,
   })
 
-  const previewSizes =
-    viewMode === 'list' ? '48px' : viewMode === 'grid-lg' ? '520px' : '280px'
+  const previewSizes = viewMode === 'list' ? '48px' : viewMode === 'grid-lg' ? '520px' : '280px'
 
   const { renderPreview } = useMediaPreviewRenderer({
     media,
@@ -398,7 +384,7 @@ export default function Previews() {
             setDeleteTarget(null)
             toast.success(t('media.folderDeleted'))
           },
-        }
+        },
       )
       return
     }
@@ -418,7 +404,7 @@ export default function Previews() {
               : t('media.fileDeleted'),
           )
         },
-      }
+      },
     )
   }
 
@@ -466,13 +452,13 @@ export default function Previews() {
               : t('media.fileUpdated'),
           )
         },
-      }
+      },
     )
   }
 
   const invalidateMediaLists = async (
     sourceFolderId: string | null,
-    targetFolderId: string | null
+    targetFolderId: string | null,
   ) => {
     await Promise.all(
       (['all', 'image', 'video', 'document'] as const).flatMap((mediaType) =>
@@ -490,9 +476,9 @@ export default function Previews() {
                 },
               },
             }),
-          })
-        )
-      )
+          }),
+        ),
+      ),
     )
   }
 
@@ -604,9 +590,7 @@ export default function Previews() {
       setImageEditTarget(item)
       setImageEditUrl(url)
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t('media.openImageEditorError'),
-      )
+      toast.error(error instanceof Error ? error.message : t('media.openImageEditorError'))
     }
   }
 
@@ -627,9 +611,7 @@ export default function Previews() {
       setImageEditUrl('')
       toast.success(t('media.editedImageSaved'))
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t('media.saveEditedImageError'),
-      )
+      toast.error(error instanceof Error ? error.message : t('media.saveEditedImageError'))
     } finally {
       setIsSavingImageEdit(false)
     }
@@ -666,11 +648,7 @@ export default function Previews() {
       await refetch()
       toast.success(t('media.imageDetailsSaved'))
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : t('media.saveImageDetailsError'),
-      )
+      toast.error(error instanceof Error ? error.message : t('media.saveImageDetailsError'))
     }
   }
 
@@ -684,18 +662,20 @@ export default function Previews() {
   }
 
   const onRequestReimport = (item: MediaRecord) => {
-    if (!optimizeEnabled || !item.mime.startsWith('image/')) return
+    if (!optimizeEnabled || (!item.mime.startsWith('image/') && !item.mime.startsWith('video/')))
+      return
 
-    const selectedImages = media.filter(
+    const selectedMedia = media.filter(
       (mediaItem) =>
-        bulkSelectedIds.has(mediaItem._id) && mediaItem.mime.startsWith('image/'),
+        bulkSelectedIds.has(mediaItem._id) &&
+        (mediaItem.mime.startsWith('image/') || mediaItem.mime.startsWith('video/')),
     )
-    if (selectedImages.length > 1 && bulkSelectedIds.has(item._id)) {
-      void reimportImages(selectedImages)
+    if (selectedMedia.length > 1 && bulkSelectedIds.has(item._id)) {
+      void reimportMedia(selectedMedia)
       return
     }
 
-    void reimportImages([item])
+    void reimportMedia([item])
   }
 
   const onRequestSelect = (item: MediaRecord) => {
@@ -719,30 +699,29 @@ export default function Previews() {
   const onRequestBulkReimport = () => {
     if (!optimizeEnabled) return
 
-    const selectedImages = media.filter(
-      (item) => bulkSelectedIds.has(item._id) && item.mime.startsWith('image/'),
+    const selectedMedia = media.filter(
+      (item) =>
+        bulkSelectedIds.has(item._id) &&
+        (item.mime.startsWith('image/') || item.mime.startsWith('video/')),
     )
-    if (selectedImages.length === 0) {
-      toast.error(t('media.bulkReimportNoImages'))
+    if (selectedMedia.length === 0) {
+      toast.error(t('media.bulkReimportNoMedia'))
       return
     }
 
-    void reimportImages(selectedImages)
+    void reimportMedia(selectedMedia)
   }
 
-  const reimportImages = (images: MediaRecord[]) => {
+  const reimportMedia = (items: MediaRecord[]) => {
     void confirm({
-      title:
-        images.length === 1
-          ? t('media.reimportTitle')
-          : t('media.bulkReimportTitle'),
+      title: items.length === 1 ? t('media.reimportTitle') : t('media.bulkReimportTitle'),
       description:
-        images.length === 1
-          ? t('media.reimportDescription', { name: images[0]?.name ?? '' })
-          : t('media.bulkReimportDescription', { count: images.length }),
+        items.length === 1
+          ? t('media.reimportDescription', { name: items[0]?.name ?? '' })
+          : t('media.bulkReimportDescription', { count: items.length }),
       confirmLabel: t('media.reimportConfirm'),
       onConfirm: async () => {
-        const ids = images.map((item) => item._id)
+        const ids = items.map((item) => item._id)
         setReimportingIds((current) => {
           const next = new Set(current)
           for (const id of ids) next.add(id)
@@ -754,11 +733,14 @@ export default function Previews() {
         let lastError: unknown
 
         try {
-          for (const item of images) {
+          for (const item of items) {
             try {
               await managerClient.request('manager.media.reimport', {
                 id: item._id,
-                optimizeOptions,
+                optimizeOptions: {
+                  ...optimizeOptions,
+                  video: optimizeOptions.video ?? { quality: 80 },
+                },
               })
               successCount += 1
             } catch (error) {
@@ -771,7 +753,7 @@ export default function Previews() {
             await refetch()
             clearBulkSelection()
             toast.success(
-              images.length === 1
+              items.length === 1
                 ? t('media.reimported')
                 : t('media.bulkReimported', { count: successCount }),
             )
@@ -864,7 +846,7 @@ export default function Previews() {
         setMediaTypeFilter(value)
       })
     },
-    []
+    [],
   )
 
   const handleViewModeChange = useCallback((value: ViewMode) => {
@@ -942,7 +924,7 @@ export default function Previews() {
       onRequestMove,
       onRequestDelete,
       renderPreview,
-    ]
+    ],
   )
 
   return (
@@ -953,10 +935,7 @@ export default function Previews() {
       )}
     >
       <MediaPreviewProvider value={mediaPreviewContextValue}>
-        <div
-          className="mb-2 flex w-full shrink-0 flex-wrap gap-2 p-1"
-          data-tour="media-folders"
-        >
+        <div className="mb-2 flex w-full shrink-0 flex-wrap gap-2 p-1" data-tour="media-folders">
           <Button
             variant="outline"
             disabled={isCreatingFolder}
@@ -1060,9 +1039,7 @@ export default function Previews() {
                     <Upload className="size-6 text-muted-foreground" />
                   </div>
                   <p className="font-medium text-sm">{t('media.dragDropFiles')}</p>
-                  <p className="text-muted-foreground text-xs">
-                    {t('media.uploadLimits')}
-                  </p>
+                  <p className="text-muted-foreground text-xs">{t('media.uploadLimits')}</p>
                 </div>
               </div>
 
@@ -1070,9 +1047,7 @@ export default function Previews() {
 
               {!showMediaSkeleton && media.length === 0 ? (
                 <Card className="w-full p-8 text-center text-muted-foreground text-sm">
-                  {trimmedSearch
-                    ? t('media.noSearchResults')
-                    : t('media.emptyFolder')}
+                  {trimmedSearch ? t('media.noSearchResults') : t('media.emptyFolder')}
                 </Card>
               ) : null}
 
@@ -1121,7 +1096,6 @@ export default function Previews() {
           }}
           onSave={handleSaveImageEdit}
         />
-
 
         <MediaCreateFolderDialog
           open={isCreateFolderDialogOpen}

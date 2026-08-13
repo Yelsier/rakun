@@ -23,6 +23,15 @@ export const mediaSizeOutput = z.object({
 
 export const mediaSizeInput = mediaSizeOutput.omit({ url: true })
 
+export const mediaSourceOutput = z.object({
+  key: z.string(),
+  url: z.url().optional(),
+  mime: z.enum(['video/mp4', 'video/webm']),
+  size: z.number().int().nonnegative(),
+})
+
+export const mediaSourceInput = mediaSourceOutput.omit({ url: true })
+
 export const mediaRecordOutput = z.object({
   _id: z.string(),
   _type: z.literal('Media'),
@@ -41,6 +50,7 @@ export const mediaRecordOutput = z.object({
   previewUrl: z.url().optional(),
   previewMime: z.string().optional(),
   sizes: z.array(mediaSizeOutput).optional(),
+  sources: z.array(mediaSourceOutput).optional(),
   width: z.number().int().positive().optional(),
   height: z.number().int().positive().optional(),
   orientation: mediaOrientationSchema.optional(),
@@ -75,6 +85,7 @@ export const finalizeUploadInput = z.object({
   previewUrl: z.url().optional(),
   previewMime: z.string().min(1).optional(),
   sizes: z.array(mediaSizeInput).optional(),
+  sources: z.array(mediaSourceInput).optional(),
   width: z.number().int().positive().optional(),
   height: z.number().int().positive().optional(),
   orientation: mediaOrientationSchema.optional(),

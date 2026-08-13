@@ -26,7 +26,7 @@ type UploadOptimizationInput = {
   optimizeOptions?: FileOptimizeOptions;
 };
 
-type UploadOptimizationOutput = {
+export type UploadOptimizationOutput = {
   key: string;
   mime: string;
   size: number;
@@ -49,6 +49,12 @@ type UploadOptimizationOutput = {
     size: number;
     width: number;
     height: number;
+    content: Buffer;
+  }>;
+  sources?: Array<{
+    key: string;
+    mime: "video/mp4" | "video/webm";
+    size: number;
     content: Buffer;
   }>;
 };

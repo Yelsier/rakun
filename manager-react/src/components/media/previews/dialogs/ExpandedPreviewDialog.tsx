@@ -32,11 +32,7 @@ type ExpandedPreviewDialogProps = {
   previewUrl: string
   isSaving?: boolean
   onClose: () => void
-  onSaveDetails: (input: {
-    name: string
-    title: string
-    alt: string
-  }) => Promise<void>
+  onSaveDetails: (input: { name: string; title: string; alt: string }) => Promise<void>
 }
 
 export default function ExpandedPreviewDialog({
@@ -70,9 +66,7 @@ export default function ExpandedPreviewDialog({
     : t('media.no')
 
   const previewVariantLabel =
-    preview?.previewUrl || preview?.previewKey
-      ? t('media.available')
-      : t('media.no')
+    preview?.previewUrl || preview?.previewKey ? t('media.available') : t('media.no')
 
   return (
     <Dialog
@@ -87,9 +81,7 @@ export default function ExpandedPreviewDialog({
             {preview?.name || preview?.title || t('media.preview')}
           </DialogTitle>
           <DialogDescription className="truncate">
-            {preview
-              ? `${preview.mime} · ${formatFileSize(preview.size)}`
-              : ''}
+            {preview ? `${preview.mime} · ${formatFileSize(preview.size)}` : ''}
           </DialogDescription>
         </DialogHeader>
         <div className="grid max-h-[85vh] min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
@@ -120,18 +112,22 @@ export default function ExpandedPreviewDialog({
               />
             ) : isVideo(preview.mime) ? (
               <video
-                src={previewUrl}
+                src={preview.sources?.some((source) => source.url) ? undefined : previewUrl}
                 controls
                 className="h-full w-full object-contain"
-              />
+              >
+                {preview.sources
+                  ?.filter((source) => source.url)
+                  .map((source) => (
+                    <source key={source.key} src={source.url} type={source.mime} />
+                  ))}
+              </video>
             ) : (
               <div className="flex flex-col items-center gap-3 p-6 text-center">
                 <div className="rounded-full border p-3 text-muted-foreground">
                   <FileTypeIcon mime={preview.mime} />
                 </div>
-                <p className="text-muted-foreground text-sm">
-                  {t('media.noInlinePreview')}
-                </p>
+                <p className="text-muted-foreground text-sm">{t('media.noInlinePreview')}</p>
                 <Button asChild variant="outline">
                   <a href={previewUrl} target="_blank" rel="noreferrer">
                     <ExternalLink className="size-4" />
@@ -193,14 +189,10 @@ export default function ExpandedPreviewDialog({
                   </div>
                   <div>
                     <p className="text-muted-foreground text-xs">{t('media.size')}</p>
-                    <p className="font-medium">
-                      {formatFileSize(preview.size)}
-                    </p>
+                    <p className="font-medium">{formatFileSize(preview.size)}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground text-xs">
-                      {t('media.originalSize')}
-                    </p>
+                    <p className="text-muted-foreground text-xs">{t('media.originalSize')}</p>
                     <p className="font-medium">
                       {preview.originalSize != null
                         ? formatFileSize(preview.originalSize)
@@ -217,14 +209,10 @@ export default function ExpandedPreviewDialog({
                   </div>
                   <div>
                     <p className="text-muted-foreground text-xs">{t('media.orientation')}</p>
-                    <p className="font-medium">
-                      {preview.orientation || t('media.na')}
-                    </p>
+                    <p className="font-medium">{preview.orientation || t('media.na')}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground text-xs">
-                      {t('media.optimization')}
-                    </p>
+                    <p className="text-muted-foreground text-xs">{t('media.optimization')}</p>
                     <p className="font-medium">{optimizationLabel}</p>
                   </div>
                   <div>
@@ -236,16 +224,13 @@ export default function ExpandedPreviewDialog({
                     </p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground text-xs">
-                      {t('media.previewVariant')}
-                    </p>
+                    <p className="text-muted-foreground text-xs">{t('media.previewVariant')}</p>
                     <p className="font-medium">{previewVariantLabel}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground text-xs">{t('media.saved')}</p>
                     <p className="font-medium">
-                      {preview.originalSize &&
-                      preview.originalSize > preview.size
+                      {preview.originalSize && preview.originalSize > preview.size
                         ? `${formatFileSize(preview.originalSize - preview.size)} (${formatPercent(((preview.originalSize - preview.size) / preview.originalSize) * 100)})`
                         : t('media.na')}
                     </p>
@@ -260,10 +245,7 @@ export default function ExpandedPreviewDialog({
                         const widthLabel = `${size.width}w`
                         const dimensions = `${size.width}x${size.height}`
                         return (
-                          <div
-                            key={size.key}
-                            className="rounded-md border p-2 text-xs"
-                          >
+                          <div key={size.key} className="rounded-md border p-2 text-xs">
                             <div className="flex items-center justify-between gap-2">
                               <span className="font-medium">{widthLabel}</span>
                               <span className="text-muted-foreground">
@@ -271,9 +253,7 @@ export default function ExpandedPreviewDialog({
                               </span>
                             </div>
                             <p className="text-muted-foreground">{dimensions}</p>
-                            <p className="truncate text-muted-foreground">
-                              {size.mime}
-                            </p>
+                            <p className="truncate text-muted-foreground">{size.mime}</p>
                           </div>
                         )
                       })}
@@ -282,6 +262,23 @@ export default function ExpandedPreviewDialog({
                     <p className="text-muted-foreground text-sm">{t('media.na')}</p>
                   )}
                 </div>
+                {preview.sources?.length ? (
+                  <div className="space-y-2">
+                    <p className="font-medium text-sm">{t('media.outputFormats')}</p>
+                    <div className="space-y-2">
+                      {preview.sources.map((source) => (
+                        <div key={source.key} className="rounded-md border p-2 text-xs">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-medium">{source.mime}</span>
+                            <span className="text-muted-foreground">
+                              {formatFileSize(source.size)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </ScrollArea>

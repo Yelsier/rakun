@@ -242,6 +242,7 @@ export const managerMessages = {
   'common.deselect': { defaultMessage: 'Deselect' },
   'common.move': { defaultMessage: 'Move' },
   'common.upload': { defaultMessage: 'Upload' },
+  'common.download': { defaultMessage: 'Download' },
 
   'mediaPicker.title': { defaultMessage: 'Media library' },
   'mediaPicker.description': {
@@ -275,6 +276,7 @@ export const managerMessages = {
     defaultMessage: 'This file type does not have inline preview.',
   },
   'media.openFile': { defaultMessage: 'Open file' },
+  'media.downloadError': { defaultMessage: 'Could not download the file.' },
   'media.alt': { defaultMessage: 'Alt' },
   'media.mime': { defaultMessage: 'MIME' },
   'media.size': { defaultMessage: 'Size' },
@@ -353,6 +355,12 @@ export const managerMessages = {
   },
   'media.format': { defaultMessage: 'Format' },
   'media.selectFormat': { defaultMessage: 'Select format' },
+  'media.outputFormat': { defaultMessage: 'Output format' },
+  'media.outputFormats': { defaultMessage: 'Output formats' },
+  'media.videoOutputFormats': { defaultMessage: 'MP4 + WebM' },
+  'media.videoFormatsDescription': {
+    defaultMessage: 'Videos are converted to both formats for broad browser compatibility.',
+  },
   'media.qualityRange': { defaultMessage: 'Quality (1-100)' },
   'media.generatePreview': { defaultMessage: 'Generate preview' },
   'media.generateResponsiveSizes': {
@@ -390,29 +398,31 @@ export const managerMessages = {
   'media.enableOptimizationToReimport': {
     defaultMessage: 'Enable optimization to reimport',
   },
-  'media.reimportTitle': { defaultMessage: 'Reimport image?' },
+  'media.reimportTitle': { defaultMessage: 'Reimport media?' },
   'media.reimportDescription': {
     defaultMessage:
       'Reprocess {name} with the optimization settings currently selected in the media toolbar. Existing references and details will be preserved.',
   },
   'media.reimportConfirm': { defaultMessage: 'Reimport' },
-  'media.reimported': { defaultMessage: 'Image reimported' },
+  'media.reimported': { defaultMessage: 'Media reimported' },
   'media.reimportError': {
-    defaultMessage: 'Could not reimport the image: {reason}',
+    defaultMessage: 'Could not reimport the media: {reason}',
   },
-  'media.bulkReimportTitle': { defaultMessage: 'Reimport selected images?' },
+  'media.bulkReimportTitle': { defaultMessage: 'Reimport selected media?' },
   'media.bulkReimportDescription': {
     defaultMessage:
-      'Reprocess {count} selected {count, plural, one {image} other {images}} with the optimization settings currently selected in the media toolbar. Existing references and details will be preserved.',
+      'Reprocess {count} selected media items with the optimization settings currently selected in the media toolbar. Existing references and details will be preserved.',
     params: { count: 'number' },
   },
   'media.bulkReimported': {
-    defaultMessage:
-      'Reimported {count} {count, plural, one {image} other {images}}',
+    defaultMessage: 'Reimported {count} media {count, plural, one {item} other {items}}',
     params: { count: 'number' },
   },
   'media.bulkReimportNoImages': {
     defaultMessage: 'Select at least one image to reimport',
+  },
+  'media.bulkReimportNoMedia': {
+    defaultMessage: 'Select at least one image or video to reimport',
   },
   'media.reimportSelectedCount': {
     defaultMessage: 'Reimport',
@@ -599,8 +609,7 @@ export const managerMessages = {
     defaultMessage: 'Could not save the shared template',
   },
   'contentEdit.sharedTemplateWarning': {
-    defaultMessage:
-      'This template is shared. Changes made here apply to all content of this type.',
+    defaultMessage: 'This template is shared. Changes made here apply to all content of this type.',
   },
   'contentEdit.saveAsDraft': { defaultMessage: 'Save as draft' },
   'contentEdit.saveOptions': { defaultMessage: 'Save options' },

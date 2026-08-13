@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, type ImgHTMLAttributes } from "react";
 
+import { resolvePublicMediaUrl } from "./mediaUrl";
+
 type ImageFetchPriority = "high" | "low" | "auto";
 type ImageElementProps = ImgHTMLAttributes<HTMLImageElement> & {
   fetchPriority?: ImageFetchPriority;
@@ -51,44 +53,6 @@ export type RakunImageProps = Omit<
   mediaPublicPath?: string;
   includeOriginalInSrcSet?: boolean;
   priority?: boolean;
-};
-
-const encodeMediaPath = (value: string): string =>
-  value
-    .split("/")
-    .filter(Boolean)
-    .map((part) => encodeURIComponent(part))
-    .join("/");
-
-const joinUrlPath = (baseUrl: string | null | undefined, pathname: string) => {
-  const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
-
-  if (!baseUrl) return normalizedPath;
-
-  return `${baseUrl.replace(/\/$/, "")}${normalizedPath}`;
-};
-
-const resolvePublicMediaUrl = ({
-  key,
-  access,
-  mediaBaseUrl,
-  mediaPublicPath,
-}: {
-  key?: string | null;
-  access?: string | null;
-  mediaBaseUrl?: string | null;
-  mediaPublicPath: string;
-}): string | undefined => {
-  if (!key || access === "private") return undefined;
-
-  const publicKey = key.startsWith("public/")
-    ? key.slice("public/".length)
-    : key;
-  const encodedKey = encodeMediaPath(publicKey);
-
-  if (!encodedKey) return undefined;
-
-  return joinUrlPath(mediaBaseUrl, `${mediaPublicPath}/${encodedKey}`);
 };
 
 const buildSrcSet = ({

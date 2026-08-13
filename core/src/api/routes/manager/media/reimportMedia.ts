@@ -4,7 +4,7 @@ import { throwAppError } from "../../../../lib/errors";
 import { Logger } from "../../../../lib/Logger";
 import type { FileOptimizeOptions } from "../../../../lib/fields/File";
 import { getMediaService, type MediaService } from "../../../../media";
-import { optimizeImageUpload } from "../../../../media/imageOptimization";
+import { optimizeMediaUpload } from "../../../../media/mediaOptimization";
 import { getMongoService } from "../../../../orm";
 import type {
   ReimportMediaInput,
@@ -15,7 +15,7 @@ import { checkOwnership } from "../../../utils/checkOwnership";
 import { deleteMediaStorage } from "./deleteMediaStorage";
 import { resolveMediaRecordUrls } from "./resolveMediaRecordUrls";
 
-type ReimportedImage = Awaited<ReturnType<typeof optimizeImageUpload>>;
+type ReimportedMedia = Awaited<ReturnType<typeof optimizeMediaUpload>>;
 
 const fileExtension = (fileName: string): string | undefined => {
   const parts = fileName.split(".");
@@ -24,14 +24,13 @@ const fileExtension = (fileName: string): string | undefined => {
   return extension || undefined;
 };
 
-const cleanupStoredMedia = async (
-  media: {
-    key: string;
-    previewKey?: string;
-    sizes?: unknown;
-    access: "public" | "private";
-  },
-) => {
+const cleanupStoredMedia = async (media: {
+  key: string;
+  previewKey?: string;
+  sizes?: unknown;
+  sources?: unknown;
+  access: "public" | "private";
+}) => {
   try {
     await deleteMediaStorage({
       mediaItems: [media],
@@ -47,7 +46,7 @@ const cleanupStoredMedia = async (
   }
 };
 
-export const storeReimportedImage = async ({
+export const storeReimportedMedia = async ({
   mediaService,
   source,
   fileName,
@@ -61,14 +60,14 @@ export const storeReimportedImage = async ({
   mime: string;
   access: "public" | "private";
   optimizeOptions: FileOptimizeOptions;
-}): Promise<ReimportedImage> => {
+}): Promise<ReimportedMedia> => {
   const prepared = await mediaService.prepareUpload({
     fileName,
     mime,
     size: source.length,
     access,
   });
-  const optimized = await optimizeImageUpload({
+  const optimized = await optimizeMediaUpload({
     buffer: source,
     mime,
     fileName,
@@ -85,6 +84,9 @@ export const storeReimportedImage = async ({
         content: optimized.content,
       },
       ...(optimized.sizes ?? []),
+      ...(optimized.sources ?? []).filter(
+        (source) => source.key !== optimized.key,
+      ),
     ];
 
     for (const object of objects) {
@@ -108,6 +110,9 @@ export const storeReimportedImage = async ({
   return optimized;
 };
 
+/** @deprecated Use storeReimportedMedia. */
+export const storeReimportedImage = storeReimportedMedia;
+
 export const reimportMediaHandler = async ({
   input,
   ctx,
@@ -125,9 +130,12 @@ export const reimportMediaHandler = async ({
 
   const db = await getMongoService();
   const existing = await db.get(Media, input.id);
-  if (!existing.mime.startsWith("image/")) {
+  if (
+    !existing.mime.startsWith("image/") &&
+    !existing.mime.startsWith("video/")
+  ) {
     throwAppError("VALIDATION", {
-      errors: [{ message: "Only image media can be reimported" }],
+      errors: [{ message: "Only image and video media can be reimported" }],
     });
   }
 
@@ -151,7 +159,7 @@ export const reimportMediaHandler = async ({
     });
   }
 
-  const optimized = await storeReimportedImage({
+  const optimized = await storeReimportedMedia({
     mediaService,
     source,
     fileName: existing.originalName,
@@ -160,10 +168,12 @@ export const reimportMediaHandler = async ({
     optimizeOptions: input.optimizeOptions,
   });
   const sizes = optimized.sizes?.map(({ content: _, ...size }) => size);
+  const sources = optimized.sources?.map(({ content: _, ...source }) => source);
   const newStorage = {
     key: optimized.key,
     previewKey: undefined as string | undefined,
     sizes,
+    sources,
     access: existing.access,
   };
 
@@ -189,6 +199,7 @@ export const reimportMediaHandler = async ({
         previewUrl: optimized.preview?.dataUrl ?? null,
         previewMime: optimized.preview?.mime ?? null,
         sizes: sizes?.length ? sizes : null,
+        sources: sources?.length ? sources : null,
         width: optimized.width ?? null,
         height: optimized.height ?? null,
         orientation: optimized.orientation ?? null,
@@ -213,21 +224,24 @@ export const reimportMediaHandler = async ({
   setApiSuccessEventData(ctx, {
     mediaId: existing._id,
     optimized: optimized.optimized,
-    format: input.optimizeOptions.format,
-    quality: input.optimizeOptions.quality,
+    format: optimized.optimizedFormat ?? input.optimizeOptions.format,
+    quality: optimized.optimizationQuality ?? input.optimizeOptions.quality,
     generatedSizes: sizes?.length ?? 0,
+    generatedSources: sources?.length ?? 0,
     generatedPreview: Boolean(optimized.preview),
     previousStorageRemoved,
   });
   Logger.addTrace("manager.media.reimport: completed", {
     mediaId: existing._id,
     generatedSizes: sizes?.length ?? 0,
+    generatedSources: sources?.length ?? 0,
     generatedPreview: Boolean(optimized.preview),
   });
 
   const outputBase: ReimportMediaOutput = {
     ...updated,
     sizes: sizes?.length ? sizes : undefined,
+    sources: sources?.length ? sources : undefined,
     folder: updated.folder
       ? {
           type: "existing",
