@@ -6,6 +6,7 @@ import {
   type FieldLike,
   type FieldState,
   type FieldWithModifiers,
+  type FieldCapabilities,
   type WithFieldState,
   withFieldModifiers,
 } from './Field'
@@ -21,6 +22,7 @@ export type BreadcrumsValue = Breadcrumb[] | null
 export type BreadcrumsMeta = {
   type: 'Breadcrums'
   ui: 'Breadcrums'
+  capabilities: FieldCapabilities
 }
 
 type BreadcrumsState = {
@@ -47,20 +49,22 @@ type BreadcrumsFieldCore<State extends FieldState> = FieldLike<
   State
 >
 
-export type BreadcrumsField<
-  State extends FieldState = BreadcrumsState,
-> = FieldWithModifiers<BreadcrumsFieldCore<State>>
+export type BreadcrumsField<State extends FieldState = BreadcrumsState> = FieldWithModifiers<
+  BreadcrumsFieldCore<State>
+>
 export type EncodedBreadcrumsField = EncodedField
 
 export function breadcrumsField(): BreadcrumsField {
   return makeBreadcrumsField(breadcrumsState)
 }
 
-function makeBreadcrumsField<State extends FieldState>(
-  state: State,
-): BreadcrumsField<State> {
+function makeBreadcrumsField<State extends FieldState>(state: State): BreadcrumsField<State> {
   const field: BreadcrumsFieldCore<State> = createField({
-    meta: { type: 'Breadcrums', ui: 'Breadcrums' },
+    meta: {
+      type: 'Breadcrums',
+      ui: 'Breadcrums',
+      capabilities: { valueKind: 'array' },
+    },
     state,
     schemas: {
       input: () => z.never(),
@@ -72,9 +76,6 @@ function makeBreadcrumsField<State extends FieldState>(
   return withFieldModifiers({
     field,
     rebuild: <NextState extends FieldState>(nextState: NextState) =>
-      makeBreadcrumsField(nextState) as WithFieldState<
-        BreadcrumsFieldCore<State>,
-        NextState
-      >,
+      makeBreadcrumsField(nextState) as WithFieldState<BreadcrumsFieldCore<State>, NextState>,
   })
 }

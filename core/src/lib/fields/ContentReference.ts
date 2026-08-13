@@ -1,4 +1,4 @@
-import z from "zod";
+import z from 'zod'
 
 import {
   createField,
@@ -10,72 +10,65 @@ import {
   type FieldState,
   type FieldStateOf,
   type FieldWithModifiers,
+  type FieldCapabilities,
   type WithFieldState,
   withFieldModifiers,
-} from "./Field";
-import type { EncodedContentType } from "../ContentType";
-import { Id } from "../utils/id";
+} from './Field'
+import type { EncodedContentType } from '../ContentType'
+import { Id } from '../utils/id'
 
-type ContentReferenceValue<Multiple extends boolean> = Multiple extends true
-  ? string[]
-  : string;
+type ContentReferenceValue<Multiple extends boolean> = Multiple extends true ? string[] : string
 
 export type ContentReferenceMeta<
   Name extends string = string,
   Multiple extends boolean = boolean,
 > = {
-  type: "ContentReference";
-  ui: Multiple extends true ? "ContentTypeMultiSelect" : "ContentTypeSelect";
-  contentType: Name;
-  isMultiple: Multiple;
-  minItems?: number;
-  maxItems?: number;
-};
+  type: 'ContentReference'
+  ui: Multiple extends true ? 'ContentTypeMultiSelect' : 'ContentTypeSelect'
+  contentType: Name
+  isMultiple: Multiple
+  minItems?: number
+  maxItems?: number
+  capabilities: FieldCapabilities
+}
 
 export type EncodedContentReferenceField = EncodedField & {
-  contentType: Pick<EncodedContentType, "name" | "listFields">;
-  isMultiple: boolean;
-  minItems?: number;
-  maxItems?: number;
-};
+  contentType: Pick<EncodedContentType, 'name' | 'listFields'>
+  isMultiple: boolean
+  minItems?: number
+  maxItems?: number
+}
 
-type ContentReferenceOptions<
-  Name extends string,
-  Multiple extends boolean,
-> = {
-  contentType: Name;
-  multiple: Multiple;
-  minItems?: number;
-  maxItems?: number;
-};
+type ContentReferenceOptions<Name extends string, Multiple extends boolean> = {
+  contentType: Name
+  multiple: Multiple
+  minItems?: number
+  maxItems?: number
+}
 
 export type ContentReferenceField<
   Name extends string = string,
   Multiple extends boolean = false,
   State extends FieldState = DefaultFieldState,
-> = FieldWithModifiers<
-  ContentReferenceFieldCore<Name, Multiple, State>
->;
+> = FieldWithModifiers<ContentReferenceFieldCore<Name, Multiple, State>>
 
 type ContentReferenceFieldCore<
   Name extends string,
   Multiple extends boolean,
   State extends FieldState,
 > = ContentReferenceFieldBase<Name, Multiple, State> & {
-  multiple: <
-    TThis extends ContentReferenceFieldBase<Name, Multiple, FieldState>,
-  >(
-    this: TThis,
-  ) => ContentReferenceField<Name, true, FieldStateOf<TThis>>;
+  multiple: <TThis extends ContentReferenceFieldBase<Name, Multiple, FieldState>>(
+    this: TThis
+  ) => ContentReferenceField<Name, true, FieldStateOf<TThis>>
   min: <TThis extends ContentReferenceFieldBase<Name, Multiple, FieldState>>(
     this: Multiple extends true ? TThis : never,
-    count: number,
-  ) => ContentReferenceField<Name, Multiple, FieldStateOf<TThis>>;
+    count: number
+  ) => ContentReferenceField<Name, Multiple, FieldStateOf<TThis>>
   max: <TThis extends ContentReferenceFieldBase<Name, Multiple, FieldState>>(
     this: Multiple extends true ? TThis : never,
-    count: number,
-  ) => ContentReferenceField<Name, Multiple, FieldStateOf<TThis>>;
-};
+    count: number
+  ) => ContentReferenceField<Name, Multiple, FieldStateOf<TThis>>
+}
 
 type ContentReferenceFieldBase<
   Name extends string,
@@ -87,15 +80,12 @@ type ContentReferenceFieldBase<
   ContentReferenceValue<Multiple>,
   ContentReferenceMeta<Name, Multiple>,
   State
->;
+>
 
 export function contentReferenceField<const Name extends string>(
-  contentType: Name,
+  contentType: Name
 ): ContentReferenceField<Name> {
-  return makeContentReferenceField(
-    { contentType, multiple: false },
-    defaultFieldState,
-  );
+  return makeContentReferenceField({ contentType, multiple: false }, defaultFieldState)
 }
 
 function makeContentReferenceField<
@@ -104,51 +94,53 @@ function makeContentReferenceField<
   State extends FieldState,
 >(
   options: ContentReferenceOptions<Name, Multiple>,
-  state: State,
+  state: State
 ): ContentReferenceField<Name, Multiple, State> {
   const field: ContentReferenceFieldCore<Name, Multiple, State> = {
     ...createField({
       meta: {
-        type: "ContentReference",
+        type: 'ContentReference',
         ui: (options.multiple
-          ? "ContentTypeMultiSelect"
-          : "ContentTypeSelect") as ContentReferenceMeta<
-          Name,
-          Multiple
-        >["ui"],
+          ? 'ContentTypeMultiSelect'
+          : 'ContentTypeSelect') as ContentReferenceMeta<Name, Multiple>['ui'],
         contentType: options.contentType,
         isMultiple: options.multiple,
         minItems: options.minItems,
         maxItems: options.maxItems,
+        capabilities: {
+          valueKind: options.multiple ? 'array' : 'string',
+        },
       },
       state,
       schemas: sameSchemas(() => buildContentReferenceSchema(options)),
     }),
-    multiple: function <
-      TThis extends ContentReferenceFieldBase<Name, Multiple, FieldState>,
-    >(this: TThis) {
+    multiple: function <TThis extends ContentReferenceFieldBase<Name, Multiple, FieldState>>(
+      this: TThis
+    ) {
       return makeContentReferenceField(
         { ...options, multiple: true },
-        this.state as FieldStateOf<TThis>,
-      );
+        this.state as FieldStateOf<TThis>
+      )
     },
-    min: function <
-      TThis extends ContentReferenceFieldBase<Name, Multiple, FieldState>,
-    >(this: Multiple extends true ? TThis : never, count: number) {
+    min: function <TThis extends ContentReferenceFieldBase<Name, Multiple, FieldState>>(
+      this: Multiple extends true ? TThis : never,
+      count: number
+    ) {
       return makeContentReferenceField(
         { ...options, minItems: count },
-        this.state as FieldStateOf<TThis>,
-      );
+        this.state as FieldStateOf<TThis>
+      )
     },
-    max: function <
-      TThis extends ContentReferenceFieldBase<Name, Multiple, FieldState>,
-    >(this: Multiple extends true ? TThis : never, count: number) {
+    max: function <TThis extends ContentReferenceFieldBase<Name, Multiple, FieldState>>(
+      this: Multiple extends true ? TThis : never,
+      count: number
+    ) {
       return makeContentReferenceField(
         { ...options, maxItems: count },
-        this.state as FieldStateOf<TThis>,
-      );
+        this.state as FieldStateOf<TThis>
+      )
     },
-  };
+  }
 
   return withFieldModifiers({
     field,
@@ -157,20 +149,15 @@ function makeContentReferenceField<
         ContentReferenceFieldCore<Name, Multiple, State>,
         NextState
       >,
-  });
+  })
 }
 
-function buildContentReferenceSchema<
-  Name extends string,
-  Multiple extends boolean,
->(
-  options: ContentReferenceOptions<Name, Multiple>,
+function buildContentReferenceSchema<Name extends string, Multiple extends boolean>(
+  options: ContentReferenceOptions<Name, Multiple>
 ) {
-  let list = z.array(Id);
-  if (options.minItems !== undefined) list = list.min(options.minItems);
-  if (options.maxItems !== undefined) list = list.max(options.maxItems);
+  let list = z.array(Id)
+  if (options.minItems !== undefined) list = list.min(options.minItems)
+  if (options.maxItems !== undefined) list = list.max(options.maxItems)
 
-  return (options.multiple ? list : Id) as unknown as z.ZodType<
-    ContentReferenceValue<Multiple>
-  >;
+  return (options.multiple ? list : Id) as unknown as z.ZodType<ContentReferenceValue<Multiple>>
 }

@@ -1,4 +1,4 @@
-import z from "zod";
+import z from 'zod'
 
 import {
   createField,
@@ -19,36 +19,35 @@ import {
   type WithFieldState,
   withFieldModifiers,
   type FieldWithModifiers,
-} from "./Field";
+  type FieldCapabilities,
+} from './Field'
 
-type SimpleListInput<F extends AnyFieldLike> = InferInput<F>[];
-type SimpleListDb<F extends AnyFieldLike> = InferDb<F>[];
-type SimpleListOutput<F extends AnyFieldLike> = InferOutput<F>[];
-type SimpleListPopulated<F extends AnyFieldLike> = InferPopulated<F>[];
+type SimpleListInput<F extends AnyFieldLike> = InferInput<F>[]
+type SimpleListDb<F extends AnyFieldLike> = InferDb<F>[]
+type SimpleListOutput<F extends AnyFieldLike> = InferOutput<F>[]
+type SimpleListPopulated<F extends AnyFieldLike> = InferPopulated<F>[]
 
 export type SimpleListMeta<F extends AnyFieldLike = AnyFieldLike> = {
-  type: "List";
-  ui: "SimpleList";
-  field: F["meta"];
-  minItems?: number;
-  maxItems?: number;
-};
+  type: 'List'
+  ui: 'SimpleList'
+  field: F['meta']
+  minItems?: number
+  maxItems?: number
+  capabilities: FieldCapabilities
+}
 
 export type EncodedSimpleListField = EncodedField & {
-  field: EncodedFieldUnknown;
-  minItems?: number;
-  maxItems?: number;
-};
+  field: EncodedFieldUnknown
+  minItems?: number
+  maxItems?: number
+}
 
 export type SimpleListField<
   F extends AnyFieldLike = AnyFieldLike,
   State extends FieldState = DefaultFieldState,
-> = FieldWithModifiers<SimpleListFieldCore<F, State>>;
+> = FieldWithModifiers<SimpleListFieldCore<F, State>>
 
-type SimpleListFieldCore<
-  F extends AnyFieldLike,
-  State extends FieldState,
-> = FieldLike<
+type SimpleListFieldCore<F extends AnyFieldLike, State extends FieldState> = FieldLike<
   SimpleListInput<F>,
   SimpleListDb<F>,
   SimpleListOutput<F>,
@@ -56,91 +55,87 @@ type SimpleListFieldCore<
   State
 > &
   PopulatableFieldLike<SimpleListPopulated<F>, State> & {
-    field: F;
+    field: F
     min: <TThis extends SimpleListFieldCore<F, FieldState>>(
       this: TThis,
-      count: number,
-    ) => SimpleListField<F, FieldStateOf<TThis>>;
+      count: number
+    ) => SimpleListField<F, FieldStateOf<TThis>>
     max: <TThis extends SimpleListFieldCore<F, FieldState>>(
       this: TThis,
-      count: number,
-    ) => SimpleListField<F, FieldStateOf<TThis>>;
-  };
+      count: number
+    ) => SimpleListField<F, FieldStateOf<TThis>>
+  }
 
 type SimpleListOptions = {
-  minItems?: number;
-  maxItems?: number;
-};
+  minItems?: number
+  maxItems?: number
+}
 
-export function simpleListField<F extends AnyFieldLike>(
-  field: F,
-): SimpleListField<F> {
-  return makeSimpleListField(field, {}, defaultFieldState);
+export function simpleListField<F extends AnyFieldLike>(field: F): SimpleListField<F> {
+  return makeSimpleListField(field, {}, defaultFieldState)
 }
 
 function makeSimpleListField<F extends AnyFieldLike, State extends FieldState>(
   field: F,
   options: SimpleListOptions,
-  state: State,
+  state: State
 ): SimpleListField<F, State> {
   const core: SimpleListFieldCore<F, State> = {
     ...createField({
       meta: {
-        type: "List",
-        ui: "SimpleList",
+        type: 'List',
+        ui: 'SimpleList',
         field: field.meta,
         minItems: options.minItems,
         maxItems: options.maxItems,
+        capabilities: {
+          valueKind: 'array',
+          dynamic: { collection: 'homogeneous' },
+        },
+      },
+      runtime: {
+        populate: (value, context) =>
+          Array.isArray(value)
+            ? Promise.all(value.map((item) => context.populate(item, field)))
+            : value,
       },
       state,
       schemas: {
         input: () =>
-          applySimpleListLimits(
-            z.array(field.getInputSchema()),
-            options,
-          ) as z.ZodType<SimpleListInput<F>>,
+          applySimpleListLimits(z.array(field.getInputSchema()), options) as z.ZodType<
+            SimpleListInput<F>
+          >,
         db: () =>
-          applySimpleListLimits(
-            z.array(field.getSchema()),
-            options,
-          ) as z.ZodType<SimpleListDb<F>>,
+          applySimpleListLimits(z.array(field.getSchema()), options) as z.ZodType<SimpleListDb<F>>,
         output: () =>
-          applySimpleListLimits(
-            z.array(field.getOutputSchema()),
-            options,
-          ) as z.ZodType<SimpleListOutput<F>>,
+          applySimpleListLimits(z.array(field.getOutputSchema()), options) as z.ZodType<
+            SimpleListOutput<F>
+          >,
       },
     }),
     getPopulatedSchema: () =>
       applySimpleListOutputPresence(
-        applySimpleListLimits(
-          z.array(getFieldPopulatedSchema(field)),
-          options,
-        ) as z.ZodType<SimpleListPopulated<F>>,
-        state,
+        applySimpleListLimits(z.array(getFieldPopulatedSchema(field)), options) as z.ZodType<
+          SimpleListPopulated<F>
+        >,
+        state
       ) as z.ZodType<FieldOutput<SimpleListPopulated<F>, State>>,
     field,
-    min: function <TThis extends SimpleListFieldCore<F, FieldState>>(
-      this: TThis,
-      count: number,
-    ) {
+    min: function <TThis extends SimpleListFieldCore<F, FieldState>>(this: TThis, count: number) {
       return makeSimpleListField(
         field,
         { ...options, minItems: count },
-        this.state as FieldStateOf<TThis>,
-      );
+        this.state as FieldStateOf<TThis>
+      )
     },
-    max: function <TThis extends SimpleListFieldCore<F, FieldState>>(
-      this: TThis,
-      count: number,
-    ) {
+    max: function <TThis extends SimpleListFieldCore<F, FieldState>>(this: TThis, count: number) {
       return makeSimpleListField(
         field,
         { ...options, maxItems: count },
-        this.state as FieldStateOf<TThis>,
-      );
+        this.state as FieldStateOf<TThis>
+      )
     },
-  };
+  }
 
   return withFieldModifiers({
     field: core,
@@ -149,44 +144,39 @@ function makeSimpleListField<F extends AnyFieldLike, State extends FieldState>(
         SimpleListFieldCore<F, State>,
         NextState
       >,
-  });
+  })
 }
 
 function applySimpleListLimits<Item extends z.ZodTypeAny>(
   schema: z.ZodArray<Item>,
-  options: SimpleListOptions,
+  options: SimpleListOptions
 ) {
-  let next = schema;
+  let next = schema
 
   if (options.minItems !== undefined) {
-    next = next.min(options.minItems);
+    next = next.min(options.minItems)
   }
 
   if (options.maxItems !== undefined) {
-    next = next.max(options.maxItems);
+    next = next.max(options.maxItems)
   }
 
-  return next;
+  return next
 }
 
 function hasPopulatedSchema(
-  field: AnyFieldLike,
+  field: AnyFieldLike
 ): field is AnyFieldLike & PopulatableFieldLike<unknown, FieldState> {
-  return (
-    "getPopulatedSchema" in field &&
-    typeof field.getPopulatedSchema === "function"
-  );
+  return 'getPopulatedSchema' in field && typeof field.getPopulatedSchema === 'function'
 }
 
 function getFieldPopulatedSchema(field: AnyFieldLike) {
-  return hasPopulatedSchema(field)
-    ? field.getPopulatedSchema()
-    : field.getSchema();
+  return hasPopulatedSchema(field) ? field.getPopulatedSchema() : field.getSchema()
 }
 
 function applySimpleListOutputPresence<Value, State extends FieldState>(
   schema: z.ZodType<Value>,
-  state: State,
+  state: State
 ) {
-  return state.required ? schema : schema.optional();
+  return state.required ? schema : schema.optional()
 }

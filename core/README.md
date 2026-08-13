@@ -339,7 +339,38 @@ runtimes.
 
 Custom field factories can use `createPluginField`. Their serializable
 `meta.editor` must match a field declaration in the server plugin and a React
-editor registered by its manager facet.
+editor registered by its manager facet. Each field also declares capabilities
+that shared systems consume instead of branching on its built-in type:
+
+```ts
+const externalLink = createPluginField({
+  meta: {
+    type: 'Link',
+    ui: 'Link',
+    editor: '@acme/external-link',
+    capabilities: {
+      valueKind: 'object',
+      dynamic: {
+        properties: { title: 'string', href: 'string' },
+        mapProperties: true,
+      },
+    },
+  },
+  schemas: sameSchemas(() => ExternalLinkSchema),
+  runtime: {
+    populate: (value, { populateLink }) => populateLink(value),
+  },
+})
+```
+
+`valueKind` controls Dynamic Data compatibility. `dynamic.properties` exposes
+nested source paths, `mapProperties` makes those paths independent mapping
+targets, `relation` enables content-type traversal, and `collection` describes
+`homogeneous` or `heterogeneous` per-item mapping. Capabilities are encoded for
+the manager. `runtime.populate` remains server-only and receives the database,
+recursive `populate`, and built-in `populateLink` helpers. The web pipeline
+exports this generic phase as `populateFields`; `populateLinks` remains a
+deprecated compatibility alias.
 
 ## Content Types
 

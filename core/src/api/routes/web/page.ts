@@ -21,7 +21,7 @@ import type { PageInput, PageModule, PageOutput } from '../../../schemas/web/pag
 import { runContentHookContext } from '../../hooks/context'
 import { resolveContentOutput } from '../../utils/dynamicData'
 import { getLanguages } from '../../utils/getLanguages'
-import { populateLinks } from '../../utils/populates/populateLinks'
+import { populateFields } from '../../utils/populates/populateLinks'
 import { populateRelations } from '../../utils/populates/populateRelations'
 import { resolveRedirect } from '../../utils/redirects/resolveRedirect'
 import { validateModule } from '../../utils/validateModule'
@@ -222,7 +222,7 @@ export const buildPageOutput = async ({
       },
     },
     async () => {
-      const linksPopulated = await populateLinks(sourceData as DBOutput<ContentType>)
+      const linksPopulated = await populateFields(sourceData as DBOutput<ContentType>)
       Logger.addTrace(`${tracePrefix}: links populated`)
 
       const populated = await populateRelations(linksPopulated as DBOutput<ContentType>)
@@ -285,7 +285,7 @@ export const buildPageOutput = async ({
           })
           const seoSettings = seoSettingsRaw
             ? translateObject(
-                await populateRelations(await populateLinks(seoSettingsRaw)),
+                await populateRelations(await populateFields(seoSettingsRaw)),
                 language,
                 languages
               )
@@ -345,7 +345,7 @@ export const buildPageOutput = async ({
                   return [selection.key, null] as const
                 }
 
-                const layoutPopulated = await populateRelations(await populateLinks(layoutData))
+                const layoutPopulated = await populateRelations(await populateFields(layoutData))
                 const layoutResolved = await resolveContentOutput({
                   db,
                   contentType: layoutContentType,

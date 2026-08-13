@@ -26,20 +26,37 @@ const fieldState = {
   isDynamic: true,
 } as const
 
-const fileField = (
-  mediaType: EncodedFileField['mediaType'],
-  isMultiple = false,
-) =>
+const fileProperties = {
+  url: 'string',
+  previewUrl: 'string',
+  name: 'string',
+  title: 'string',
+  alt: 'string',
+  mime: 'string',
+  srcSet: 'string',
+  width: 'number',
+  height: 'number',
+  size: 'number',
+} as const
+
+const fileField = (mediaType: EncodedFileField['mediaType'], isMultiple = false) =>
   ({
     ...fieldState,
-    config: { type: 'File', ui: 'File' },
+    config: {
+      type: 'File',
+      ui: 'File',
+      capabilities: {
+        valueKind: isMultiple ? 'array' : 'object',
+        dynamic: { properties: fileProperties },
+      },
+    },
     mediaType,
     isMultiple,
   }) as EncodedFileField
 
 const stringField = {
   ...fieldState,
-  config: { type: 'String', ui: 'Text' },
+  config: { type: 'String', ui: 'Text', capabilities: { valueKind: 'string' } },
 } as EncodedFieldUnknown
 
 const category = {
@@ -61,11 +78,25 @@ const project = {
     featuredImages: fileField('Image', true),
     website: {
       ...fieldState,
-      config: { type: 'Link', ui: 'Link' },
+      config: {
+        type: 'Link',
+        ui: 'Link',
+        capabilities: {
+          valueKind: 'object',
+          dynamic: {
+            properties: { title: 'string', href: 'string' },
+            mapProperties: true,
+          },
+        },
+      },
     } as EncodedFieldUnknown,
     category: {
       ...fieldState,
-      config: { type: 'Relation', ui: 'ContentType' },
+      config: {
+        type: 'Relation',
+        ui: 'ContentType',
+        capabilities: { valueKind: 'object', dynamic: { relation: true } },
+      },
       contentType: category,
     } as EncodedRelationField,
   },
@@ -80,7 +111,7 @@ describe('dynamic data fallback validation', () => {
       isDynamicFallbackRequired(requiredField, {
         contentType: 'Article',
         path: 'title',
-      }),
+      })
     ).toBe(false)
   })
 
@@ -124,9 +155,7 @@ describe('dynamic data source field options', () => {
   })
 
   test('keeps file properties available to scalar targets', () => {
-    const values = sourceFieldOptions(project, stringField).map(
-      (option) => option.value,
-    )
+    const values = sourceFieldOptions(project, stringField).map((option) => option.value)
 
     expect(values).toContain('title')
     expect(values).not.toContain('_iterator')
@@ -148,9 +177,7 @@ describe('dynamic data source field options', () => {
 
   test('offers complete links only to link targets', () => {
     const linkField = project.fields.website
-    const values = sourceFieldOptions(project, linkField).map(
-      (option) => option.value,
-    )
+    const values = sourceFieldOptions(project, linkField).map((option) => option.value)
 
     expect(values).toContain('website')
     expect(values).not.toContain('website.href')
@@ -165,7 +192,11 @@ describe('dynamic data source field options', () => {
         ...project.fields,
         _seo: {
           ...fieldState,
-          config: { type: 'Relation', ui: 'ContentType' },
+          config: {
+            type: 'Relation',
+            ui: 'ContentType',
+            capabilities: { valueKind: 'object', dynamic: { relation: true } },
+          },
           contentType: {
             name: 'Seo',
             uniques: [],
@@ -176,7 +207,7 @@ describe('dynamic data source field options', () => {
     } as EncodedContentType
 
     expect(sourceFieldOptions(routeableProject, stringField).map(({ value }) => value)).toEqual(
-      expect.arrayContaining(['$href', 'title', 'category.slug']),
+      expect.arrayContaining(['$href', 'title', 'category.slug'])
     )
   })
 })
@@ -197,30 +228,91 @@ describe('dynamic data target mapping fields', () => {
   test('maps structured homogeneous arrays but keeps primitive arrays direct', () => {
     const linkArray = {
       ...fieldState,
-      config: { type: 'List', ui: 'SimpleList' },
+      config: {
+        type: 'List',
+        ui: 'SimpleList',
+        capabilities: {
+          valueKind: 'array',
+          dynamic: { collection: 'homogeneous' },
+        },
+      },
       field: project.fields.website,
     } as EncodedSimpleListField
     const relationArray = {
       ...fieldState,
-      config: { type: 'List', ui: 'SimpleList' },
+      config: {
+        type: 'List',
+        ui: 'SimpleList',
+        capabilities: {
+          valueKind: 'array',
+          dynamic: { collection: 'homogeneous' },
+        },
+      },
       field: project.fields.category,
     } as EncodedSimpleListField
     const stringArray = {
       ...fieldState,
-      config: { type: 'List', ui: 'SimpleList' },
+      config: {
+        type: 'List',
+        ui: 'SimpleList',
+        capabilities: {
+          valueKind: 'array',
+          dynamic: { collection: 'homogeneous' },
+        },
+      },
       field: stringField,
     } as EncodedSimpleListField
 
     expect(isMappableDynamicListField(linkArray)).toBe(true)
     expect(isMappableDynamicListField(relationArray)).toBe(true)
     expect(isMappableDynamicListField(stringArray)).toBe(false)
-    expect(listItemTargetFields(linkArray, 'Link').map(([path]) => path)).toEqual([
-      'title',
-      'href',
+    expect(listItemTargetFields(linkArray, 'Link').map(([path]) => path)).toEqual(['title', 'href'])
+    expect(listItemTargetFields(relationArray, 'Category').map(([path]) => path)).toEqual(['slug'])
+  })
+
+  test('uses plugin capabilities without knowing the custom editor id', () => {
+    const pluginObject = {
+      ...fieldState,
+      config: {
+        type: 'String',
+        ui: 'Text',
+        editor: 'test.plugin-object',
+        capabilities: {
+          valueKind: 'object',
+          dynamic: {
+            properties: { label: 'string', url: 'string' },
+            mapProperties: true,
+          },
+        },
+      },
+    } as EncodedFieldUnknown
+    const pluginArray = {
+      ...fieldState,
+      config: {
+        type: 'List',
+        ui: 'SimpleList',
+        capabilities: {
+          valueKind: 'array',
+          dynamic: { collection: 'homogeneous' },
+        },
+      },
+      field: pluginObject,
+    } as EncodedSimpleListField
+    const pluginContentType = {
+      name: 'PluginContent',
+      uniques: [],
+      fields: { action: pluginObject },
+    } as EncodedContentType
+
+    expect(targetMappingFields(pluginContentType).map(([path]) => path)).toEqual([
+      'action.label',
+      'action.url',
     ])
-    expect(
-      listItemTargetFields(relationArray, 'Category').map(([path]) => path),
-    ).toEqual(['slug'])
+    expect(isMappableDynamicListField(pluginArray)).toBe(true)
+    expect(listItemTargetFields(pluginArray, 'test.plugin-object').map(([path]) => path)).toEqual([
+      'label',
+      'url',
+    ])
   })
 })
 
@@ -235,13 +327,24 @@ describe('current document list source options', () => {
     } as EncodedContentType
     const categoryRelation = {
       ...fieldState,
-      config: { type: 'Relation', ui: 'ContentType' },
+      config: {
+        type: 'Relation',
+        ui: 'ContentType',
+        capabilities: { valueKind: 'object', dynamic: { relation: true } },
+      },
       contentType: linkItem,
       only: 'new',
     } as EncodedRelationField
     const categories = {
       ...fieldState,
-      config: { type: 'List', ui: 'List' },
+      config: {
+        type: 'List',
+        ui: 'List',
+        capabilities: {
+          valueKind: 'array',
+          dynamic: { collection: 'heterogeneous' },
+        },
+      },
       fields: [{ name: 'Category', field: categoryRelation }],
     } as EncodedListField
     const document = {
@@ -275,12 +378,9 @@ describe('dynamic data query filters', () => {
           { field: 'title', operator: 'contains', value: 'launch' },
           { field: 'published', operator: 'true', value: '' },
         ],
-      }),
+      })
     ).toEqual({
-      $and: [
-        { title: { $contains: 'launch' } },
-        { published: true },
-      ],
+      $and: [{ title: { $contains: 'launch' } }, { published: true }],
     })
 
     expect(
@@ -290,7 +390,7 @@ describe('dynamic data query filters', () => {
           { field: 'status', operator: 'equals', value: 'draft' },
           { field: 'status', operator: 'equals', value: 'review' },
         ],
-      }),
+      })
     ).toEqual({
       $or: [{ status: 'draft' }, { status: 'review' }],
     })
@@ -310,8 +410,8 @@ describe('dynamic data query filters', () => {
         [
           { label: 'views', value: 'views', kind: 'number' },
           { label: 'score', value: 'score', kind: 'number' },
-        ],
-      ),
+        ]
+      )
     ).toEqual({
       $and: [
         { views: { $gte: 10 } },
@@ -341,29 +441,20 @@ describe('dynamic data query filters', () => {
     }
 
     expect(buildFilter(state)).toEqual({
-      $and: [
-        { 'category.slug': { $current: 'slug' } },
-        { site: { $document: 'site' } },
-      ],
+      $and: [{ 'category.slug': { $current: 'slug' } }, { site: { $document: 'site' } }],
     })
     expect(
       readFilterState({
-        $and: [
-          { 'category.slug': { $current: 'slug' } },
-          { site: { $document: 'site' } },
-        ],
-      }),
+        $and: [{ 'category.slug': { $current: 'slug' } }, { site: { $document: 'site' } }],
+      })
     ).toEqual(state)
   })
 
   test('reads existing simple and logical filters', () => {
     expect(
       readFilterState({
-        $or: [
-          { title: { $contains: 'news' } },
-          { featured: true },
-        ],
-      }),
+        $or: [{ title: { $contains: 'news' } }, { featured: true }],
+      })
     ).toEqual({
       combinator: 'or',
       conditions: [

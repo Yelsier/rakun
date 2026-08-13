@@ -42,10 +42,7 @@ import {
   isDynamicFieldEnabled,
   isMappableDynamicListField,
 } from './_fields/DynamicDataControl'
-import {
-  useManagerPlugins,
-  type ManagerFieldEditorRef,
-} from '@/plugins'
+import { useManagerPlugins, type ManagerFieldEditorRef } from '@/plugins'
 import MissingUI from './_fields/Missing'
 import { getInitialSeoBindings } from './_fields/seoBindings'
 
@@ -234,9 +231,7 @@ const ContentTypeEdit = forwardRef<
   const { refs, setRef } = useArrayRefs<FieldRef>()
   const errors = useEditErrorStore((state) => state.errors)
   const addError = useEditErrorStore((state) => state.addError)
-  const removeRelatedErrors = useEditErrorStore(
-    (state) => state.removeRelatedErrors
-  )
+  const removeRelatedErrors = useEditErrorStore((state) => state.removeRelatedErrors)
   const formStateInitialValue = useMemo(
     () =>
       Object.fromEntries(
@@ -250,17 +245,15 @@ const ContentTypeEdit = forwardRef<
   const [formState, setFormState] = useState(formStateInitialValue)
   const conditionFieldState = useMemo(
     () =>
-      mergeConditionFieldState(
-        props.defaultData as Record<string, unknown> | undefined,
-        formState
-      ),
+      mergeConditionFieldState(props.defaultData as Record<string, unknown> | undefined, formState),
     [formState, props.defaultData]
   )
-  const [dynamicBindings, setDynamicBindings] = useState<DynamicDocumentBindings | undefined>(() =>
-    getDefaultBindings(props.defaultData) ??
-    (props.initializeSeoBindings
-      ? getInitialSeoBindings({ contentType, parentContentType: props.parentContentType })
-      : undefined)
+  const [dynamicBindings, setDynamicBindings] = useState<DynamicDocumentBindings | undefined>(
+    () =>
+      getDefaultBindings(props.defaultData) ??
+      (props.initializeSeoBindings
+        ? getInitialSeoBindings({ contentType, parentContentType: props.parentContentType })
+        : undefined)
   )
   const [dynamicEditorOpen, setDynamicEditorOpen] = useState<string | null>(null)
   const allItems = useMemo(
@@ -368,9 +361,8 @@ const ContentTypeEdit = forwardRef<
             ? pluginRegistry.fieldEditors[customEditor]
             : (fieldsMap[fieldValue.config.type] as FieldComponent | undefined)
           const dynamicBinding = isMappableDynamicListField(fieldValue)
-            ? fieldValue.config.ui === 'SimpleList'
-              ? dynamicBindings?.lists?.[fieldName] ??
-                dynamicBindings?.fields?.[fieldName]
+            ? fieldValue.config.capabilities.dynamic?.collection === 'homogeneous'
+              ? (dynamicBindings?.lists?.[fieldName] ?? dynamicBindings?.fields?.[fieldName])
               : dynamicBindings?.lists?.[fieldName]
             : dynamicBindings?.fields?.[fieldName]
           const dynamicFallbackPlaceholder =
@@ -446,10 +438,7 @@ const ContentTypeEdit = forwardRef<
                                 <span className="sr-only">{t('common.toggle')}</span>
                               </span>
                             </Button>
-                            <FieldLabel
-                              fieldName={fieldName}
-                              isRequired={fieldValue.isRequired}
-                            />
+                            <FieldLabel fieldName={fieldName} isRequired={fieldValue.isRequired} />
                           </CardTitle>
                         </button>
                       </CollapsibleTrigger>

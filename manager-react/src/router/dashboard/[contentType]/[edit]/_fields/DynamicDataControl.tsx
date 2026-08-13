@@ -16,6 +16,7 @@ import type {
   EncodedListField,
   EncodedRelationField,
   EncodedSimpleListField,
+  FieldValueKind,
 } from '@rakun-kit/core/client'
 import {
   DYNAMIC_QUERY_CURRENT_VALUE_KEY,
@@ -25,26 +26,13 @@ import {
   isDynamicDataSourceContentTypeAllowed,
   isTranslatableObject,
 } from '@rakun-kit/core/client'
-import {
-  Cable,
-  ChevronRight,
-  HelpCircle,
-  Link2,
-  ListFilter,
-  Plus,
-  Trash2,
-  X,
-} from 'lucide-react'
+import { Cable, ChevronRight, HelpCircle, Link2, ListFilter, Plus, Trash2, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   Dialog,
   DialogContent,
@@ -61,11 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useManagerQuery } from '@/client/react'
@@ -76,7 +60,7 @@ type ListMapSource = DynamicListMapSource | undefined
 
 export const isDynamicFallbackRequired = (
   field: Pick<EncodedFieldUnknown, 'isRequired'>,
-  binding: unknown,
+  binding: unknown
 ) => field.isRequired && !binding
 
 type FilterOperator =
@@ -103,15 +87,7 @@ type FilterState = {
   combinator: 'and' | 'or'
   conditions: FilterCondition[]
 }
-type SourceFieldKind =
-  | 'string'
-  | 'richText'
-  | 'number'
-  | 'boolean'
-  | 'date'
-  | 'object'
-  | 'array'
-  | 'unknown'
+type SourceFieldKind = FieldValueKind
 type SourceFieldOption = {
   label: string
   value: string
@@ -128,23 +104,18 @@ type MappableListField = EncodedListField | EncodedSimpleListField
 
 const CURRENT_DOCUMENT_ID = '__rakun_current_document__'
 
-const cloneDynamicBindings = (
-  bindings: DynamicDocumentBindings | undefined,
-) => (bindings ? structuredClone(bindings) : undefined)
+const cloneDynamicBindings = (bindings: DynamicDocumentBindings | undefined) =>
+  bindings ? structuredClone(bindings) : undefined
 
 const cleanDynamicBindings = (
-  bindings: DynamicDocumentBindings | undefined,
+  bindings: DynamicDocumentBindings | undefined
 ): DynamicDocumentBindings | undefined => {
   if (!bindings) return undefined
 
   const fields =
-    bindings.fields && Object.keys(bindings.fields).length > 0
-      ? bindings.fields
-      : undefined
+    bindings.fields && Object.keys(bindings.fields).length > 0 ? bindings.fields : undefined
   const lists =
-    bindings.lists && Object.keys(bindings.lists).length > 0
-      ? bindings.lists
-      : undefined
+    bindings.lists && Object.keys(bindings.lists).length > 0 ? bindings.lists : undefined
 
   return fields || lists ? { fields, lists } : undefined
 }
@@ -153,72 +124,68 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
 
 const isListField = (field: EncodedFieldUnknown) =>
-  field.config.ui === 'List' || field.config.ui === 'Iterator'
+  field.config.capabilities.dynamic?.collection === 'heterogeneous'
 
 export const isMappableDynamicListField = (
-  field: EncodedFieldUnknown,
+  field: EncodedFieldUnknown
 ): field is MappableListField => {
   if (isListField(field)) return true
-  if (field.config.ui !== 'SimpleList') return false
+  if (field.config.capabilities.dynamic?.collection !== 'homogeneous' || !('field' in field))
+    return false
 
   const itemField = (field as EncodedSimpleListField).field
-  return (
-    itemField.config.type === 'Link' || itemField.config.type === 'Relation'
+  return !!(
+    itemField.config.capabilities.dynamic?.relation ||
+    itemField.config.capabilities.dynamic?.mapProperties
   )
 }
 
 const isRelatedCollectionSource = (
-  source: ListMapSource,
+  source: ListMapSource
 ): source is DynamicRelatedCollectionSource =>
   !!source && 'kind' in source && source.kind === 'relatedCollection'
 
-const isNestedListSource = (
-  source: ListMapSource,
-): source is DynamicNestedListSource =>
+const isNestedListSource = (source: ListMapSource): source is DynamicNestedListSource =>
   !!source && 'kind' in source && source.kind === 'list'
 
 const asMappableListField = (field: EncodedFieldUnknown) =>
-  isMappableDynamicListField(field)
-    ? field
-    : undefined
+  isMappableDynamicListField(field) ? field : undefined
 
 const isDynamicVisibleField = (field: EncodedFieldUnknown) =>
   (field.visibility ?? 'all') === 'all' && field.isDynamic !== false
 
-const isSelectableDynamicField = (
-  name: string,
-  field: EncodedFieldUnknown,
-) => name !== ITERATOR_FIELD_NAME && isDynamicVisibleField(field)
+const isSelectableDynamicField = (name: string, field: EncodedFieldUnknown) =>
+  name !== ITERATOR_FIELD_NAME && isDynamicVisibleField(field)
 
-const linkPropertyTargetField = (field: EncodedFieldUnknown) =>
+const propertyTargetField = (field: EncodedFieldUnknown, valueKind: FieldValueKind) =>
   ({
     ...field,
-    config: { type: 'String', ui: 'Text' },
+    config: {
+      ...field.config,
+      capabilities: { valueKind },
+    },
   }) as EncodedFieldUnknown
 
-const linkItemMappingFields = (
-  field: EncodedFieldUnknown,
-): Array<[string, EncodedFieldUnknown]> => {
-  const propertyField = linkPropertyTargetField(field)
-  return [
-    ['title', propertyField],
-    ['href', propertyField],
-  ]
-}
+const propertyMappingFields = (field: EncodedFieldUnknown): Array<[string, EncodedFieldUnknown]> =>
+  Object.entries(field.config.capabilities.dynamic?.properties ?? {}).map(
+    ([property, valueKind]) => [property, propertyTargetField(field, valueKind)]
+  )
 
 export const targetMappingFields = (
-  contentType?: EncodedContentType,
+  contentType?: EncodedContentType
 ): Array<[string, EncodedFieldUnknown]> =>
   contentType
     ? Object.entries(contentType.fields).flatMap(([name, field]) => {
         if (!isSelectableDynamicField(name, field)) return []
 
-        if (field.config.type === 'Link') {
-          const propertyField = linkPropertyTargetField(field)
-          return [
-            [`${name}.title`, propertyField],
-            [`${name}.href`, propertyField],
-          ]
+        const properties = field.config.capabilities.dynamic?.mapProperties
+          ? propertyMappingFields(field)
+          : []
+        if (properties.length > 0) {
+          return properties.map(
+            ([property, propertyField]) =>
+              [`${name}.${property}`, propertyField] as [string, EncodedFieldUnknown]
+          )
         }
 
         return [[name, field]]
@@ -227,45 +194,16 @@ export const targetMappingFields = (
 
 export const isDynamicFieldEnabled = (
   contentType: EncodedContentType,
-  field: EncodedFieldUnknown,
+  field: EncodedFieldUnknown
 ) => {
-  return (
-    contentType.dynamicData !== false &&
-    isDynamicVisibleField(field)
-  )
+  return contentType.dynamicData !== false && isDynamicVisibleField(field)
 }
 
 const getFieldKind = (field: EncodedFieldUnknown): SourceFieldKind => {
-  if (field.config.type === 'String') {
-    return field.config.ui === 'RichText' ? 'richText' : 'string'
-  }
-  if (field.config.type === 'Link') return 'object'
-  if (field.config.type === 'Menu') return 'array'
-  if (field.config.type === 'Number') return 'number'
-  if (field.config.type === 'Boolean') return 'boolean'
-  if (field.config.type === 'Date') {
-    return field.config.ui === 'Time' ? 'string' : 'date'
-  }
-  if (field.config.type === 'Select') {
-    return (field as { isMultiple?: boolean }).isMultiple ? 'array' : 'string'
-  }
-  if (field.config.type === 'ContentReference') {
-    return (field as { isMultiple?: boolean }).isMultiple ? 'array' : 'string'
-  }
-  if (field.config.type === 'File') {
-    return (field as { isMultiple?: boolean }).isMultiple ? 'array' : 'object'
-  }
-  if (field.config.type === 'Relation') return 'object'
-  if (field.config.ui === 'SimpleList') return 'array'
-  if (isListField(field)) return 'array'
-
-  return 'unknown'
+  return field.config.capabilities.valueKind
 }
 
-const isCompatibleSourceKind = (
-  sourceKind: SourceFieldKind,
-  targetField?: EncodedFieldUnknown,
-) => {
+const isCompatibleSourceKind = (sourceKind: SourceFieldKind, targetField?: EncodedFieldUnknown) => {
   if (!targetField) return sourceKind !== 'object' && sourceKind !== 'array'
 
   return sourceKind === getFieldKind(targetField)
@@ -276,7 +214,7 @@ const getFileField = (field: EncodedFieldUnknown) =>
 
 const areFieldKindsCompatible = (
   sourceField: EncodedFieldUnknown,
-  targetField?: EncodedFieldUnknown,
+  targetField?: EncodedFieldUnknown
 ) => {
   const sourceKind = getFieldKind(sourceField)
   if (!targetField) return isCompatibleSourceKind(sourceKind)
@@ -303,42 +241,20 @@ const fieldLabel = (path: string) =>
 const isSeoPath = (path: string) =>
   path.split('.').some((segment) => segment === '_seo' || segment === 'seo')
 
-const fileFieldOptions = (
+const propertyFieldOptions = (
   path: string,
-  targetField?: EncodedFieldUnknown,
+  field: EncodedFieldUnknown,
+  targetField?: EncodedFieldUnknown
 ): SourceFieldOption[] => {
-  const options: SourceFieldOption[] = [
-    { label: fieldLabel(`${path}.url`), value: `${path}.url`, kind: 'string' },
-    {
-      label: fieldLabel(`${path}.previewUrl`),
-      value: `${path}.previewUrl`,
-      kind: 'string',
-    },
-    { label: fieldLabel(`${path}.name`), value: `${path}.name`, kind: 'string' },
-    {
-      label: fieldLabel(`${path}.title`),
-      value: `${path}.title`,
-      kind: 'string',
-    },
-    { label: fieldLabel(`${path}.alt`), value: `${path}.alt`, kind: 'string' },
-    { label: fieldLabel(`${path}.mime`), value: `${path}.mime`, kind: 'string' },
-    {
-      label: fieldLabel(`${path}.srcSet`),
-      value: `${path}.srcSet`,
-      kind: 'string',
-    },
-    { label: fieldLabel(`${path}.width`), value: `${path}.width`, kind: 'number' },
-    {
-      label: fieldLabel(`${path}.height`),
-      value: `${path}.height`,
-      kind: 'number',
-    },
-    { label: fieldLabel(`${path}.size`), value: `${path}.size`, kind: 'number' },
-  ]
-
-  return options.filter((option) =>
-    isCompatibleSourceKind(option.kind, targetField),
+  const options = Object.entries(field.config.capabilities.dynamic?.properties ?? {}).map(
+    ([property, kind]) => ({
+      label: fieldLabel(`${path}.${property}`),
+      value: `${path}.${property}`,
+      kind,
+    })
   )
+
+  return options.filter((option) => isCompatibleSourceKind(option.kind, targetField))
 }
 
 const nestedSourceFieldOptions = ({
@@ -360,12 +276,9 @@ const nestedSourceFieldOptions = ({
 
     if (isSeoPath(path)) return []
 
-    if (field.config.type === 'Relation' && depth < 3) {
+    if (field.config.capabilities.dynamic?.relation && depth < 3) {
       const relationContentType = (field as EncodedRelationField).contentType
-      const idOption: SourceFieldOption[] = isCompatibleSourceKind(
-        'string',
-        targetField,
-      )
+      const idOption: SourceFieldOption[] = isCompatibleSourceKind('string', targetField)
         ? [
             {
               label: fieldLabel(`${path}._id`),
@@ -386,7 +299,8 @@ const nestedSourceFieldOptions = ({
       ]
     }
 
-    if (field.config.type === 'File') {
+    const properties = field.config.capabilities.dynamic?.properties
+    if (properties) {
       const fieldOption = areFieldKindsCompatible(field, targetField)
         ? [
             {
@@ -397,30 +311,9 @@ const nestedSourceFieldOptions = ({
           ]
         : []
 
-      if ((field as EncodedFileField).isMultiple) return fieldOption
-
-      return [...fieldOption, ...fileFieldOptions(path, targetField)]
-    }
-
-    if (field.config.type === 'Link') {
-      const fieldOption =
-        targetField?.config.type === 'Link' &&
-        areFieldKindsCompatible(field, targetField)
-        ? [{ label: fieldLabel(path), value: path, kind }]
-        : []
-      const propertyOptions = ['href', 'title'].flatMap((property) =>
-        isCompatibleSourceKind('string', targetField)
-          ? [
-              {
-                label: fieldLabel(`${path}.${property}`),
-                value: `${path}.${property}`,
-                kind: 'string' as const,
-              },
-            ]
-          : [],
-      )
-
-      return [...fieldOption, ...propertyOptions]
+      return kind === 'object'
+        ? [...fieldOption, ...propertyFieldOptions(path, field, targetField)]
+        : fieldOption
     }
 
     if (!areFieldKindsCompatible(field, targetField)) return []
@@ -436,7 +329,7 @@ const nestedSourceFieldOptions = ({
 
 export const sourceFieldOptions = (
   contentType?: EncodedContentType,
-  targetField?: EncodedFieldUnknown,
+  targetField?: EncodedFieldUnknown
 ): SourceFieldOption[] => {
   if (!contentType) return []
 
@@ -445,25 +338,22 @@ export const sourceFieldOptions = (
     contentType.routes?.some((route) => route.hasPage) &&
     isCompatibleSourceKind('string', targetField)
 
-  return includeHref
-    ? [{ label: 'href', value: '$href', kind: 'string' }, ...fields]
-    : fields
+  return includeHref ? [{ label: 'href', value: '$href', kind: 'string' }, ...fields] : fields
 }
 
 const currentDocumentListSourceValue = (path: string, itemName?: string) =>
   `current-document:${path}:${itemName ?? ''}`
 
 export const currentDocumentListSourceOptions = (
-  contentType: EncodedContentType,
+  contentType: EncodedContentType
 ): CurrentDocumentListSourceOption[] =>
   Object.entries(contentType.fields).flatMap(([name, field]) => {
     if (!isSelectableDynamicField(name, field) || field.isTranslatable) return []
 
-    if (field.config.ui === 'List' || field.config.ui === 'Iterator') {
+    if (field.config.capabilities.dynamic?.collection === 'heterogeneous' && 'fields' in field) {
       const relationEntries = (field as EncodedListField).fields.filter(
         (entry) =>
-          entry.name !== ITERATOR_FIELD_NAME &&
-          entry.field.config.type === 'Relation',
+          entry.name !== ITERATOR_FIELD_NAME && entry.field.config.capabilities.dynamic?.relation
       )
 
       return relationEntries.map((entry) => ({
@@ -478,9 +368,9 @@ export const currentDocumentListSourceOptions = (
       }))
     }
 
-    if (field.config.ui === 'SimpleList') {
+    if (field.config.capabilities.dynamic?.collection === 'homogeneous' && 'field' in field) {
       const itemField = (field as EncodedSimpleListField).field
-      if (itemField.config.type !== 'Relation') return []
+      if (!itemField.config.capabilities.dynamic?.relation) return []
 
       return [
         {
@@ -495,14 +385,8 @@ export const currentDocumentListSourceOptions = (
     return []
   })
 
-const createSource = (
-  contentType: string,
-  value: string,
-  id?: string,
-): DynamicBindingSource =>
-  value === '$href'
-    ? { contentType, id, virtual: 'href' }
-    : { contentType, id, path: value }
+const createSource = (contentType: string, value: string, id?: string): DynamicBindingSource =>
+  value === '$href' ? { contentType, id, virtual: 'href' } : { contentType, id, path: value }
 
 const sourceValue = (source?: DynamicBindingSource) =>
   source?.virtual === 'href' ? '$href' : source?.path || ''
@@ -510,10 +394,7 @@ const sourceValue = (source?: DynamicBindingSource) =>
 const sourceLabel = (source?: DynamicBindingSource) =>
   source?.virtual === 'href' ? 'href' : fieldLabel(source?.path || '')
 
-const mappingSourceSummary = (
-  source: ListMapSource,
-  currentSourceName: string,
-) => {
+const mappingSourceSummary = (source: ListMapSource, currentSourceName: string) => {
   if (!source) {
     return {
       mode: 'Not configured',
@@ -544,19 +425,14 @@ const mappingSourceSummary = (
   }
 }
 
-const sourceContentTypeLabel = (
-  source: DynamicBindingSource,
-  documentContentTypeName: string,
-) =>
+const sourceContentTypeLabel = (source: DynamicBindingSource, documentContentTypeName: string) =>
   source.contentType === documentContentTypeName && !source.id
     ? 'Current document'
     : source.contentType
 
-const getSourceContentTypes = (
-  contentTypes: EncodedContentType[],
-) =>
+const getSourceContentTypes = (contentTypes: EncodedContentType[]) =>
   contentTypes.filter((sourceContentType) =>
-    isDynamicDataSourceContentTypeAllowed(sourceContentType),
+    isDynamicDataSourceContentTypeAllowed(sourceContentType)
   )
 
 const operatorByMongoOperator: Record<string, FilterOperator> = {
@@ -571,23 +447,15 @@ const operatorByMongoOperator: Record<string, FilterOperator> = {
   $lte: 'lessThanOrEqual',
 }
 
-const readFilterOperand = (
-  value: unknown,
-): Pick<FilterCondition, 'value' | 'valueSource'> => {
-  if (
-    isRecord(value) &&
-    typeof value[DYNAMIC_QUERY_CURRENT_VALUE_KEY] === 'string'
-  ) {
+const readFilterOperand = (value: unknown): Pick<FilterCondition, 'value' | 'valueSource'> => {
+  if (isRecord(value) && typeof value[DYNAMIC_QUERY_CURRENT_VALUE_KEY] === 'string') {
     return {
       value: value[DYNAMIC_QUERY_CURRENT_VALUE_KEY],
       valueSource: 'current' as const,
     }
   }
 
-  if (
-    isRecord(value) &&
-    typeof value[DYNAMIC_QUERY_DOCUMENT_VALUE_KEY] === 'string'
-  ) {
+  if (isRecord(value) && typeof value[DYNAMIC_QUERY_DOCUMENT_VALUE_KEY] === 'string') {
     return {
       value: value[DYNAMIC_QUERY_DOCUMENT_VALUE_KEY],
       valueSource: 'document' as const,
@@ -599,18 +467,12 @@ const readFilterOperand = (
   }
 }
 
-const filterConditionFromEntry = (
-  field: string,
-  value: unknown,
-): FilterCondition => {
+const filterConditionFromEntry = (field: string, value: unknown): FilterCondition => {
   if (value === true) return { field, operator: 'true', value: '' }
   if (value === false) return { field, operator: 'false', value: '' }
 
   const directOperand = readFilterOperand(value)
-  if (
-    directOperand.valueSource === 'current' ||
-    directOperand.valueSource === 'document'
-  ) {
+  if (directOperand.valueSource === 'current' || directOperand.valueSource === 'document') {
     return { field, operator: 'equals', ...directOperand }
   }
 
@@ -624,7 +486,7 @@ const filterConditionFromEntry = (
     }
 
     const operatorEntry = Object.entries(value).find(
-      ([operator]) => operator in operatorByMongoOperator,
+      ([operator]) => operator in operatorByMongoOperator
     )
     if (operatorEntry) {
       const [operator, operatorValue] = operatorEntry
@@ -643,9 +505,7 @@ const filterConditionFromEntry = (
   }
 }
 
-export const readFilterState = (
-  filter: Record<string, unknown> | undefined,
-): FilterState => {
+export const readFilterState = (filter: Record<string, unknown> | undefined): FilterState => {
   if (!filter) return { combinator: 'and', conditions: [] }
 
   const logicalEntry = ['$and', '$or'].find((key) => Array.isArray(filter[key]))
@@ -655,7 +515,7 @@ export const readFilterState = (
         ? Object.entries(item)
             .filter(([field]) => !field.startsWith('$'))
             .map(([field, value]) => filterConditionFromEntry(field, value))
-        : [],
+        : []
     )
 
     return {
@@ -675,13 +535,8 @@ export const readFilterState = (
 const operatorNeedsValue = (operator: FilterOperator) =>
   !['true', 'false', 'exists', 'notExists'].includes(operator)
 
-const parseFilterValue = (
-  condition: FilterCondition,
-  fieldOptions: SourceFieldOption[],
-) => {
-  const kind = fieldOptions.find(
-    (option) => option.value === condition.field,
-  )?.kind
+const parseFilterValue = (condition: FilterCondition, fieldOptions: SourceFieldOption[]) => {
+  const kind = fieldOptions.find((option) => option.value === condition.field)?.kind
   const parseValue = (value: string) =>
     kind === 'number' && value.trim() !== '' && Number.isFinite(Number(value))
       ? Number(value)
@@ -698,10 +553,7 @@ const parseFilterValue = (
   return parseValue(condition.value)
 }
 
-const buildFilterCondition = (
-  condition: FilterCondition,
-  fieldOptions: SourceFieldOption[],
-) => {
+const buildFilterCondition = (condition: FilterCondition, fieldOptions: SourceFieldOption[]) => {
   if (!condition.field) return undefined
   if (condition.operator === 'true') return { [condition.field]: true }
   if (condition.operator === 'false') return { [condition.field]: false }
@@ -731,21 +583,14 @@ const buildFilterCondition = (
   }
   const operator = mongoOperator[condition.operator]
 
-  return operator
-    ? { [condition.field]: { [operator]: value } }
-    : { [condition.field]: value }
+  return operator ? { [condition.field]: { [operator]: value } } : { [condition.field]: value }
 }
 
-export const buildFilter = (
-  state: FilterState,
-  fieldOptions: SourceFieldOption[] = [],
-) => {
-  const conditions: Record<string, unknown>[] = state.conditions.flatMap(
-    (condition) => {
-      const builtCondition = buildFilterCondition(condition, fieldOptions)
-      return builtCondition ? [builtCondition] : []
-    },
-  )
+export const buildFilter = (state: FilterState, fieldOptions: SourceFieldOption[] = []) => {
+  const conditions: Record<string, unknown>[] = state.conditions.flatMap((condition) => {
+    const builtCondition = buildFilterCondition(condition, fieldOptions)
+    return builtCondition ? [builtCondition] : []
+  })
 
   if (conditions.length === 0) return undefined
   if (conditions.length === 1) return conditions[0]
@@ -824,45 +669,31 @@ const bindingSummary = ({
 
   return `${sourceContentTypeLabel(
     fieldBinding,
-    documentContentTypeName,
+    documentContentTypeName
   )} -> ${sourceLabel(fieldBinding)}`
 }
 
-const PanelSection = ({
-  title,
-  children,
-}: {
-  title: string
-  children: ReactNode
-}) => (
-  <div className='grid gap-3 rounded-md border border-border bg-muted/20 p-3'>
-    <div className='text-xs font-semibold uppercase text-muted-foreground'>
-      {title}
-    </div>
+const PanelSection = ({ title, children }: { title: string; children: ReactNode }) => (
+  <div className="grid gap-3 rounded-md border border-border bg-muted/20 p-3">
+    <div className="text-xs font-semibold uppercase text-muted-foreground">{title}</div>
     {children}
   </div>
 )
 
-const ControlLabel = ({
-  children,
-  help,
-}: {
-  children: ReactNode
-  help: string
-}) => (
-  <div className='flex items-center gap-1.5'>
+const ControlLabel = ({ children, help }: { children: ReactNode; help: string }) => (
+  <div className="flex items-center gap-1.5">
     <Label>{children}</Label>
     <Tooltip>
       <TooltipTrigger asChild>
         <button
-          type='button'
-          className='rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring'
+          type="button"
+          className="rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
           aria-label={help}
         >
-          <HelpCircle className='h-3.5 w-3.5' />
+          <HelpCircle className="h-3.5 w-3.5" />
         </button>
       </TooltipTrigger>
-      <TooltipContent side='top' sideOffset={6} className='max-w-xs'>
+      <TooltipContent side="top" sideOffset={6} className="max-w-xs">
         {help}
       </TooltipContent>
     </Tooltip>
@@ -893,7 +724,7 @@ const FieldBindingEditor = ({
       binding.contentType === documentContentType.name &&
       !binding.id
       ? CURRENT_DOCUMENT_ID
-      : binding?.id || '',
+      : binding?.id || ''
   )
   const [fieldPath, setFieldPath] = useState(sourceValue(binding))
   const usesCurrentDocumentSource =
@@ -912,13 +743,13 @@ const FieldBindingEditor = ({
       },
     },
     enabled:
-      !!sourceType &&
-      !usesCurrentDocumentSource &&
-      selectedContentType?.dynamicDataSource === true,
+      !!sourceType && !usesCurrentDocumentSource && selectedContentType?.dynamicDataSource === true,
   })
-  const items = ((sourceItemsQuery.data as
-    | { items?: Array<Record<string, unknown> & { _id: string }> }
-    | undefined)?.items ?? []) as Array<Record<string, unknown> & { _id: string }>
+  const items = ((
+    sourceItemsQuery.data as
+      | { items?: Array<Record<string, unknown> & { _id: string }> }
+      | undefined
+  )?.items ?? []) as Array<Record<string, unknown> & { _id: string }>
   const hasCurrentDocumentItem =
     currentDocumentSourceEnabled && sourceType === documentContentType.name
   const hasItemOptions = hasCurrentDocumentItem || items.length > 0
@@ -939,17 +770,16 @@ const FieldBindingEditor = ({
   }
 
   return (
-    <PanelSection title='Source value'>
-      <div className='grid gap-3 md:grid-cols-[1fr_1.4fr_1fr]'>
-        <Label className='grid gap-1.5'>
+    <PanelSection title="Source value">
+      <div className="grid gap-3 md:grid-cols-[1fr_1.4fr_1fr]">
+        <Label className="grid gap-1.5">
           {t('dynamicData.source')}
           <Select
             disabled={contentTypes.length === 0}
             value={sourceType}
             onValueChange={(value) => {
               const nextId =
-                currentDocumentSourceEnabled &&
-                value === documentContentType.name
+                currentDocumentSourceEnabled && value === documentContentType.name
                   ? CURRENT_DOCUMENT_ID
                   : ''
 
@@ -959,19 +789,16 @@ const FieldBindingEditor = ({
               onChange(undefined)
             }}
           >
-            <SelectTrigger className='w-full'>
+            <SelectTrigger className="w-full">
               <SelectValue
-                placeholder={
-                  contentTypes.length > 0 ? 'Content type' : 'No content types'
-                }
+                placeholder={contentTypes.length > 0 ? 'Content type' : 'No content types'}
               />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 {contentTypes.map((ct) => (
                   <SelectItem key={ct.name} value={ct.name}>
-                    {currentDocumentSourceEnabled &&
-                    ct.name === documentContentType.name
+                    {currentDocumentSourceEnabled && ct.name === documentContentType.name
                       ? `${ct.name} (current document)`
                       : ct.name}
                   </SelectItem>
@@ -980,7 +807,7 @@ const FieldBindingEditor = ({
             </SelectContent>
           </Select>
         </Label>
-        <Label className='grid gap-1.5'>
+        <Label className="grid gap-1.5">
           {t('dynamicData.item')}
           <Select
             disabled={!sourceType || !hasItemOptions}
@@ -990,10 +817,8 @@ const FieldBindingEditor = ({
               emit(sourceType, value, fieldPath)
             }}
           >
-            <SelectTrigger className='w-full'>
-              <SelectValue
-                placeholder={hasItemOptions ? 'Item' : 'No items available'}
-              />
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={hasItemOptions ? 'Item' : 'No items available'} />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -1019,7 +844,7 @@ const FieldBindingEditor = ({
             </SelectContent>
           </Select>
         </Label>
-        <Label className='grid gap-1.5'>
+        <Label className="grid gap-1.5">
           {t('dynamicData.field')}
           <Select
             disabled={!sourceType || !sourceId || fieldOptions.length === 0}
@@ -1029,20 +854,18 @@ const FieldBindingEditor = ({
               emit(sourceType, sourceId, value)
             }}
           >
-            <SelectTrigger className='w-full'>
+            <SelectTrigger className="w-full">
               <SelectValue
-                placeholder={
-                  fieldOptions.length > 0 ? 'Field' : 'No compatible fields'
-                }
+                placeholder={fieldOptions.length > 0 ? 'Field' : 'No compatible fields'}
               />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 {fieldOptions.map((field) => (
-                    <SelectItem key={field.value} value={field.value}>
-                      {field.label}
-                    </SelectItem>
-                  ))}
+                  <SelectItem key={field.value} value={field.value}>
+                    {field.label}
+                  </SelectItem>
+                ))}
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -1052,48 +875,39 @@ const FieldBindingEditor = ({
   )
 }
 
-const getListTargetContentType = (
-  field: MappableListField,
-  itemName: string,
-) => {
-  if (field.config.ui === 'SimpleList') {
+const getListTargetContentType = (field: MappableListField, itemName: string) => {
+  if (field.config.capabilities.dynamic?.collection === 'homogeneous') {
     const itemField = (field as EncodedSimpleListField).field
-    return itemField.config.type === 'Relation'
+    return itemField.config.capabilities.dynamic?.relation
       ? (itemField as EncodedRelationField).contentType
       : undefined
   }
 
   const listField = field as EncodedListField
   const entry = listField.fields.find((item) => item.name === itemName)
-  if (!entry || entry.field.config.type !== 'Relation') return undefined
+  if (!entry || !entry.field.config.capabilities.dynamic?.relation) return undefined
 
   return (entry.field as EncodedRelationField).contentType
 }
 
 const getListItemOptions = (field: MappableListField) => {
-  if (field.config.ui !== 'SimpleList') {
-    return (field as EncodedListField).fields.filter(
-      (item) => item.name !== ITERATOR_FIELD_NAME,
-    )
+  if (field.config.capabilities.dynamic?.collection !== 'homogeneous') {
+    return (field as EncodedListField).fields.filter((item) => item.name !== ITERATOR_FIELD_NAME)
   }
 
   const itemField = (field as EncodedSimpleListField).field
-  const name =
-    itemField.config.type === 'Relation'
-      ? (itemField as EncodedRelationField).contentType.name
-      : 'Link'
+  const name = itemField.config.capabilities.dynamic?.relation
+    ? (itemField as EncodedRelationField).contentType.name
+    : (itemField.config.editor ?? itemField.config.type)
 
   return [{ name, field: itemField }]
 }
 
-export const listItemTargetFields = (
-  field: MappableListField,
-  itemName: string,
-) => {
-  if (field.config.ui === 'SimpleList') {
+export const listItemTargetFields = (field: MappableListField, itemName: string) => {
+  if (field.config.capabilities.dynamic?.collection === 'homogeneous') {
     const itemField = (field as EncodedSimpleListField).field
-    if (itemField.config.type === 'Link') {
-      return linkItemMappingFields(itemField)
+    if (itemField.config.capabilities.dynamic?.mapProperties) {
+      return propertyMappingFields(itemField)
     }
   }
 
@@ -1103,13 +917,13 @@ export const listItemTargetFields = (
 const getRelationContentType = (field: EncodedFieldUnknown) => {
   if (field.isTranslatable) return undefined
 
-  if (field.config.type === 'Relation') {
+  if (field.config.capabilities.dynamic?.relation) {
     return (field as EncodedRelationField).contentType
   }
 
-  if (field.config.ui === 'SimpleList') {
+  if (field.config.capabilities.dynamic?.collection === 'homogeneous' && 'field' in field) {
     const itemField = (field as EncodedSimpleListField).field
-    if (itemField.config.type === 'Relation') {
+    if (itemField.config.capabilities.dynamic?.relation) {
       return (itemField as EncodedRelationField).contentType
     }
   }
@@ -1119,7 +933,7 @@ const getRelationContentType = (field: EncodedFieldUnknown) => {
 
 const getRelatedRelationOptions = (
   contentType: EncodedContentType,
-  currentSource: EncodedContentType,
+  currentSource: EncodedContentType
 ) =>
   Object.entries(contentType.fields).flatMap(([name, field]) => {
     if (!isSelectableDynamicField(name, field)) return []
@@ -1128,17 +942,12 @@ const getRelatedRelationOptions = (
     return relationContentType?.name === currentSource.name ? [name] : []
   })
 
-const getRelatedPathOptions = (
-  contentType: EncodedContentType,
-  targetField: EncodedFieldUnknown,
-) =>
+const getRelatedPathOptions = (contentType: EncodedContentType, targetField: EncodedFieldUnknown) =>
   sourceFieldOptions(contentType, targetField).filter(
-    (option) => option.kind === 'array' && option.value !== '$href',
+    (option) => option.kind === 'array' && option.value !== '$href'
   )
 
-const getSortFieldOptions = (
-  contentType: EncodedContentType,
-): SourceFieldOption[] =>
+const getSortFieldOptions = (contentType: EncodedContentType): SourceFieldOption[] =>
   Object.entries(contentType.fields).flatMap(([name, field]) => {
     if (
       !isSelectableDynamicField(name, field) ||
@@ -1150,23 +959,12 @@ const getSortFieldOptions = (
     }
 
     const kind = getFieldKind(field)
-    const isSingleSelect =
-      field.config.type === 'Select' &&
-      !(field as { isMultiple?: boolean }).isMultiple
-    const isSortable =
-      (field.config.type === 'String' && field.config.ui !== 'RichText') ||
-      field.config.type === 'Number' ||
-      field.config.type === 'Boolean' ||
-      field.config.type === 'Date' ||
-      isSingleSelect
+    const isSortable = ['string', 'number', 'boolean', 'date'].includes(kind)
 
     return isSortable ? [{ label: fieldLabel(name), value: name, kind }] : []
   })
 
-const filterOperatorOptions: Record<
-  FilterOperator,
-  { label: string; value: FilterOperator }
-> = {
+const filterOperatorOptions: Record<FilterOperator, { label: string; value: FilterOperator }> = {
   equals: { label: 'Equals', value: 'equals' },
   notEquals: { label: 'Does not equal', value: 'notEquals' },
   contains: { label: 'Contains', value: 'contains' },
@@ -1206,23 +1004,14 @@ const getFilterOperatorOptions = (kind: SourceFieldKind | undefined) => {
             'notExists',
           ]
         : kind === 'string' || kind === 'richText'
-          ? [
-              'equals',
-              'notEquals',
-              'contains',
-              'in',
-              'notIn',
-              'exists',
-              'notExists',
-            ]
+          ? ['equals', 'notEquals', 'contains', 'in', 'notIn', 'exists', 'notExists']
           : ['equals', 'notEquals', 'exists', 'notExists']
 
   return operators.map((operator) => filterOperatorOptions[operator])
 }
 
-const defaultFilterOperator = (
-  kind: SourceFieldKind | undefined,
-): FilterOperator => (kind === 'boolean' ? 'true' : 'equals')
+const defaultFilterOperator = (kind: SourceFieldKind | undefined): FilterOperator =>
+  kind === 'boolean' ? 'true' : 'equals'
 
 const createRelatedCollectionSource = ({
   contentType,
@@ -1266,19 +1055,15 @@ const MappingSourceEditor = ({
   const nestedSource = isNestedListSource(source) ? source : undefined
   const relatedSource = isRelatedCollectionSource(source) ? source : undefined
   const directSource =
-    source && !isRelatedCollectionSource(source) && !isNestedListSource(source)
-      ? source
-      : undefined
+    source && !isRelatedCollectionSource(source) && !isNestedListSource(source) ? source : undefined
   const directFieldOptions = sourceFieldOptions(currentSource, targetField)
   const relatedContentTypes = contentTypes.filter(
     (contentType) =>
       getRelatedRelationOptions(contentType, currentSource).length > 0 &&
-      getRelatedPathOptions(contentType, targetField).length > 0,
+      getRelatedPathOptions(contentType, targetField).length > 0
   )
   const selectedRelatedContentType = relatedSource
-    ? relatedContentTypes.find(
-        (contentType) => contentType.name === relatedSource.contentType,
-      )
+    ? relatedContentTypes.find((contentType) => contentType.name === relatedSource.contentType)
     : undefined
   const relationOptions = selectedRelatedContentType
     ? getRelatedRelationOptions(selectedRelatedContentType, currentSource)
@@ -1310,23 +1095,23 @@ const MappingSourceEditor = ({
 
   if (nestedSource && nestedListTarget) {
     return (
-      <div className='grid gap-3'>
-        <div className='grid max-w-sm content-start gap-1.5'>
+      <div className="grid gap-3">
+        <div className="grid max-w-sm content-start gap-1.5">
           <ControlLabel help={t('dynamicData.nestedListHelp')}>
             {t('dynamicData.mappingMode')}
           </ControlLabel>
           <Select
-            value='list'
+            value="list"
             onValueChange={(value) => {
               if (value === 'field') onChange(undefined)
             }}
           >
-            <SelectTrigger className='w-full'>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='field'>{t('dynamicData.directField')}</SelectItem>
-              <SelectItem value='list'>{t('dynamicData.nestedList')}</SelectItem>
+              <SelectItem value="field">{t('dynamicData.directField')}</SelectItem>
+              <SelectItem value="list">{t('dynamicData.nestedList')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -1338,9 +1123,7 @@ const MappingSourceEditor = ({
           currentDocumentSourceEnabled
           field={nestedListTarget}
           binding={nestedSource}
-          onChange={(binding) =>
-            onChange(binding ? { ...binding, kind: 'list' } : undefined)
-          }
+          onChange={(binding) => onChange(binding ? { ...binding, kind: 'list' } : undefined)}
         />
       </div>
     )
@@ -1348,13 +1131,13 @@ const MappingSourceEditor = ({
 
   if (!relatedSource) {
     return (
-      <div className='grid gap-3 md:grid-cols-[0.7fr_1.3fr]'>
-        <div className='grid content-start gap-1.5'>
-          <ControlLabel help='Choose a direct field or query a related collection.'>
+      <div className="grid gap-3 md:grid-cols-[0.7fr_1.3fr]">
+        <div className="grid content-start gap-1.5">
+          <ControlLabel help="Choose a direct field or query a related collection.">
             {t('dynamicData.mappingMode')}
           </ControlLabel>
           <Select
-            value='field'
+            value="field"
             onValueChange={(value) => {
               if (value === 'list') {
                 onChange(createNestedSource())
@@ -1368,43 +1151,41 @@ const MappingSourceEditor = ({
                     contentType,
                     currentSource,
                     targetField,
-                  }),
+                  })
                 )
                 .find(Boolean)
               onChange(next)
             }}
           >
-            <SelectTrigger className='w-full'>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='field'>{t('dynamicData.directField')}</SelectItem>
+              <SelectItem value="field">{t('dynamicData.directField')}</SelectItem>
               {relatedContentTypes.length > 0 ? (
-                <SelectItem value='relatedCollection'>{t('dynamicData.relatedCollection')}</SelectItem>
+                <SelectItem value="relatedCollection">
+                  {t('dynamicData.relatedCollection')}
+                </SelectItem>
               ) : null}
               {nestedListTarget ? (
-                <SelectItem value='list'>{t('dynamicData.nestedList')}</SelectItem>
+                <SelectItem value="list">{t('dynamicData.nestedList')}</SelectItem>
               ) : null}
             </SelectContent>
           </Select>
         </div>
-        <div className='grid content-start gap-1.5'>
-          <ControlLabel help='Its value will be assigned to this mapped property.'>
+        <div className="grid content-start gap-1.5">
+          <ControlLabel help="Its value will be assigned to this mapped property.">
             {t('dynamicData.fieldOn')} {currentSource.name}
           </ControlLabel>
           <Select
             disabled={directFieldOptions.length === 0}
             value={sourceValue(directSource)}
-            onValueChange={(value) =>
-              onChange(createSource(currentSource.name, value))
-            }
+            onValueChange={(value) => onChange(createSource(currentSource.name, value))}
           >
-            <SelectTrigger className='w-full'>
+            <SelectTrigger className="w-full">
               <SelectValue
                 placeholder={
-                  directFieldOptions.length > 0
-                    ? 'Select a source field'
-                    : 'No compatible fields'
+                  directFieldOptions.length > 0 ? 'Select a source field' : 'No compatible fields'
                 }
               />
             </SelectTrigger>
@@ -1424,41 +1205,39 @@ const MappingSourceEditor = ({
   }
 
   return (
-    <div className='grid gap-3'>
-      <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
-        <div className='grid content-start gap-1.5'>
-          <ControlLabel help='Query records related to the current source item.'>
+    <div className="grid gap-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid content-start gap-1.5">
+          <ControlLabel help="Query records related to the current source item.">
             {t('dynamicData.mappingMode')}
           </ControlLabel>
           <Select
-            value='relatedCollection'
-            onValueChange={(value) =>
-              onChange(value === 'list' ? createNestedSource() : undefined)
-            }
+            value="relatedCollection"
+            onValueChange={(value) => onChange(value === 'list' ? createNestedSource() : undefined)}
           >
-            <SelectTrigger className='w-full'>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='field'>{t('dynamicData.directField')}</SelectItem>
-              <SelectItem value='relatedCollection'>{t('dynamicData.relatedCollection')}</SelectItem>
+              <SelectItem value="field">{t('dynamicData.directField')}</SelectItem>
+              <SelectItem value="relatedCollection">
+                {t('dynamicData.relatedCollection')}
+              </SelectItem>
               {nestedListTarget ? (
-                <SelectItem value='list'>{t('dynamicData.nestedList')}</SelectItem>
+                <SelectItem value="list">{t('dynamicData.nestedList')}</SelectItem>
               ) : null}
             </SelectContent>
           </Select>
         </div>
-        <div className='grid content-start gap-1.5'>
-          <ControlLabel help='Content type whose records will be searched.'>
+        <div className="grid content-start gap-1.5">
+          <ControlLabel help="Content type whose records will be searched.">
             {t('dynamicData.collectionToQuery')}
           </ControlLabel>
           <Select
             disabled={relatedContentTypes.length === 0}
             value={relatedSource.contentType}
             onValueChange={(value) => {
-              const contentType = relatedContentTypes.find(
-                (item) => item.name === value,
-              )
+              const contentType = relatedContentTypes.find((item) => item.name === value)
               if (!contentType) return
 
               onChange(
@@ -1466,11 +1245,11 @@ const MappingSourceEditor = ({
                   contentType,
                   currentSource,
                   targetField,
-                }),
+                })
               )
             }}
           >
-            <SelectTrigger className='w-full'>
+            <SelectTrigger className="w-full">
               <SelectValue
                 placeholder={
                   relatedContentTypes.length > 0
@@ -1488,7 +1267,7 @@ const MappingSourceEditor = ({
             </SelectContent>
           </Select>
         </div>
-        <div className='grid content-start gap-1.5'>
+        <div className="grid content-start gap-1.5">
           <ControlLabel
             help={`Field on ${relatedSource.contentType} that points to ${currentSource.name}.`}
           >
@@ -1499,12 +1278,10 @@ const MappingSourceEditor = ({
             value={relatedSource.relation}
             onValueChange={(relation) => onChange({ ...relatedSource, relation })}
           >
-            <SelectTrigger className='w-full'>
+            <SelectTrigger className="w-full">
               <SelectValue
                 placeholder={
-                  relationOptions.length > 0
-                    ? 'Select a relation field'
-                    : 'No compatible relations'
+                  relationOptions.length > 0 ? 'Select a relation field' : 'No compatible relations'
                 }
               />
             </SelectTrigger>
@@ -1517,8 +1294,8 @@ const MappingSourceEditor = ({
             </SelectContent>
           </Select>
         </div>
-        <div className='grid content-start gap-1.5'>
-          <ControlLabel help='Arrays from matching records are flattened into one result.'>
+        <div className="grid content-start gap-1.5">
+          <ControlLabel help="Arrays from matching records are flattened into one result.">
             {t('dynamicData.arrayFieldToCollect')}
           </ControlLabel>
           <Select
@@ -1526,12 +1303,10 @@ const MappingSourceEditor = ({
             value={relatedSource.path}
             onValueChange={(path) => onChange({ ...relatedSource, path })}
           >
-            <SelectTrigger className='w-full'>
+            <SelectTrigger className="w-full">
               <SelectValue
                 placeholder={
-                  pathOptions.length > 0
-                    ? 'Select an array field'
-                    : 'No compatible array fields'
+                  pathOptions.length > 0 ? 'Select an array field' : 'No compatible array fields'
                 }
               />
             </SelectTrigger>
@@ -1545,31 +1320,28 @@ const MappingSourceEditor = ({
           </Select>
         </div>
       </div>
-      <div className='grid gap-3 sm:grid-cols-[0.7fr_1fr_0.7fr]'>
-        <div className='grid content-start gap-1.5'>
+      <div className="grid gap-3 sm:grid-cols-[0.7fr_1fr_0.7fr]">
+        <div className="grid content-start gap-1.5">
           <ControlLabel
             help={`Number of ${relatedSource.contentType} records queried per ${currentSource.name}. Minimum 1, maximum 100.`}
           >
             {t('dynamicData.maximumRelatedRecords')}
           </ControlLabel>
           <Input
-            type='number'
+            type="number"
             min={1}
             max={100}
             value={String(relatedSource.limit)}
             onChange={(event) =>
               onChange({
                 ...relatedSource,
-                limit: Math.min(
-                  100,
-                  Math.max(1, Number(event.target.value || 10)),
-                ),
+                limit: Math.min(100, Math.max(1, Number(event.target.value || 10))),
               })
             }
           />
         </div>
-        <div className='grid content-start gap-1.5'>
-          <ControlLabel help='Optional. Only direct scalar fields can be used.'>
+        <div className="grid content-start gap-1.5">
+          <ControlLabel help="Optional. Only direct scalar fields can be used.">
             {t('dynamicData.sortRelatedRecordsBy')}
           </ControlLabel>
           <Select
@@ -1577,18 +1349,15 @@ const MappingSourceEditor = ({
             onValueChange={(value) =>
               onChange({
                 ...relatedSource,
-                sort:
-                  value === '__none__'
-                    ? undefined
-                    : { [value]: sortDirection },
+                sort: value === '__none__' ? undefined : { [value]: sortDirection },
               })
             }
           >
-            <SelectTrigger className='w-full'>
+            <SelectTrigger className="w-full">
               <SelectValue placeholder={t('dynamicData.noSort')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='__none__'>{t('dynamicData.noSort')}</SelectItem>
+              <SelectItem value="__none__">{t('dynamicData.noSort')}</SelectItem>
               {sortOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
@@ -1597,8 +1366,8 @@ const MappingSourceEditor = ({
             </SelectContent>
           </Select>
         </div>
-        <div className='grid content-start gap-1.5'>
-          <ControlLabel help='Applied before collecting and flattening the arrays.'>
+        <div className="grid content-start gap-1.5">
+          <ControlLabel help="Applied before collecting and flattening the arrays.">
             {t('dynamicData.sortDirection')}
           </ControlLabel>
           <Select
@@ -1613,12 +1382,12 @@ const MappingSourceEditor = ({
                 : undefined
             }
           >
-            <SelectTrigger className='w-full'>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='asc'>{t('dynamicData.ascending')}</SelectItem>
-              <SelectItem value='desc'>{t('dynamicData.descending')}</SelectItem>
+              <SelectItem value="asc">{t('dynamicData.ascending')}</SelectItem>
+              <SelectItem value="desc">{t('dynamicData.descending')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -1654,53 +1423,36 @@ const ListBindingEditor = ({
   const initialDocumentSource = binding?.source
     ? documentSourceOptions.find(
         (option) =>
-          option.path === binding.source?.path &&
-          option.itemName === binding.source?.itemName,
+          option.path === binding.source?.path && option.itemName === binding.source?.itemName
       )
     : undefined
   const [sourceType, setSourceType] = useState(
-    initialDocumentSource?.value || binding?.contentType || '',
+    initialDocumentSource?.value || binding?.contentType || ''
   )
-  const [itemName, setItemName] = useState(
-    binding?.itemName || itemOptions[0]?.name || '',
-  )
+  const [itemName, setItemName] = useState(binding?.itemName || itemOptions[0]?.name || '')
   const [filterState, setFilterState] = useState<FilterState>(
-    readFilterState(binding?.query?.filter),
+    readFilterState(binding?.query?.filter)
   )
   const [openMappingField, setOpenMappingField] = useState<string | null>(null)
-  const selectedDocumentSource = documentSourceOptions.find(
-    (option) => option.value === sourceType,
-  )
+  const selectedDocumentSource = documentSourceOptions.find((option) => option.value === sourceType)
   const selectedSource =
-    selectedDocumentSource?.contentType ??
-    contentTypes.find((ct) => ct.name === sourceType)
-  const targetFields = useMemo(
-    () => listItemTargetFields(field, itemName),
-    [field, itemName],
-  )
-  const sortFieldOptions = selectedSource
-    ? getSortFieldOptions(selectedSource)
-    : []
+    selectedDocumentSource?.contentType ?? contentTypes.find((ct) => ct.name === sourceType)
+  const targetFields = useMemo(() => listItemTargetFields(field, itemName), [field, itemName])
+  const sortFieldOptions = selectedSource ? getSortFieldOptions(selectedSource) : []
   const filterFieldOptions = selectedSource
     ? sourceFieldOptions(selectedSource).filter((item) => item.value !== '$href')
     : []
   const currentDocumentFieldOptions: SourceFieldOption[] = [
     { label: '_id', value: '_id', kind: 'string' },
     ...sourceFieldOptions(rootDocumentContentType).filter(
-      (item) =>
-        item.value !== '$href' &&
-        item.kind !== 'object' &&
-        item.kind !== 'array',
+      (item) => item.value !== '$href' && item.kind !== 'object' && item.kind !== 'array'
     ),
   ]
   const currentItemFieldOptions: SourceFieldOption[] = currentItemContentType
     ? [
         { label: '_id', value: '_id', kind: 'string' },
         ...sourceFieldOptions(currentItemContentType).filter(
-          (item) =>
-            item.value !== '$href' &&
-            item.kind !== 'object' &&
-            item.kind !== 'array',
+          (item) => item.value !== '$href' && item.kind !== 'object' && item.kind !== 'array'
         ),
       ]
     : []
@@ -1722,9 +1474,7 @@ const ListBindingEditor = ({
       source,
       itemName,
       map: binding?.map ?? {},
-      query: source
-        ? undefined
-        : (binding?.query ?? { options: { limit: 10 } }),
+      query: source ? undefined : (binding?.query ?? { options: { limit: 10 } }),
       ...patch,
     }
 
@@ -1746,29 +1496,24 @@ const ListBindingEditor = ({
     })
   }
 
-  const updateFilterCondition = (
-    index: number,
-    nextCondition: FilterCondition,
-  ) => {
+  const updateFilterCondition = (index: number, nextCondition: FilterCondition) => {
     const conditions = [...filterState.conditions]
     conditions[index] = nextCondition
     updateFilter({ ...filterState, conditions })
   }
 
   return (
-    <div className='grid gap-3'>
-      <PanelSection title='Collection'>
-        <div className='grid gap-3 md:grid-cols-2'>
-          <Label className='grid gap-1.5'>
+    <div className="grid gap-3">
+      <PanelSection title="Collection">
+        <div className="grid gap-3 md:grid-cols-2">
+          <Label className="grid gap-1.5">
             {t('dynamicData.source')}
             <Select
-              disabled={
-                contentTypes.length === 0 && documentSourceOptions.length === 0
-              }
+              disabled={contentTypes.length === 0 && documentSourceOptions.length === 0}
               value={sourceType}
               onValueChange={(value) => {
                 const documentSource = documentSourceOptions.find(
-                  (option) => option.value === value,
+                  (option) => option.value === value
                 )
                 setSourceType(value)
                 const nextFilterState: FilterState = {
@@ -1798,7 +1543,7 @@ const ListBindingEditor = ({
                 })
               }}
             >
-              <SelectTrigger className='w-full'>
+              <SelectTrigger className="w-full">
                 <SelectValue
                   placeholder={
                     contentTypes.length > 0 || documentSourceOptions.length > 0
@@ -1823,7 +1568,7 @@ const ListBindingEditor = ({
               </SelectContent>
             </Select>
           </Label>
-          <Label className='grid gap-1.5'>
+          <Label className="grid gap-1.5">
             {t('dynamicData.item')}
             <Select
               disabled={!sourceType || itemOptions.length === 0}
@@ -1833,12 +1578,8 @@ const ListBindingEditor = ({
                 emit({ itemName: value, map: {} })
               }}
             >
-              <SelectTrigger className='w-full'>
-                <SelectValue
-                  placeholder={
-                    itemOptions.length > 0 ? 'Item type' : 'No item types'
-                  }
-                />
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={itemOptions.length > 0 ? 'Item type' : 'No item types'} />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
@@ -1855,396 +1596,359 @@ const ListBindingEditor = ({
       </PanelSection>
 
       {selectedDocumentSource ? null : (
-        <PanelSection title='Query'>
-          <div className='grid grid-cols-[minmax(5rem,0.4fr)_minmax(0,1.2fr)_minmax(8rem,0.6fr)] items-end gap-3'>
-          <Label className='grid gap-1.5'>
-            {t('dynamicData.limit')}
-            <Input
-              type='number'
-              min={1}
-              max={100}
-              value={String(binding?.query?.options?.limit ?? 10)}
-              onChange={(event) =>
-                emit({
-                  query: {
-                    ...binding?.query,
-                    options: {
-                      ...binding?.query?.options,
-                      limit: Math.min(
-                        100,
-                        Math.max(1, Number(event.target.value || 10)),
-                      ),
-                    },
-                  },
-                })
-              }
-            />
-          </Label>
-          <Label className='grid min-w-0 gap-1.5'>
-            {t('dynamicData.sortBy')}
-            <Select
-              disabled={sortFieldOptions.length === 0}
-              value={sortField || '__none__'}
-              onValueChange={(value) =>
-                emit({
-                  query: {
-                    ...binding?.query,
-                    options: {
-                      ...binding?.query?.options,
-                      sort:
-                        value === '__none__'
-                          ? undefined
-                          : { [value]: sortDirection },
-                    },
-                  },
-                })
-              }
-            >
-              <SelectTrigger className='w-full'>
-                <SelectValue
-                  placeholder={
-                    sortFieldOptions.length > 0
-                      ? 'Sort by field'
-                      : 'No sortable fields'
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value='__none__'>{t('dynamicData.noSort')}</SelectItem>
-                  {sortFieldOptions.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Label>
-          <Label className='grid gap-1.5'>
-            {t('dynamicData.direction')}
-            <Select
-              disabled={!sortField}
-              value={sortDirection}
-              onValueChange={(direction) =>
-                sortField
-                  ? emit({
-                      query: {
-                        ...binding?.query,
-                        options: {
-                          ...binding?.query?.options,
-                          sort: {
-                            [sortField]: direction as 'asc' | 'desc',
-                          },
-                        },
+        <PanelSection title="Query">
+          <div className="grid grid-cols-[minmax(5rem,0.4fr)_minmax(0,1.2fr)_minmax(8rem,0.6fr)] items-end gap-3">
+            <Label className="grid gap-1.5">
+              {t('dynamicData.limit')}
+              <Input
+                type="number"
+                min={1}
+                max={100}
+                value={String(binding?.query?.options?.limit ?? 10)}
+                onChange={(event) =>
+                  emit({
+                    query: {
+                      ...binding?.query,
+                      options: {
+                        ...binding?.query?.options,
+                        limit: Math.min(100, Math.max(1, Number(event.target.value || 10))),
                       },
-                    })
-                  : undefined
-              }
-            >
-              <SelectTrigger className='w-full'>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='asc'>{t('dynamicData.ascending')}</SelectItem>
-                <SelectItem value='desc'>{t('dynamicData.descending')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </Label>
-        </div>
-
-        <div className='grid gap-3 rounded-md border border-border bg-background/60 p-3'>
-          <div className='flex flex-wrap items-center justify-between gap-2'>
-            <div>
-              <div className='text-sm font-medium'>{t('dynamicData.conditions')}</div>
-              <div className='text-xs text-muted-foreground'>
-                {t('dynamicData.conditionsDescription')}
-              </div>
-            </div>
-            <div className='flex items-center gap-2'>
-              {filterState.conditions.length > 1 ? (
-                <Select
-                  value={filterState.combinator}
-                  onValueChange={(combinator) =>
-                    updateFilter({
-                      ...filterState,
-                      combinator: combinator as 'and' | 'or',
-                    })
-                  }
-                >
-                  <SelectTrigger className='h-8 w-36'>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='and'>{t('dynamicData.matchAll')}</SelectItem>
-                    <SelectItem value='or'>{t('dynamicData.matchAny')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : null}
-              <Button
-                type='button'
-                size='sm'
-                variant='outline'
-                disabled={
-                  filterFieldOptions.length === 0 ||
-                  filterState.conditions.length >= 25
+                    },
+                  })
                 }
-                onClick={() =>
-                  updateFilter({
-                    ...filterState,
-                    conditions: [
-                      ...filterState.conditions,
-                      { field: '', operator: 'equals', value: '' },
-                    ],
+              />
+            </Label>
+            <Label className="grid min-w-0 gap-1.5">
+              {t('dynamicData.sortBy')}
+              <Select
+                disabled={sortFieldOptions.length === 0}
+                value={sortField || '__none__'}
+                onValueChange={(value) =>
+                  emit({
+                    query: {
+                      ...binding?.query,
+                      options: {
+                        ...binding?.query?.options,
+                        sort: value === '__none__' ? undefined : { [value]: sortDirection },
+                      },
+                    },
                   })
                 }
               >
-                <Plus className='h-4 w-4' />
-                {t('dynamicData.addCondition')}
-              </Button>
-            </div>
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={
+                      sortFieldOptions.length > 0 ? 'Sort by field' : 'No sortable fields'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="__none__">{t('dynamicData.noSort')}</SelectItem>
+                    {sortFieldOptions.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Label>
+            <Label className="grid gap-1.5">
+              {t('dynamicData.direction')}
+              <Select
+                disabled={!sortField}
+                value={sortDirection}
+                onValueChange={(direction) =>
+                  sortField
+                    ? emit({
+                        query: {
+                          ...binding?.query,
+                          options: {
+                            ...binding?.query?.options,
+                            sort: {
+                              [sortField]: direction as 'asc' | 'desc',
+                            },
+                          },
+                        },
+                      })
+                    : undefined
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="asc">{t('dynamicData.ascending')}</SelectItem>
+                  <SelectItem value="desc">{t('dynamicData.descending')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </Label>
           </div>
 
-          {filterState.conditions.length === 0 ? (
-            <div className='rounded-md border border-dashed border-border px-3 py-5 text-center text-sm text-muted-foreground'>
-              {t('dynamicData.noConditions')}
-            </div>
-          ) : (
-            <div className='grid gap-2'>
-              {filterState.conditions.map((condition, index) => {
-                const fieldOption = filterFieldOptions.find(
-                  (option) => option.value === condition.field,
-                )
-                const operatorOptions = getFilterOperatorOptions(
-                  fieldOption?.kind,
-                )
-                const needsValue = operatorNeedsValue(condition.operator)
-                const currentDocumentValueOptions =
-                  currentDocumentFieldOptions.filter(
-                    (option) =>
-                      !fieldOption || option.kind === fieldOption.kind,
-                  )
-                const currentItemValueOptions = currentItemFieldOptions.filter(
-                  (option) =>
-                    !fieldOption || option.kind === fieldOption.kind,
-                )
-                const currentValueOptions =
-                  condition.valueSource === 'document'
-                    ? currentDocumentValueOptions
-                    : currentItemContentType
-                      ? currentItemValueOptions
-                      : currentDocumentValueOptions
-                const allowsCurrentDocumentValue =
-                  condition.operator !== 'in' &&
-                  condition.operator !== 'notIn' &&
-                  currentDocumentValueOptions.length > 0
-                const allowsCurrentItemValue =
-                  !!currentItemContentType &&
-                  condition.operator !== 'in' &&
-                  condition.operator !== 'notIn' &&
-                  currentItemValueOptions.length > 0
-
-                return (
-                  <div
-                    key={`${index}-${condition.field}`}
-                    className='grid items-center gap-2 rounded-md border border-border bg-background p-2 sm:grid-cols-[1.2fr_1fr_1.8fr_auto]'
+          <div className="grid gap-3 rounded-md border border-border bg-background/60 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="text-sm font-medium">{t('dynamicData.conditions')}</div>
+                <div className="text-xs text-muted-foreground">
+                  {t('dynamicData.conditionsDescription')}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {filterState.conditions.length > 1 ? (
+                  <Select
+                    value={filterState.combinator}
+                    onValueChange={(combinator) =>
+                      updateFilter({
+                        ...filterState,
+                        combinator: combinator as 'and' | 'or',
+                      })
+                    }
                   >
-                    <Select
-                      disabled={filterFieldOptions.length === 0}
-                      value={condition.field}
-                      onValueChange={(value) => {
-                        const kind = filterFieldOptions.find(
-                          (option) => option.value === value,
-                        )?.kind
-                        updateFilterCondition(index, {
-                          field: value,
-                          operator: defaultFilterOperator(kind),
-                          value: '',
-                        })
-                      }}
-                    >
-                      <SelectTrigger className='w-full'>
-                        <SelectValue placeholder={t('dynamicData.field')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {filterFieldOptions.map((item) => (
-                            <SelectItem key={item.value} value={item.value}>
-                              {item.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                    <SelectTrigger className="h-8 w-36">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="and">{t('dynamicData.matchAll')}</SelectItem>
+                      <SelectItem value="or">{t('dynamicData.matchAny')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : null}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={filterFieldOptions.length === 0 || filterState.conditions.length >= 25}
+                  onClick={() =>
+                    updateFilter({
+                      ...filterState,
+                      conditions: [
+                        ...filterState.conditions,
+                        { field: '', operator: 'equals', value: '' },
+                      ],
+                    })
+                  }
+                >
+                  <Plus className="h-4 w-4" />
+                  {t('dynamicData.addCondition')}
+                </Button>
+              </div>
+            </div>
 
-                    <Select
-                      disabled={!condition.field}
-                      value={condition.operator}
-                      onValueChange={(operator) =>
-                        updateFilterCondition(index, {
-                          ...condition,
-                          operator: operator as FilterOperator,
-                          valueSource:
-                            operator === 'in' || operator === 'notIn'
-                              ? 'literal'
-                              : condition.valueSource,
-                          value: operatorNeedsValue(
-                            operator as FilterOperator,
-                          )
-                            ? operator === 'in' || operator === 'notIn'
-                              ? ''
-                              : condition.value
-                            : '',
-                        })
-                      }
-                    >
-                      <SelectTrigger className='w-full'>
-                        <SelectValue placeholder={t('dynamicData.operator')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {operatorOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+            {filterState.conditions.length === 0 ? (
+              <div className="rounded-md border border-dashed border-border px-3 py-5 text-center text-sm text-muted-foreground">
+                {t('dynamicData.noConditions')}
+              </div>
+            ) : (
+              <div className="grid gap-2">
+                {filterState.conditions.map((condition, index) => {
+                  const fieldOption = filterFieldOptions.find(
+                    (option) => option.value === condition.field
+                  )
+                  const operatorOptions = getFilterOperatorOptions(fieldOption?.kind)
+                  const needsValue = operatorNeedsValue(condition.operator)
+                  const currentDocumentValueOptions = currentDocumentFieldOptions.filter(
+                    (option) => !fieldOption || option.kind === fieldOption.kind
+                  )
+                  const currentItemValueOptions = currentItemFieldOptions.filter(
+                    (option) => !fieldOption || option.kind === fieldOption.kind
+                  )
+                  const currentValueOptions =
+                    condition.valueSource === 'document'
+                      ? currentDocumentValueOptions
+                      : currentItemContentType
+                        ? currentItemValueOptions
+                        : currentDocumentValueOptions
+                  const allowsCurrentDocumentValue =
+                    condition.operator !== 'in' &&
+                    condition.operator !== 'notIn' &&
+                    currentDocumentValueOptions.length > 0
+                  const allowsCurrentItemValue =
+                    !!currentItemContentType &&
+                    condition.operator !== 'in' &&
+                    condition.operator !== 'notIn' &&
+                    currentItemValueOptions.length > 0
 
-                    {needsValue ? (
-                      <div className='grid grid-cols-[minmax(7rem,0.7fr)_minmax(0,1fr)] gap-2'>
-                        <Select
-                          value={condition.valueSource ?? 'literal'}
-                          onValueChange={(valueSource) =>
-                            updateFilterCondition(index, {
-                              ...condition,
-                              valueSource: valueSource as
-                                | 'literal'
-                                | 'current'
-                                | 'document',
-                              value: '',
-                            })
-                          }
-                        >
-                          <SelectTrigger
-                            className='w-full'
-                            aria-label='Value source'
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value='literal'>{t('dynamicData.fixedValue')}</SelectItem>
-                            {allowsCurrentDocumentValue ? (
-                              <SelectItem
-                                value={
-                                  currentItemContentType
-                                    ? 'document'
-                                    : 'current'
-                                }
-                              >
-                                {t('dynamicData.currentDocument')}
+                  return (
+                    <div
+                      key={`${index}-${condition.field}`}
+                      className="grid items-center gap-2 rounded-md border border-border bg-background p-2 sm:grid-cols-[1.2fr_1fr_1.8fr_auto]"
+                    >
+                      <Select
+                        disabled={filterFieldOptions.length === 0}
+                        value={condition.field}
+                        onValueChange={(value) => {
+                          const kind = filterFieldOptions.find(
+                            (option) => option.value === value
+                          )?.kind
+                          updateFilterCondition(index, {
+                            field: value,
+                            operator: defaultFilterOperator(kind),
+                            value: '',
+                          })
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={t('dynamicData.field')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {filterFieldOptions.map((item) => (
+                              <SelectItem key={item.value} value={item.value}>
+                                {item.label}
                               </SelectItem>
-                            ) : null}
-                            {allowsCurrentItemValue ? (
-                              <SelectItem value='current'>
-                                {t('dynamicData.currentItem')}
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        disabled={!condition.field}
+                        value={condition.operator}
+                        onValueChange={(operator) =>
+                          updateFilterCondition(index, {
+                            ...condition,
+                            operator: operator as FilterOperator,
+                            valueSource:
+                              operator === 'in' || operator === 'notIn'
+                                ? 'literal'
+                                : condition.valueSource,
+                            value: operatorNeedsValue(operator as FilterOperator)
+                              ? operator === 'in' || operator === 'notIn'
+                                ? ''
+                                : condition.value
+                              : '',
+                          })
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={t('dynamicData.operator')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {operatorOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
                               </SelectItem>
-                            ) : null}
-                          </SelectContent>
-                        </Select>
-                        {condition.valueSource === 'current' ||
-                        condition.valueSource === 'document' ? (
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+
+                      {needsValue ? (
+                        <div className="grid grid-cols-[minmax(7rem,0.7fr)_minmax(0,1fr)] gap-2">
                           <Select
-                            disabled={!condition.field}
-                            value={condition.value}
-                            onValueChange={(value) =>
+                            value={condition.valueSource ?? 'literal'}
+                            onValueChange={(valueSource) =>
                               updateFilterCondition(index, {
                                 ...condition,
-                                value,
+                                valueSource: valueSource as 'literal' | 'current' | 'document',
+                                value: '',
                               })
                             }
                           >
-                            <SelectTrigger className='w-full'>
-                              <SelectValue placeholder={t('dynamicData.currentField')} />
+                            <SelectTrigger className="w-full" aria-label="Value source">
+                              <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectGroup>
-                                {currentValueOptions.map((option) => (
-                                  <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                  >
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
+                              <SelectItem value="literal">{t('dynamicData.fixedValue')}</SelectItem>
+                              {allowsCurrentDocumentValue ? (
+                                <SelectItem value={currentItemContentType ? 'document' : 'current'}>
+                                  {t('dynamicData.currentDocument')}
+                                </SelectItem>
+                              ) : null}
+                              {allowsCurrentItemValue ? (
+                                <SelectItem value="current">
+                                  {t('dynamicData.currentItem')}
+                                </SelectItem>
+                              ) : null}
                             </SelectContent>
                           </Select>
-                        ) : (
-                          <Input
-                            type={
-                              fieldOption?.kind === 'number' &&
-                              condition.operator !== 'in' &&
-                              condition.operator !== 'notIn'
-                                ? 'number'
-                                : 'text'
-                            }
-                            value={condition.value}
-                            disabled={!condition.field}
-                            placeholder={
-                              condition.operator === 'in' ||
-                              condition.operator === 'notIn'
-                                ? 'Comma-separated values'
-                                : 'Value'
-                            }
-                            onChange={(event) =>
-                              updateFilterCondition(index, {
-                                ...condition,
-                                value: event.target.value,
-                              })
-                            }
-                          />
-                        )}
-                      </div>
-                    ) : (
-                      <div className='h-9 rounded-md border border-dashed border-border bg-muted/30' />
-                    )}
+                          {condition.valueSource === 'current' ||
+                          condition.valueSource === 'document' ? (
+                            <Select
+                              disabled={!condition.field}
+                              value={condition.value}
+                              onValueChange={(value) =>
+                                updateFilterCondition(index, {
+                                  ...condition,
+                                  value,
+                                })
+                              }
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder={t('dynamicData.currentField')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  {currentValueOptions.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              type={
+                                fieldOption?.kind === 'number' &&
+                                condition.operator !== 'in' &&
+                                condition.operator !== 'notIn'
+                                  ? 'number'
+                                  : 'text'
+                              }
+                              value={condition.value}
+                              disabled={!condition.field}
+                              placeholder={
+                                condition.operator === 'in' || condition.operator === 'notIn'
+                                  ? 'Comma-separated values'
+                                  : 'Value'
+                              }
+                              onChange={(event) =>
+                                updateFilterCondition(index, {
+                                  ...condition,
+                                  value: event.target.value,
+                                })
+                              }
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <div className="h-9 rounded-md border border-dashed border-border bg-muted/30" />
+                      )}
 
-                    <Button
-                      type='button'
-                      size='icon'
-                      variant='ghost'
-                      className='size-9 text-muted-foreground hover:text-destructive'
-                      onClick={() =>
-                        updateFilter({
-                          ...filterState,
-                          conditions: filterState.conditions.filter(
-                            (_, conditionIndex) => conditionIndex !== index,
-                          ),
-                        })
-                      }
-                    >
-                      <Trash2 className='h-4 w-4' />
-                      <span className='sr-only'>{t('dynamicData.removeCondition')}</span>
-                    </Button>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </PanelSection>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="size-9 text-muted-foreground hover:text-destructive"
+                        onClick={() =>
+                          updateFilter({
+                            ...filterState,
+                            conditions: filterState.conditions.filter(
+                              (_, conditionIndex) => conditionIndex !== index
+                            ),
+                          })
+                        }
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">{t('dynamicData.removeCondition')}</span>
+                      </Button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </PanelSection>
       )}
 
-      <PanelSection title='Mapping'>
-        <div className='grid gap-2'>
+      <PanelSection title="Mapping">
+        <div className="grid gap-2">
           {targetFields.map(([targetField, targetFieldConfig]) => {
             const source = binding?.map?.[targetField]
-            const summary = mappingSourceSummary(
-              source,
-              selectedSource?.name ?? 'Source',
-            )
+            const summary = mappingSourceSummary(source, selectedSource?.name ?? 'Source')
             const summaryMode = isNestedListSource(source)
               ? t('dynamicData.nestedList')
               : summary.mode
@@ -2254,37 +1958,33 @@ const ListBindingEditor = ({
               <Collapsible
                 key={targetField}
                 open={isOpen}
-                onOpenChange={(open) =>
-                  setOpenMappingField(open ? targetField : null)
-                }
+                onOpenChange={(open) => setOpenMappingField(open ? targetField : null)}
               >
-                <div className='overflow-hidden rounded-md border border-border bg-background/70 transition-colors hover:border-foreground/20'>
+                <div className="overflow-hidden rounded-md border border-border bg-background/70 transition-colors hover:border-foreground/20">
                   <CollapsibleTrigger asChild>
                     <button
-                      type='button'
+                      type="button"
                       disabled={!selectedSource}
-                      className='group grid w-full grid-cols-[minmax(6rem,0.45fr)_auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50'
+                      className="group grid w-full grid-cols-[minmax(6rem,0.45fr)_auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <span className='truncate text-sm font-semibold'>
-                        {targetField}
-                      </span>
+                      <span className="truncate text-sm font-semibold">{targetField}</span>
                       <Badge
                         variant={source ? 'secondary' : 'outline'}
-                        className='max-w-40 truncate'
+                        className="max-w-40 truncate"
                       >
                         {summaryMode}
                       </Badge>
-                      <span className='truncate text-sm text-muted-foreground'>
-                        {selectedSource
-                          ? summary.detail
-                          : 'Select a source collection first'}
+                      <span className="truncate text-sm text-muted-foreground">
+                        {selectedSource ? summary.detail : 'Select a source collection first'}
                       </span>
-                      <ChevronRight className='h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-90' />
-                      <span className='sr-only'>{t('dynamicData.configureMapping', { name: targetField })}</span>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
+                      <span className="sr-only">
+                        {t('dynamicData.configureMapping', { name: targetField })}
+                      </span>
                     </button>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <div className='border-t border-border bg-muted/20 p-3'>
+                    <div className="border-t border-border bg-muted/20 p-3">
                       {selectedSource ? (
                         <MappingSourceEditor
                           contentTypes={contentTypes}
@@ -2334,9 +2034,7 @@ const StructuredArrayBindingEditor = ({
   onListChange: (binding: DynamicListBinding | undefined) => void
 }) => {
   const t = useTranslations()
-  const [mode, setMode] = useState<'field' | 'list'>(
-    listBinding ? 'list' : 'field',
-  )
+  const [mode, setMode] = useState<'field' | 'list'>(listBinding ? 'list' : 'field')
 
   useEffect(() => {
     if (listBinding) setMode('list')
@@ -2344,8 +2042,8 @@ const StructuredArrayBindingEditor = ({
   }, [fieldBinding, listBinding])
 
   return (
-    <div className='grid gap-3'>
-      <div className='grid max-w-sm content-start gap-1.5'>
+    <div className="grid gap-3">
+      <div className="grid max-w-sm content-start gap-1.5">
         <ControlLabel help={t('dynamicData.nestedListHelp')}>
           {t('dynamicData.mappingMode')}
         </ControlLabel>
@@ -2362,12 +2060,12 @@ const StructuredArrayBindingEditor = ({
             onFieldChange(undefined)
           }}
         >
-          <SelectTrigger className='w-full'>
+          <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value='field'>{t('dynamicData.directField')}</SelectItem>
-            <SelectItem value='list'>{t('dynamicData.nestedList')}</SelectItem>
+            <SelectItem value="field">{t('dynamicData.directField')}</SelectItem>
+            <SelectItem value="list">{t('dynamicData.nestedList')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -2421,13 +2119,13 @@ export const DynamicDataControl = ({
 }) => {
   const t = useTranslations()
   const [internalOpen, setInternalOpen] = useState(false)
-  const [draftBindings, setDraftBindings] = useState<
-    DynamicDocumentBindings | undefined
-  >(() => cloneDynamicBindings(bindings))
+  const [draftBindings, setDraftBindings] = useState<DynamicDocumentBindings | undefined>(() =>
+    cloneDynamicBindings(bindings)
+  )
   const wasOpenRef = useRef(open ?? internalOpen)
 
   const list = isMappableDynamicListField(field)
-  const structuredArray = list && field.config.ui === 'SimpleList'
+  const structuredArray = list && field.config.capabilities.dynamic?.collection === 'homogeneous'
   const isOpen = open ?? internalOpen
 
   useEffect(() => {
@@ -2463,19 +2161,15 @@ export const DynamicDataControl = ({
           onChange(cleanDynamicBindings(nextBindings))
   const sourceContentTypes = getSourceContentTypes(contentTypes)
   const currentDocumentContentType = documentContentType ?? contentType
-  const currentDocumentSourceEnabled =
-    currentDocumentContentType.name !== contentType.name
+  const currentDocumentSourceEnabled = currentDocumentContentType.name !== contentType.name
   const fieldSourceContentTypes = currentDocumentSourceEnabled
     ? [
         currentDocumentContentType,
         ...sourceContentTypes.filter(
-          (sourceContentType) =>
-            sourceContentType.name !== currentDocumentContentType.name,
+          (sourceContentType) => sourceContentType.name !== currentDocumentContentType.name
         ),
       ]
-    : sourceContentTypes.filter(
-        (sourceContentType) => sourceContentType.name !== contentType.name,
-      )
+    : sourceContentTypes.filter((sourceContentType) => sourceContentType.name !== contentType.name)
   const fieldBinding = activeBindings?.fields?.[fieldName]
   const listBinding = activeBindings?.lists?.[fieldName]
   const bound = structuredArray
@@ -2520,9 +2214,7 @@ export const DynamicDataControl = ({
       lists: Object.keys(lists).length ? lists : undefined,
     })
   }
-  const updateStructuredListBinding = (
-    binding: DynamicListBinding | undefined,
-  ) => {
+  const updateStructuredListBinding = (binding: DynamicListBinding | undefined) => {
     const fields = { ...(activeBindings?.fields ?? {}) }
     const lists = { ...(activeBindings?.lists ?? {}) }
     delete fields[fieldName]
@@ -2557,38 +2249,38 @@ export const DynamicDataControl = ({
   }
 
   const trigger = (
-    <div className='flex min-w-0 items-center gap-1.5'>
+    <div className="flex min-w-0 items-center gap-1.5">
       <Tooltip>
         <TooltipTrigger asChild>
           <button
-            type='button'
-            className='min-w-0 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+            type="button"
+            className="min-w-0 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={() => setOpen((value) => !value)}
           >
             {bound && summary ? (
               <Badge
-                variant='secondary'
-                className='max-w-80 min-w-0 gap-1.5 rounded-md px-2 py-1 hover:bg-secondary/80'
+                variant="secondary"
+                className="max-w-80 min-w-0 gap-1.5 rounded-md px-2 py-1 hover:bg-secondary/80"
               >
                 {usesListBinding ? (
-                  <ListFilter className='h-3.5 w-3.5 shrink-0' />
+                  <ListFilter className="h-3.5 w-3.5 shrink-0" />
                 ) : (
-                  <Link2 className='h-3.5 w-3.5 shrink-0' />
+                  <Link2 className="h-3.5 w-3.5 shrink-0" />
                 )}
-                <span className='truncate'>{summary}</span>
+                <span className="truncate">{summary}</span>
               </Badge>
             ) : (
               <Badge
-                variant='outline'
-                className='gap-1.5 rounded-md px-2 py-1 text-muted-foreground'
+                variant="outline"
+                className="gap-1.5 rounded-md px-2 py-1 text-muted-foreground"
               >
-                <Cable className='h-3.5 w-3.5' />
+                <Cable className="h-3.5 w-3.5" />
                 {t('dynamicData.notLinked')}
               </Badge>
             )}
           </button>
         </TooltipTrigger>
-        <TooltipContent side='top' sideOffset={6}>
+        <TooltipContent side="top" sideOffset={6}>
           {triggerLabel}
         </TooltipContent>
       </Tooltip>
@@ -2596,17 +2288,17 @@ export const DynamicDataControl = ({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              type='button'
-              size='icon'
-              variant='ghost'
-              className='size-6'
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="size-6"
               onClick={clearBinding}
             >
-              <X className='h-4 w-4' />
-              <span className='sr-only'>{t('dynamicData.clear')}</span>
+              <X className="h-4 w-4" />
+              <span className="sr-only">{t('dynamicData.clear')}</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent side='top' sideOffset={6}>
+          <TooltipContent side="top" sideOffset={6}>
             {t('dynamicData.clearLink')}
           </TooltipContent>
         </Tooltip>
@@ -2648,9 +2340,7 @@ export const DynamicDataControl = ({
   )
 
   const panel = isOpen ? (
-    <div className='rounded-md border border-border bg-background p-4 shadow-sm'>
-      {editor}
-    </div>
+    <div className="rounded-md border border-border bg-background p-4 shadow-sm">{editor}</div>
   ) : null
 
   const dialog = (
@@ -2665,22 +2355,22 @@ export const DynamicDataControl = ({
         cancelDialogChanges()
       }}
     >
-      <DialogContent className='max-h-[85vh] w-screen max-w-5xl! overflow-y-auto'>
+      <DialogContent className="max-h-[85vh] w-screen max-w-5xl! overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className='flex items-center gap-2'>
+          <DialogTitle className="flex items-center gap-2">
             {t('dynamicData.title')}
-            <HelpCircle className='h-4 w-4 text-muted-foreground' />
+            <HelpCircle className="h-4 w-4 text-muted-foreground" />
           </DialogTitle>
-          <DialogDescription className='max-w-2xl leading-relaxed'>
+          <DialogDescription className="max-w-2xl leading-relaxed">
             {helpDescription}
           </DialogDescription>
         </DialogHeader>
         {editor}
         <DialogFooter>
-          <Button type='button' variant='outline' onClick={cancelDialogChanges}>
+          <Button type="button" variant="outline" onClick={cancelDialogChanges}>
             {t('common.cancel')}
           </Button>
-          <Button type='button' onClick={saveDialogChanges}>
+          <Button type="button" onClick={saveDialogChanges}>
             {t('common.save')}
           </Button>
         </DialogFooter>
@@ -2693,8 +2383,8 @@ export const DynamicDataControl = ({
   if (mode === 'dialog') return dialog
 
   return (
-    <div className='grid min-w-0 gap-2'>
-      <div className='flex min-w-0 justify-end'>{trigger}</div>
+    <div className="grid min-w-0 gap-2">
+      <div className="flex min-w-0 justify-end">{trigger}</div>
       {panel}
     </div>
   )

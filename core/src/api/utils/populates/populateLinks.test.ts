@@ -1,66 +1,88 @@
-import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { beforeEach, describe, expect, it, mock } from 'bun:test'
 
-const mockGetMongoService = mock();
-const mockGetLanguages = mock();
+const mockGetMongoService = mock()
+const mockGetLanguages = mock()
 
-mock.module("../../../orm", () => ({
+mock.module('../../../orm', () => ({
   getMongoService: mockGetMongoService,
-}));
+}))
 
-mock.module("../getLanguages", () => ({
+mock.module('../getLanguages', () => ({
   getLanguages: mockGetLanguages,
-}));
+}))
 
-import { Language, RouteMap } from "../../../internal-content-types";
-import ContentType from "../../../lib/ContentType";
-import { Fields } from "../../../lib/fields";
-import { registerContentType } from "../../../lib/Registry";
-import type { DBOutput } from "../../../lib/types";
+import { Language, RouteMap } from '../../../internal-content-types'
+import ContentType from '../../../lib/ContentType'
+import { Fields } from '../../../lib/fields'
+import { createPluginField, sameSchemas } from '../../../lib/fields/Field'
+import { registerContentType } from '../../../lib/Registry'
+import type { DBOutput } from '../../../lib/types'
+import { z } from 'zod'
 
-const { populateLinks } = await import("./populateLinks");
+const { populateFields, populateLinks } = await import('./populateLinks')
 
-type LanguageRow = DBOutput<typeof Language>;
-type RouteMapRow = DBOutput<typeof RouteMap>;
+type LanguageRow = DBOutput<typeof Language>
+type RouteMapRow = DBOutput<typeof RouteMap>
 
 const languages: LanguageRow[] = [
   {
-    _id: "language-en",
-    _type: "Language",
-    code: "en",
-    name: "English",
+    _id: 'language-en',
+    _type: 'Language',
+    code: 'en',
+    name: 'English',
     default: true,
   },
   {
-    _id: "language-es",
-    _type: "Language",
-    code: "es",
-    name: "Spanish",
+    _id: 'language-es',
+    _type: 'Language',
+    code: 'es',
+    name: 'Spanish',
     default: false,
   },
-];
+]
 
 const LinkTestPage = new ContentType({
-  name: "PopulateLinksTypeAwarePage",
+  name: 'PopulateLinksTypeAwarePage',
   fields: {
     primaryLink: Fields.link(),
     links: Fields.array(Fields.link()),
     menu: Fields.menu(),
   },
-});
+})
 
-registerContentType(LinkTestPage);
+registerContentType(LinkTestPage)
+
+const PluginPopulatePage = new ContentType({
+  name: 'PluginPopulatePage',
+  fields: {
+    label: createPluginField({
+      meta: {
+        type: 'String',
+        ui: 'Text',
+        editor: 'test.uppercase',
+        capabilities: { valueKind: 'string' },
+      },
+      schemas: sameSchemas(() => z.string()),
+      runtime: {
+        populate: (value) => String(value).toUpperCase(),
+      },
+    }),
+  },
+})
+
+registerContentType(PluginPopulatePage)
 
 const makeRouteMap = (overrides: Partial<RouteMapRow>): RouteMapRow =>
   ({
-    _id: `${overrides.routeId ?? "route-id"}-${overrides.languageId ?? "language-en"}`,
-    _type: "RouteMap",
-    path: "/fallback/",
-    contentType: "Page",
-    contentTypeId: "content-id",
-    routeId: "route-id",
-    languageId: "language-en",
+    _id: `${overrides.routeId ?? 'route-id'}-${overrides.languageId ?? 'language-en'}`,
+    _type: 'RouteMap',
+    path: '/fallback/',
+    contentType: 'Page',
+    contentTypeId: 'content-id',
+    routeId: 'route-id',
+    languageId: 'language-en',
     ...overrides,
-  }) as RouteMapRow;
+  }) as RouteMapRow
 
 const setRouteMaps = (routeMaps: RouteMapRow[]) => {
   const list = mock(
@@ -68,388 +90,401 @@ const setRouteMaps = (routeMaps: RouteMapRow[]) => {
       _contentType: unknown,
       params: {
         filter: {
-          routeId: string;
-          contentTypeId?: string;
-          variantGroupId?: string;
-        };
-      },
+          routeId: string
+          contentTypeId?: string
+          variantGroupId?: string
+        }
+      }
     ) => ({
       items: routeMaps.filter(
         (routeMap) =>
           routeMap.routeId === params.filter.routeId &&
           (params.filter.variantGroupId
             ? routeMap.variantGroupId === params.filter.variantGroupId
-            : routeMap.contentTypeId === params.filter.contentTypeId),
+            : routeMap.contentTypeId === params.filter.contentTypeId)
       ),
-    }),
-  );
+    })
+  )
 
-  mockGetMongoService.mockResolvedValue({ list });
-  mockGetLanguages.mockResolvedValue(languages);
+  mockGetMongoService.mockResolvedValue({ list })
+  mockGetLanguages.mockResolvedValue(languages)
 
-  return list;
-};
+  return list
+}
 
-describe("populateLinks", () => {
+describe('populateLinks', () => {
   beforeEach(() => {
-    mockGetMongoService.mockReset();
-    mockGetLanguages.mockReset();
-  });
+    mockGetMongoService.mockReset()
+    mockGetLanguages.mockReset()
+  })
 
-  it("replaces link fields with localized route map paths", async () => {
+  it('replaces link fields with localized route map paths', async () => {
     const list = setRouteMaps([
       makeRouteMap({
-        routeId: "route-about",
-        contentTypeId: "about-id",
-        languageId: "language-en",
-        path: "/about/",
+        routeId: 'route-about',
+        contentTypeId: 'about-id',
+        languageId: 'language-en',
+        path: '/about/',
       }),
       makeRouteMap({
-        routeId: "route-about",
-        contentTypeId: "about-id",
-        languageId: "language-es",
-        path: "/es/sobre/",
+        routeId: 'route-about',
+        contentTypeId: 'about-id',
+        languageId: 'language-es',
+        path: '/es/sobre/',
       }),
       makeRouteMap({
-        routeId: "route-contact",
-        contentTypeId: "contact-id",
-        languageId: "language-en",
-        path: "/contact/",
+        routeId: 'route-contact',
+        contentTypeId: 'contact-id',
+        languageId: 'language-en',
+        path: '/contact/',
       }),
       makeRouteMap({
-        routeId: "route-contact",
-        contentTypeId: "contact-id",
-        languageId: "language-es",
-        path: "/es/contacto/",
+        routeId: 'route-contact',
+        contentTypeId: 'contact-id',
+        languageId: 'language-es',
+        path: '/es/contacto/',
       }),
-    ]);
+    ])
 
     const result = await populateLinks({
-      _id: "page-id",
-      _type: "TestPage",
-      title: "Docs",
+      _id: 'page-id',
+      _type: 'TestPage',
+      title: 'Docs',
       primaryLink: {
-        routeId: "route-about",
-        contentTypeId: "about-id",
-        title: "About us",
+        routeId: 'route-about',
+        contentTypeId: 'about-id',
+        title: 'About us',
       },
       blocks: [
         {
           ctaLink: {
-            routeId: "route-contact",
-            contentTypeId: "contact-id",
+            routeId: 'route-contact',
+            contentTypeId: 'contact-id',
           },
         },
       ],
       untouched: {
-        routeId: "route-about",
+        routeId: 'route-about',
       },
-    } as DBOutput<ContentType>);
+    } as DBOutput<ContentType>)
 
     expect(result).toEqual({
-      _id: "page-id",
-      _type: "TestPage",
-      title: "Docs",
+      _id: 'page-id',
+      _type: 'TestPage',
+      title: 'Docs',
       primaryLink: {
         href: {
-          _tag: "Translatable",
-          en: "/about/",
-          es: "/es/sobre/",
+          _tag: 'Translatable',
+          en: '/about/',
+          es: '/es/sobre/',
         },
-        title: "About us",
+        title: 'About us',
       },
       blocks: [
         {
           ctaLink: {
             href: {
-              _tag: "Translatable",
-              en: "/contact/",
-              es: "/es/contacto/",
+              _tag: 'Translatable',
+              en: '/contact/',
+              es: '/es/contacto/',
             },
-            title: "",
+            title: '',
           },
         },
       ],
       untouched: {
-        routeId: "route-about",
+        routeId: 'route-about',
       },
-    });
-    expect(list).toHaveBeenCalledTimes(4);
+    })
+    expect(list).toHaveBeenCalledTimes(4)
     expect(list).toHaveBeenCalledWith(RouteMap, {
       filter: {
-        routeId: "route-about",
-        variantGroupId: "about-id",
+        routeId: 'route-about',
+        variantGroupId: 'about-id',
       },
-      options: { limit: "all" },
-    });
+      options: { limit: 'all' },
+    })
     expect(list).toHaveBeenCalledWith(RouteMap, {
       filter: {
-        routeId: "route-about",
-        contentTypeId: "about-id",
+        routeId: 'route-about',
+        contentTypeId: 'about-id',
       },
-      options: { limit: "all" },
-    });
+      options: { limit: 'all' },
+    })
     expect(list).toHaveBeenCalledWith(RouteMap, {
       filter: {
-        routeId: "route-contact",
-        variantGroupId: "contact-id",
+        routeId: 'route-contact',
+        variantGroupId: 'contact-id',
       },
-      options: { limit: "all" },
-    });
+      options: { limit: 'all' },
+    })
     expect(list).toHaveBeenCalledWith(RouteMap, {
       filter: {
-        routeId: "route-contact",
-        contentTypeId: "contact-id",
+        routeId: 'route-contact',
+        contentTypeId: 'contact-id',
       },
-      options: { limit: "all" },
-    });
-  });
+      options: { limit: 'all' },
+    })
+  })
 
-  it("uses the default language code when a route map language is missing", async () => {
+  it('uses the default language code when a route map language is missing', async () => {
     setRouteMaps([
       makeRouteMap({
-        routeId: "route-about",
-        contentTypeId: "about-id",
-        languageId: "missing-language",
-        path: "/fallback/about/",
+        routeId: 'route-about',
+        contentTypeId: 'about-id',
+        languageId: 'missing-language',
+        path: '/fallback/about/',
       }),
-    ]);
+    ])
 
     const result = await populateLinks({
-      _id: "page-id",
-      _type: "TestPage",
+      _id: 'page-id',
+      _type: 'TestPage',
       primaryLink: {
-        routeId: "route-about",
-        contentTypeId: "about-id",
+        routeId: 'route-about',
+        contentTypeId: 'about-id',
       },
-    } as DBOutput<ContentType>);
+    } as DBOutput<ContentType>)
 
     expect(result).toEqual({
-      _id: "page-id",
-      _type: "TestPage",
+      _id: 'page-id',
+      _type: 'TestPage',
       primaryLink: {
         href: {
-          _tag: "Translatable",
-          en: "/fallback/about/",
+          _tag: 'Translatable',
+          en: '/fallback/about/',
         },
-        title: "",
+        title: '',
       },
-    });
-  });
+    })
+  })
 
-  it("keeps direct URLs without querying route maps", async () => {
-    const list = setRouteMaps([]);
+  it('keeps direct URLs without querying route maps', async () => {
+    const list = setRouteMaps([])
 
     const result = await populateLinks({
-      _id: "page-id",
-      _type: "TestPage",
-      primaryLink: "https://example.com/docs",
+      _id: 'page-id',
+      _type: 'TestPage',
+      primaryLink: 'https://example.com/docs',
       titledLink: {
-        href: "https://example.com/guides",
-        title: "Guides",
+        href: 'https://example.com/guides',
+        title: 'Guides',
       },
       nested: {
-        link: "/contact/",
+        link: '/contact/',
       },
-    } as DBOutput<ContentType>);
+    } as DBOutput<ContentType>)
 
     expect(result).toEqual({
-      _id: "page-id",
-      _type: "TestPage",
-      primaryLink: "https://example.com/docs",
+      _id: 'page-id',
+      _type: 'TestPage',
+      primaryLink: 'https://example.com/docs',
       titledLink: {
-        href: "https://example.com/guides",
-        title: "Guides",
+        href: 'https://example.com/guides',
+        title: 'Guides',
       },
       nested: {
-        link: "/contact/",
+        link: '/contact/',
       },
-    });
-    expect(list).not.toHaveBeenCalled();
-  });
+    })
+    expect(list).not.toHaveBeenCalled()
+  })
 
-  it("normalizes legacy direct strings for typed link fields and arrays", async () => {
-    const list = setRouteMaps([]);
+  it('runs population declared by a plugin field', async () => {
+    setRouteMaps([])
+
+    const result = await populateFields({
+      _id: 'page-id',
+      _type: PluginPopulatePage.name,
+      label: 'plugin value',
+    } as DBOutput<typeof PluginPopulatePage>)
+
+    expect(result.label).toBe('PLUGIN VALUE')
+    expect(populateLinks).toBe(populateFields)
+  })
+
+  it('normalizes legacy direct strings for typed link fields and arrays', async () => {
+    const list = setRouteMaps([])
 
     const result = await populateLinks({
-      _id: "page-id",
+      _id: 'page-id',
       _type: LinkTestPage.name,
-      primaryLink: "https://example.com/docs",
-      links: ["/about/", { href: "/contact/", title: "Contact" }],
-    } as DBOutput<typeof LinkTestPage>);
+      primaryLink: 'https://example.com/docs',
+      links: ['/about/', { href: '/contact/', title: 'Contact' }],
+    } as DBOutput<typeof LinkTestPage>)
 
     expect(result).toEqual({
-      _id: "page-id",
+      _id: 'page-id',
       _type: LinkTestPage.name,
       primaryLink: {
-        href: "https://example.com/docs",
-        title: "",
+        href: 'https://example.com/docs',
+        title: '',
       },
       links: [
-        { href: "/about/", title: "" },
-        { href: "/contact/", title: "Contact" },
+        { href: '/about/', title: '' },
+        { href: '/contact/', title: 'Contact' },
       ],
-    });
-    expect(list).not.toHaveBeenCalled();
-  });
+    })
+    expect(list).not.toHaveBeenCalled()
+  })
 
-  it("resolves internal links recursively inside menu fields", async () => {
+  it('resolves internal links recursively inside menu fields', async () => {
     const list = setRouteMaps([
       makeRouteMap({
-        routeId: "route-products",
-        contentTypeId: "products-id",
-        languageId: "language-en",
-        path: "/products/",
+        routeId: 'route-products',
+        contentTypeId: 'products-id',
+        languageId: 'language-en',
+        path: '/products/',
       }),
       makeRouteMap({
-        routeId: "route-featured",
-        contentTypeId: "featured-id",
-        languageId: "language-en",
-        path: "/products/featured/",
+        routeId: 'route-featured',
+        contentTypeId: 'featured-id',
+        languageId: 'language-en',
+        path: '/products/featured/',
       }),
-    ]);
+    ])
 
     const result = await populateLinks({
-      _id: "page-id",
+      _id: 'page-id',
       _type: LinkTestPage.name,
-      primaryLink: { href: "/", title: "Home" },
+      primaryLink: { href: '/', title: 'Home' },
       links: [],
       menu: [
         {
-          routeId: "route-products",
-          contentTypeId: "products-id",
-          title: "Products",
+          routeId: 'route-products',
+          contentTypeId: 'products-id',
+          title: 'Products',
           children: [
             {
-              routeId: "route-featured",
-              contentTypeId: "featured-id",
-              title: "Featured",
+              routeId: 'route-featured',
+              contentTypeId: 'featured-id',
+              title: 'Featured',
               children: [],
             },
           ],
         },
       ],
-    } as DBOutput<typeof LinkTestPage>);
+    } as DBOutput<typeof LinkTestPage>)
 
     expect(result.menu).toEqual([
       {
-        href: { _tag: "Translatable", en: "/products/" },
-        title: "Products",
+        href: { _tag: 'Translatable', en: '/products/' },
+        title: 'Products',
         children: [
           {
-            href: { _tag: "Translatable", en: "/products/featured/" },
-            title: "Featured",
+            href: { _tag: 'Translatable', en: '/products/featured/' },
+            title: 'Featured',
             children: [],
           },
         ],
       },
-    ]);
-    expect(list).toHaveBeenCalledTimes(4);
-  });
+    ])
+    expect(list).toHaveBeenCalledTimes(4)
+  })
 
-  it("resolves links through locale variant groups", async () => {
+  it('resolves links through locale variant groups', async () => {
     const list = setRouteMaps([
       makeRouteMap({
-        routeId: "route-about",
-        contentTypeId: "about-id",
-        variantGroupId: "about-id",
-        languageId: "language-en",
-        path: "/about/",
+        routeId: 'route-about',
+        contentTypeId: 'about-id',
+        variantGroupId: 'about-id',
+        languageId: 'language-en',
+        path: '/about/',
       }),
       makeRouteMap({
-        routeId: "route-about",
-        contentTypeId: "about-es-id",
-        variantGroupId: "about-id",
-        languageId: "language-es",
-        path: "/es/sobre/",
+        routeId: 'route-about',
+        contentTypeId: 'about-es-id',
+        variantGroupId: 'about-id',
+        languageId: 'language-es',
+        path: '/es/sobre/',
       }),
-    ]);
+    ])
 
     const result = await populateLinks({
-      _id: "page-id",
-      _type: "TestPage",
+      _id: 'page-id',
+      _type: 'TestPage',
       primaryLink: {
-        routeId: "route-about",
-        contentTypeId: "about-id",
+        routeId: 'route-about',
+        contentTypeId: 'about-id',
       },
-    } as DBOutput<ContentType>);
+    } as DBOutput<ContentType>)
 
     expect(result).toEqual({
-      _id: "page-id",
-      _type: "TestPage",
+      _id: 'page-id',
+      _type: 'TestPage',
       primaryLink: {
         href: {
-          _tag: "Translatable",
-          en: "/about/",
-          es: "/es/sobre/",
+          _tag: 'Translatable',
+          en: '/about/',
+          es: '/es/sobre/',
         },
-        title: "",
+        title: '',
       },
-    });
-    expect(list).toHaveBeenCalledTimes(1);
+    })
+    expect(list).toHaveBeenCalledTimes(1)
     expect(list).toHaveBeenCalledWith(RouteMap, {
       filter: {
-        routeId: "route-about",
-        variantGroupId: "about-id",
+        routeId: 'route-about',
+        variantGroupId: 'about-id',
       },
-      options: { limit: "all" },
-    });
-  });
+      options: { limit: 'all' },
+    })
+  })
 
-  it("matches route map languages by string value", async () => {
+  it('matches route map languages by string value', async () => {
     setRouteMaps([
       makeRouteMap({
-        routeId: "route-about",
-        contentTypeId: "about-id",
+        routeId: 'route-about',
+        contentTypeId: 'about-id',
         languageId: {
-          toString: () => "language-es",
+          toString: () => 'language-es',
         } as unknown as string,
-        path: "/es/sobre/",
+        path: '/es/sobre/',
       }),
-    ]);
+    ])
 
     const result = await populateLinks({
-      _id: "page-id",
-      _type: "TestPage",
+      _id: 'page-id',
+      _type: 'TestPage',
       primaryLink: {
-        routeId: "route-about",
-        contentTypeId: "about-id",
+        routeId: 'route-about',
+        contentTypeId: 'about-id',
       },
-    } as DBOutput<ContentType>);
+    } as DBOutput<ContentType>)
 
     expect(result).toEqual({
-      _id: "page-id",
-      _type: "TestPage",
+      _id: 'page-id',
+      _type: 'TestPage',
       primaryLink: {
         href: {
-          _tag: "Translatable",
-          es: "/es/sobre/",
+          _tag: 'Translatable',
+          es: '/es/sobre/',
         },
-        title: "",
+        title: '',
       },
-    });
-  });
+    })
+  })
 
-  it("keeps the object shape when no route map is found", async () => {
-    const list = setRouteMaps([]);
+  it('keeps the object shape when no route map is found', async () => {
+    const list = setRouteMaps([])
 
     const result = await populateLinks({
-      _id: "page-id",
-      _type: "TestPage",
+      _id: 'page-id',
+      _type: 'TestPage',
       primaryLink: {
-        routeId: "route-about",
-        contentTypeId: "about-id",
+        routeId: 'route-about',
+        contentTypeId: 'about-id',
       },
-    } as DBOutput<ContentType>);
+    } as DBOutput<ContentType>)
 
     expect(result).toEqual({
-      _id: "page-id",
-      _type: "TestPage",
+      _id: 'page-id',
+      _type: 'TestPage',
       primaryLink: {
-        href: "",
-        title: "",
+        href: '',
+        title: '',
       },
-    });
-    expect(list).toHaveBeenCalledTimes(2);
-  });
-});
+    })
+    expect(list).toHaveBeenCalledTimes(2)
+  })
+})

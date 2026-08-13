@@ -60,22 +60,20 @@ const createEditorId = () => {
   return `menu-item-${fallbackId}`
 }
 
-const isTranslatableValue = (
-  value: unknown,
-): value is TranslatableValue<MenuItemValue[]> =>
+const isTranslatableValue = (value: unknown): value is TranslatableValue<MenuItemValue[]> =>
   !!value && typeof value === 'object' && '_tag' in value && value._tag === 'Translatable'
 
 const hydrateDefaultData = (
   value: unknown,
-  translatable: boolean,
+  translatable: boolean
 ): EditorMenuItem[] | TranslatableValue<EditorMenuItem[]> | undefined => {
   if (translatable && isTranslatableValue(value)) {
     return Object.fromEntries(
       Object.entries(value).map(([language, items]) =>
         language === '_tag'
           ? [language, 'Translatable']
-          : [language, hydrateMenuItems(Array.isArray(items) ? items : [], createEditorId)],
-      ),
+          : [language, hydrateMenuItems(Array.isArray(items) ? items : [], createEditorId)]
+      )
     ) as TranslatableValue<EditorMenuItem[]>
   }
 
@@ -87,7 +85,7 @@ const hydrateDefaultData = (
 const mapTree = (
   items: EditorMenuItem[],
   itemId: string,
-  map: (item: EditorMenuItem) => EditorMenuItem,
+  map: (item: EditorMenuItem) => EditorMenuItem
 ): EditorMenuItem[] =>
   items.map((item) => {
     if (item._editorId === itemId) return map(item)
@@ -103,8 +101,8 @@ const stripEditorValue = (value: unknown) => {
     Object.entries(value).map(([language, items]) =>
       language === '_tag'
         ? [language, 'Translatable']
-        : [language, Array.isArray(items) ? stripMenuEditorIds(items as EditorMenuItem[]) : []],
-    ),
+        : [language, Array.isArray(items) ? stripMenuEditorIds(items as EditorMenuItem[]) : []]
+    )
   )
 }
 
@@ -134,8 +132,15 @@ const MenuItemCard = ({
   parentContentType?: MenuPropsRef['parentContentType']
 }) => {
   const t = useTranslations()
-  const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: item._editorId })
+  const {
+    attributes,
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item._editorId })
 
   return (
     <div
@@ -148,64 +153,72 @@ const MenuItemCard = ({
       }}
     >
       <Collapsible open={expanded} onOpenChange={onExpandedChange}>
-        <Card className='overflow-hidden py-0'>
-          <CardHeader className='flex-row items-center gap-1 space-y-0 px-2 py-2'>
+        <Card className="overflow-hidden py-0">
+          <CardHeader className="flex-row items-center gap-1 space-y-0 px-2 py-2">
             <Button
               aria-label={t('menuField.dragItem')}
-              className='shrink-0 cursor-grab text-muted-foreground active:cursor-grabbing'
+              className="shrink-0 cursor-grab text-muted-foreground active:cursor-grabbing"
               ref={setActivatorNodeRef}
-              size='icon'
-              type='button'
-              variant='ghost'
+              size="icon"
+              type="button"
+              variant="ghost"
               {...attributes}
               {...listeners}
             >
               <GripVertical />
             </Button>
             <CollapsibleTrigger asChild>
-              <Button className='min-w-0 flex-1 justify-start gap-2' type='button' variant='ghost'>
+              <Button className="min-w-0 flex-1 justify-start gap-2" type="button" variant="ghost">
                 <ChevronDown
                   className={cn('shrink-0 transition-transform', !expanded && '-rotate-90')}
                 />
-                <span className='truncate'>
-                  {getItemLabel(item, t('menuField.untitledItem'))}
-                </span>
+                <span className="truncate">{getItemLabel(item, t('menuField.untitledItem'))}</span>
               </Button>
             </CollapsibleTrigger>
             <Button
               aria-label={t('menuField.outdentItem')}
               disabled={item.depth === 0}
               onClick={onOutdent}
-              size='icon'
-              type='button'
-              variant='ghost'
+              size="icon"
+              type="button"
+              variant="ghost"
             >
               <ChevronLeft />
             </Button>
             <Button
               aria-label={t('menuField.indentItem')}
               onClick={onIndent}
-              size='icon'
-              type='button'
-              variant='ghost'
+              size="icon"
+              type="button"
+              variant="ghost"
             >
               <ChevronRight />
             </Button>
             <Button
               aria-label={t('menuField.removeItem')}
-              className='text-destructive hover:text-destructive'
+              className="text-destructive hover:text-destructive"
               onClick={onRemove}
-              size='icon'
-              type='button'
-              variant='ghost'
+              size="icon"
+              type="button"
+              variant="ghost"
             >
               <Trash2 />
             </Button>
           </CardHeader>
           <CollapsibleContent>
-            <CardContent className='border-t px-4 py-4'>
+            <CardContent className="border-t px-4 py-4">
               <LinkUI
-                config={{ type: 'Link', ui: 'Link' }}
+                config={{
+                  type: 'Link',
+                  ui: 'Link',
+                  capabilities: {
+                    valueKind: 'object',
+                    dynamic: {
+                      properties: { title: 'string', href: 'string' },
+                      mapProperties: true,
+                    },
+                  },
+                }}
                 defaultData={item}
                 id={`menu-link-${item._editorId}`}
                 isDynamic={false}
@@ -213,7 +226,7 @@ const MenuItemCard = ({
                 isTranslatable={false}
                 onLinkValueChange={onLinkValueChange}
                 parentContentType={parentContentType}
-                visibility='all'
+                visibility="all"
               />
             </CardContent>
           </CollapsibleContent>
@@ -228,7 +241,7 @@ const MenuUI: React.FC<MenuPropsRef> = ({ id, ref, ...props }) => {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const defaultData = useMemo(
     () => hydrateDefaultData(props.defaultData, props.isTranslatable),
-    [props.defaultData, props.isTranslatable],
+    [props.defaultData, props.isTranslatable]
   )
   const { value, errors, onValueChange, getValue, getState } = useFieldValues<EditorMenuItem[]>({
     id,
@@ -237,8 +250,9 @@ const MenuUI: React.FC<MenuPropsRef> = ({ id, ref, ...props }) => {
     defaultData,
     defaultValue: [],
     validateValue: (items) => {
-      const invalid = flattenMenuItems(items).some(({ children: _children, depth: _depth, _editorId, ...link }) =>
-        !LinkInputSchema.safeParse(link).success
+      const invalid = flattenMenuItems(items).some(
+        ({ children: _children, depth: _depth, _editorId, ...link }) =>
+          !LinkInputSchema.safeParse(link).success
       )
       return invalid ? t('menuField.destinationRequired') : null
     },
@@ -247,7 +261,7 @@ const MenuUI: React.FC<MenuPropsRef> = ({ id, ref, ...props }) => {
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
   const updateValue = (nextValue: EditorMenuItem[]) => onValueChange(nextValue)
@@ -271,7 +285,7 @@ const MenuUI: React.FC<MenuPropsRef> = ({ id, ref, ...props }) => {
         activeId: String(event.active.id),
         overId: String(event.over.id),
         horizontalOffset: event.delta.x,
-      }),
+      })
     )
   }
 
@@ -280,28 +294,32 @@ const MenuUI: React.FC<MenuPropsRef> = ({ id, ref, ...props }) => {
 
   return (
     <FieldWrapper id={id} errors={errors} getValue={getMenuValue} getState={getMenuState} ref={ref}>
-      <div className='grid gap-3'>
-        <div className='flex items-center justify-between gap-3 rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground'>
-          <span className='flex items-center gap-2'>
-            <MenuIcon className='size-4 shrink-0' />
+      <div className="grid gap-3">
+        <div className="flex items-center justify-between gap-3 rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
+          <span className="flex items-center gap-2">
+            <MenuIcon className="size-4 shrink-0" />
             {t('menuField.instructions')}
           </span>
-          <Button onClick={addItem} size='sm' type='button' variant='outline'>
+          <Button onClick={addItem} size="sm" type="button" variant="outline">
             <Plus />
             {t('menuField.addItem')}
           </Button>
         </div>
         {flatItems.length === 0 ? (
-          <div className='rounded-md border border-dashed px-4 py-8 text-center text-sm text-muted-foreground'>
+          <div className="rounded-md border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
             {t('menuField.empty')}
           </div>
         ) : (
-          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd} sensors={sensors}>
+          <DndContext
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            sensors={sensors}
+          >
             <SortableContext
               items={flatItems.map((item) => item._editorId)}
               strategy={verticalListSortingStrategy}
             >
-              <div className='grid gap-2'>
+              <div className="grid gap-2">
                 {flatItems.map((item) => (
                   <MenuItemCard
                     expanded={expandedItems.has(item._editorId)}
@@ -321,7 +339,7 @@ const MenuUI: React.FC<MenuPropsRef> = ({ id, ref, ...props }) => {
                         mapTree(value, item._editorId, (current) => ({
                           ...current,
                           ...link,
-                        })),
+                        }))
                       )
                     }
                     onOutdent={() => updateValue(changeMenuItemDepth(value, item._editorId, -1))}

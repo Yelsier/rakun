@@ -1,4 +1,4 @@
-import z from "zod";
+import z from 'zod'
 
 import {
   createField,
@@ -10,108 +10,130 @@ import {
   type FieldLike,
   type FieldState,
   type FieldWithModifiers,
+  type FieldCapabilities,
   type InferDb,
   type InferOutput,
   type WithFieldState,
   withFieldModifiers,
-} from "./Field";
-import { Id } from "../utils/id";
+} from './Field'
+import { Id } from '../utils/id'
 
-export type Entry<
-  Name extends string = string,
-  F extends AnyFieldLike = AnyFieldLike,
-> = {
-  name: Name;
-  field: F;
-};
+export type Entry<Name extends string = string, F extends AnyFieldLike = AnyFieldLike> = {
+  name: Name
+  field: F
+}
 
 export type EncodedListFieldItem = {
-  name: string;
-  field: EncodedFieldUnknown;
-};
+  name: string
+  field: EncodedFieldUnknown
+}
 
 export type EncodedListField = EncodedField & {
-  fields: EncodedListFieldItem[];
-};
+  fields: EncodedListFieldItem[]
+}
 
 export const IteratorItemVisibilityConditionSchema = z.object({
   field: z.string().trim().min(1),
-  operator: z.enum(["notEmpty", "empty"]),
-});
+  operator: z.enum(['notEmpty', 'empty']),
+})
 
-export type IteratorItemVisibilityCondition = z.infer<
-  typeof IteratorItemVisibilityConditionSchema
->;
+export type IteratorItemVisibilityCondition = z.infer<typeof IteratorItemVisibilityConditionSchema>
 
 export type ListFieldValueItem<S> = {
-  name: string;
-  value: S;
-  visibleWhen?: IteratorItemVisibilityCondition;
-};
+  name: string
+  value: S
+  visibleWhen?: IteratorItemVisibilityCondition
+}
 
 type ListInputValue<Entries extends readonly Entry[]> = Array<{
-  name: Entries[number]["name"];
-  value: InferDb<Entries[number]["field"]>;
-  visibleWhen?: IteratorItemVisibilityCondition;
-}>;
+  name: Entries[number]['name']
+  value: InferDb<Entries[number]['field']>
+  visibleWhen?: IteratorItemVisibilityCondition
+}>
 
 type ListOutputValue<Entries extends readonly Entry[]> = Array<{
-  name: Entries[number]["name"];
-  value: InferOutput<Entries[number]["field"]>;
-  visibleWhen?: IteratorItemVisibilityCondition;
-}>;
+  name: Entries[number]['name']
+  value: InferOutput<Entries[number]['field']>
+  visibleWhen?: IteratorItemVisibilityCondition
+}>
 
 export type ListMeta<Entries extends readonly Entry[] = readonly Entry[]> = {
-  type: "List";
-  ui: "List" | "Iterator";
+  type: 'List'
+  ui: 'List' | 'Iterator'
   fields: {
     [K in keyof Entries]: Entries[K] extends Entry<infer Name, infer F>
-      ? { name: Name; field: F["meta"] }
-      : never;
-  };
-};
+      ? { name: Name; field: F['meta'] }
+      : never
+  }
+  capabilities: FieldCapabilities
+}
 
 type ListOptions<Entries extends readonly Entry[]> = {
-  fields: Entries;
-  ui: "List" | "Iterator";
-};
+  fields: Entries
+  ui: 'List' | 'Iterator'
+}
 
 export type ListField<
   Entries extends readonly Entry[] = readonly Entry[],
   State extends FieldState = DefaultFieldState,
-> = FieldWithModifiers<ListFieldCore<Entries, State>>;
+> = FieldWithModifiers<ListFieldCore<Entries, State>>
 
-type ListFieldCore<
-  Entries extends readonly Entry[],
-  State extends FieldState,
-> = FieldLike<
+type ListFieldCore<Entries extends readonly Entry[], State extends FieldState> = FieldLike<
   ListInputValue<Entries>,
   ListInputValue<Entries>,
   ListOutputValue<Entries>,
   ListMeta<Entries>,
   State
 > & {
-  fields: Entries;
-};
-
-export function listField<const Entries extends readonly Entry[]>(
-  fields: Entries,
-): ListField<Entries> {
-  return makeListField({ fields, ui: "List" }, defaultFieldState);
+  fields: Entries
 }
 
-export function makeListField<
-  Entries extends readonly Entry[],
-  State extends FieldState,
->(options: ListOptions<Entries>, state: State): ListField<Entries, State> {
+export function listField<const Entries extends readonly Entry[]>(
+  fields: Entries
+): ListField<Entries> {
+  return makeListField({ fields, ui: 'List' }, defaultFieldState)
+}
+
+export function makeListField<Entries extends readonly Entry[], State extends FieldState>(
+  options: ListOptions<Entries>,
+  state: State
+): ListField<Entries, State> {
   const field: ListFieldCore<Entries, State> = createField({
     meta: {
-      type: "List",
+      type: 'List',
       ui: options.ui,
       fields: options.fields.map((entry) => ({
         name: entry.name,
         field: entry.field.meta,
-      })) as ListMeta<Entries>["fields"],
+      })) as ListMeta<Entries>['fields'],
+      capabilities: {
+        valueKind: 'array',
+        dynamic: { collection: 'heterogeneous' },
+      },
+    },
+    runtime: {
+      populate: (value, context) =>
+        Array.isArray(value)
+          ? Promise.all(
+              value.map(async (item) => {
+                if (
+                  !item ||
+                  typeof item !== 'object' ||
+                  Array.isArray(item) ||
+                  !('name' in item) ||
+                  typeof item.name !== 'string'
+                ) {
+                  return context.populate(item)
+                }
+
+                const entry = options.fields.find((candidate) => candidate.name === item.name)
+                return {
+                  ...item,
+                  value: await context.populate(item.value, entry?.field),
+                }
+              })
+            )
+          : value,
     },
     state,
     schemas: {
@@ -119,91 +141,85 @@ export function makeListField<
       db: () => buildListDbSchema(options.fields, options.ui),
       output: () => buildListOutputSchema(options.fields, options.ui),
     },
-  }) as ListFieldCore<Entries, State>;
+  }) as ListFieldCore<Entries, State>
 
-  field.fields = options.fields;
+  field.fields = options.fields
 
   return withFieldModifiers({
     field,
     rebuild: <NextState extends FieldState>(nextState: NextState) =>
-      makeListField(options, nextState) as WithFieldState<
-        ListFieldCore<Entries, State>,
-        NextState
-      >,
-  });
+      makeListField(options, nextState) as WithFieldState<ListFieldCore<Entries, State>, NextState>,
+  })
 }
 
-function buildListDbSchema<Entries extends readonly Entry[]>(
-  fields: Entries,
-  ui: ListMeta["ui"],
-) {
-  const valueSchemas = fields.map((entry) => getListDbValueSchema(entry, ui));
+function buildListDbSchema<Entries extends readonly Entry[]>(fields: Entries, ui: ListMeta['ui']) {
+  const valueSchemas = fields.map((entry) => getListDbValueSchema(entry, ui))
 
   return z.array(
     z.object({
       name: z.string(),
       value: unionSchemas(valueSchemas),
-      ...(ui === "Iterator"
+      ...(ui === 'Iterator'
         ? {
             visibleWhen: IteratorItemVisibilityConditionSchema.optional(),
           }
         : {}),
-    }),
-  ) as z.ZodType<ListInputValue<Entries>>;
+    })
+  ) as z.ZodType<ListInputValue<Entries>>
 }
 
-function getListDbValueSchema(entry: Entry, ui: ListMeta["ui"]) {
-  const schema = entry.field.getSchema();
-  const meta = entry.field.meta;
+function getListDbValueSchema(entry: Entry, ui: ListMeta['ui']) {
+  const schema = entry.field.getSchema()
+  const meta = entry.field.meta
 
   if (
-    ui === "Iterator" &&
-    meta.type === "Relation" &&
-    "only" in meta &&
-    meta.only === "new" &&
-    "contentType" in meta &&
-    typeof meta.contentType === "string"
+    ui === 'Iterator' &&
+    meta.type === 'Relation' &&
+    'only' in meta &&
+    meta.only === 'new' &&
+    'contentType' in meta &&
+    typeof meta.contentType === 'string'
   ) {
     return z.union([
       schema,
       z.object({
-        type: z.literal("existing"),
+        type: z.literal('existing'),
         _id: Id,
         contentType: z.literal(meta.contentType),
       }),
-    ]);
+    ])
   }
 
-  return schema;
+  return schema
 }
 
 function buildListOutputSchema<Entries extends readonly Entry[]>(
   fields: Entries,
-  ui: ListMeta["ui"],
+  ui: ListMeta['ui']
 ) {
-  const valueSchemas = fields.map((entry) => entry.field.getOutputSchema());
+  const valueSchemas = fields.map((entry) => entry.field.getOutputSchema())
 
   return z.array(
     z.object({
       name: z.string(),
       value: unionSchemas(valueSchemas),
-      ...(ui === "Iterator"
+      ...(ui === 'Iterator'
         ? {
             visibleWhen: IteratorItemVisibilityConditionSchema.optional(),
           }
         : {}),
-    }),
-  ) as z.ZodType<ListOutputValue<Entries>>;
+    })
+  ) as z.ZodType<ListOutputValue<Entries>>
 }
 
 function unionSchemas(schemas: z.ZodTypeAny[]) {
   if (schemas.length === 0) {
-    return z.never();
+    return z.never()
   }
 
   if (schemas.length === 1) {
-    return schemas[0];
+    return schemas[0]
   }
 
-  return z.union(schemas as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]]);
+  return z.union(schemas as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]])
 }

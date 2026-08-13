@@ -112,6 +112,14 @@ RichText extensions. Use exported plugin types from
 `@rakun-kit/manager-react/plugins`. Plugin ids, route ids, field editor ids,
 Lexical node types and RichText plugin ids must be unique.
 
+Dynamic Data behavior for custom editors comes from the encoded field
+`config.capabilities`, not from the editor id. `valueKind` controls source and
+target compatibility; `dynamic.properties` exposes object leaves;
+`mapProperties` renders them as separate mapping targets; `relation` enables
+nested content-type fields; and `collection` enables homogeneous or
+heterogeneous per-item mappings. A plugin editor therefore gains the standard
+Dynamic Data control by declaring its behavior in its core field factory.
+
 In Next.js, plugin registration belongs in a `'use client'` wrapper around
 `RakunManagerClientPage`; pass the wrapper to `RakunManagerPage` as
 `managerComponent`.

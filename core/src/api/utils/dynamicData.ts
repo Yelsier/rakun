@@ -1,5 +1,5 @@
-import { getRakunBootstrapOptions } from "../../bootstrapState";
-import type ContentType from "../../lib/ContentType";
+import { getRakunBootstrapOptions } from '../../bootstrapState'
+import type ContentType from '../../lib/ContentType'
 import {
   DYNAMIC_BINDINGS_FIELD_NAME,
   DynamicQueryCurrentValueSchema,
@@ -11,51 +11,44 @@ import {
   type DynamicListMapSource,
   type DynamicNestedListSource,
   type DynamicRelatedCollectionSource,
-} from "../../lib/dynamicData";
-import { Logger } from "../../lib/Logger";
-import type { DataPopulatedWithoutApiOnly, DBOutput, Query } from "../../lib/types";
-import { getContentTypeByName } from "../../lib/Registry";
-import type { DBService } from "../../orm/dbService";
-import { runOnGetHook } from "../hooks/runContentHooks";
-import { getLink } from "./getLink";
-import { populateLinks } from "./populates/populateLinks";
-import { populateRelations } from "./populates/populateRelations";
-import { parseSafeManagerQuery } from "./safeManagerQuery";
+} from '../../lib/dynamicData'
+import { Logger } from '../../lib/Logger'
+import type { DataPopulatedWithoutApiOnly, DBOutput, Query } from '../../lib/types'
+import { getContentTypeByName } from '../../lib/Registry'
+import type { DBService } from '../../orm/dbService'
+import { runOnGetHook } from '../hooks/runContentHooks'
+import { getLink } from './getLink'
+import { populateFields } from './populates/populateLinks'
+import { populateRelations } from './populates/populateRelations'
+import { parseSafeManagerQuery } from './safeManagerQuery'
 import { getContentHookContext } from '../hooks/context'
 import { resolveBreadcrumsFields } from './breadcrums'
 
 type ResolveOptions = {
-  db: DBService;
-  contentType?: ContentType;
+  db: DBService
+  contentType?: ContentType
   contextSource?: {
-    contentType: ContentType;
-    value: Record<string, unknown>;
-  };
-  surface: "web" | "preview";
-};
+    contentType: ContentType
+    value: Record<string, unknown>
+  }
+  surface: 'web' | 'preview'
+}
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  !!value &&
-  typeof value === "object" &&
-  !Array.isArray(value) &&
-  !(value instanceof Date);
+  !!value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)
 
 const getAtPath = (value: unknown, path: string | undefined) => {
-  if (!path) return undefined;
+  if (!path) return undefined
 
-  return path.split(".").reduce<unknown>((current, segment) => {
-    if (!isRecord(current)) return undefined;
-    return current[segment];
-  }, value);
-};
+  return path.split('.').reduce<unknown>((current, segment) => {
+    if (!isRecord(current)) return undefined
+    return current[segment]
+  }, value)
+}
 
-const setAtPath = (
-  target: Record<string, unknown>,
-  path: string,
-  value: unknown,
-) => {
-  const segments = path.split(".");
-  let current = target;
+const setAtPath = (target: Record<string, unknown>, path: string, value: unknown) => {
+  const segments = path.split('.')
+  let current = target
 
   for (const [index, segment] of segments.entries()) {
     if (index === segments.length - 1) {
@@ -64,227 +57,176 @@ const setAtPath = (
         enumerable: true,
         value,
         writable: true,
-      });
-      return;
+      })
+      return
     }
 
-    const existing = current[segment];
-    const next = isRecord(existing) ? existing : {};
+    const existing = current[segment]
+    const next = isRecord(existing) ? existing : {}
     if (next !== existing) {
       Object.defineProperty(current, segment, {
         configurable: true,
         enumerable: true,
         value: next,
         writable: true,
-      });
+      })
     }
-    current = next;
+    current = next
   }
-};
+}
 
 const isPublicDocument = (value: Record<string, unknown>) =>
-  value._trashed !== true &&
-  value._visibility !== "draft" &&
-  value._visibility !== "trash";
+  value._trashed !== true && value._visibility !== 'draft' && value._visibility !== 'trash'
 
 const getAllowedSourceContentType = (sourceContentTypeName: string) => {
-  const contentType = getContentTypeByName(sourceContentTypeName);
+  const contentType = getContentTypeByName(sourceContentTypeName)
 
-  return isDynamicDataSourceContentTypeAllowed(contentType)
-    ? contentType
-    : undefined;
-};
-
-const fileSourcePaths = new Set([
-  "url",
-  "previewUrl",
-  "name",
-  "title",
-  "alt",
-  "mime",
-  "srcSet",
-  "width",
-  "height",
-  "size",
-]);
-const linkPaths = new Set(["href", "title"]);
+  return isDynamicDataSourceContentTypeAllowed(contentType) ? contentType : undefined
+}
 
 const getDynamicTargetField = (
   contentType: ContentType,
-  path: string,
-): ContentType["fields"][string] | undefined => {
-  const [fieldName, ...rest] = path.split(".");
-  const field = contentType.fields[fieldName];
+  path: string
+): ContentType['fields'][string] | undefined => {
+  const [fieldName, ...rest] = path.split('.')
+  const field = contentType.fields[fieldName]
   if (!field || !contentType.allowsDynamicBindingForField(fieldName)) {
-    return undefined;
+    return undefined
   }
 
-  if (rest.length === 0) return field;
+  if (rest.length === 0) return field
 
-  return field.meta.type === "Link" &&
-    rest.length === 1 &&
-    linkPaths.has(rest[0])
+  return rest.length === 1 &&
+    field.meta.capabilities.dynamic?.mapProperties === true &&
+    field.meta.capabilities.dynamic?.properties?.[rest[0]]
     ? field
-    : undefined;
-};
+    : undefined
+}
 
 const isDynamicSourcePathAllowed = (
   contentType: ContentType,
   path: string | undefined,
-  depth = 0,
+  depth = 0
 ): boolean => {
-  if (!path) return false;
+  if (!path) return false
 
-  const [fieldName, ...rest] = path.split(".");
-  const field = contentType.fields[fieldName];
+  const [fieldName, ...rest] = path.split('.')
+  const field = contentType.fields[fieldName]
   if (!field || !contentType.allowsDynamicBindingForField(fieldName)) {
-    return false;
+    return false
   }
 
-  if (rest.length === 0) return true;
+  if (rest.length === 0) return true
 
-  if (
-    field.meta.type === "Relation" &&
-    "contentType" in field &&
-    depth < 3
-  ) {
-    return isDynamicSourcePathAllowed(
-      field.contentType as ContentType,
-      rest.join("."),
-      depth + 1,
-    );
+  if (field.meta.capabilities.dynamic?.relation === true && 'contentType' in field && depth < 3) {
+    return isDynamicSourcePathAllowed(field.contentType as ContentType, rest.join('.'), depth + 1)
   }
 
-  if (field.meta.type === "File") {
-    return rest.length === 1 && fileSourcePaths.has(rest[0]);
-  }
-
-  if (field.meta.type === "Link") {
-    return rest.length === 1 && linkPaths.has(rest[0]);
-  }
-
-  return false;
-};
+  return rest.length === 1 && !!field.meta.capabilities.dynamic?.properties?.[rest[0]]
+}
 
 const getDynamicSourceField = (
   contentType: ContentType,
   path: string | undefined,
-  depth = 0,
-): ContentType["fields"][string] | undefined => {
-  if (!path) return undefined;
+  depth = 0
+): ContentType['fields'][string] | undefined => {
+  if (!path) return undefined
 
-  const [fieldName, ...rest] = path.split(".");
-  const field = contentType.fields[fieldName];
+  const [fieldName, ...rest] = path.split('.')
+  const field = contentType.fields[fieldName]
   if (!field || !contentType.allowsDynamicBindingForField(fieldName)) {
-    return undefined;
+    return undefined
   }
 
-  if (rest.length === 0) return field;
+  if (rest.length === 0) return field
 
-  if (
-    field.meta.type === "Relation" &&
-    "contentType" in field &&
-    depth < 3
-  ) {
-    return getDynamicSourceField(
-      field.contentType as ContentType,
-      rest.join("."),
-      depth + 1,
-    );
+  if (field.meta.capabilities.dynamic?.relation === true && 'contentType' in field && depth < 3) {
+    return getDynamicSourceField(field.contentType as ContentType, rest.join('.'), depth + 1)
   }
 
-  return undefined;
-};
+  return undefined
+}
 
-const isArraySourceField = (
-  field: ContentType["fields"][string] | undefined,
-) => {
-  if (!field) return false;
-  if (field.meta.type === "List" || field.meta.type === "Menu") return true;
-
-  return "isMultiple" in field.meta && field.meta.isMultiple === true;
-};
+const isArraySourceField = (field: ContentType['fields'][string] | undefined) => {
+  if (!field) return false
+  return field.meta.capabilities.valueKind === 'array'
+}
 
 const getRelationTarget = (
-  field: ContentType["fields"][string] | undefined,
+  field: ContentType['fields'][string] | undefined
 ): ContentType | undefined => {
-  if (!field || field.getIsTranslatable()) return undefined;
+  if (!field || field.getIsTranslatable()) return undefined
 
-  if (field.meta.type === "Relation" && "contentType" in field) {
-    return field.contentType as ContentType;
+  if (field.meta.capabilities.dynamic?.relation === true && 'contentType' in field) {
+    return field.contentType as ContentType
   }
 
-  if (field.meta.ui === "SimpleList" && "field" in field) {
-    const itemField = field.field as ContentType["fields"][string];
-    if (itemField.meta.type === "Relation" && "contentType" in itemField) {
-      return itemField.contentType as ContentType;
+  if (field.meta.capabilities.dynamic?.collection === 'homogeneous' && 'field' in field) {
+    const itemField = field.field as ContentType['fields'][string]
+    if (itemField.meta.capabilities.dynamic?.relation === true && 'contentType' in itemField) {
+      return itemField.contentType as ContentType
     }
   }
 
-  return undefined;
-};
+  return undefined
+}
 
 const getDocumentListItemContentType = (
-  field: ContentType["fields"][string] | undefined,
-  itemName?: string,
+  field: ContentType['fields'][string] | undefined,
+  itemName?: string
 ): ContentType | undefined => {
   if (!field || !isArraySourceField(field) || field.getIsTranslatable()) {
-    return undefined;
+    return undefined
   }
 
   if (
-    (field.meta.ui === "List" || field.meta.ui === "Iterator") &&
-    "fields" in field &&
+    field.meta.capabilities.dynamic?.collection === 'heterogeneous' &&
+    'fields' in field &&
     Array.isArray(field.fields)
   ) {
-    if (!itemName) return undefined;
+    if (!itemName) return undefined
 
-    const entry = field.fields.find((item) => item.name === itemName);
-    return entry ? getRelationTarget(entry.field) : undefined;
+    const entry = field.fields.find((item) => item.name === itemName)
+    return entry ? getRelationTarget(entry.field) : undefined
   }
 
-  return getRelationTarget(field);
-};
+  return getRelationTarget(field)
+}
 
-const getRouteKeyForSource = (
-  contentTypeName: string,
-  routeKey?: string,
-): string | undefined => {
-  if (routeKey) return routeKey;
+const getRouteKeyForSource = (contentTypeName: string, routeKey?: string): string | undefined => {
+  if (routeKey) return routeKey
 
   return getRakunBootstrapOptions()?.routes?.find(
-    (route) => route.contentType === contentTypeName && route.hasPage,
-  )?.key;
-};
+    (route) => route.contentType === contentTypeName && route.hasPage
+  )?.key
+}
 
-const resolveHref = async (
-  source: DynamicBindingSource,
-  sourceId: string,
-): Promise<unknown> => {
-  const routeKey = getRouteKeyForSource(source.contentType, source.routeKey);
-  if (!routeKey) return undefined;
+const resolveHref = async (source: DynamicBindingSource, sourceId: string): Promise<unknown> => {
+  const routeKey = getRouteKeyForSource(source.contentType, source.routeKey)
+  if (!routeKey) return undefined
 
-  return await getLink(routeKey, sourceId);
-};
+  return await getLink(routeKey, sourceId)
+}
 
 const loadSourceDocument = async (
   db: DBService,
-  source: DynamicBindingSource,
+  source: DynamicBindingSource
 ): Promise<Record<string, unknown> | undefined> => {
-  if (!source.id) return undefined;
+  if (!source.id) return undefined
 
-  const contentType = getContentTypeByName(source.contentType);
-  if (!contentType) return undefined;
+  const contentType = getContentTypeByName(source.contentType)
+  if (!contentType) return undefined
 
-  const item = await db.get(contentType, source.id).catch(() => undefined);
+  const item = await db.get(contentType, source.id).catch(() => undefined)
   if (!item || !isPublicDocument(item as Record<string, unknown>)) {
-    return undefined;
+    return undefined
   }
 
-  return (await populateRelations(
-    await populateLinks(item as DBOutput<ContentType>),
-  )) as Record<string, unknown>;
-};
+  return (await populateRelations(await populateFields(item as DBOutput<ContentType>))) as Record<
+    string,
+    unknown
+  >
+}
 
 const resolveSourceValue = async ({
   db,
@@ -294,147 +236,134 @@ const resolveSourceValue = async ({
   allowCurrentSource,
   contextSource,
 }: {
-  db: DBService;
-  source: DynamicBindingSource;
-  currentSource?: Record<string, unknown>;
-  currentContentType?: ContentType;
-  allowCurrentSource?: boolean;
-  contextSource?: ResolveOptions["contextSource"];
+  db: DBService
+  source: DynamicBindingSource
+  currentSource?: Record<string, unknown>
+  currentContentType?: ContentType
+  allowCurrentSource?: boolean
+  contextSource?: ResolveOptions['contextSource']
 }) => {
   const usesCurrentRecord =
     allowCurrentSource === true &&
     !source.id &&
     !!currentSource &&
-    source.contentType === currentContentType?.name;
-  const usesContextDocument =
-    !source.id && source.contentType === contextSource?.contentType.name;
+    source.contentType === currentContentType?.name
+  const usesContextDocument = !source.id && source.contentType === contextSource?.contentType.name
   const sourceContentType = usesCurrentRecord
     ? currentContentType
     : usesContextDocument
       ? contextSource?.contentType
-    : getAllowedSourceContentType(source.contentType);
+      : getAllowedSourceContentType(source.contentType)
   if (!sourceContentType) {
-    return undefined;
+    return undefined
   }
 
-  const sourceDocument =
-    usesCurrentRecord
-      ? currentSource
-      : usesContextDocument
-        ? contextSource?.value
-        : await loadSourceDocument(db, source);
-  if (!sourceDocument) return undefined;
+  const sourceDocument = usesCurrentRecord
+    ? currentSource
+    : usesContextDocument
+      ? contextSource?.value
+      : await loadSourceDocument(db, source)
+  if (!sourceDocument) return undefined
 
-  if (source.virtual === "href") {
-    const sourceId =
-      typeof sourceDocument._id === "string" ? sourceDocument._id : source.id;
-    return sourceId ? await resolveHref(source, sourceId) : undefined;
+  if (source.virtual === 'href') {
+    const sourceId = typeof sourceDocument._id === 'string' ? sourceDocument._id : source.id
+    return sourceId ? await resolveHref(source, sourceId) : undefined
   }
 
   if (!isDynamicSourcePathAllowed(sourceContentType, source.path)) {
-    return undefined;
+    return undefined
   }
 
-  return getAtPath(sourceDocument, source.path);
-};
+  return getAtPath(sourceDocument, source.path)
+}
 
 const isRelatedCollectionSource = (
-  source: DynamicListMapSource,
+  source: DynamicListMapSource
 ): source is DynamicRelatedCollectionSource =>
-  "kind" in source && source.kind === "relatedCollection";
+  'kind' in source && source.kind === 'relatedCollection'
 
-const isNestedListSource = (
-  source: DynamicListMapSource,
-): source is DynamicNestedListSource =>
-  "kind" in source && source.kind === "list";
+const isNestedListSource = (source: DynamicListMapSource): source is DynamicNestedListSource =>
+  'kind' in source && source.kind === 'list'
 
 const addPublicContentFilter = (query: Query): Query => ({
   ...query,
   filter: {
     ...query.filter,
     _trashed: { $ne: true },
-    _visibility: { $nin: ["draft", "trash"] },
+    _visibility: { $nin: ['draft', 'trash'] },
   },
-});
+})
 
-type DynamicQueryValueResolution =
-  | { success: true; value: unknown }
-  | { success: false };
+type DynamicQueryValueResolution = { success: true; value: unknown } | { success: false }
 
-const isDynamicQueryCurrentPathAllowed = (
-  contentType: ContentType,
-  path: string,
-) => path === "_id" || isDynamicSourcePathAllowed(contentType, path);
+const isDynamicQueryCurrentPathAllowed = (contentType: ContentType, path: string) =>
+  path === '_id' || isDynamicSourcePathAllowed(contentType, path)
 
 const resolveDynamicQueryValue = (
   value: unknown,
   currentItem: Record<string, unknown>,
   currentItemContentType: ContentType,
   currentDocument: Record<string, unknown>,
-  currentDocumentContentType: ContentType,
+  currentDocumentContentType: ContentType
 ): DynamicQueryValueResolution => {
-  const currentValue = DynamicQueryCurrentValueSchema.safeParse(value);
+  const currentValue = DynamicQueryCurrentValueSchema.safeParse(value)
   if (currentValue.success) {
-    const path = currentValue.data.$current;
+    const path = currentValue.data.$current
     if (!isDynamicQueryCurrentPathAllowed(currentItemContentType, path)) {
-      return { success: false };
+      return { success: false }
     }
 
-    const resolved = getAtPath(currentItem, path);
-    return resolved === undefined
-      ? { success: false }
-      : { success: true, value: resolved };
+    const resolved = getAtPath(currentItem, path)
+    return resolved === undefined ? { success: false } : { success: true, value: resolved }
   }
 
-  const documentValue = DynamicQueryDocumentValueSchema.safeParse(value);
+  const documentValue = DynamicQueryDocumentValueSchema.safeParse(value)
   if (documentValue.success) {
-    const path = documentValue.data.$document;
+    const path = documentValue.data.$document
     if (!isDynamicQueryCurrentPathAllowed(currentDocumentContentType, path)) {
-      return { success: false };
+      return { success: false }
     }
 
-    const resolved = getAtPath(currentDocument, path);
-    return resolved === undefined
-      ? { success: false }
-      : { success: true, value: resolved };
+    const resolved = getAtPath(currentDocument, path)
+    return resolved === undefined ? { success: false } : { success: true, value: resolved }
   }
 
   if (Array.isArray(value)) {
-    const items: unknown[] = [];
+    const items: unknown[] = []
     for (const item of value) {
       const resolved = resolveDynamicQueryValue(
         item,
         currentItem,
         currentItemContentType,
         currentDocument,
-        currentDocumentContentType,
-      );
-      if (!resolved.success) return resolved;
-      items.push(resolved.value);
+        currentDocumentContentType
+      )
+      if (!resolved.success) return resolved
+      items.push(resolved.value)
     }
 
-    return { success: true, value: items };
+    return { success: true, value: items }
   }
 
   if (isRecord(value) && !(value instanceof Date)) {
-    const entries: Array<[string, unknown]> = [];
+    const entries: Array<[string, unknown]> = []
     for (const [key, item] of Object.entries(value)) {
       const resolved = resolveDynamicQueryValue(
         item,
         currentItem,
         currentItemContentType,
         currentDocument,
-        currentDocumentContentType,
-      );
-      if (!resolved.success) return resolved;
-      entries.push([key, resolved.value]);
+        currentDocumentContentType
+      )
+      if (!resolved.success) return resolved
+      entries.push([key, resolved.value])
     }
 
-    return { success: true, value: Object.fromEntries(entries) };
+    return { success: true, value: Object.fromEntries(entries) }
   }
 
-  return { success: true, value };
-};
+  return { success: true, value }
+}
 
 export const resolveRelatedCollectionValue = async ({
   db,
@@ -442,40 +371,36 @@ export const resolveRelatedCollectionValue = async ({
   currentSource,
   currentContentType,
   populateDocument = async (sourceItem: DBOutput<ContentType>) =>
-    (await populateRelations(
-      await populateLinks(sourceItem),
-    )) as Record<string, unknown>,
+    (await populateRelations(await populateFields(sourceItem))) as Record<string, unknown>,
 }: {
-  db: DBService;
-  source: DynamicRelatedCollectionSource;
-  currentSource: Record<string, unknown>;
-  currentContentType: ContentType;
-  populateDocument?: (
-    sourceItem: DBOutput<ContentType>,
-  ) => Promise<Record<string, unknown>>;
+  db: DBService
+  source: DynamicRelatedCollectionSource
+  currentSource: Record<string, unknown>
+  currentContentType: ContentType
+  populateDocument?: (sourceItem: DBOutput<ContentType>) => Promise<Record<string, unknown>>
 }) => {
   if (!isDynamicDataSourceContentTypeAllowed(currentContentType)) {
-    return undefined;
+    return undefined
   }
 
-  const sourceId = currentSource._id;
-  if (typeof sourceId !== "string") return undefined;
+  const sourceId = currentSource._id
+  if (typeof sourceId !== 'string') return undefined
 
-  const relatedContentType = getAllowedSourceContentType(source.contentType);
-  if (!relatedContentType) return undefined;
+  const relatedContentType = getAllowedSourceContentType(source.contentType)
+  if (!relatedContentType) return undefined
 
-  const relationField = relatedContentType.fields[source.relation];
-  const relationTarget = getRelationTarget(relationField);
+  const relationField = relatedContentType.fields[source.relation]
+  const relationTarget = getRelationTarget(relationField)
   if (
     !relationTarget ||
     relationTarget.name !== currentContentType.name ||
     !relatedContentType.allowsDynamicBindingForField(source.relation)
   ) {
-    return undefined;
+    return undefined
   }
 
-  const sourceField = getDynamicSourceField(relatedContentType, source.path);
-  if (!isArraySourceField(sourceField)) return undefined;
+  const sourceField = getDynamicSourceField(relatedContentType, source.path)
+  if (!isArraySourceField(sourceField)) return undefined
 
   const query = addPublicContentFilter(
     parseSafeManagerQuery(relatedContentType, {
@@ -484,21 +409,19 @@ export const resolveRelatedCollectionValue = async ({
         limit: source.limit,
         sort: source.sort,
       },
-    }),
-  );
-  const sourceItems = (await db.list(relatedContentType, query)).items;
+    })
+  )
+  const sourceItems = (await db.list(relatedContentType, query)).items
   const values = await Promise.all(
     sourceItems.map(async (sourceItem) => {
-      const populated = await populateDocument(
-        sourceItem as DBOutput<ContentType>,
-      );
+      const populated = await populateDocument(sourceItem as DBOutput<ContentType>)
 
-      return getAtPath(populated, source.path);
-    }),
-  );
+      return getAtPath(populated, source.path)
+    })
+  )
 
-  return values.flatMap((value) => (Array.isArray(value) ? value : []));
-};
+  return values.flatMap((value) => (Array.isArray(value) ? value : []))
+}
 
 const resolveListMapSourceValue = async ({
   db,
@@ -508,16 +431,16 @@ const resolveListMapSourceValue = async ({
   currentContentType,
   contextSource,
 }: {
-  db: DBService;
-  source: DynamicListMapSource;
-  targetField?: ContentType["fields"][string];
-  currentSource: Record<string, unknown>;
-  currentContentType: ContentType;
-  contextSource?: ResolveOptions["contextSource"];
+  db: DBService
+  source: DynamicListMapSource
+  targetField?: ContentType['fields'][string]
+  currentSource: Record<string, unknown>
+  currentContentType: ContentType
+  contextSource?: ResolveOptions['contextSource']
 }): Promise<unknown> => {
   if (isNestedListSource(source)) {
     if (!targetField || !getDynamicListTarget(targetField, source.itemName)) {
-      return undefined;
+      return undefined
     }
 
     return await resolveListBinding({
@@ -527,7 +450,7 @@ const resolveListMapSourceValue = async ({
       currentDocument: currentSource,
       currentDocumentContentType: currentContentType,
       targetField,
-    });
+    })
   }
 
   if (isRelatedCollectionSource(source)) {
@@ -536,7 +459,7 @@ const resolveListMapSourceValue = async ({
       source,
       currentSource,
       currentContentType,
-    });
+    })
   }
 
   return await resolveSourceValue({
@@ -546,8 +469,8 @@ const resolveListMapSourceValue = async ({
     currentContentType,
     allowCurrentSource: true,
     contextSource,
-  });
-};
+  })
+}
 
 const resolveListBinding = async ({
   db,
@@ -557,345 +480,313 @@ const resolveListBinding = async ({
   currentDocumentContentType,
   targetField,
 }: {
-  db: DBService;
-  binding: DynamicListBinding;
-  contextSource?: ResolveOptions["contextSource"];
-  currentDocument: Record<string, unknown>;
-  currentDocumentContentType: ContentType;
-  targetField: ContentType["fields"][string];
+  db: DBService
+  binding: DynamicListBinding
+  contextSource?: ResolveOptions['contextSource']
+  currentDocument: Record<string, unknown>
+  currentDocumentContentType: ContentType
+  targetField: ContentType['fields'][string]
 }): Promise<unknown[] | undefined> => {
-  const documentSource = binding.source;
+  const documentSource = binding.source
   const rootDocumentSource = contextSource ?? {
     contentType: currentDocumentContentType,
     value: currentDocument,
-  };
+  }
   const sourceContentType = documentSource
     ? getContentTypeByName(binding.contentType)
-    : getAllowedSourceContentType(binding.contentType);
+    : getAllowedSourceContentType(binding.contentType)
   if (!sourceContentType) {
-    return undefined;
+    return undefined
   }
-  const target = getDynamicListTarget(targetField, binding.itemName);
-  if (!target) return undefined;
+  const target = getDynamicListTarget(targetField, binding.itemName)
+  if (!target) return undefined
 
-  let sourceItems: unknown[];
+  let sourceItems: unknown[]
 
   if (documentSource) {
-    if (
-      documentSource.contentType !== currentDocumentContentType.name
-    ) {
-      return undefined;
+    if (documentSource.contentType !== currentDocumentContentType.name) {
+      return undefined
     }
 
-    const sourceField = getDynamicSourceField(
-      currentDocumentContentType,
-      documentSource.path,
-    );
-    const itemContentType = getDocumentListItemContentType(
-      sourceField,
-      documentSource.itemName,
-    );
+    const sourceField = getDynamicSourceField(currentDocumentContentType, documentSource.path)
+    const itemContentType = getDocumentListItemContentType(sourceField, documentSource.itemName)
     if (itemContentType?.name !== sourceContentType.name) {
-      return undefined;
+      return undefined
     }
 
-    const value = getAtPath(currentDocument, documentSource.path);
-    if (!Array.isArray(value)) return undefined;
+    const value = getAtPath(currentDocument, documentSource.path)
+    if (!Array.isArray(value)) return undefined
 
     sourceItems = documentSource.itemName
       ? value.flatMap((item) =>
-          isRecord(item) &&
-          item.name === documentSource.itemName &&
-          "value" in item
+          isRecord(item) && item.name === documentSource.itemName && 'value' in item
             ? [item.value]
-            : [],
+            : []
         )
-      : value;
+      : value
   } else {
     const resolvedFilter = resolveDynamicQueryValue(
       binding.query?.filter ?? {},
       currentDocument,
       currentDocumentContentType,
       rootDocumentSource.value,
-      rootDocumentSource.contentType,
-    );
+      rootDocumentSource.contentType
+    )
     if (!resolvedFilter.success || !isRecord(resolvedFilter.value)) {
-      return [];
+      return []
     }
 
     const query = addPublicContentFilter(
       parseSafeManagerQuery(sourceContentType, {
         ...binding.query,
         filter: resolvedFilter.value,
-      }),
-    );
-    sourceItems = (await db.list(sourceContentType, query)).items;
+      })
+    )
+    sourceItems = (await db.list(sourceContentType, query)).items
   }
 
   const resolvedItems: Array<unknown | undefined> = await Promise.all(
-    sourceItems.map(async (
-      sourceItem,
-      index,
-    ): Promise<unknown | undefined> => {
-      if (!isRecord(sourceItem)) return undefined;
+    sourceItems.map(async (sourceItem, index): Promise<unknown | undefined> => {
+      if (!isRecord(sourceItem)) return undefined
 
       const populated = documentSource
         ? sourceItem
         : ((await populateRelations(
-            await populateLinks(sourceItem as DBOutput<ContentType>),
-          )) as Record<string, unknown>);
+            await populateFields(sourceItem as DBOutput<ContentType>)
+          )) as Record<string, unknown>)
       const mappedEntries = await Promise.all(
-        Object.entries(binding.map).map(async ([targetPath, source]) => [
-          targetPath,
-          await resolveListMapSourceValue({
-            db,
-            source,
-            targetField:
-              target.kind === "linkArray"
-                ? undefined
-                : getDynamicTargetField(target.contentType, targetPath),
-            currentSource: populated,
-            currentContentType: sourceContentType,
-            contextSource: rootDocumentSource,
-          }),
-        ] as const),
-      );
-      const mapped: Record<string, unknown> = {};
-      mappedEntries
-        .sort(
-          ([left], [right]) =>
-            left.split(".").length - right.split(".").length,
+        Object.entries(binding.map).map(
+          async ([targetPath, source]) =>
+            [
+              targetPath,
+              await resolveListMapSourceValue({
+                db,
+                source,
+                targetField:
+                  target.kind === 'linkArray'
+                    ? undefined
+                    : getDynamicTargetField(target.contentType, targetPath),
+                currentSource: populated,
+                currentContentType: sourceContentType,
+                contextSource: rootDocumentSource,
+              }),
+            ] as const
         )
-        .forEach(([targetPath, value]) => setAtPath(mapped, targetPath, value));
+      )
+      const mapped: Record<string, unknown> = {}
+      mappedEntries
+        .sort(([left], [right]) => left.split('.').length - right.split('.').length)
+        .forEach(([targetPath, value]) => setAtPath(mapped, targetPath, value))
 
-      if (target.kind === "linkArray") return mapped;
+      if (target.kind === 'linkArray') return mapped
 
       const targetValue = {
         _id:
-          typeof sourceItem._id === "string"
+          typeof sourceItem._id === 'string'
             ? `${binding.itemName}:${sourceItem._id}`
             : `${binding.itemName}:${index}`,
         _type: target.contentType.name,
         ...mapped,
-      };
+      }
 
-      if (target.kind === "relationArray") return targetValue;
+      if (target.kind === 'relationArray') return targetValue
 
       return {
         name: binding.itemName,
         value: targetValue,
-      };
-    }),
-  );
+      }
+    })
+  )
 
-  return resolvedItems.filter((item) => item !== undefined);
-};
+  return resolvedItems.filter((item) => item !== undefined)
+}
 
 const getBlocksTargetContentType = (
-  field: ContentType["fields"][string] | undefined,
-  itemName: string,
+  field: ContentType['fields'][string] | undefined,
+  itemName: string
 ) => {
-  if (!field || (field.meta.ui !== "List" && field.meta.ui !== "Iterator")) {
-    return undefined;
+  if (!field || field.meta.capabilities.dynamic?.collection !== 'heterogeneous') {
+    return undefined
   }
 
-  if (!("fields" in field) || !Array.isArray(field.fields)) {
-    return undefined;
+  if (!('fields' in field) || !Array.isArray(field.fields)) {
+    return undefined
   }
 
-  const entry = field.fields.find((item) => item.name === itemName);
+  const entry = field.fields.find((item) => item.name === itemName)
   if (
     !entry ||
-    entry.field.meta.type !== "Relation" ||
-    !("contentType" in entry.field)
+    entry.field.meta.capabilities.dynamic?.relation !== true ||
+    !('contentType' in entry.field)
   ) {
-    return undefined;
+    return undefined
   }
 
-  return entry.field.contentType as ContentType;
-};
+  return entry.field.contentType as ContentType
+}
 
 type DynamicListTarget =
   | {
-      kind: "blocks" | "relationArray";
-      contentType: ContentType;
+      kind: 'blocks' | 'relationArray'
+      contentType: ContentType
     }
   | {
-      kind: "linkArray";
-    };
+      kind: 'linkArray'
+    }
 
-const getSimpleListItemField = (
-  field: ContentType["fields"][string] | undefined,
-) => {
-  if (!field || field.meta.ui !== "SimpleList" || !("field" in field)) {
-    return undefined;
+const getSimpleListItemField = (field: ContentType['fields'][string] | undefined) => {
+  if (
+    !field ||
+    field.meta.capabilities.dynamic?.collection !== 'homogeneous' ||
+    !('field' in field)
+  ) {
+    return undefined
   }
 
-  return field.field as ContentType["fields"][string];
-};
+  return field.field as ContentType['fields'][string]
+}
 
 const getDynamicListTarget = (
-  field: ContentType["fields"][string] | undefined,
-  itemName: string,
+  field: ContentType['fields'][string] | undefined,
+  itemName: string
 ): DynamicListTarget | undefined => {
-  const blocksContentType = getBlocksTargetContentType(field, itemName);
+  const blocksContentType = getBlocksTargetContentType(field, itemName)
   if (blocksContentType) {
-    return { kind: "blocks", contentType: blocksContentType };
+    return { kind: 'blocks', contentType: blocksContentType }
   }
 
-  const itemField = getSimpleListItemField(field);
-  if (!itemField) return undefined;
+  const itemField = getSimpleListItemField(field)
+  if (!itemField) return undefined
 
-  if (
-    itemField.meta.type === "Relation" &&
-    "contentType" in itemField
-  ) {
-    const contentType = itemField.contentType as ContentType;
-    if (itemName !== contentType.name) return undefined;
+  if (itemField.meta.capabilities.dynamic?.relation === true && 'contentType' in itemField) {
+    const contentType = itemField.contentType as ContentType
+    if (itemName !== contentType.name) return undefined
 
     return {
-      kind: "relationArray",
+      kind: 'relationArray',
       contentType,
-    };
+    }
   }
 
-  return itemField.meta.type === "Link" && itemName === "Link"
-    ? { kind: "linkArray" }
-    : undefined;
-};
+  const itemTypeName = itemField.meta.editor ?? itemField.meta.type
+  return itemField.meta.capabilities.dynamic?.mapProperties === true &&
+    itemField.meta.capabilities.dynamic?.properties &&
+    itemName === itemTypeName
+    ? { kind: 'linkArray' }
+    : undefined
+}
 
 export const getDynamicListItemContentTypeName = (
-  field: ContentType["fields"][string] | undefined,
-  itemName: string,
+  field: ContentType['fields'][string] | undefined,
+  itemName: string
 ) => {
-  const target = getDynamicListTarget(field, itemName);
-  return target && target.kind !== "linkArray"
-    ? target.contentType.name
-    : itemName;
-};
+  const target = getDynamicListTarget(field, itemName)
+  return target && target.kind !== 'linkArray' ? target.contentType.name : itemName
+}
 
 const filterListBindingMap = (
   contentType: ContentType,
   fieldName: string,
-  binding: DynamicListBinding,
+  binding: DynamicListBinding
 ): DynamicListBinding => {
-  return filterListBindingForTarget(
-    contentType.fields[fieldName],
-    binding,
-  );
-};
+  return filterListBindingForTarget(contentType.fields[fieldName], binding)
+}
 
 const filterListBindingForTarget = (
-  targetField: ContentType["fields"][string] | undefined,
-  binding: DynamicListBinding,
+  targetField: ContentType['fields'][string] | undefined,
+  binding: DynamicListBinding
 ): DynamicListBinding => {
-  const target = getDynamicListTarget(targetField, binding.itemName);
-  if (!target) return { ...binding, map: {} };
+  const target = getDynamicListTarget(targetField, binding.itemName)
+  if (!target) return { ...binding, map: {} }
 
   return {
     ...binding,
     map: Object.fromEntries(
       Object.entries(binding.map).flatMap(([targetPath, source]) => {
-        if (target.kind === "linkArray") {
-          return linkPaths.has(targetPath) && !isNestedListSource(source)
+        if (target.kind === 'linkArray') {
+          return targetField &&
+            'field' in targetField &&
+            !!(targetField.field as ContentType['fields'][string]).meta.capabilities.dynamic
+              ?.properties?.[targetPath] &&
+            !isNestedListSource(source)
             ? [[targetPath, source]]
-            : [];
+            : []
         }
 
-        const field = getDynamicTargetField(target.contentType, targetPath);
+        const field = getDynamicTargetField(target.contentType, targetPath)
         if (!field) {
-          return [];
+          return []
         }
 
         if (!isNestedListSource(source)) {
-          return [[targetPath, source]];
+          return [[targetPath, source]]
         }
 
-        if (targetPath.includes(".")) return [];
+        if (targetPath.includes('.')) return []
 
-        const nestedTarget = getDynamicListTarget(field, source.itemName);
-        return nestedTarget
-          ? [[targetPath, filterListBindingForTarget(field, source)]]
-          : [];
-      }),
+        const nestedTarget = getDynamicListTarget(field, source.itemName)
+        return nestedTarget ? [[targetPath, filterListBindingForTarget(field, source)]] : []
+      })
     ),
-  };
-};
+  }
+}
 
 const getListItemStableKey = (item: unknown): string | undefined => {
-  if (!isRecord(item)) return undefined;
+  if (!isRecord(item)) return undefined
 
-  const name = typeof item.name === "string" ? item.name : "";
-  const value = item.value;
+  const name = typeof item.name === 'string' ? item.name : ''
+  const value = item.value
 
-  if (isRecord(value) && typeof value._id === "string") {
-    const id = value._id.startsWith(`${name}:`)
-      ? value._id.slice(name.length + 1)
-      : value._id;
-    return `${name}:${id}`;
+  if (isRecord(value) && typeof value._id === 'string') {
+    const id = value._id.startsWith(`${name}:`) ? value._id.slice(name.length + 1) : value._id
+    return `${name}:${id}`
   }
 
-  if (
-    isRecord(value) &&
-    isRecord(value.data) &&
-    typeof value.data._id === "string"
-  ) {
-    return `${name}:${value.data._id}`;
+  if (isRecord(value) && isRecord(value.data) && typeof value.data._id === 'string') {
+    return `${name}:${value.data._id}`
   }
 
-  return undefined;
-};
+  return undefined
+}
 
-const isListValueItem = (
-  item: unknown,
-): item is { name: string; value: unknown } =>
+const isListValueItem = (item: unknown): item is { name: string; value: unknown } =>
   isRecord(item) &&
-  typeof item.name === "string" &&
-  Object.prototype.hasOwnProperty.call(item, "value") &&
-  item.value !== undefined;
+  typeof item.name === 'string' &&
+  Object.prototype.hasOwnProperty.call(item, 'value') &&
+  item.value !== undefined
 
-export const mergeDynamicListItems = (
-  currentValue: unknown,
-  resolvedValue: unknown,
-) => {
-  const currentItems = Array.isArray(currentValue)
-    ? currentValue.filter(isListValueItem)
-    : [];
-  const resolvedItems = Array.isArray(resolvedValue)
-    ? resolvedValue.filter(isListValueItem)
-    : [];
-  const seen = new Set<string>();
-  const merged: unknown[] = [];
+export const mergeDynamicListItems = (currentValue: unknown, resolvedValue: unknown) => {
+  const currentItems = Array.isArray(currentValue) ? currentValue.filter(isListValueItem) : []
+  const resolvedItems = Array.isArray(resolvedValue) ? resolvedValue.filter(isListValueItem) : []
+  const seen = new Set<string>()
+  const merged: unknown[] = []
 
   for (const item of [...resolvedItems, ...currentItems]) {
-    const key = getListItemStableKey(item);
+    const key = getListItemStableKey(item)
     if (key) {
-      if (seen.has(key)) continue;
-      seen.add(key);
+      if (seen.has(key)) continue
+      seen.add(key)
     }
 
-    merged.push(item);
+    merged.push(item)
   }
 
-  return merged;
-};
+  return merged
+}
 
-export const mergeDynamicArrayItems = (
-  currentValue: unknown,
-  resolvedValue: unknown,
-) => {
-  const currentItems = Array.isArray(currentValue) ? currentValue : [];
-  const resolvedItems = Array.isArray(resolvedValue) ? resolvedValue : [];
-  const seenIds = new Set<string>();
+export const mergeDynamicArrayItems = (currentValue: unknown, resolvedValue: unknown) => {
+  const currentItems = Array.isArray(currentValue) ? currentValue : []
+  const resolvedItems = Array.isArray(resolvedValue) ? resolvedValue : []
+  const seenIds = new Set<string>()
 
   return [...resolvedItems, ...currentItems].filter((item) => {
-    if (!isRecord(item) || typeof item._id !== "string") return true;
-    if (seenIds.has(item._id)) return false;
+    if (!isRecord(item) || typeof item._id !== 'string') return true
+    if (seenIds.has(item._id)) return false
 
-    seenIds.add(item._id);
-    return true;
-  });
-};
+    seenIds.add(item._id)
+    return true
+  })
+}
 
 const resolveRecordBindings = async ({
   db,
@@ -903,20 +794,18 @@ const resolveRecordBindings = async ({
   value,
   contextSource,
 }: {
-  db: DBService;
-  contentType: ContentType;
-  value: Record<string, unknown>;
-  contextSource?: ResolveOptions["contextSource"];
+  db: DBService
+  contentType: ContentType
+  value: Record<string, unknown>
+  contextSource?: ResolveOptions['contextSource']
 }) => {
-  const bindings = getDynamicDocumentBindings(
-    value[DYNAMIC_BINDINGS_FIELD_NAME],
-  );
-  if (!bindings) return value;
+  const bindings = getDynamicDocumentBindings(value[DYNAMIC_BINDINGS_FIELD_NAME])
+  if (!bindings) return value
 
-  const next = { ...value };
+  const next = { ...value }
 
   for (const [field, source] of Object.entries(bindings.fields ?? {})) {
-    if (!contentType.allowsDynamicBindingForField(field)) continue;
+    if (!contentType.allowsDynamicBindingForField(field)) continue
 
     try {
       const resolved = await resolveSourceValue({
@@ -925,21 +814,21 @@ const resolveRecordBindings = async ({
         currentSource: value,
         currentContentType: contentType,
         contextSource,
-      });
+      })
       if (resolved !== undefined) {
-        next[field] = resolved;
+        next[field] = resolved
       }
     } catch (error) {
-      Logger.error("dynamicData: field binding failed", error as Error);
+      Logger.error('dynamicData: field binding failed', error as Error)
     }
   }
 
   for (const [field, binding] of Object.entries(bindings.lists ?? {})) {
-    if (!contentType.allowsDynamicBindingForField(field)) continue;
+    if (!contentType.allowsDynamicBindingForField(field)) continue
 
     try {
-      const targetField = contentType.fields[field];
-      const filteredBinding = filterListBindingMap(contentType, field, binding);
+      const targetField = contentType.fields[field]
+      const filteredBinding = filterListBindingMap(contentType, field, binding)
       const resolved = await resolveListBinding({
         db,
         binding: filteredBinding,
@@ -947,38 +836,31 @@ const resolveRecordBindings = async ({
         currentDocument: contextSource?.value ?? next,
         currentDocumentContentType: contextSource?.contentType ?? contentType,
         targetField,
-      });
+      })
       if (resolved !== undefined) {
         next[field] =
-          targetField.meta.ui === "SimpleList"
+          targetField.meta.capabilities.dynamic?.collection === 'homogeneous'
             ? mergeDynamicArrayItems(next[field], resolved)
-            : mergeDynamicListItems(next[field], resolved);
+            : mergeDynamicListItems(next[field], resolved)
       }
     } catch (error) {
-      Logger.error("dynamicData: list binding failed", error as Error);
+      Logger.error('dynamicData: list binding failed', error as Error)
     }
   }
 
-  return next;
-};
+  return next
+}
 
-export const resolveDynamicData = async <T>(
-  value: T,
-  options: ResolveOptions,
-): Promise<T> => {
+export const resolveDynamicData = async <T>(value: T, options: ResolveOptions): Promise<T> => {
   if (Array.isArray(value)) {
-    return (await Promise.all(
-      value.map((item) => resolveDynamicData(item, options)),
-    )) as T;
+    return (await Promise.all(value.map((item) => resolveDynamicData(item, options)))) as T
   }
 
-  if (!isRecord(value)) return value;
+  if (!isRecord(value)) return value
 
   const contentType =
     options.contentType ??
-    (typeof value._type === "string"
-      ? getContentTypeByName(value._type)
-      : undefined);
+    (typeof value._type === 'string' ? getContentTypeByName(value._type) : undefined)
   const boundValue = contentType
     ? await resolveRecordBindings({
         db: options.db,
@@ -986,7 +868,7 @@ export const resolveDynamicData = async <T>(
         value,
         contextSource: options.contextSource,
       })
-    : value;
+    : value
   const contextSource =
     options.contextSource ??
     (contentType
@@ -994,7 +876,7 @@ export const resolveDynamicData = async <T>(
           contentType,
           value: boundValue,
         }
-      : undefined);
+      : undefined)
 
   const entries = await Promise.all(
     Object.entries(boundValue).map(async ([key, item]) => [
@@ -1004,25 +886,25 @@ export const resolveDynamicData = async <T>(
         contextSource,
         contentType: undefined,
       }),
-    ]),
-  );
+    ])
+  )
 
-  return Object.fromEntries(entries) as T;
-};
+  return Object.fromEntries(entries) as T
+}
 
 export const stripDynamicBindings = <T>(value: T): T => {
   if (Array.isArray(value)) {
-    return value.map((item) => stripDynamicBindings(item)) as T;
+    return value.map((item) => stripDynamicBindings(item)) as T
   }
 
-  if (!isRecord(value)) return value;
+  if (!isRecord(value)) return value
 
   return Object.fromEntries(
     Object.entries(value)
       .filter(([key]) => key !== DYNAMIC_BINDINGS_FIELD_NAME)
-      .map(([key, item]) => [key, stripDynamicBindings(item)]),
-  ) as T;
-};
+      .map(([key, item]) => [key, stripDynamicBindings(item)])
+  ) as T
+}
 
 export const resolveContentOutput = async <T extends ContentType>({
   db,
@@ -1030,25 +912,25 @@ export const resolveContentOutput = async <T extends ContentType>({
   data,
   surface,
 }: {
-  db: DBService;
-  contentType: T;
-  data: DataPopulatedWithoutApiOnly<T>;
-  surface: "web" | "preview";
+  db: DBService
+  contentType: T
+  data: DataPopulatedWithoutApiOnly<T>
+  surface: 'web' | 'preview'
 }) => {
   const dynamicData = await resolveDynamicData(data, {
     db,
     contentType,
     surface,
-  });
+  })
   const hooked = await runOnGetHook({
     db,
     contentType,
     data: dynamicData,
     surface,
-  });
+  })
 
   const stripped = stripDynamicBindings(hooked)
   const breadcrums = getContentHookContext().route?.breadcrums ?? null
 
   return resolveBreadcrumsFields(contentType, stripped, breadcrums)
-};
+}

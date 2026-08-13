@@ -1,815 +1,762 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from 'bun:test'
 
-import ContentType from "../ContentType";
+import ContentType from '../ContentType'
 import {
   encodeContentTypeForManager,
   getContentTypesForManager,
   registerContentType,
-} from "../Registry";
-import {
-  ITERATOR_FIELD_NAME,
-  SEO_FIELD_NAME,
-  TEMPLATE_FIELD_NAME,
-} from "../systemFields";
-import { Fields, f } from "./index";
-import type { DataInput } from "../types";
+} from '../Registry'
+import { ITERATOR_FIELD_NAME, SEO_FIELD_NAME, TEMPLATE_FIELD_NAME } from '../systemFields'
+import { Fields, f } from './index'
+import type { DataInput } from '../types'
 
 const TypeRegressionCT = new ContentType({
-  name: "TypeRegression",
+  name: 'TypeRegression',
   fields: {
     slug: Fields.string().translatable().required(),
   },
-});
+})
 
-type TypeRegressionInput = DataInput<typeof TypeRegressionCT>;
+type TypeRegressionInput = DataInput<typeof TypeRegressionCT>
 
-const _singleWrappedSlug: TypeRegressionInput["slug"] = {
-  _tag: "Translatable",
-  en: "hello",
-};
+const _singleWrappedSlug: TypeRegressionInput['slug'] = {
+  _tag: 'Translatable',
+  en: 'hello',
+}
 
-const _nestedSlugIsRejected: TypeRegressionInput["slug"] = {
-  _tag: "Translatable",
+const _nestedSlugIsRejected: TypeRegressionInput['slug'] = {
+  _tag: 'Translatable',
   // @ts-expect-error Translatable fields should not be wrapped twice.
   en: {
-    _tag: "Translatable",
-    en: "hello",
+    _tag: 'Translatable',
+    en: 'hello',
   },
-};
+}
 
-describe("field type inference", () => {
-  it("exports f as the concise Fields alias", () => {
-    expect(f).toBe(Fields);
-  });
+describe('field type inference', () => {
+  it('exports f as the concise Fields alias', () => {
+    expect(f).toBe(Fields)
+  })
 
-  it("makes fields required by default and supports explicit optional fields", () => {
+  it('makes fields required by default and supports explicit optional fields', () => {
     const PresenceDefaults = new ContentType({
-      name: "PresenceDefaults",
+      name: 'PresenceDefaults',
       fields: {
         title: Fields.string(),
         description: Fields.string().optional(),
       },
-    });
-    const encoded = encodeContentTypeForManager(PresenceDefaults);
+    })
+    const encoded = encodeContentTypeForManager(PresenceDefaults)
 
-    expect(() =>
-      PresenceDefaults.validate({ _type: PresenceDefaults.name }),
-    ).toThrow("Required field is missing");
+    expect(() => PresenceDefaults.validate({ _type: PresenceDefaults.name })).toThrow(
+      'Required field is missing'
+    )
     expect(
       PresenceDefaults.validate({
         _type: PresenceDefaults.name,
-        title: "Required by default",
-      }).description,
-    ).toBeUndefined();
-    expect(encoded.fields.title.isRequired).toBe(true);
-    expect(encoded.fields.description.isRequired).toBe(false);
-  });
+        title: 'Required by default',
+      }).description
+    ).toBeUndefined()
+    expect(encoded.fields.title.isRequired).toBe(true)
+    expect(encoded.fields.description.isRequired).toBe(false)
+  })
 
-  it("keeps translatable string fields runtime-compatible", () => {
+  it('keeps translatable string fields runtime-compatible', () => {
     expect(
       TypeRegressionCT.getInputSchema().parse({
-        _type: "TypeRegression",
+        _type: 'TypeRegression',
         slug: _singleWrappedSlug,
-      }).slug,
-    ).toEqual(_singleWrappedSlug);
-  });
+      }).slug
+    ).toEqual(_singleWrappedSlug)
+  })
 
-  it("accepts direct URLs and internal route references in link fields", () => {
-    const link = Fields.link().required();
+  it('accepts direct URLs and internal route references in link fields', () => {
+    const link = Fields.link().required()
 
-    expect(
-      link.getInputSchema().safeParse("https://example.com/docs").success,
-    ).toBe(false);
-    expect(link.getSchema().parse("https://example.com/docs")).toBe(
-      "https://example.com/docs",
-    );
+    expect(link.getInputSchema().safeParse('https://example.com/docs').success).toBe(false)
+    expect(link.getSchema().parse('https://example.com/docs')).toBe('https://example.com/docs')
     expect(
       link.getInputSchema().parse({
-        routeId: "64f0c0000000000000000001",
-        contentTypeId: "64f0c0000000000000000002",
-        title: "Documentation",
-      }),
+        routeId: '64f0c0000000000000000001',
+        contentTypeId: '64f0c0000000000000000002',
+        title: 'Documentation',
+      })
     ).toEqual({
-      routeId: "64f0c0000000000000000001",
-      contentTypeId: "64f0c0000000000000000002",
-      title: "Documentation",
-    });
+      routeId: '64f0c0000000000000000001',
+      contentTypeId: '64f0c0000000000000000002',
+      title: 'Documentation',
+    })
     expect(
       link.getInputSchema().parse({
-        href: "https://example.com/docs",
-        title: "Documentation",
-      }),
+        href: 'https://example.com/docs',
+        title: 'Documentation',
+      })
     ).toEqual({
-      href: "https://example.com/docs",
-      title: "Documentation",
-    });
+      href: 'https://example.com/docs',
+      title: 'Documentation',
+    })
     expect(
       link.getOutputSchema().parse({
-        href: "/docs/",
-        title: "Documentation",
-      }),
-    ).toEqual({ href: "/docs/", title: "Documentation" });
-    expect(link.getOutputSchema().parse("/legacy-docs/")).toEqual({
-      href: "/legacy-docs/",
-      title: "",
-    });
-    expect(link.getInputSchema().safeParse("").success).toBe(false);
-  });
+        href: '/docs/',
+        title: 'Documentation',
+      })
+    ).toEqual({ href: '/docs/', title: 'Documentation' })
+    expect(link.getOutputSchema().parse('/legacy-docs/')).toEqual({
+      href: '/legacy-docs/',
+      title: '',
+    })
+    expect(link.getInputSchema().safeParse('').success).toBe(false)
+  })
 
-  it("validates recursive menu fields and exposes their manager type", () => {
+  it('validates recursive menu fields and exposes their manager type', () => {
     const Navigation = new ContentType({
-      name: "Navigation",
+      name: 'Navigation',
       fields: {
         items: Fields.menu(),
       },
-    });
+    })
     const menu = [
       {
-        href: "/products/",
-        title: "Products",
+        href: '/products/',
+        title: 'Products',
         children: [
           {
-            routeId: "64f0c0000000000000000001",
-            contentTypeId: "64f0c0000000000000000002",
-            title: "Featured",
+            routeId: '64f0c0000000000000000001',
+            contentTypeId: '64f0c0000000000000000002',
+            title: 'Featured',
             children: [],
           },
         ],
       },
-    ];
+    ]
 
     expect(
       Navigation.getInputSchema().parse({
         _type: Navigation.name,
         items: menu,
-      }).items,
-    ).toEqual(menu);
+      }).items
+    ).toEqual(menu)
     expect(
-      Navigation.fields.items.getInputSchema().safeParse([
-        { href: "/missing-children/", title: "Invalid" },
-      ]).success,
-    ).toBe(false);
-    expect(
-      encodeContentTypeForManager(Navigation).fields.items.config,
-    ).toEqual({ type: "Menu", ui: "Menu" });
-  });
+      Navigation.fields.items
+        .getInputSchema()
+        .safeParse([{ href: '/missing-children/', title: 'Invalid' }]).success
+    ).toBe(false)
+    expect(encodeContentTypeForManager(Navigation).fields.items.config).toEqual({
+      type: 'Menu',
+      ui: 'Menu',
+      capabilities: { valueKind: 'array' },
+    })
+  })
 
-  it("normalizes serialized date inputs and keeps persisted dates strict", () => {
-    const serializedDate = "2026-08-06T00:00:00.000Z";
-    const serializedDateTime = "2026-08-15T15:58:00.000Z";
-    const date = Fields.date().type("Date").required();
-    const dateTime = Fields.date().type("DateTime").required();
-    const time = Fields.date().type("Time").required();
+  it('normalizes serialized date inputs and keeps persisted dates strict', () => {
+    const serializedDate = '2026-08-06T00:00:00.000Z'
+    const serializedDateTime = '2026-08-15T15:58:00.000Z'
+    const date = Fields.date().type('Date').required()
+    const dateTime = Fields.date().type('DateTime').required()
+    const time = Fields.date().type('Time').required()
 
-    expect(date.getInputSchema().parse(serializedDate)).toEqual(
-      new Date(serializedDate),
-    );
+    expect(date.getInputSchema().parse(serializedDate)).toEqual(new Date(serializedDate))
     expect(dateTime.getInputSchema().parse(serializedDateTime)).toEqual(
-      new Date(serializedDateTime),
-    );
-    expect(time.getInputSchema().parse("17:59:46")).toBe("17:59:46");
+      new Date(serializedDateTime)
+    )
+    expect(time.getInputSchema().parse('17:59:46')).toBe('17:59:46')
 
-    expect(date.getSchema().safeParse(serializedDate).success).toBe(false);
-    expect(dateTime.getSchema().safeParse(serializedDateTime).success).toBe(
-      false,
-    );
-    expect(date.getInputSchema().safeParse("2026-08-06").success).toBe(false);
-    expect(time.getInputSchema().safeParse("not-a-time").success).toBe(false);
-  });
+    expect(date.getSchema().safeParse(serializedDate).success).toBe(false)
+    expect(dateTime.getSchema().safeParse(serializedDateTime).success).toBe(false)
+    expect(date.getInputSchema().safeParse('2026-08-06').success).toBe(false)
+    expect(time.getInputSchema().safeParse('not-a-time').success).toBe(false)
+  })
 
-  it("limits arrays and multiple fields by item count", () => {
+  it('limits arrays and multiple fields by item count', () => {
     const LimitedItem = new ContentType({
-      name: "LimitedItem",
+      name: 'LimitedItem',
       fields: {
         title: Fields.string().required(),
       },
-    });
+    })
     const LimitedCollections = new ContentType({
-      name: "LimitedCollections",
+      name: 'LimitedCollections',
       fields: {
         tags: Fields.array(Fields.string().required()).min(2).max(3).required(),
-        items: Fields.relation(LimitedItem, "existing")
-          .multiple()
-          .required()
-          .min(1)
-          .max(2),
+        items: Fields.relation(LimitedItem, 'existing').multiple().required().min(1).max(2),
         files: Fields.file().multiple().min(1).max(2),
-        choices: Fields.select(["one", "two", "three"])
-          .multiple()
-          .min(1)
-          .max(2),
-        references: Fields.contentReference(LimitedItem.name)
-          .multiple()
-          .min(1)
-          .max(2),
+        choices: Fields.select(['one', 'two', 'three']).multiple().min(1).max(2),
+        references: Fields.contentReference(LimitedItem.name).multiple().min(1).max(2),
       },
-    });
-    const tags = LimitedCollections.fields.tags;
-    const items = LimitedCollections.fields.items;
-    const encoded = encodeContentTypeForManager(LimitedCollections);
+    })
+    const tags = LimitedCollections.fields.tags
+    const items = LimitedCollections.fields.items
+    const encoded = encodeContentTypeForManager(LimitedCollections)
 
-    expect(tags.getInputSchema().safeParse(["one"]).success).toBe(false);
-    expect(tags.getInputSchema().safeParse(["one", "two"]).success).toBe(
-      true,
-    );
-    expect(
-      tags.getSchema().safeParse(["one", "two", "three", "four"]).success,
-    ).toBe(false);
+    expect(tags.getInputSchema().safeParse(['one']).success).toBe(false)
+    expect(tags.getInputSchema().safeParse(['one', 'two']).success).toBe(true)
+    expect(tags.getSchema().safeParse(['one', 'two', 'three', 'four']).success).toBe(false)
     expect(
       items.getInputSchema().safeParse([
         {
-          type: "existing",
-          _id: "64f0c0000000000000000001",
+          type: 'existing',
+          _id: '64f0c0000000000000000001',
           contentType: LimitedItem.name,
         },
         {
-          type: "existing",
-          _id: "64f0c0000000000000000002",
+          type: 'existing',
+          _id: '64f0c0000000000000000002',
           contentType: LimitedItem.name,
         },
         {
-          type: "existing",
-          _id: "64f0c0000000000000000003",
+          type: 'existing',
+          _id: '64f0c0000000000000000003',
           contentType: LimitedItem.name,
         },
-      ]).success,
-    ).toBe(false);
-    expect(encoded.fields.tags.minItems).toBe(2);
-    expect(encoded.fields.tags.maxItems).toBe(3);
-    expect(encoded.fields.items.minItems).toBe(1);
-    expect(encoded.fields.items.maxItems).toBe(2);
+      ]).success
+    ).toBe(false)
+    expect(encoded.fields.tags.minItems).toBe(2)
+    expect(encoded.fields.tags.maxItems).toBe(3)
+    expect(encoded.fields.items.minItems).toBe(1)
+    expect(encoded.fields.items.maxItems).toBe(2)
     expect(
       LimitedCollections.fields.files.getInputSchema().safeParse([
         {
-          type: "existing",
-          _id: "64f0c0000000000000000001",
-          contentType: "Media",
+          type: 'existing',
+          _id: '64f0c0000000000000000001',
+          contentType: 'Media',
         },
         {
-          type: "existing",
-          _id: "64f0c0000000000000000002",
-          contentType: "Media",
+          type: 'existing',
+          _id: '64f0c0000000000000000002',
+          contentType: 'Media',
         },
         {
-          type: "existing",
-          _id: "64f0c0000000000000000003",
-          contentType: "Media",
+          type: 'existing',
+          _id: '64f0c0000000000000000003',
+          contentType: 'Media',
         },
-      ]).success,
-    ).toBe(false);
-    expect(
-      LimitedCollections.fields.choices.getInputSchema().safeParse([]).success,
-    ).toBe(false);
+      ]).success
+    ).toBe(false)
+    expect(LimitedCollections.fields.choices.getInputSchema().safeParse([]).success).toBe(false)
     expect(
       LimitedCollections.fields.references
         .getInputSchema()
         .safeParse([
-          "64f0c0000000000000000001",
-          "64f0c0000000000000000002",
-          "64f0c0000000000000000003",
-        ]).success,
-    ).toBe(false);
-    expect(encoded.fields.files.maxItems).toBe(2);
-    expect(encoded.fields.choices.minItems).toBe(1);
-    expect(encoded.fields.references.maxItems).toBe(2);
-  });
+          '64f0c0000000000000000001',
+          '64f0c0000000000000000002',
+          '64f0c0000000000000000003',
+        ]).success
+    ).toBe(false)
+    expect(encoded.fields.files.maxItems).toBe(2)
+    expect(encoded.fields.choices.minItems).toBe(1)
+    expect(encoded.fields.references.maxItems).toBe(2)
+  })
 
-  it("adds iterator fields from content type params", () => {
+  it('adds iterator fields from content type params', () => {
     const IteratorParamCT = new ContentType({
-      name: "IteratorParam",
+      name: 'IteratorParam',
       fields: {
         title: Fields.string().required(),
       },
       iterator: [
         {
           contentType: TypeRegressionCT,
-          type: "existing",
+          type: 'existing',
         },
       ],
-    });
+    })
 
-    expect(IteratorParamCT.hasIterator).toBe(true);
-    expect(IteratorParamCT.fields[ITERATOR_FIELD_NAME]?.meta.ui).toBe(
-      "Iterator",
-    );
-    expect(
-      IteratorParamCT.fields[ITERATOR_FIELD_NAME]?.getIsRequired(),
-    ).toBe(false);
+    expect(IteratorParamCT.hasIterator).toBe(true)
+    expect(IteratorParamCT.fields[ITERATOR_FIELD_NAME]?.meta.ui).toBe('Iterator')
+    expect(IteratorParamCT.fields[ITERATOR_FIELD_NAME]?.getIsRequired()).toBe(false)
     expect(
       IteratorParamCT.validate({
-        _type: "IteratorParam",
-        title: "Page without modules",
-      })[ITERATOR_FIELD_NAME],
-    ).toBeUndefined();
+        _type: 'IteratorParam',
+        title: 'Page without modules',
+      })[ITERATOR_FIELD_NAME]
+    ).toBeUndefined()
 
     expect(
       IteratorParamCT.validate({
-        _type: "IteratorParam",
-        title: "Page",
+        _type: 'IteratorParam',
+        title: 'Page',
         [ITERATOR_FIELD_NAME]: [
           {
             name: TypeRegressionCT.name,
             value: {
-              type: "existing",
-              _id: "64f0c0000000000000000001",
+              type: 'existing',
+              _id: '64f0c0000000000000000001',
               contentType: TypeRegressionCT.name,
             },
             visibleWhen: {
-              field: "title",
-              operator: "notEmpty",
+              field: 'title',
+              operator: 'notEmpty',
             },
           },
         ],
-      })[ITERATOR_FIELD_NAME]?.[0]?.visibleWhen,
+      })[ITERATOR_FIELD_NAME]?.[0]?.visibleWhen
     ).toEqual({
-      field: "title",
-      operator: "notEmpty",
-    });
+      field: 'title',
+      operator: 'notEmpty',
+    })
 
     expect(() =>
       IteratorParamCT.validate({
-        _type: "IteratorParam",
-        title: "Page",
+        _type: 'IteratorParam',
+        title: 'Page',
         [ITERATOR_FIELD_NAME]: [
           {
             name: TypeRegressionCT.name,
             value: {
-              type: "existing",
-              _id: "64f0c0000000000000000001",
+              type: 'existing',
+              _id: '64f0c0000000000000000001',
               contentType: TypeRegressionCT.name,
             },
             visibleWhen: {
-              field: "title",
-              operator: "unknown",
+              field: 'title',
+              operator: 'unknown',
             },
           },
         ],
-      }),
-    ).toThrow();
-  });
+      })
+    ).toThrow()
+  })
 
-  it("enables templates from an iterator and encodes the same modules", () => {
+  it('enables templates from an iterator and encodes the same modules', () => {
     const InvalidTemplate = new ContentType({
-      name: "InvalidTemplate",
+      name: 'InvalidTemplate',
       fields: {},
-    });
-    expect(() => InvalidTemplate.enableTemplate()).toThrow(
-      "require ContentType.iterator",
-    );
+    })
+    expect(() => InvalidTemplate.enableTemplate()).toThrow('require ContentType.iterator')
 
     const TemplateCT = new ContentType({
-      name: "TemplateParam",
+      name: 'TemplateParam',
       fields: {},
       iterator: [
         {
           contentType: TypeRegressionCT,
-          type: "new",
+          type: 'new',
         },
       ],
-    }).enableTemplate();
+    }).enableTemplate()
 
-    const encoded = encodeContentTypeForManager(TemplateCT);
-    expect(TemplateCT.hasTemplate).toBe(true);
-    expect(encoded.hasTemplate).toBe(true);
-    expect(encoded.templateField).toBeDefined();
+    const encoded = encodeContentTypeForManager(TemplateCT)
+    expect(TemplateCT.hasTemplate).toBe(true)
+    expect(encoded.hasTemplate).toBe(true)
+    expect(encoded.templateField).toBeDefined()
     expect(
       (encoded.templateField as { fields: Array<{ name: string }> }).fields.map(
-        (entry) => entry.name,
-      ),
-    ).toContain(TypeRegressionCT.name);
-    expect(TemplateCT.apiOnly().hasTemplate).toBe(true);
-  });
+        (entry) => entry.name
+      )
+    ).toContain(TypeRegressionCT.name)
+    expect(TemplateCT.apiOnly().hasTemplate).toBe(true)
+  })
 
-  it("allows new iterator modules to be saved as existing relations", () => {
+  it('allows new iterator modules to be saved as existing relations', () => {
     const IteratorParamCT = new ContentType({
-      name: "IteratorNewToExisting",
+      name: 'IteratorNewToExisting',
       fields: {
         title: Fields.string().required(),
       },
       iterator: [
         {
           contentType: TypeRegressionCT,
-          type: "new",
+          type: 'new',
         },
       ],
-    });
+    })
 
     expect(
       IteratorParamCT.validate({
-        _type: "IteratorNewToExisting",
-        title: "Page",
+        _type: 'IteratorNewToExisting',
+        title: 'Page',
         [ITERATOR_FIELD_NAME]: [
           {
             name: TypeRegressionCT.name,
             value: {
-              type: "existing",
-              _id: "64f0c0000000000000000001",
+              type: 'existing',
+              _id: '64f0c0000000000000000001',
               contentType: TypeRegressionCT.name,
             },
           },
         ],
-      })[ITERATOR_FIELD_NAME]?.[0]?.value.type,
-    ).toBe("existing");
-  });
+      })[ITERATOR_FIELD_NAME]?.[0]?.value.type
+    ).toBe('existing')
+  })
 
-  it("allows required fields to be supplied by dynamic bindings", () => {
+  it('allows required fields to be supplied by dynamic bindings', () => {
     const DynamicBindingCT = new ContentType({
-      name: "DynamicBindingCT",
+      name: 'DynamicBindingCT',
       fields: {
         title: Fields.string().required(),
       },
-    });
+    })
 
     expect(
       DynamicBindingCT.validate({
-        _type: "DynamicBindingCT",
+        _type: 'DynamicBindingCT',
         _bindings: {
           fields: {
             title: {
-              contentType: "Article",
-              id: "64f0c0000000000000000001",
-              path: "title",
+              contentType: 'Article',
+              id: '64f0c0000000000000000001',
+              path: 'title',
             },
           },
         },
-      })._bindings?.fields?.title?.path,
-    ).toBe("title");
-  });
+      })._bindings?.fields?.title?.path
+    ).toBe('title')
+  })
 
-  it("accepts direct and item mappings for required structured arrays", () => {
+  it('accepts direct and item mappings for required structured arrays', () => {
     const DynamicArrayItem = new ContentType({
-      name: "DynamicArrayItem",
+      name: 'DynamicArrayItem',
       fields: {
         title: Fields.string().required(),
       },
-    });
+    })
     const DynamicArrays = new ContentType({
-      name: "DynamicArrays",
+      name: 'DynamicArrays',
       fields: {
         links: Fields.array(Fields.link().required()).required(),
-        relations: Fields.relation(DynamicArrayItem, "new")
-          .multiple()
-          .required(),
+        relations: Fields.relation(DynamicArrayItem, 'new').multiple().required(),
       },
-    });
+    })
 
     const parsed = DynamicArrays.validate({
       _type: DynamicArrays.name,
       _bindings: {
         fields: {
           links: {
-            contentType: "Navigation",
-            path: "links",
+            contentType: 'Navigation',
+            path: 'links',
           },
         },
         lists: {
           relations: {
-            contentType: "Article",
+            contentType: 'Article',
             itemName: DynamicArrayItem.name,
             map: {
               title: {
-                contentType: "Article",
-                path: "title",
+                contentType: 'Article',
+                path: 'title',
               },
             },
           },
         },
       },
-    });
+    })
 
-    expect(parsed._bindings?.fields?.links?.path).toBe("links");
-    expect(parsed._bindings?.lists?.relations?.itemName).toBe(
-      DynamicArrayItem.name,
-    );
-  });
+    expect(parsed._bindings?.fields?.links?.path).toBe('links')
+    expect(parsed._bindings?.lists?.relations?.itemName).toBe(DynamicArrayItem.name)
+  })
 
-  it("keeps dynamic required fields required without a binding", () => {
+  it('keeps dynamic required fields required without a binding', () => {
     const DynamicRequiredCT = new ContentType({
-      name: "DynamicRequiredCT",
+      name: 'DynamicRequiredCT',
       fields: {
         title: Fields.string().required(),
       },
-    });
+    })
 
     expect(() =>
       DynamicRequiredCT.validate({
-        _type: "DynamicRequiredCT",
-      }),
-    ).toThrow("Required field is missing");
-  });
+        _type: 'DynamicRequiredCT',
+      })
+    ).toThrow('Required field is missing')
+  })
 
-  it("strips dynamic bindings when fields opt out", () => {
+  it('strips dynamic bindings when fields opt out', () => {
     const ClosedBindingCT = new ContentType({
-      name: "ClosedBindingCT",
+      name: 'ClosedBindingCT',
       fields: {
         title: Fields.string().required().noDynamic(),
       },
-    });
+    })
 
     const parsed = ClosedBindingCT.validate({
-      _type: "ClosedBindingCT",
-      title: "Manual",
+      _type: 'ClosedBindingCT',
+      title: 'Manual',
       _bindings: {
         fields: {
           title: {
-            contentType: "Article",
-            id: "64f0c0000000000000000001",
-            path: "title",
+            contentType: 'Article',
+            id: '64f0c0000000000000000001',
+            path: 'title',
           },
         },
       },
-    });
+    })
 
-    expect("_bindings" in parsed).toBe(false);
-  });
+    expect('_bindings' in parsed).toBe(false)
+  })
 
-  it("rejects public fields that use reserved system fields", () => {
+  it('rejects public fields that use reserved system fields', () => {
     expect(
       () =>
         new ContentType({
-          name: "ReservedIterator",
+          name: 'ReservedIterator',
           fields: {
             [ITERATOR_FIELD_NAME]: Fields.string(),
           },
-        }),
-    ).toThrow("reserved");
+        })
+    ).toThrow('reserved')
 
     expect(
       () =>
         new ContentType({
-          name: "ReservedTemplate",
+          name: 'ReservedTemplate',
           fields: {
             [TEMPLATE_FIELD_NAME]: Fields.boolean(),
           },
-        }),
-    ).toThrow("reserved");
+        })
+    ).toThrow('reserved')
 
     expect(
       () =>
         new ContentType({
-          name: "ReservedSeo",
+          name: 'ReservedSeo',
           fields: {
             [SEO_FIELD_NAME]: Fields.string(),
           },
-        }),
-    ).toThrow("reserved");
+        })
+    ).toThrow('reserved')
 
     expect(
       () =>
         new ContentType({
-          name: "DirectIterator",
+          name: 'DirectIterator',
           fields: {
-            modules: Fields.iterator([
-              { contentType: TypeRegressionCT, type: "existing" },
-            ]),
+            modules: Fields.iterator([{ contentType: TypeRegressionCT, type: 'existing' }]),
           },
-        }),
-    ).toThrow("ContentType.iterator");
-  });
+        })
+    ).toThrow('ContentType.iterator')
+  })
 
-  it("adds conditions to fields and keeps them through modifiers", () => {
-    const condition = { field: "intent", equals: "x" } as const;
+  it('adds conditions to fields and keeps them through modifiers', () => {
+    const condition = { field: 'intent', equals: 'x' } as const
     const fields = [
       Fields.string(),
-      Fields.select(["x", "y"] as const),
+      Fields.select(['x', 'y'] as const),
       Fields.number(),
       Fields.boolean(),
       Fields.date(),
       Fields.link(),
       Fields.file(),
-      Fields.contentReference("Page"),
+      Fields.contentReference('Page'),
       Fields.selfRelation(),
       Fields.array(Fields.string()),
-      Fields.blocks([{ name: "block", field: Fields.string() }]),
-      Fields.iterator([{ contentType: TypeRegressionCT, type: "existing" }]),
-    ];
+      Fields.blocks([{ name: 'block', field: Fields.string() }]),
+      Fields.iterator([{ contentType: TypeRegressionCT, type: 'existing' }]),
+    ]
 
     for (const field of fields) {
       expect(
-        field
-          .condition(condition)
-          .required()
-          .translatable()
-          .noDynamic()
-          .getCondition(),
-      ).toEqual(condition);
-      expect(field.noDynamic().getIsDynamic()).toBe(false);
+        field.condition(condition).required().translatable().noDynamic().getCondition()
+      ).toEqual(condition)
+      expect(field.noDynamic().getIsDynamic()).toBe(false)
     }
-  });
+  })
 
-  it("encodes field conditions for the manager", () => {
-    const condition = { field: "intent", equals: "x" } as const;
+  it('encodes field conditions for the manager', () => {
+    const condition = { field: 'intent', equals: 'x' } as const
     const ConditionEncodedCT = new ContentType({
-      name: "ConditionEncoded",
+      name: 'ConditionEncoded',
       fields: {
-        intent: Fields.select(["x", "y"] as const),
+        intent: Fields.select(['x', 'y'] as const),
         enabled: Fields.boolean().condition(condition),
       },
-    });
+    })
 
-    registerContentType(ConditionEncodedCT);
+    registerContentType(ConditionEncodedCT)
 
     const encoded = getContentTypesForManager().find(
-      (contentType) => contentType.name === ConditionEncodedCT.name,
-    );
+      (contentType) => contentType.name === ConditionEncodedCT.name
+    )
 
-    expect(encoded?.fields.enabled.condition).toEqual(condition);
-  });
+    expect(encoded?.fields.enabled.condition).toEqual(condition)
+  })
 
-  it("encodes field descriptions for the manager", () => {
+  it('encodes field descriptions for the manager', () => {
     const DescriptionEncodedCT = new ContentType({
-      name: "DescriptionEncoded",
+      name: 'DescriptionEncoded',
       fields: {
-        title: Fields.string().description("Shown below the field label."),
+        title: Fields.string().description('Shown below the field label.'),
       },
-    });
+    })
 
-    registerContentType(DescriptionEncodedCT);
+    registerContentType(DescriptionEncodedCT)
 
     const encoded = getContentTypesForManager().find(
-      (contentType) => contentType.name === DescriptionEncodedCT.name,
-    );
+      (contentType) => contentType.name === DescriptionEncodedCT.name
+    )
 
-    expect(encoded?.fields.title.description).toBe(
-      "Shown below the field label.",
-    );
-  });
+    expect(encoded?.fields.title.description).toBe('Shown below the field label.')
+  })
 
-  it("encodes dynamic opt-out for the manager", () => {
+  it('encodes dynamic opt-out for the manager', () => {
     const DynamicOptOutEncodedCT = new ContentType({
-      name: "DynamicOptOutEncoded",
+      name: 'DynamicOptOutEncoded',
       fields: {
         title: Fields.string().noDynamic(),
       },
-    });
+    })
 
-    registerContentType(DynamicOptOutEncodedCT);
+    registerContentType(DynamicOptOutEncodedCT)
 
     const encoded = getContentTypesForManager().find(
-      (contentType) => contentType.name === DynamicOptOutEncodedCT.name,
-    );
+      (contentType) => contentType.name === DynamicOptOutEncodedCT.name
+    )
 
-    expect(encoded?.fields.title.isDynamic).toBe(false);
-  });
+    expect(encoded?.fields.title.isDynamic).toBe(false)
+  })
 
-  it("encodes automatic SEO bindings for string fields", () => {
+  it('encodes automatic SEO bindings for string fields', () => {
     const SeoBindingEncodedCT = new ContentType({
-      name: "SeoBindingEncoded",
+      name: 'SeoBindingEncoded',
       fields: {
-        title: Fields.string().required().seo("title"),
+        title: Fields.string().required().seo('title'),
       },
-    });
+    })
 
-    registerContentType(SeoBindingEncodedCT);
+    registerContentType(SeoBindingEncodedCT)
 
     const encoded = getContentTypesForManager().find(
-      (contentType) => contentType.name === SeoBindingEncodedCT.name,
-    );
+      (contentType) => contentType.name === SeoBindingEncodedCT.name
+    )
 
-    expect(encoded?.fields.title.config.seo).toBe("title");
-  });
+    expect(encoded?.fields.title.config.seo).toBe('title')
+  })
 
-  it("encodes module picker metadata for the manager", () => {
+  it('encodes module picker metadata for the manager', () => {
     const ModulePickerEncodedCT = new ContentType({
-      name: "ModulePickerEncoded",
+      name: 'ModulePickerEncoded',
       modulePicker: {
-        title: "Hero section",
-        description: "Large intro block with heading, copy, and CTA.",
-        category: "Marketing",
-        icon: "PanelTop",
-        preview: "/images/modules/hero.webp",
-        keywords: ["banner", "cover"],
+        title: 'Hero section',
+        description: 'Large intro block with heading, copy, and CTA.',
+        category: 'Marketing',
+        icon: 'PanelTop',
+        preview: '/images/modules/hero.webp',
+        keywords: ['banner', 'cover'],
       },
       fields: {
         title: Fields.string(),
       },
-    });
+    })
 
-    registerContentType(ModulePickerEncodedCT);
+    registerContentType(ModulePickerEncodedCT)
 
     const encoded = getContentTypesForManager().find(
-      (contentType) => contentType.name === ModulePickerEncodedCT.name,
-    );
+      (contentType) => contentType.name === ModulePickerEncodedCT.name
+    )
 
     expect(encoded?.modulePicker).toEqual({
-      title: "Hero section",
-      description: "Large intro block with heading, copy, and CTA.",
-      category: "Marketing",
-      icon: "PanelTop",
-      preview: "/images/modules/hero.webp",
-      keywords: ["banner", "cover"],
-    });
-  });
+      title: 'Hero section',
+      description: 'Large intro block with heading, copy, and CTA.',
+      category: 'Marketing',
+      icon: 'PanelTop',
+      preview: '/images/modules/hero.webp',
+      keywords: ['banner', 'cover'],
+    })
+  })
 
-  it("allows null for required fields when their condition is false", () => {
+  it('allows null for required fields when their condition is false', () => {
     const ConditionalRequiredCT = new ContentType({
-      name: "ConditionalRequired",
+      name: 'ConditionalRequired',
       fields: {
-        intent: Fields.select(["x", "y"] as const).required(),
-        enabled: Fields.boolean()
-          .condition({ field: "intent", equals: "x" })
-          .required(),
+        intent: Fields.select(['x', 'y'] as const).required(),
+        enabled: Fields.boolean().condition({ field: 'intent', equals: 'x' }).required(),
       },
-    });
+    })
 
     expect(
       ConditionalRequiredCT.validate({
-        _type: "ConditionalRequired",
-        intent: "y",
+        _type: 'ConditionalRequired',
+        intent: 'y',
         enabled: null,
-      }).enabled,
-    ).toBeNull();
-  });
+      }).enabled
+    ).toBeNull()
+  })
 
-  it("requires conditioned required fields when their condition is true", () => {
+  it('requires conditioned required fields when their condition is true', () => {
     const ConditionalRequiredCT = new ContentType({
-      name: "ConditionalRequiredStrict",
+      name: 'ConditionalRequiredStrict',
       fields: {
-        intent: Fields.select(["x", "y"] as const).required(),
-        enabled: Fields.boolean()
-          .condition({ field: "intent", equals: "x" })
-          .required(),
+        intent: Fields.select(['x', 'y'] as const).required(),
+        enabled: Fields.boolean().condition({ field: 'intent', equals: 'x' }).required(),
       },
-    });
+    })
 
     expect(() =>
       ConditionalRequiredCT.validate({
-        _type: "ConditionalRequiredStrict",
-        intent: "x",
+        _type: 'ConditionalRequiredStrict',
+        intent: 'x',
         enabled: null,
-      }),
-    ).toThrow();
-  });
+      })
+    ).toThrow()
+  })
 
-  it("supports numeric conditional operators", () => {
+  it('supports numeric conditional operators', () => {
     const NumericConditionCT = new ContentType({
-      name: "NumericCondition",
+      name: 'NumericCondition',
       fields: {
         score: Fields.number().required(),
-        enabled: Fields.boolean()
-          .condition({ field: "score", gte: 10 })
-          .required(),
+        enabled: Fields.boolean().condition({ field: 'score', gte: 10 }).required(),
       },
-    });
+    })
 
     expect(
       NumericConditionCT.validate({
-        _type: "NumericCondition",
+        _type: 'NumericCondition',
         score: 9,
         enabled: null,
-      }).enabled,
-    ).toBeNull();
+      }).enabled
+    ).toBeNull()
 
     expect(() =>
       NumericConditionCT.validate({
-        _type: "NumericCondition",
+        _type: 'NumericCondition',
         score: 10,
         enabled: null,
-      }),
-    ).toThrow();
-  });
+      })
+    ).toThrow()
+  })
 
-  it("supports list inclusion and length conditional operators", () => {
+  it('supports list inclusion and length conditional operators', () => {
     const ListConditionCT = new ContentType({
-      name: "ListCondition",
+      name: 'ListCondition',
       fields: {
-        tags: Fields.select(["featured", "draft", "news"] as const)
+        tags: Fields.select(['featured', 'draft', 'news'] as const)
           .multiple()
           .required(),
-        cta: Fields.string()
-          .condition({ field: "tags", includes: "featured" })
-          .required(),
+        cta: Fields.string().condition({ field: 'tags', includes: 'featured' }).required(),
         summary: Fields.string()
-          .condition({ field: "tags", length: { gte: 2 } })
+          .condition({ field: 'tags', length: { gte: 2 } })
           .required(),
       },
-    });
+    })
 
     expect(
       ListConditionCT.validate({
-        _type: "ListCondition",
-        tags: ["draft"],
+        _type: 'ListCondition',
+        tags: ['draft'],
         cta: null,
         summary: null,
-      }).cta,
-    ).toBeNull();
+      }).cta
+    ).toBeNull()
 
     expect(() =>
       ListConditionCT.validate({
-        _type: "ListCondition",
-        tags: ["featured"],
+        _type: 'ListCondition',
+        tags: ['featured'],
         cta: null,
         summary: null,
-      }),
-    ).toThrow();
+      })
+    ).toThrow()
 
     expect(() =>
       ListConditionCT.validate({
-        _type: "ListCondition",
-        tags: ["draft", "news"],
+        _type: 'ListCondition',
+        tags: ['draft', 'news'],
         cta: null,
         summary: null,
-      }),
-    ).toThrow();
-  });
-});
+      })
+    ).toThrow()
+  })
+})

@@ -20,6 +20,7 @@ const makeContentType = (name: string) =>
           type: 'String',
           ui: 'Text',
           editor: 'test.plugin.title',
+          capabilities: { valueKind: 'string' },
         },
         schemas: sameSchemas(() => z.string()),
       }),
@@ -88,7 +89,7 @@ describe('Rakun plugins', () => {
             fields: [{ id: 'test.plugin.title' }],
           }),
         ],
-      }),
+      })
     ).toThrow('registered by "app" and "duplicate.plugin"')
   })
 
@@ -97,7 +98,7 @@ describe('Rakun plugins', () => {
       resolveRakunPluginContributions({
         contentTypes: [makeContentType('UndeclaredPluginField')],
         literals: {},
-      }),
+      })
     ).toThrow('uses undeclared plugin field editor "test.plugin.title"')
   })
 
@@ -121,7 +122,7 @@ describe('Rakun plugins', () => {
     const context = {} as RakunPluginInitContext
 
     await expect(
-      runRakunPluginInitializers({ plugins, context, initializedPluginIds }),
+      runRakunPluginInitializers({ plugins, context, initializedPluginIds })
     ).rejects.toThrow('retry me')
     shouldFail = false
     await runRakunPluginInitializers({ plugins, context, initializedPluginIds })

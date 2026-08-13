@@ -1,4 +1,4 @@
-import z from "zod";
+import z from 'zod'
 
 import {
   createField,
@@ -9,67 +9,66 @@ import {
   type FieldState,
   type FieldStateOf,
   type FieldWithModifiers,
+  type FieldCapabilities,
   type WithFieldState,
   withFieldModifiers,
-} from "./Field";
+} from './Field'
 
-export const dateUis = ["Date", "DateTime", "Time"] as const;
+export const dateUis = ['Date', 'DateTime', 'Time'] as const
 
-export type DateUI = (typeof dateUis)[number];
+export type DateUI = (typeof dateUis)[number]
 
-type DateValue<Ui extends DateUI> = Ui extends "Time" ? string : Date;
+type DateValue<Ui extends DateUI> = Ui extends 'Time' ? string : Date
 
 export type DateMeta<Ui extends DateUI = DateUI> = {
-  type: "Date";
-  ui: Ui;
-};
+  type: 'Date'
+  ui: Ui
+  capabilities: FieldCapabilities
+}
 
 type DateOptions<Ui extends DateUI> = {
-  ui: Ui;
-};
+  ui: Ui
+}
 
 export type DateField<
-  Ui extends DateUI = "Date",
+  Ui extends DateUI = 'Date',
   State extends FieldState = DefaultFieldState,
-> = FieldWithModifiers<DateFieldCore<Ui, State>>;
+> = FieldWithModifiers<DateFieldCore<Ui, State>>
 
-type DateFieldCore<
-  Ui extends DateUI,
-  State extends FieldState,
-> = DateFieldBase<Ui, State> & {
-  type: <
-    TThis extends DateFieldBase<Ui, FieldState>,
-    NextUi extends DateUI,
-  >(
+type DateFieldCore<Ui extends DateUI, State extends FieldState> = DateFieldBase<Ui, State> & {
+  type: <TThis extends DateFieldBase<Ui, FieldState>, NextUi extends DateUI>(
     this: TThis,
-    ui: NextUi,
-  ) => DateField<NextUi, FieldStateOf<TThis>>;
-};
+    ui: NextUi
+  ) => DateField<NextUi, FieldStateOf<TThis>>
+}
 
-type DateFieldBase<
-  Ui extends DateUI,
-  State extends FieldState,
-> = FieldLike<
+type DateFieldBase<Ui extends DateUI, State extends FieldState> = FieldLike<
   DateValue<Ui>,
   DateValue<Ui>,
   DateValue<Ui>,
   DateMeta<Ui>,
   State
->;
+>
 
 export function dateField(): DateField {
-  return makeDateField({ ui: "Date" }, defaultFieldState);
+  return makeDateField({ ui: 'Date' }, defaultFieldState)
 }
 
-export type EncodedDateField = EncodedField;
+export type EncodedDateField = EncodedField
 
 function makeDateField<Ui extends DateUI, State extends FieldState>(
   options: DateOptions<Ui>,
-  state: State,
+  state: State
 ): DateField<Ui, State> {
   const field: DateFieldCore<Ui, State> = {
     ...createField({
-      meta: { type: "Date", ui: options.ui },
+      meta: {
+        type: 'Date',
+        ui: options.ui,
+        capabilities: {
+          valueKind: options.ui === 'Time' ? 'string' : 'date',
+        },
+      },
       state,
       schemas: {
         input: () => buildDateInputSchema(options.ui),
@@ -77,41 +76,36 @@ function makeDateField<Ui extends DateUI, State extends FieldState>(
         output: () => buildDateSchema(options.ui),
       },
     }),
-    type: function <
-      TThis extends DateFieldBase<Ui, FieldState>,
-      NextUi extends DateUI,
-    >(this: TThis, ui: NextUi) {
-      return makeDateField({ ui }, this.state as FieldStateOf<TThis>);
+    type: function <TThis extends DateFieldBase<Ui, FieldState>, NextUi extends DateUI>(
+      this: TThis,
+      ui: NextUi
+    ) {
+      return makeDateField({ ui }, this.state as FieldStateOf<TThis>)
     },
-  };
+  }
 
   return withFieldModifiers({
     field,
     rebuild: <NextState extends FieldState>(nextState: NextState) =>
-      makeDateField(options, nextState) as WithFieldState<
-        DateFieldCore<Ui, State>,
-        NextState
-      >,
-  });
+      makeDateField(options, nextState) as WithFieldState<DateFieldCore<Ui, State>, NextState>,
+  })
 }
 
-function buildDateInputSchema<Ui extends DateUI>(
-  ui: Ui,
-): z.ZodType<DateValue<Ui>> {
-  if (ui === "Time") {
-    return buildDateSchema(ui);
+function buildDateInputSchema<Ui extends DateUI>(ui: Ui): z.ZodType<DateValue<Ui>> {
+  if (ui === 'Time') {
+    return buildDateSchema(ui)
   }
 
   return z.union([
     z.date(),
     z.iso.datetime().transform((value) => new Date(value)),
-  ]) as unknown as z.ZodType<DateValue<Ui>>;
+  ]) as unknown as z.ZodType<DateValue<Ui>>
 }
 
 function buildDateSchema<Ui extends DateUI>(ui: Ui): z.ZodType<DateValue<Ui>> {
-  if (ui === "Time") {
-    return z.iso.time() as unknown as z.ZodType<DateValue<Ui>>;
+  if (ui === 'Time') {
+    return z.iso.time() as unknown as z.ZodType<DateValue<Ui>>
   }
 
-  return z.date() as unknown as z.ZodType<DateValue<Ui>>;
+  return z.date() as unknown as z.ZodType<DateValue<Ui>>
 }

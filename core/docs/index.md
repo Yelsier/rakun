@@ -112,6 +112,21 @@ explicit, backward-compatible modifier. Other modifiers include `.multiple()`,
 Special manager editors are selected with `.type(...)`, for example `Slug`,
 `RichText`, `Email`, `Password` and `Image`.
 
+Plugin field factories created with `createPluginField` must declare
+serializable `meta.capabilities`. `valueKind` (`string`, `richText`, `number`,
+`boolean`, `date`, `object`, `array`, or `unknown`) drives Dynamic Data type
+compatibility. Under `dynamic`, `properties` exposes named leaf paths,
+`mapProperties` allows those paths to be mapped independently, `relation`
+enables content-type traversal, and `collection` enables homogeneous or
+heterogeneous per-item mapping. This lets custom fields participate without
+adding their names to manager or core type switches.
+
+Custom server resolution belongs in the optional `runtime.populate` callback.
+It receives `{ db, populate, populateLink }`, so a composite field can recurse
+through nested fields or reuse Rakun's localized link resolver. Runtime hooks
+are not sent to the manager. The generic web-output phase is exported as
+`populateFields`; the former `populateLinks` name remains as a deprecated alias.
+
 Homogeneous `f.array(...)` fields accept `.min(count)` and `.max(count)` item
 limits. These methods are also available after `.multiple()` on relation, file,
 select, and content-reference fields, for example
