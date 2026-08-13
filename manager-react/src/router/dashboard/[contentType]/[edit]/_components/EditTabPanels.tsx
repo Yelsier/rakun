@@ -7,6 +7,7 @@ import { useEditPageContext } from '../_context/EditPageContext'
 import VersionHistory from './Versions'
 import { RouteLayoutModuleTabContent } from './RouteLayoutModuleTabContent'
 import { ContentVariants } from './LocaleVariants'
+import { SeoTabContent } from './SeoTabContent'
 
 import { TabsContent } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -108,16 +109,7 @@ export const EditTabPanels = () => {
             className="w-full h-full"
             data-tour="content-edit-fields"
           >
-            <ContentTypeEdit
-              key={`seo:${form.formRevision}`}
-              defaultData={form.draft.current}
-              ref={form.seoRef}
-              contentType={sections.seo}
-              parentContentType={contentType}
-              initializeSeoBindings={!contentTypeId}
-              id={contentTypeName}
-              hideTitle
-            />
+            <SeoTabContent />
           </TabsContent>
         ) : null}
         {routeLayout.routeLayoutModules.map((layoutModule) => (

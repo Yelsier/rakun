@@ -180,7 +180,11 @@ export async function RakunPageRenderer({
     return (
       <PageInfoProvider value={page.info}>
         {previewConfig ? (
-          <RakunPreviewBridge tokenParam={previewConfig.tokenParam} />
+          <RakunPreviewBridge
+            language={page.language?.code}
+            seo={page.seo}
+            tokenParam={previewConfig.tokenParam}
+          />
         ) : null}
         {rendered}
       </PageInfoProvider>

@@ -710,6 +710,130 @@ export const managerMessages = {
   'contentEdit.previewCouldNotLoad': {
     defaultMessage: 'Preview could not be loaded',
   },
+  'contentEdit.seoMetadataView': { defaultMessage: 'Metadata' },
+  'contentEdit.seoAnalysisView': { defaultMessage: 'Analysis' },
+  'contentEdit.seoAnalysisTitle': { defaultMessage: 'On-page SEO report' },
+  'contentEdit.seoAnalysisDescription': {
+    defaultMessage: 'Analyze the rendered preview with the latest unsaved changes.',
+  },
+  'contentEdit.seoGenerateReport': { defaultMessage: 'Generate report' },
+  'contentEdit.seoRegenerateReport': { defaultMessage: 'Regenerate report' },
+  'contentEdit.seoAnalysisUnavailable': {
+    defaultMessage: 'Configure preview for this route to enable SEO analysis.',
+  },
+  'contentEdit.seoAnalysisError': {
+    defaultMessage: 'The SEO report could not be generated.',
+  },
+  'contentEdit.seoAnalysisPreviewError': {
+    defaultMessage: 'The preview snapshot for the SEO report could not be created.',
+  },
+  'contentEdit.seoAnalysisTimeout': {
+    defaultMessage:
+      'The rendered preview did not answer in time. Check that the web preview uses a compatible Rakun adapter and can load without browser errors.',
+  },
+  'contentEdit.seoAnalysisInvalidResponse': {
+    defaultMessage: 'The rendered preview returned an invalid SEO report.',
+  },
+  'contentEdit.seoAnalysisFrameTitle': { defaultMessage: 'SEO analysis preview' },
+  'contentEdit.seoNoReportTitle': { defaultMessage: 'No report generated yet' },
+  'contentEdit.seoNoReportDescription': {
+    defaultMessage:
+      'Generate a report to inspect metadata, headings, images and search and social previews.',
+  },
+  'contentEdit.seoScoreTitle': { defaultMessage: 'SEO health score' },
+  'contentEdit.seoScoreDescription': {
+    defaultMessage: 'A practical guide based on the rendered page, not a search ranking guarantee.',
+  },
+  'contentEdit.seoStatusGood': { defaultMessage: 'Good' },
+  'contentEdit.seoStatusWarning': { defaultMessage: 'Improve' },
+  'contentEdit.seoStatusError': { defaultMessage: 'Problem' },
+  'contentEdit.seoCheckTitle': { defaultMessage: 'Page title' },
+  'contentEdit.seoTitleMissing': { defaultMessage: 'The rendered page has no title.' },
+  'contentEdit.seoTitleGood': {
+    defaultMessage: 'The title length is suitable ({count} characters).',
+    params: { count: 'number' },
+  },
+  'contentEdit.seoTitleImprove': {
+    defaultMessage: 'The title has {count} characters; aim for 30–60.',
+    params: { count: 'number' },
+  },
+  'contentEdit.seoCheckDescription': { defaultMessage: 'Meta description' },
+  'contentEdit.seoDescriptionMissing': {
+    defaultMessage: 'The rendered page has no meta description.',
+  },
+  'contentEdit.seoDescriptionGood': {
+    defaultMessage: 'The description length is suitable ({count} characters).',
+    params: { count: 'number' },
+  },
+  'contentEdit.seoDescriptionImprove': {
+    defaultMessage: 'The description has {count} characters; aim for 120–160.',
+    params: { count: 'number' },
+  },
+  'contentEdit.seoCheckH1': { defaultMessage: 'Primary heading' },
+  'contentEdit.seoH1Good': { defaultMessage: 'The page has exactly one H1.' },
+  'contentEdit.seoH1Missing': { defaultMessage: 'The page has no H1.' },
+  'contentEdit.seoH1Multiple': {
+    defaultMessage: 'The page has {count} H1 headings; use one clear primary heading.',
+    params: { count: 'number' },
+  },
+  'contentEdit.seoCheckHeadings': { defaultMessage: 'Heading hierarchy' },
+  'contentEdit.seoHeadingsGood': { defaultMessage: 'Heading levels follow a logical order.' },
+  'contentEdit.seoHeadingsMissing': { defaultMessage: 'The page has no headings.' },
+  'contentEdit.seoHeadingsSkipped': {
+    defaultMessage:
+      '{count, plural, one {One heading skips a level} other {# headings skip a level}}.',
+    params: { count: 'number' },
+  },
+  'contentEdit.seoCheckImages': { defaultMessage: 'Image alt text' },
+  'contentEdit.seoImagesGood': {
+    defaultMessage:
+      '{count, plural, =0 {The page has no images} one {The image has an alt attribute} other {All # images have alt attributes}}.',
+    params: { count: 'number' },
+  },
+  'contentEdit.seoImagesMissingAlt': {
+    defaultMessage:
+      '{count, plural, one {One image has no alt attribute} other {# images have no alt attribute}}.',
+    params: { count: 'number' },
+  },
+  'contentEdit.seoCheckCanonical': { defaultMessage: 'Canonical URL' },
+  'contentEdit.seoCanonicalGood': { defaultMessage: 'The page declares a canonical URL.' },
+  'contentEdit.seoCanonicalMissing': { defaultMessage: 'The page has no canonical URL.' },
+  'contentEdit.seoCanonicalSiteUrlMissing': {
+    defaultMessage:
+      'The canonical URL cannot be generated until Site URL is configured in Settings → SEO.',
+  },
+  'contentEdit.seoCheckLanguage': { defaultMessage: 'Document language' },
+  'contentEdit.seoLanguageGood': {
+    defaultMessage: 'The document language is set to {language}.',
+    params: { language: 'string' },
+  },
+  'contentEdit.seoLanguageMissing': {
+    defaultMessage: 'The HTML document has no language attribute.',
+  },
+  'contentEdit.seoCheckIndexing': { defaultMessage: 'Indexing' },
+  'contentEdit.seoIndexingGood': { defaultMessage: 'The page does not declare noindex.' },
+  'contentEdit.seoIndexingBlocked': { defaultMessage: 'The page declares noindex.' },
+  'contentEdit.seoCheckSocial': { defaultMessage: 'Social metadata' },
+  'contentEdit.seoSocialGood': {
+    defaultMessage: 'Open Graph title, description and image are present.',
+  },
+  'contentEdit.seoSocialMissing': {
+    defaultMessage:
+      '{count, plural, one {One Open Graph field is missing} other {# Open Graph fields are missing}}.',
+    params: { count: 'number' },
+  },
+  'contentEdit.seoGooglePreview': { defaultMessage: 'Google preview' },
+  'contentEdit.seoSocialPreview': { defaultMessage: 'Sharing preview' },
+  'contentEdit.seoHeadingOutline': { defaultMessage: 'Heading outline' },
+  'contentEdit.seoHeadingLevel': {
+    defaultMessage: 'H{level}',
+    params: { level: 'number' },
+  },
+  'contentEdit.seoHeadingCount': {
+    defaultMessage: '{count, plural, one {# heading found} other {# headings found}}.',
+    params: { count: 'number' },
+  },
+  'contentEdit.seoEmptyHeading': { defaultMessage: 'Empty heading' },
   'contentEdit.versionRestored': {
     defaultMessage: 'Version restored successfully',
   },

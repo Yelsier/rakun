@@ -119,6 +119,15 @@ Pass unresolved page props to `getRakunPageFromProps`: it reads `searchParams`
 only for dynamic routes because Next treats that prop as request-time data.
 Mount manager previews on a separate dynamic route.
 
+Preview pages rendered with `RakunPageRenderer` install the Rakun preview
+bridge automatically. Besides live snapshot updates and module selection, the
+bridge can return a sanitized on-page SEO snapshot to the manager. It combines
+the resolved Rakun SEO metadata with headings and images from the rendered DOM,
+and removes the preview token from the reported URL. Protective metadata added
+by the host preview route, such as `noindex`, is not reported as page metadata;
+the indexability check reflects the routed content's resolved `noIndex` value.
+No additional application component or public API call is required.
+
 ## llms.txt
 
 Expose the optional site-wide guide through an App Router Route Handler:

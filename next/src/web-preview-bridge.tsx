@@ -1,20 +1,60 @@
 import Script from "next/script";
+import type { PageOutput } from "@rakun-kit/core/contracts";
 
 import {
   rakunPreviewInspectorMessageType,
   rakunPreviewModuleSelectMessageType,
   rakunPreviewMessageType,
   rakunPreviewReadyMessageType,
+  rakunPreviewSeoAnalysisMessageType,
+  rakunPreviewSeoAnalysisResultMessageType,
 } from "./web-preview";
 
-const serializeScriptValue = (value: string) =>
+const serializeScriptValue = (value: unknown) =>
   JSON.stringify(value).replace(/</g, "\\u003c");
 
+const getSeoImageUrl = (value: unknown) => {
+  if (!value || typeof value !== "object" || !("url" in value)) return "";
+
+  return typeof value.url === "string" ? value.url : "";
+};
+
+const createSeoAnalysisConfig = (
+  seo: PageOutput["seo"],
+  language: string | undefined,
+) => ({
+  url: seo?.canonicalUrl ?? "",
+  title: seo?.title ?? "",
+  description: seo?.description ?? "",
+  canonical: seo?.canonicalUrl ?? "",
+  siteUrl: seo?.siteUrl ?? "",
+  robots: seo?.noIndex ? "noindex" : "",
+  language: language ?? "",
+  openGraph: {
+    title: seo?.openGraphTitle ?? "",
+    description: seo?.openGraphDescription ?? "",
+    image: getSeoImageUrl(seo?.openGraphImage),
+    url: seo?.openGraphUrl ?? "",
+    type: seo?.openGraphType ?? "",
+  },
+  twitter: {
+    card: seo?.twitterCard ?? "",
+    title: seo?.twitterTitle ?? "",
+    description: seo?.twitterDescription ?? "",
+    image: getSeoImageUrl(seo?.twitterImage),
+  },
+});
+
 export const RakunPreviewBridge = ({
+  language,
+  seo,
   tokenParam,
 }: {
+  language?: string;
+  seo?: PageOutput["seo"];
   tokenParam: string;
 }) => {
+  const seoAnalysisConfig = createSeoAnalysisConfig(seo, language);
   const script = `
 (() => {
   const bridgeKey = "__rakunPreviewBridgeInstalled";
@@ -23,6 +63,9 @@ export const RakunPreviewBridge = ({
   const readyMessageType = ${serializeScriptValue(rakunPreviewReadyMessageType)};
   const selectMessageType = ${serializeScriptValue(rakunPreviewModuleSelectMessageType)};
   const inspectorMessageType = ${serializeScriptValue(rakunPreviewInspectorMessageType)};
+  const seoAnalysisMessageType = ${serializeScriptValue(rakunPreviewSeoAnalysisMessageType)};
+  const seoAnalysisResultMessageType = ${serializeScriptValue(rakunPreviewSeoAnalysisResultMessageType)};
+  const seoAnalysisConfig = ${serializeScriptValue(seoAnalysisConfig)};
   const defaultTokenParam = ${serializeScriptValue(tokenParam)};
   const getParentOrigin = () => {
     try {
@@ -262,6 +305,45 @@ export const RakunPreviewBridge = ({
     typeof value.enabled === "boolean"
   );
 
+  const isSeoAnalysisMessage = (value) => (
+    value &&
+    typeof value === "object" &&
+    value.type === seoAnalysisMessageType &&
+    typeof value.requestId === "number"
+  );
+
+  const getSeoAnalysis = () => {
+    const images = Array.from(document.images);
+    const publicUrl = new URL(window.location.href);
+
+    publicUrl.searchParams.delete(defaultTokenParam);
+
+    return {
+      url: seoAnalysisConfig.url || publicUrl.toString(),
+      title: seoAnalysisConfig.title,
+      description: seoAnalysisConfig.description,
+      canonical: seoAnalysisConfig.canonical,
+      siteUrl: seoAnalysisConfig.siteUrl,
+      robots: seoAnalysisConfig.robots,
+      language: seoAnalysisConfig.language || document.documentElement.lang.trim(),
+      headings: Array.from(document.querySelectorAll("h1, h2, h3, h4, h5, h6")).map(
+        (heading) => ({
+          level: Number(heading.tagName.slice(1)),
+          text: (heading.textContent || "").trim().replace(/\\s+/g, " "),
+        })
+      ),
+      images: {
+        total: images.length,
+        missingAlt: images.filter((image) => !image.hasAttribute("alt")).length,
+        emptyAlt: images.filter(
+          (image) => image.hasAttribute("alt") && !image.alt.trim()
+        ).length,
+      },
+      openGraph: seoAnalysisConfig.openGraph,
+      twitter: seoAnalysisConfig.twitter,
+    };
+  };
+
   const normalizePath = (path) => (
     path.startsWith("/") ? path : "/" + path
   );
@@ -295,6 +377,15 @@ export const RakunPreviewBridge = ({
 
     if (isPreviewInspectorMessage(event.data)) {
       setInspectEnabled(event.data.enabled);
+      return;
+    }
+
+    if (isSeoAnalysisMessage(event.data)) {
+      postToParent({
+        type: seoAnalysisResultMessageType,
+        requestId: event.data.requestId,
+        report: getSeoAnalysis(),
+      });
       return;
     }
 

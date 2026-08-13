@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n css,next -c cyan,magenta \"bun run --filter @rakun-kit/manager-react build:css:watch\" \"bun run dev:next\"",
+    "dev": "bun run --filter @rakun-kit/manager-react build:css && concurrently -k -n css,next -c cyan,magenta \"bun run --filter @rakun-kit/manager-react build:css:watch\" \"bun run dev:next\"",
     "dev:next": "next dev",
     "mail:preview": "node node_modules/jsx-email/cli.js preview emails",
     "mail:check": "node node_modules/jsx-email/cli.js check emails/TestEmail.tsx --use-preview-props",

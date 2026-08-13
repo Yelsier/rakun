@@ -30,6 +30,7 @@
       "@rakun-kit/jsx-email": ["../jsx-email/src/index.ts"],
       "@rakun-kit/manager-react": ["../manager-react/src/index.ts"],
       "@rakun-kit/manager-react/locales": ["../manager-react/src/locales.ts"],
+      "@rakun-kit/manager-react/styles.css": ["../manager-react/dist/styles.css"],
       "@rakun-kit/manager-react/*": ["../manager-react/src/*"],
       "@rakun-kit/next": ["../next/src/index.ts"],
       "@rakun-kit/next/*": ["../next/src/*"],

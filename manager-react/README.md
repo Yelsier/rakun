@@ -158,6 +158,13 @@ manager host until that setting is configured. A published document with a
 resolved page route also gets a contextual View page button in its edit toolbar;
 the URL follows the selected manager language and locale variant.
 
+Routeable content splits its SEO tab into Metadata and Analysis. Generate
+report renders the current unsaved form through the configured preview and
+reports metadata lengths, heading structure, missing image alt attributes,
+indexability, social metadata, and Google and sharing previews. The report is
+advisory and is not stored. A protective `noindex` on the temporary preview URL
+does not affect the content's indexability result.
+
 ## Styles
 
 Import the package stylesheet once:

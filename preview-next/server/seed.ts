@@ -10,6 +10,7 @@ import {
   Media,
   RouteLocaleVariant,
   Seo,
+  SeoSettings,
   TemplateContent,
 } from "@rakun-kit/next/internal-content-types";
 import {
@@ -1094,6 +1095,22 @@ export const seedPreviewData = async ({
     if (!language) {
       throw new Error("Failed to create preview language.");
     }
+
+    await db.collection(SeoSettings.name).updateOne(
+      { key: "default" },
+      {
+        $set: {
+          siteUrl: "http://localhost:3000",
+          updatedAt: now(),
+        },
+        $setOnInsert: {
+          key: "default",
+          _type: SeoSettings.name,
+          createdAt: now(),
+        },
+      },
+      { upsert: true },
+    );
 
     const adminPermissions = getPermissionList();
     const role = await db.collection("ManagerRole").findOneAndUpdate(

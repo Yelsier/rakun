@@ -11,6 +11,7 @@ import type { EditPageProps } from './edit.types'
 
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { Tabs } from '@/components/ui/tabs'
+import { useTranslations } from '@/i18n'
 
 const previewResizableQuery = '(min-width: 1280px)'
 
@@ -31,6 +32,7 @@ const useCanResizePreview = () => {
 }
 
 const EditPageContent = () => {
+  const t = useTranslations()
   const { activeTab, canPreview, handleTabChange, previewState } = useEditPageContext()
   const canResizePreview = useCanResizePreview()
   const previewOpen = canPreview && previewState.previewOpen
@@ -69,6 +71,24 @@ const EditPageContent = () => {
             {previewOpen ? <PreviewPanel /> : null}
           </div>
         )}
+        {!previewOpen && previewState.isSeoAnalysisPending && previewState.previewUrl ? (
+          <iframe
+            key={`seo-analysis:${previewState.previewUrl}`}
+            ref={previewState.previewFrameRef}
+            aria-hidden
+            src={previewState.previewUrl}
+            style={{
+              border: 0,
+              height: 1,
+              opacity: 0,
+              pointerEvents: 'none',
+              position: 'fixed',
+              width: 1,
+            }}
+            tabIndex={-1}
+            title={t('contentEdit.seoAnalysisFrameTitle')}
+          />
+        ) : null}
       </Tabs>
     </div>
   )

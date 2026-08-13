@@ -176,6 +176,12 @@ await getRakunPage({
 routes; doing so for a static route would opt it into dynamic rendering. Keep
 preview rendering in a separate dynamic route.
 
+`RakunPageRenderer` automatically adds the preview bridge to preview pages.
+The bridge supports live updates, module selection, and the manager's rendered
+SEO report. The report combines resolved Rakun SEO metadata with the rendered
+heading and image structure, sanitizes the preview token, and ignores protective
+`noindex` metadata added only by the host preview route.
+
 ### On-demand revalidation
 
 Mount the Next revalidation helper:

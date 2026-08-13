@@ -467,6 +467,81 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'contentEdit.closeLargePreview': 'Cerrar vista previa grande',
   'contentEdit.loadingPreview': 'Cargando vista previa',
   'contentEdit.previewCouldNotLoad': 'No se pudo cargar la vista previa',
+  'contentEdit.seoMetadataView': 'Metadatos',
+  'contentEdit.seoAnalysisView': 'Análisis',
+  'contentEdit.seoAnalysisTitle': 'Informe SEO de la página',
+  'contentEdit.seoAnalysisDescription':
+    'Analiza la vista previa renderizada con los últimos cambios sin guardar.',
+  'contentEdit.seoGenerateReport': 'Generar informe',
+  'contentEdit.seoRegenerateReport': 'Regenerar informe',
+  'contentEdit.seoAnalysisUnavailable':
+    'Configura la vista previa de esta ruta para activar el análisis SEO.',
+  'contentEdit.seoAnalysisError': 'No se pudo generar el informe SEO.',
+  'contentEdit.seoAnalysisPreviewError':
+    'No se pudo crear la instantánea de preview para el informe SEO.',
+  'contentEdit.seoAnalysisTimeout':
+    'La preview renderizada no respondió a tiempo. Comprueba que la preview web usa un adaptador Rakun compatible y que carga sin errores en el navegador.',
+  'contentEdit.seoAnalysisInvalidResponse':
+    'La preview renderizada devolvió un informe SEO no válido.',
+  'contentEdit.seoAnalysisFrameTitle': 'Vista previa para el análisis SEO',
+  'contentEdit.seoNoReportTitle': 'Todavía no se ha generado ningún informe',
+  'contentEdit.seoNoReportDescription':
+    'Genera un informe para revisar los metadatos, títulos, imágenes y vistas previas de buscadores y redes sociales.',
+  'contentEdit.seoScoreTitle': 'Puntuación SEO',
+  'contentEdit.seoScoreDescription':
+    'Una guía práctica basada en la página renderizada, no una garantía de posicionamiento.',
+  'contentEdit.seoStatusGood': 'Correcto',
+  'contentEdit.seoStatusWarning': 'Mejorable',
+  'contentEdit.seoStatusError': 'Problema',
+  'contentEdit.seoCheckTitle': 'Título de la página',
+  'contentEdit.seoTitleMissing': 'La página renderizada no tiene título.',
+  'contentEdit.seoTitleGood': 'El título tiene una longitud adecuada ({count} caracteres).',
+  'contentEdit.seoTitleImprove':
+    'El título tiene {count} caracteres; intenta mantenerlo entre 30 y 60.',
+  'contentEdit.seoCheckDescription': 'Meta description',
+  'contentEdit.seoDescriptionMissing': 'La página renderizada no tiene meta description.',
+  'contentEdit.seoDescriptionGood':
+    'La descripción tiene una longitud adecuada ({count} caracteres).',
+  'contentEdit.seoDescriptionImprove':
+    'La descripción tiene {count} caracteres; intenta mantenerla entre 120 y 160.',
+  'contentEdit.seoCheckH1': 'Título principal',
+  'contentEdit.seoH1Good': 'La página tiene exactamente un H1.',
+  'contentEdit.seoH1Missing': 'La página no tiene ningún H1.',
+  'contentEdit.seoH1Multiple':
+    'La página tiene {count} títulos H1; utiliza un único título principal claro.',
+  'contentEdit.seoCheckHeadings': 'Jerarquía de títulos',
+  'contentEdit.seoHeadingsGood': 'Los niveles de los títulos siguen un orden lógico.',
+  'contentEdit.seoHeadingsMissing': 'La página no tiene títulos.',
+  'contentEdit.seoHeadingsSkipped':
+    '{count, plural, one {Un título se salta un nivel} other {# títulos se saltan un nivel}}.',
+  'contentEdit.seoCheckImages': 'Texto alternativo de imágenes',
+  'contentEdit.seoImagesGood':
+    '{count, plural, =0 {La página no tiene imágenes} one {La imagen tiene atributo alt} other {Las # imágenes tienen atributo alt}}.',
+  'contentEdit.seoImagesMissingAlt':
+    '{count, plural, one {Una imagen no tiene atributo alt} other {# imágenes no tienen atributo alt}}.',
+  'contentEdit.seoCheckCanonical': 'URL canónica',
+  'contentEdit.seoCanonicalGood': 'La página declara una URL canónica.',
+  'contentEdit.seoCanonicalMissing': 'La página no tiene URL canónica.',
+  'contentEdit.seoCanonicalSiteUrlMissing':
+    'La URL canónica no puede generarse hasta configurar URL del sitio en Ajustes → SEO.',
+  'contentEdit.seoCheckLanguage': 'Idioma del documento',
+  'contentEdit.seoLanguageGood': 'El idioma del documento es {language}.',
+  'contentEdit.seoLanguageMissing': 'El documento HTML no tiene atributo de idioma.',
+  'contentEdit.seoCheckIndexing': 'Indexación',
+  'contentEdit.seoIndexingGood': 'La página no declara noindex.',
+  'contentEdit.seoIndexingBlocked': 'La página declara noindex.',
+  'contentEdit.seoCheckSocial': 'Metadatos sociales',
+  'contentEdit.seoSocialGood':
+    'El título, la descripción y la imagen de Open Graph están presentes.',
+  'contentEdit.seoSocialMissing':
+    '{count, plural, one {Falta un campo de Open Graph} other {Faltan # campos de Open Graph}}.',
+  'contentEdit.seoGooglePreview': 'Vista previa de Google',
+  'contentEdit.seoSocialPreview': 'Vista previa al compartir',
+  'contentEdit.seoHeadingOutline': 'Esquema de títulos',
+  'contentEdit.seoHeadingLevel': 'H{level}',
+  'contentEdit.seoHeadingCount':
+    '{count, plural, one {Se ha encontrado # título} other {Se han encontrado # títulos}}.',
+  'contentEdit.seoEmptyHeading': 'Título vacío',
   'contentEdit.versionRestored': 'Versión restaurada correctamente',
   'contentEdit.noVisibleModuleChanges': 'No hay cambios visibles de módulos.',
   'contentEdit.noVersionsYet': 'Aún no hay versiones registradas.',

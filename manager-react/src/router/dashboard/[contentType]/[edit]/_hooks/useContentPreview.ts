@@ -6,6 +6,7 @@ import { useTranslations } from '@/i18n'
 import type { ContentTypeRouteMeta } from '../edit.types'
 
 import { useManagerMutation } from '@/client/react'
+import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import type { ManagerPreviewConfig } from '@/router/shared/types'
 
 type UseContentPreviewParams = {
@@ -25,6 +26,8 @@ const previewUpdateMessageType = 'rakun:preview:update'
 const previewReadyMessageType = 'rakun:preview:ready'
 const previewModuleSelectMessageType = 'rakun:preview:select-module'
 const previewInspectorMessageType = 'rakun:preview:inspect-mode'
+const previewSeoAnalysisMessageType = 'rakun:preview:seo-analysis'
+const previewSeoAnalysisResultMessageType = 'rakun:preview:seo-analysis-result'
 
 type PreviewUpdateMessage = {
   type: typeof previewUpdateMessageType
@@ -48,6 +51,54 @@ export type PreviewModuleSelectMessage = {
   layoutIndex: number
   layoutKey?: string
   moduleIndex?: number
+}
+
+export type SeoAnalysisReport = {
+  url: string
+  title: string
+  description: string
+  canonical: string
+  siteUrl: string
+  robots: string
+  language: string
+  headings: Array<{ level: number; text: string }>
+  images: { total: number; missingAlt: number; emptyAlt: number }
+  openGraph: {
+    title: string
+    description: string
+    image: string
+    url: string
+    type: string
+  }
+  twitter: {
+    card: string
+    title: string
+    description: string
+    image: string
+  }
+}
+
+const readSeoAnalysisReport = (value: unknown): SeoAnalysisReport | null => {
+  if (!value || typeof value !== 'object') return null
+
+  const report = value as SeoAnalysisReport
+  const strings = [
+    report.url,
+    report.title,
+    report.description,
+    report.canonical,
+    report.siteUrl,
+    report.robots,
+    report.language,
+  ]
+
+  if (strings.some((item) => typeof item !== 'string')) return null
+  if (!Array.isArray(report.headings)) return null
+  if (!report.images || typeof report.images.total !== 'number') return null
+  if (!report.openGraph || typeof report.openGraph.title !== 'string') return null
+  if (!report.twitter || typeof report.twitter.title !== 'string') return null
+
+  return report
 }
 
 const readNumber = (value: unknown) =>
@@ -121,6 +172,8 @@ export const useContentPreview = ({
   readTemplateModules,
 }: UseContentPreviewParams) => {
   const t = useTranslations()
+  const tRef = useRef(t)
+  tRef.current = t
   const { mutateAsync: createPreview, isPending: isPreviewPending } = useManagerMutation(
     'manager.preview.create',
   )
@@ -128,10 +181,34 @@ export const useContentPreview = ({
   const previewRequestId = useRef(0)
   const previewBridgeReady = useRef(false)
   const previewBridgeFallbackTimeout = useRef<number | null>(null)
+  const seoAnalysisRequestId = useRef(0)
+  const pendingSeoAnalysisRequestId = useRef<number | null>(null)
+  const seoAnalysisTimeout = useRef<number | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewError, setPreviewError] = useState<string | null>(null)
   const [previewInspectorEnabled, setPreviewInspectorEnabled] = useState(false)
+  const [seoAnalysis, setSeoAnalysis] = useState<SeoAnalysisReport | null>(null)
+  const [seoAnalysisError, setSeoAnalysisError] = useState<string | null>(null)
+  const [isSeoAnalysisPending, setIsSeoAnalysisPending] = useState(false)
+
+  const clearSeoAnalysisTimeout = useCallback(() => {
+    if (!seoAnalysisTimeout.current) return
+
+    window.clearTimeout(seoAnalysisTimeout.current)
+    seoAnalysisTimeout.current = null
+  }, [])
+
+  const failSeoAnalysis = useCallback(
+    (message: string) => {
+      pendingSeoAnalysisRequestId.current = null
+      clearSeoAnalysisTimeout()
+      setIsSeoAnalysisPending(false)
+      setSeoAnalysisError(message)
+      toast.error(message)
+    },
+    [clearSeoAnalysisTimeout],
+  )
 
   const clearPreviewBridgeFallback = useCallback(() => {
     if (!previewBridgeFallbackTimeout.current) return
@@ -197,6 +274,27 @@ export const useContentPreview = ({
     [preview],
   )
 
+  const postSeoAnalysisMessage = useCallback(() => {
+    if (!preview || !previewBridgeReady.current) return false
+
+    const requestId = pendingSeoAnalysisRequestId.current
+    const frameWindow = previewFrameRef.current?.contentWindow
+
+    if (requestId === null || !frameWindow) return false
+
+    const targetOrigin = new URL(preview.webBaseUrl.toString(), window.location.origin).origin
+
+    frameWindow.postMessage(
+      {
+        type: previewSeoAnalysisMessageType,
+        requestId,
+      },
+      targetOrigin,
+    )
+
+    return true
+  }, [preview])
+
   const updatePreviewFrame = useCallback(
     ({
       forceUrl = false,
@@ -256,6 +354,30 @@ export const useContentPreview = ({
       }
 
       if (
+        event.data &&
+        typeof event.data === 'object' &&
+        (event.data as { type?: unknown }).type === previewSeoAnalysisResultMessageType
+      ) {
+        const message = event.data as { requestId?: unknown; report?: unknown }
+
+        if (message.requestId !== pendingSeoAnalysisRequestId.current) return
+
+        const report = readSeoAnalysisReport(message.report)
+
+        if (!report) {
+          failSeoAnalysis(tRef.current('contentEdit.seoAnalysisInvalidResponse'))
+          return
+        }
+
+        pendingSeoAnalysisRequestId.current = null
+        clearSeoAnalysisTimeout()
+        setSeoAnalysis(report)
+        setSeoAnalysisError(null)
+        setIsSeoAnalysisPending(false)
+        return
+      }
+
+      if (
         !event.data ||
         typeof event.data !== 'object' ||
         (event.data as { type?: unknown }).type !== previewReadyMessageType
@@ -266,6 +388,7 @@ export const useContentPreview = ({
       previewBridgeReady.current = true
       clearPreviewBridgeFallback()
       postPreviewInspectorMessage(previewInspectorEnabled)
+      postSeoAnalysisMessage()
     }
 
     window.addEventListener('message', handleMessage)
@@ -273,13 +396,18 @@ export const useContentPreview = ({
     return () => window.removeEventListener('message', handleMessage)
   }, [
     clearPreviewBridgeFallback,
+    clearSeoAnalysisTimeout,
+    failSeoAnalysis,
     onModuleSelect,
     postPreviewInspectorMessage,
+    postSeoAnalysisMessage,
     preview,
     previewInspectorEnabled,
   ])
 
   useEffect(() => clearPreviewBridgeFallback, [clearPreviewBridgeFallback])
+
+  useEffect(() => clearSeoAnalysisTimeout, [clearSeoAnalysisTimeout])
 
   useEffect(() => {
     postPreviewInspectorMessage(previewInspectorEnabled)
@@ -335,6 +463,67 @@ export const useContentPreview = ({
     updatePreviewFrame,
   ])
 
+  const handleSeoAnalysis = useCallback(async () => {
+    if (!preview || !previewRoute) return
+
+    const data = readFormData()
+    const templateModules = readTemplateModules?.()
+
+    if (!data || (readTemplateModules && !templateModules)) return
+
+    setIsSeoAnalysisPending(true)
+    setSeoAnalysisError(null)
+    clearSeoAnalysisTimeout()
+
+    const requestId = ++previewRequestId.current
+
+    try {
+      const result = await createPreview({
+        contentType: contentTypeName,
+        documentId: contentTypeId,
+        data,
+        templateModules,
+        languageCode,
+        routeKey: previewRoute.key,
+      })
+
+      if (requestId !== previewRequestId.current) return
+
+      const analysisRequestId = ++seoAnalysisRequestId.current
+
+      pendingSeoAnalysisRequestId.current = analysisRequestId
+      seoAnalysisTimeout.current = window.setTimeout(
+        () => failSeoAnalysis(t('contentEdit.seoAnalysisTimeout')),
+        10000,
+      )
+      updatePreviewFrame({
+        forceUrl: !previewOpen,
+        path: result.path,
+        token: result.token,
+      })
+    } catch (error) {
+      if (requestId !== previewRequestId.current) return
+
+      failSeoAnalysis(
+        getActionErrorMessage(error, t('contentEdit.seoAnalysisPreviewError')),
+      )
+    }
+  }, [
+    clearSeoAnalysisTimeout,
+    contentTypeId,
+    contentTypeName,
+    createPreview,
+    failSeoAnalysis,
+    languageCode,
+    preview,
+    previewOpen,
+    previewRoute,
+    readFormData,
+    readTemplateModules,
+    t,
+    updatePreviewFrame,
+  ])
+
   useEffect(() => {
     if (!canPreview && previewOpen) {
       setPreviewOpen(false)
@@ -347,12 +536,16 @@ export const useContentPreview = ({
 
   return {
     handlePreview,
+    handleSeoAnalysis,
     isPreviewPending,
+    isSeoAnalysisPending,
     previewError,
     previewFrameRef,
     previewInspectorEnabled,
     previewOpen,
     previewUrl,
+    seoAnalysis,
+    seoAnalysisError,
     setPreviewInspectorEnabled,
     setPreviewOpen,
   }

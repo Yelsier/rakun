@@ -160,6 +160,25 @@ Template changes require the content type's `updateAny` permission and are
 saved with optimistic revision checks. Preview includes unsaved changes from
 both tabs.
 
+## Route SEO analysis
+
+The SEO tab of routeable content has separate Metadata and Analysis views.
+Generate report creates a temporary preview snapshot from the current form and
+shared template, then inspects the rendered page through the preview bridge.
+The report checks title and description lengths, H1 usage, heading order,
+missing image `alt` attributes, canonical URL, document language, `noindex`,
+and Open Graph coverage. It also renders representative Google and sharing
+previews plus the page's heading outline. The indexability result uses the
+content's resolved SEO value and ignores `noindex` added solely to protect the
+temporary preview URL from indexing. When the canonical field is empty, Rakun
+derives it from Settings → SEO `siteUrl` and the resolved page route; the report
+identifies a missing `siteUrl` separately.
+
+SEO reports are advisory, are not persisted, and do not claim to predict search
+rankings. They require the route to have manager preview configured. The
+preview adapter must support Rakun's SEO-analysis bridge messages; the official
+Next adapter does so automatically.
+
 ## Dynamic data mappings
 
 List bindings use a type-aware mapping editor. When a mapped target property is

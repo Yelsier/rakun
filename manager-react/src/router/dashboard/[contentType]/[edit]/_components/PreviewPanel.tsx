@@ -43,6 +43,7 @@ export const PreviewPanel = () => {
                     variant="ghost"
                     size="icon"
                     loading={previewState.isPreviewPending}
+                    disabled={previewState.isSeoAnalysisPending}
                     onClick={() => void previewState.handlePreview()}
                   >
                     <RefreshCw />

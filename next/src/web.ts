@@ -521,11 +521,14 @@ export const createRakunDatabaseWeb = ({
     await initialize()
 
     if (preview.token) {
-      return normalizeJsonOutput(
-        await getRakunWebPreviewPage({
-          ...input,
-          token: preview.token,
-        })
+      return markRakunPreviewPage(
+        normalizeJsonOutput(
+          await getRakunWebPreviewPage({
+            ...input,
+            token: preview.token,
+          })
+        ),
+        { tokenParam: previewTokenParam }
       )
     }
 
