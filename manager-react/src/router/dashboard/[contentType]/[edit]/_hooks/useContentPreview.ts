@@ -2,8 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useTranslations } from '@/i18n'
+import { useSession } from '@/state/session'
 
 import type { ContentTypeRouteMeta } from '../edit.types'
+import { buildSeoChecks, getSeoScore } from '../_components/seo-analysis'
 
 import { useManagerMutation } from '@/client/react'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
@@ -199,6 +201,9 @@ export const useContentPreview = ({
   const { mutateAsync: createPreview, isPending: isPreviewPending } = useManagerMutation(
     'manager.preview.create',
   )
+  const { mutateAsync: saveSeoAudit } = useManagerMutation('manager.create')
+  const { hasPermissions } = useSession()
+  const canSaveSeoAudit = hasPermissions(['content.SeoSettings.own'])
   const previewFrameRef = useRef<HTMLIFrameElement>(null)
   const previewRequestId = useRef(0)
   const previewBridgeReady = useRef(false)
@@ -213,6 +218,7 @@ export const useContentPreview = ({
   const [seoAnalysis, setSeoAnalysis] = useState<SeoAnalysisReport | null>(null)
   const [seoAnalysisError, setSeoAnalysisError] = useState<string | null>(null)
   const [isSeoAnalysisPending, setIsSeoAnalysisPending] = useState(false)
+  const [seoAnalysisHistoryRevision, setSeoAnalysisHistoryRevision] = useState(0)
 
   const clearSeoAnalysisTimeout = useCallback(() => {
     if (!seoAnalysisTimeout.current) return
@@ -396,6 +402,42 @@ export const useContentPreview = ({
         setSeoAnalysis(report)
         setSeoAnalysisError(null)
         setIsSeoAnalysisPending(false)
+
+        if (canSaveSeoAudit && contentTypeId && previewRoute) {
+          const checks = buildSeoChecks(report)
+          const score = getSeoScore(checks)
+
+          void saveSeoAudit({
+            contentType: 'SeoAudit',
+            data: {
+              _type: 'SeoAudit',
+              kind: 'page',
+              languageCode,
+              score,
+              goodCount: checks.filter((check) => check.status === 'good').length,
+              warningCount: checks.filter((check) => check.status === 'warning').length,
+              errorCount: checks.filter((check) => check.status === 'error').length,
+              documentCount: 1,
+              contentTypeCount: 1,
+              contentType: contentTypeName,
+              documentId: contentTypeId,
+              routeKey: previewRoute.key,
+              url: report.canonical || undefined,
+              payload: JSON.stringify({
+                version: 1,
+                report: {
+                  ...report,
+                  url: report.canonical || report.siteUrl,
+                },
+                checks,
+              }),
+            },
+          })
+            .then(() => setSeoAnalysisHistoryRevision((revision) => revision + 1))
+            .catch(() => {
+              toast.error(tRef.current('contentEdit.seoAnalysisSaveError'))
+            })
+        }
         return
       }
 
@@ -419,12 +461,18 @@ export const useContentPreview = ({
   }, [
     clearPreviewBridgeFallback,
     clearSeoAnalysisTimeout,
+    canSaveSeoAudit,
+    contentTypeId,
+    contentTypeName,
     failSeoAnalysis,
     onModuleSelect,
     postPreviewInspectorMessage,
     postSeoAnalysisMessage,
     preview,
     previewInspectorEnabled,
+    previewRoute,
+    languageCode,
+    saveSeoAudit,
   ])
 
   useEffect(() => clearPreviewBridgeFallback, [clearPreviewBridgeFallback])
@@ -568,6 +616,7 @@ export const useContentPreview = ({
     previewUrl,
     seoAnalysis,
     seoAnalysisError,
+    seoAnalysisHistoryRevision,
     setPreviewInspectorEnabled,
     setPreviewOpen,
   }

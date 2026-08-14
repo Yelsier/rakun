@@ -34,6 +34,7 @@ import {
 import { isIteratorItemVisible } from '../../utils/iteratorVisibility'
 import type { IteratorItemVisibilityCondition } from '../../../lib/fields/List'
 import { getRouteBreadcrums, hasBreadcrumsFields } from '../../utils/breadcrums'
+import { filterVisibleRouteMapEntries } from '../../utils/routes/routeMapHelpers'
 
 export const NotFoundResponse: PageOutput = {
   renderMode: 'static',
@@ -104,6 +105,17 @@ type PageContentData = Record<string, unknown> & {
   _visibility?: string
 }
 
+export const isPublicPageContent = (
+  contentType: Pick<ContentType, 'documentVisibility'>,
+  data: PageContentData,
+) => {
+  if (data._trashed === true || data._visibility === 'trash') return false
+
+  return contentType.documentVisibility
+    ? data._visibility === 'published' || data._visibility === 'hidden'
+    : data._visibility !== 'draft'
+}
+
 const getSeoAlternatePaths = async ({
   contentType,
   contentTypeId,
@@ -134,12 +146,13 @@ const getSeoAlternatePaths = async ({
       },
       options: {
         limit: 'all',
-        fields: ['path', 'languageId'],
+        fields: ['path', 'languageId', 'contentType', 'contentTypeId'],
       },
     })
   ).items
 
-  const entries = routeMaps
+  const visibleRouteMaps = await filterVisibleRouteMapEntries(db, routeMaps)
+  const entries = visibleRouteMaps
     .map((routeMap) => {
       const code = languageCodeById.get(String(routeMap.languageId))
       return code ? ([code, routeMap.path] as const) : null
@@ -495,7 +508,7 @@ export const getPage = async (input: PageInput): Promise<PageOutput> => {
 
     if (!data) return NotFoundResponse
 
-    if (data._trashed === true || data._visibility === 'draft' || data._visibility === 'trash') {
+    if (!isPublicPageContent(contentType, data)) {
       return NotFoundResponse
     }
 

@@ -10,6 +10,7 @@ import { ManagerDashboardHomeScreen } from "../dashboard";
 import { ManagerLoginScreen } from "../login";
 import { ManagerLoginCallbackScreen } from "../login/callback";
 import { ManagerMediaLibraryScreen } from "../dashboard/media";
+import { ManagerSeoScreen } from '../dashboard/seo'
 import { ManagerMfaScreen } from "../mfa";
 import {
   ManagerForgotPasswordScreen,
@@ -181,6 +182,18 @@ export const managerRouteDefinitions = [
     layout: "dashboard",
     parse: () => ({ kind: "debugging-security" }),
     render: () => <ManagerSettingsSecurityScreen />,
+  }),
+  defineManagerRoute({
+    kind: 'seo',
+    path: '/seo',
+    layout: 'dashboard',
+    parse: () => ({ kind: 'seo' }),
+    render: (_route, props) => (
+      <ManagerSeoScreen
+        contentTypes={props.contentTypes ?? []}
+        siteUrl={props.siteUrl}
+      />
+    ),
   }),
   defineManagerRoute({
     kind: "media-library",

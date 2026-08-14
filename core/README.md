@@ -874,6 +874,11 @@ assignment when that exact assigned document is published and has a generated
 page route. Manager clients can use it for a contextual public-page link without
 granting editors direct access to internal `RouteMap` records.
 
+Routeable content with document visibility is public only when `_visibility`
+is explicitly `published` or `hidden`. Missing visibility is treated as draft,
+both while generating route maps and when resolving a public page, so legacy or
+incomplete records fail closed even if an obsolete route-map entry remains.
+
 Main helpers:
 
 - `defineOperationContract`: declares a contract with Zod input/output, method, path, and metadata.

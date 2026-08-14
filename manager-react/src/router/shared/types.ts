@@ -22,6 +22,7 @@ export type ManagerResolvedRoute =
   | { kind: "dashboard-home" }
   | { kind: "account" }
   | { kind: "media-library" }
+  | { kind: 'seo' }
   | { kind: "api-routes" }
   | { kind: "users" }
   | { kind: "debugging-home" }

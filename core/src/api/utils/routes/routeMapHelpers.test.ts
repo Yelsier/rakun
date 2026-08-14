@@ -1,14 +1,27 @@
 import { describe, expect, it } from 'bun:test'
 
-import type { Language, Route, RouteSettings } from '../../../internal-content-types'
+import type { Language, Route, RouteMap, RouteSettings } from '../../../internal-content-types'
+import ContentType from '../../../lib/ContentType'
+import { Fields } from '../../../lib/fields'
+import { registerContentType } from '../../../lib/Registry'
 import type { DBOutput, TranslatableValue } from '../../../lib/types'
+import type { DBService } from '../../../orm/dbService'
 import {
   buildRoutePath,
+  filterVisibleRouteMapEntries,
   generateRouteMapItems,
   getRouteFields,
   isHomePageRouteItem,
+  isVisibleForRouteMap,
   type RouteLocaleVariantRecord,
 } from './routeMapHelpers'
+
+const VisibilityPage = new ContentType({
+  name: 'RouteMapVisibilityPage',
+  fields: { slug: Fields.string().required() },
+}).enableDocumentVisibility()
+
+registerContentType(VisibilityPage)
 
 const makeLanguage = (overrides: Partial<DBOutput<Language>>): DBOutput<Language> =>
   ({
@@ -34,6 +47,54 @@ const makeRoute = (overrides: Partial<DBOutput<Route>> = {}): DBOutput<Route> =>
   }) as DBOutput<Route>
 
 describe('route map helpers', () => {
+  it('treats missing visibility as a draft for content types with visibility', () => {
+    const legacyItem = { _id: 'legacy-page', slug: 'legacy-page' }
+
+    expect(isVisibleForRouteMap(legacyItem, true)).toBe(false)
+    expect(isVisibleForRouteMap(legacyItem, false)).toBe(true)
+    expect(
+      isVisibleForRouteMap(
+        { ...legacyItem, _visibility: 'published' },
+        true,
+      ),
+    ).toBe(true)
+  })
+
+  it('filters stale route map entries using the target document visibility', async () => {
+    const entries = [
+      {
+        contentType: VisibilityPage.name,
+        contentTypeId: 'published-page',
+        path: '/published/',
+      },
+      {
+        contentType: VisibilityPage.name,
+        contentTypeId: 'legacy-page',
+        path: '/legacy/',
+      },
+    ] as Pick<DBOutput<RouteMap>, 'contentType' | 'contentTypeId' | 'path'>[]
+    const db = {
+      list: async () => ({
+        totalItems: 2,
+        items: [
+          {
+            _id: 'published-page',
+            _type: VisibilityPage.name,
+            _visibility: 'published',
+          },
+          {
+            _id: 'legacy-page',
+            _type: VisibilityPage.name,
+          },
+        ],
+      }),
+    } as unknown as DBService
+
+    await expect(filterVisibleRouteMapEntries(db, entries)).resolves.toEqual([
+      entries[0],
+    ])
+  })
+
   it('generates one language while translating with parent/default languages', async () => {
     const english = makeLanguage({ code: 'en', default: true })
     const spanish = makeLanguage({

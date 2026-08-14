@@ -32,6 +32,7 @@ export * from "./RouteSettings";
 export * from "./SchemaState";
 export * from "./Seo";
 export * from "./SeoSettings";
+export * from './SeoAudit'
 export * from './StructuredData'
 export * from "./Session";
 export * from "./UserMfa";

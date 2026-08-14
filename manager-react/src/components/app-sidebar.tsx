@@ -3,6 +3,7 @@ import {
   ExternalLink,
   HelpCircle,
   Images,
+  SearchCheck,
   Settings,
   User,
   type LucideIcon,
@@ -71,6 +72,16 @@ const getDefaultSecondaryNavItems = (
   basePath: string,
   t: (key: ManagerMessageKey) => string
 ): ManagerSidebarItem[] => [
+  {
+    title: t('sidebar.seo'),
+    url: getManagerPathHref('/seo', { basePath }),
+    icon: SearchCheck,
+    permissions: [
+      'content.SeoSettings.readAny',
+      'content.SeoSettings.own',
+    ],
+    permissionMode: 'any',
+  },
   {
     title: t('sidebar.mediaLibrary'),
     url: getManagerPathHref('/media', { basePath }),

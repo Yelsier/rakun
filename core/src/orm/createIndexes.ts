@@ -11,6 +11,7 @@ import {
   Migration,
   PreviewSnapshot,
   SchemaState,
+  SeoAudit,
 } from "../internal-content-types";
 import { getContentTypes } from "../lib/Registry";
 import { getPersistedUniqueGroups } from "../lib/routeableContent";
@@ -109,6 +110,10 @@ export async function createIndexes(db: Db): Promise<void> {
     db
       .collection(PreviewSnapshot.name)
       .createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    db.collection(SeoAudit.name).createIndex({ kind: 1, createdAt: -1 }),
+    db
+      .collection(SeoAudit.name)
+      .createIndex({ contentType: 1, documentId: 1, createdAt: -1 }),
     db
       .collection(SchemaState.name)
       .createIndex({ contentType: 1 }, { unique: true }),

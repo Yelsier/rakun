@@ -1,18 +1,33 @@
 'use client'
 
-import { Braces, CheckCircle2, CircleX, Search, Share2, TriangleAlert } from 'lucide-react'
-import { useState } from 'react'
+import type { Permission } from '@rakun-kit/core/client'
+import {
+  Braces,
+  CheckCircle2,
+  CircleX,
+  History,
+  RotateCcw,
+  Search,
+  Share2,
+  TriangleAlert,
+} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 
 import ContentTypeEdit from '../ContentTypeEdit'
 import { useEditPageContext } from '../_context/EditPageContext'
 import { buildSeoChecks, getSeoScore, type SeoCheck } from './seo-analysis'
+import type { SeoAnalysisReport } from '../_hooks/useContentPreview'
 
+import { useManagerQuery } from '@/client/react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { useTranslations } from '@/i18n'
+import { formatDate } from '@/helpers/formatDate'
+import { getActionErrorMessage } from '@/helpers/get-action-error-message'
+import { useSession } from '@/state/session'
 
 const statusStyles = {
   good: 'border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300',
@@ -44,14 +59,141 @@ const formatJsonLd = (value: string) => {
   }
 }
 
+type PageSeoAuditRecord = {
+  _id: string
+  score: number
+  goodCount: number
+  warningCount: number
+  errorCount: number
+  payload: string
+  createdAt?: Date | string
+}
+
+type PageSeoAuditSnapshot = {
+  report: SeoAnalysisReport | null
+  checks: SeoCheck[]
+}
+
+const readSavedReport = (value: unknown): SeoAnalysisReport | null => {
+  if (!value || typeof value !== 'object') return null
+
+  const report = value as SeoAnalysisReport
+
+  if (
+    typeof report.url !== 'string' ||
+    typeof report.title !== 'string' ||
+    typeof report.description !== 'string' ||
+    typeof report.canonical !== 'string' ||
+    typeof report.siteUrl !== 'string' ||
+    typeof report.robots !== 'string' ||
+    typeof report.language !== 'string' ||
+    !Array.isArray(report.headings) ||
+    !report.images ||
+    !Array.isArray(report.structuredData) ||
+    !report.openGraph ||
+    !report.twitter
+  ) {
+    return null
+  }
+
+  return report
+}
+
+const readSavedChecks = (value: unknown): SeoCheck[] => {
+  if (!Array.isArray(value)) return []
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== 'object') return []
+
+    const check = item as SeoCheck
+    if (
+      typeof check.id !== 'string' ||
+      !['good', 'warning', 'error'].includes(check.status) ||
+      typeof check.value !== 'number'
+    ) {
+      return []
+    }
+
+    return [check]
+  })
+}
+
+const readPageSeoAuditSnapshot = (payload: string): PageSeoAuditSnapshot => {
+  try {
+    const value = JSON.parse(payload) as { report?: unknown; checks?: unknown }
+    return {
+      report: readSavedReport(value.report),
+      checks: readSavedChecks(value.checks),
+    }
+  } catch {
+    return { report: null, checks: [] }
+  }
+}
+
 export const SeoTabContent = () => {
   const t = useTranslations()
   const [view, setView] = useState<'metadata' | 'analysis'>('metadata')
-  const { canPreview, contentType, contentTypeId, contentTypeName, form, previewState, sections } =
-    useEditPageContext()
-  const report = previewState.seoAnalysis
-  const checks = report ? buildSeoChecks(report) : []
-  const score = getSeoScore(checks)
+  const [selectedAuditId, setSelectedAuditId] = useState<string | null>(null)
+  const {
+    canPreview,
+    contentType,
+    contentTypeId,
+    contentTypeName,
+    form,
+    languageCode,
+    localeVariantRoute,
+    previewState,
+    sections,
+  } = useEditPageContext()
+  const { hasAnyPermission } = useSession()
+  const canReadHistory = hasAnyPermission([
+    'content.SeoSettings.own' as Permission,
+    'content.SeoSettings.readAny' as Permission,
+  ])
+  const historyQuery = useManagerQuery({
+    name: 'manager.list',
+    input: {
+      contentType: 'SeoAudit',
+      query: {
+        filter: {
+          kind: 'page',
+          contentType: contentTypeName,
+          documentId: contentTypeId ?? '',
+          languageCode,
+          ...(localeVariantRoute ? { routeKey: localeVariantRoute.key } : {}),
+        },
+        options: { limit: 20, sort: { createdAt: 'desc' } },
+      },
+    },
+    enabled: Boolean(canReadHistory && contentTypeId),
+  })
+  const history = (historyQuery.data?.items ?? []) as PageSeoAuditRecord[]
+  const selectedAudit = history.find((audit) => audit._id === selectedAuditId)
+  const selectedSnapshot = useMemo(
+    () => (selectedAudit ? readPageSeoAuditSnapshot(selectedAudit.payload) : null),
+    [selectedAudit],
+  )
+  const liveReport = previewState.seoAnalysis
+  const report = selectedAudit ? selectedSnapshot?.report ?? null : liveReport
+  const checks = selectedAudit
+    ? selectedSnapshot?.checks ?? []
+    : report
+      ? buildSeoChecks(report)
+      : []
+  const score = selectedAudit?.score ?? getSeoScore(checks)
+
+  useEffect(() => {
+    setSelectedAuditId(null)
+  }, [liveReport])
+
+  useEffect(() => {
+    setSelectedAuditId(null)
+  }, [contentTypeId, languageCode, localeVariantRoute?.key])
+
+  useEffect(() => {
+    if (previewState.seoAnalysisHistoryRevision === 0) return
+    void historyQuery.refetch()
+  }, [historyQuery.refetch, previewState.seoAnalysisHistoryRevision])
   const missingSocialFields = [
     [report?.openGraph.title, t('contentEdit.seoSocialFieldTitle')],
     [report?.openGraph.description, t('contentEdit.seoSocialFieldDescription')],
@@ -212,7 +354,9 @@ export const SeoTabContent = () => {
               onClick={() => void previewState.handleSeoAnalysis()}
             >
               <Search />
-              {report ? t('contentEdit.seoRegenerateReport') : t('contentEdit.seoGenerateReport')}
+              {liveReport
+                ? t('contentEdit.seoRegenerateReport')
+                : t('contentEdit.seoGenerateReport')}
             </Button>
           </CardHeader>
           {!canPreview ? (
@@ -227,7 +371,112 @@ export const SeoTabContent = () => {
           ) : null}
         </Card>
 
-        {!report ? (
+        {contentTypeId && canReadHistory ? (
+          <Card>
+            <CardHeader className='gap-3 sm:flex-row sm:items-center sm:justify-between'>
+              <div className='space-y-1.5'>
+                <CardTitle className='flex items-center gap-2'>
+                  <History className='size-4' />
+                  {t('contentEdit.seoHistoryTitle')}
+                </CardTitle>
+                <CardDescription>{t('contentEdit.seoHistoryDescription')}</CardDescription>
+              </div>
+              {selectedAudit ? (
+                <Button variant='outline' size='sm' onClick={() => setSelectedAuditId(null)}>
+                  <RotateCcw />
+                  {t('contentEdit.seoHistoryCurrent')}
+                </Button>
+              ) : null}
+            </CardHeader>
+            <CardContent>
+              {historyQuery.isLoading ? (
+                <p className='text-sm text-muted-foreground'>
+                  {t('contentEdit.seoHistoryLoading')}
+                </p>
+              ) : historyQuery.isError ? (
+                <p className='text-sm text-destructive'>
+                  {getActionErrorMessage(
+                    historyQuery.error,
+                    t('contentEdit.seoHistoryLoadError'),
+                  )}
+                </p>
+              ) : history.length ? (
+                <div className='flex gap-3 overflow-x-auto pb-1'>
+                  {history.map((audit) => (
+                    <button
+                      key={audit._id}
+                      type='button'
+                      className={cn(
+                        'min-w-48 rounded-lg border p-3 text-left transition-colors hover:bg-accent',
+                        selectedAuditId === audit._id && 'border-primary bg-primary/5',
+                      )}
+                      onClick={() => setSelectedAuditId(audit._id)}
+                    >
+                      <span className='block text-xs text-muted-foreground'>
+                        {audit.createdAt
+                          ? formatDate(new Date(audit.createdAt))
+                          : t('common.unknown')}
+                      </span>
+                      <span className='mt-2 flex items-center justify-between gap-3'>
+                        <strong>{t('contentEdit.seoHistoryScore', { score: audit.score })}</strong>
+                        <span className='flex gap-1'>
+                          {audit.errorCount ? (
+                            <Badge variant='destructive'>{audit.errorCount}</Badge>
+                          ) : null}
+                          {audit.warningCount ? (
+                            <Badge variant='secondary'>{audit.warningCount}</Badge>
+                          ) : null}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className='text-sm text-muted-foreground'>
+                  {t('contentEdit.seoHistoryEmpty')}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {selectedAudit ? (
+          <div className='flex flex-wrap items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm'>
+            <History className='size-4 text-primary' />
+            <span className='font-medium'>{t('contentEdit.seoHistoryViewing')}</span>
+            <span className='text-muted-foreground'>
+              {selectedAudit.createdAt
+                ? formatDate(new Date(selectedAudit.createdAt))
+                : t('common.unknown')}
+            </span>
+          </div>
+        ) : null}
+
+        {!report && selectedAudit && checks.length ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('contentEdit.seoHistorySnapshotTitle')}</CardTitle>
+              <CardDescription>{t('contentEdit.seoHistorySnapshotDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
+              {checks.map((check) => {
+                const copy = getCheckCopy(check)
+
+                return (
+                  <div
+                    key={check.id}
+                    className={cn('rounded-lg border p-4', statusStyles[check.status])}
+                  >
+                    <div className='flex items-center gap-2 font-medium'>
+                      <StatusIcon status={check.status} />
+                      {copy.title}
+                    </div>
+                  </div>
+                )
+              })}
+            </CardContent>
+          </Card>
+        ) : !report ? (
           <div className="text-muted-foreground flex min-h-64 flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-8 text-center">
             <Search className="size-9" />
             <div>

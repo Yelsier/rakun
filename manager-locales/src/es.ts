@@ -13,6 +13,7 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'navUser.theme.light': 'Claro',
   'navUser.theme.dark': 'Oscuro',
   'sidebar.mediaLibrary': 'Biblioteca de medios',
+  'sidebar.seo': 'SEO',
   'sidebar.users': 'Usuarios',
   'sidebar.apiRoutes': 'Rutas API',
   'sidebar.debugging': 'Depuración',
@@ -23,6 +24,65 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'sidebar.contentTypes': 'Tipos de contenido',
   'nav.dashboard': 'Panel',
   'nav.toggleSidebar': 'Alternar barra lateral',
+  'seoAudit.title': 'SEO',
+  'seoAudit.description':
+    'Audita las páginas publicadas del sitio y guarda informes con fecha para seguir su evolución.',
+  'seoAudit.generate': 'Generar informe',
+  'seoAudit.regenerate': 'Generar nuevo informe',
+  'seoAudit.generated': 'Informe SEO generado y guardado.',
+  'seoAudit.generateError': 'No se pudo generar el informe SEO.',
+  'contentEdit.seoAnalysisSaveError':
+    'El informe SEO se generó, pero no se pudo guardar en el historial.',
+  'contentEdit.seoHistoryTitle': 'Informes anteriores',
+  'contentEdit.seoHistoryDescription':
+    'Abre un informe guardado para revisar cómo ha evolucionado esta página.',
+  'contentEdit.seoHistoryCurrent': 'Volver al informe actual',
+  'contentEdit.seoHistoryLoading': 'Cargando informes anteriores…',
+  'contentEdit.seoHistoryLoadError':
+    'No se pudieron cargar los informes SEO anteriores.',
+  'contentEdit.seoHistoryEmpty':
+    'Todavía no hay informes guardados para esta página y este idioma.',
+  'contentEdit.seoHistoryScore': '{score}/100',
+  'contentEdit.seoHistoryViewing': 'Viendo informe guardado',
+  'contentEdit.seoHistorySnapshotTitle': 'Hallazgos guardados',
+  'contentEdit.seoHistorySnapshotDescription':
+    'Esta captura anterior conserva los resultados, pero es previa al guardado del informe completo.',
+  'seoAudit.scope': 'La auditoría incluye {count} tipos de contenido con rutas.',
+  'seoAudit.score': 'Puntuación',
+  'seoAudit.scoreValue': '{score}/100',
+  'seoAudit.documents': 'Páginas publicadas',
+  'seoAudit.errors': 'Errores',
+  'seoAudit.warnings': 'Avisos',
+  'seoAudit.pagesTitle': 'Resultados por página',
+  'seoAudit.pagesDescription':
+    'Abre una página para consultar sus hallazgos e ir directamente al documento.',
+  'seoAudit.issueCount': '{count} hallazgos',
+  'seoAudit.noIssues': 'No hay problemas de metadatos en esta página.',
+  'seoAudit.openDocument': 'Abrir documento',
+  'seoAudit.emptyTitle': 'Todavía no hay informes SEO',
+  'seoAudit.emptyDescription':
+    'Genera el primer informe para establecer el punto de partida del sitio.',
+  'seoAudit.historyTitle': 'Evolución',
+  'seoAudit.historyDescription':
+    'Cada auditoría del sitio se guarda con su fecha para poder seguir los cambios.',
+  'seoAudit.historySummary':
+    '{documents} páginas · {errors} errores · {warnings} avisos',
+  'seoAudit.noHistory': 'No hay auditorías del sitio guardadas.',
+  'seoAudit.pageHistoryTitle': 'Informes recientes de páginas',
+  'seoAudit.pageHistoryDescription':
+    'Informes generados desde la pestaña SEO de documentos individuales.',
+  'seoAudit.finding.missingTitle': 'La página no tiene título SEO.',
+  'seoAudit.finding.titleLength': 'El título está fuera de la longitud recomendada.',
+  'seoAudit.finding.missingDescription': 'La página no tiene meta description.',
+  'seoAudit.finding.descriptionLength':
+    'La descripción está fuera de la longitud recomendada.',
+  'seoAudit.finding.noIndex': 'La página declara noindex.',
+  'seoAudit.finding.missingCanonicalBase':
+    'No hay URL canónica ni está configurada la URL del sitio.',
+  'seoAudit.finding.incompleteOpenGraph': 'Faltan campos Open Graph personalizados: {fields}.',
+  'seoAudit.finding.duplicateTitle': 'Otra página utiliza el mismo título SEO.',
+  'seoAudit.finding.duplicateDescription':
+    'Otra página utiliza la misma meta description.',
   'login.brand': 'Rakun Manager',
   'login.welcome': 'Bienvenido a Rakun Manager',
   'login.email': 'Email',

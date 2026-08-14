@@ -168,8 +168,18 @@ report renders the current unsaved form through the configured preview and
 reports metadata lengths, heading structure, missing image alt attributes,
 indexability, social metadata, rendered JSON-LD blocks, and Google and sharing
 previews. JSON-LD results identify invalid JSON and missing `@context` or
-`@type`. The report is advisory and is not stored. A protective `noindex` on
-the temporary preview URL does not affect the content's indexability result.
+`@type`. For saved documents, the report is stored with its score and date when
+the editor can create SEO reports. Previous reports for the active language and
+route can be reopened directly from the document's Analysis view. A protective
+`noindex` on the temporary preview URL does not affect the content's
+indexability result.
+
+The secondary sidebar also includes a site-wide SEO screen above the media
+library. It audits stored metadata for published routeable documents in the
+active language, highlights duplicates and incomplete custom Open Graph data,
+and stores every run so its score can be followed over time. Access and report
+creation reuse the `SeoSettings` read and own permissions. Evolution snapshots
+and recent page reports are fetched and displayed in bounded, paginated groups.
 
 ## Styles
 

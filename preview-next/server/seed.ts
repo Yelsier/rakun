@@ -1540,6 +1540,7 @@ export const seedPreviewData = async ({
             previewCategoriesGalleryModule(),
           ],
           _type: Page.name,
+          _visibility: 'published',
           createdAt: now(),
           updatedAt: now(),
         },
@@ -1562,6 +1563,7 @@ export const seedPreviewData = async ({
             previewHelloWorldModule("About link target", "Destino Sobre"),
           ],
           _type: Page.name,
+          _visibility: 'published',
           createdAt: now(),
           updatedAt: now(),
         },
@@ -1587,6 +1589,7 @@ export const seedPreviewData = async ({
             previewHelloWorldModule("Contact link target", "Destino Contacto"),
           ],
           _type: Page.name,
+          _visibility: 'published',
           createdAt: now(),
           updatedAt: now(),
         },
@@ -1643,6 +1646,7 @@ export const seedPreviewData = async ({
           updatedAt: now(),
         },
         $setOnInsert: {
+          _visibility: 'published',
           createdAt: now(),
         },
       },
@@ -1689,6 +1693,7 @@ export const seedPreviewData = async ({
           updatedAt: now(),
         },
         $setOnInsert: {
+          _visibility: 'published',
           createdAt: now(),
         },
       },
@@ -1728,6 +1733,7 @@ export const seedPreviewData = async ({
           updatedAt: now(),
         },
         $setOnInsert: {
+          _visibility: 'published',
           createdAt: now(),
         },
       },

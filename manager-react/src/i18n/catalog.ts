@@ -24,6 +24,7 @@ export const managerMessages = {
   'navUser.theme.dark': { defaultMessage: 'Dark' },
 
   'sidebar.mediaLibrary': { defaultMessage: 'Media Library' },
+  'sidebar.seo': { defaultMessage: 'SEO' },
   'sidebar.users': { defaultMessage: 'Users' },
   'sidebar.apiRoutes': { defaultMessage: 'API Routes' },
   'sidebar.debugging': { defaultMessage: 'Debugging' },
@@ -35,6 +36,104 @@ export const managerMessages = {
 
   'nav.dashboard': { defaultMessage: 'Dashboard' },
   'nav.toggleSidebar': { defaultMessage: 'Toggle Sidebar' },
+
+  'seoAudit.title': { defaultMessage: 'SEO' },
+  'seoAudit.description': {
+    defaultMessage:
+      'Audit the published pages of the site and keep dated reports to track their evolution.',
+  },
+  'seoAudit.generate': { defaultMessage: 'Generate report' },
+  'seoAudit.regenerate': { defaultMessage: 'Generate new report' },
+  'seoAudit.generated': { defaultMessage: 'SEO report generated and saved.' },
+  'seoAudit.generateError': { defaultMessage: 'The SEO report could not be generated.' },
+  'contentEdit.seoAnalysisSaveError': {
+    defaultMessage: 'The SEO report was generated but could not be saved to the history.',
+  },
+  'contentEdit.seoHistoryTitle': { defaultMessage: 'Previous reports' },
+  'contentEdit.seoHistoryDescription': {
+    defaultMessage: 'Open a saved report to review how this page has evolved.',
+  },
+  'contentEdit.seoHistoryCurrent': { defaultMessage: 'Back to current report' },
+  'contentEdit.seoHistoryLoading': { defaultMessage: 'Loading previous reports…' },
+  'contentEdit.seoHistoryLoadError': {
+    defaultMessage: 'Previous SEO reports could not be loaded.',
+  },
+  'contentEdit.seoHistoryEmpty': {
+    defaultMessage: 'There are no saved reports for this page and language yet.',
+  },
+  'contentEdit.seoHistoryScore': {
+    defaultMessage: '{score}/100',
+    params: { score: 'number' },
+  },
+  'contentEdit.seoHistoryViewing': { defaultMessage: 'Viewing saved report' },
+  'contentEdit.seoHistorySnapshotTitle': { defaultMessage: 'Saved findings' },
+  'contentEdit.seoHistorySnapshotDescription': {
+    defaultMessage:
+      'This older snapshot contains the check results but predates full report storage.',
+  },
+  'seoAudit.scope': {
+    defaultMessage: '{count} routable content types are included in this audit.',
+    params: { count: 'number' },
+  },
+  'seoAudit.score': { defaultMessage: 'Score' },
+  'seoAudit.scoreValue': {
+    defaultMessage: '{score}/100',
+    params: { score: 'number' },
+  },
+  'seoAudit.documents': { defaultMessage: 'Published pages' },
+  'seoAudit.errors': { defaultMessage: 'Errors' },
+  'seoAudit.warnings': { defaultMessage: 'Warnings' },
+  'seoAudit.pagesTitle': { defaultMessage: 'Page results' },
+  'seoAudit.pagesDescription': {
+    defaultMessage: 'Open a page to see its findings and jump directly to the document.',
+  },
+  'seoAudit.issueCount': {
+    defaultMessage: '{count} findings',
+    params: { count: 'number' },
+  },
+  'seoAudit.noIssues': { defaultMessage: 'No metadata findings for this page.' },
+  'seoAudit.openDocument': { defaultMessage: 'Open document' },
+  'seoAudit.emptyTitle': { defaultMessage: 'No SEO reports yet' },
+  'seoAudit.emptyDescription': {
+    defaultMessage: 'Generate the first report to establish the site baseline.',
+  },
+  'seoAudit.historyTitle': { defaultMessage: 'Evolution' },
+  'seoAudit.historyDescription': {
+    defaultMessage: 'Every site audit is stored with its date so changes can be tracked over time.',
+  },
+  'seoAudit.historySummary': {
+    defaultMessage: '{documents} pages · {errors} errors · {warnings} warnings',
+    params: { documents: 'number', errors: 'number', warnings: 'number' },
+  },
+  'seoAudit.noHistory': { defaultMessage: 'There are no saved site audits.' },
+  'seoAudit.pageHistoryTitle': { defaultMessage: 'Recent page reports' },
+  'seoAudit.pageHistoryDescription': {
+    defaultMessage: 'Reports generated from the SEO tab of individual documents.',
+  },
+  'seoAudit.finding.missingTitle': { defaultMessage: 'The page has no SEO title.' },
+  'seoAudit.finding.titleLength': {
+    defaultMessage: 'The title is outside the recommended length.',
+  },
+  'seoAudit.finding.missingDescription': {
+    defaultMessage: 'The page has no meta description.',
+  },
+  'seoAudit.finding.descriptionLength': {
+    defaultMessage: 'The description is outside the recommended length.',
+  },
+  'seoAudit.finding.noIndex': { defaultMessage: 'The page declares noindex.' },
+  'seoAudit.finding.missingCanonicalBase': {
+    defaultMessage: 'There is no canonical URL and the site URL is not configured.',
+  },
+  'seoAudit.finding.incompleteOpenGraph': {
+    defaultMessage: 'Custom Open Graph is missing: {fields}.',
+    params: { fields: 'string' },
+  },
+  'seoAudit.finding.duplicateTitle': {
+    defaultMessage: 'The SEO title is also used by another page.',
+  },
+  'seoAudit.finding.duplicateDescription': {
+    defaultMessage: 'The meta description is also used by another page.',
+  },
 
   'login.brand': { defaultMessage: 'Rakun Manager' },
   'login.welcome': { defaultMessage: 'Welcome to Rakun Manager' },

@@ -180,10 +180,25 @@ temporary preview URL from indexing. When the canonical field is empty, Rakun
 derives it from Settings → SEO `siteUrl` and the resolved page route; the report
 identifies a missing `siteUrl` separately.
 
-SEO reports are advisory, are not persisted, and do not claim to predict search
-rankings. They require the route to have manager preview configured. The
-preview adapter must support Rakun's SEO-analysis bridge messages; the official
-Next adapter does so automatically.
+SEO reports are advisory and do not claim to predict search rankings. Reports
+generated for saved documents are persisted with their date, score and rendered
+findings when the editor has `content.SeoSettings.own`; the site-wide SEO screen
+uses that history to show recent page reports. The document's Analysis view also
+lists its previous reports for the active language and route; selecting one
+restores the saved report, while Back to current report returns to the live
+result. Preview analysis requires the route to have manager preview configured.
+The preview adapter must support Rakun's SEO-analysis bridge messages; the
+official Next adapter does so automatically.
+
+The secondary sidebar exposes a separate SEO screen above the media library for
+users with SEO settings read access. Its Generate report action scans published
+documents from every readable routeable content type in the active language,
+checks stored metadata, custom Open Graph completeness and duplicate titles or
+descriptions, then persists a dated `SeoAudit` snapshot. Previous site scores
+remain visible as a paginated evolution history; recent page reports use an
+independent bounded pagination. `SeoAudit` shares the `SeoSettings`
+permission resource, so `own` controls generation and `readAny` controls shared
+history visibility.
 
 Rakun's `StructuredData` iterator module can be placed in Content or a shared
 Template. Its typed fields support normal dynamic data mappings; the Custom

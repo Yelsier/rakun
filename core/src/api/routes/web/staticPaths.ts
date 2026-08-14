@@ -3,6 +3,7 @@ import { DEFAULT_STATIC_PAGE_TTL } from '../../../schemas/web/page'
 import type { StaticPathsOutput } from '../../../schemas/web/staticPaths'
 import type { DBOutput } from '../../../lib/types'
 import { getMongoService } from '../../../orm'
+import { filterVisibleRouteMapEntries } from '../../utils/routes/routeMapHelpers'
 
 export const buildStaticPathsOutput = (
   routes: readonly DBOutput<Route>[],
@@ -37,10 +38,12 @@ export const getStaticPaths = async (): Promise<StaticPathsOutput> => {
     db.list(RouteMap, {
       options: {
         limit: 'all',
-        fields: ['path', 'routeId'],
+        fields: ['path', 'routeId', 'contentType', 'contentTypeId'],
       },
     }),
   ])
 
-  return buildStaticPathsOutput(routes.items, routeMap.items)
+  const visibleRouteMap = await filterVisibleRouteMapEntries(db, routeMap.items)
+
+  return buildStaticPathsOutput(routes.items, visibleRouteMap)
 }

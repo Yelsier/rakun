@@ -268,6 +268,12 @@ language assignment only when its exact document is published and has a route
 map. This is the supported manager-facing way to build a contextual View page
 action; do not query hidden `RouteMap` records from manager UI code.
 
+For routeable content types with document visibility, only explicit
+`published` and `hidden` values are eligible for the route map or public page
+resolution. A legacy document with no `_visibility` is treated as a draft;
+this fail-closed check also prevents an obsolete `RouteMap` entry from exposing
+its content.
+
 The public `web.staticPaths` query returns `{ path, ttl }` entries only for
 route-map records whose configured page route has `dynamic: false`. Framework
 adapters use it to generate static params and choose an ISR lifetime. A
@@ -366,6 +372,12 @@ Project-defined manager labels may use arbitrary keys. Field labels follow
 `field.<fieldName>` and layout slots follow `layoutModule.<layoutKey>`.
 The public `manager.uiLocales` response also exposes a validated HTTP(S) SEO
 `siteUrl` for manager chrome; no other SEO settings are included.
+
+SEO audit snapshots are stored in the hidden internal `SeoAudit` content type.
+It shares the `SeoSettings` permission resource: `own` permits creating dated
+site or page reports, while `readAny` permits viewing reports created by other
+editors. The manager uses normal content operations for this persistence, so
+successful report creation is covered by the standard mutation event log.
 
 ## Public entrypoints
 

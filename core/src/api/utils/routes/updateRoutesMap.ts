@@ -23,9 +23,15 @@ import {
   type RouteLocaleVariantRecord,
 } from "./routeMapHelpers";
 
-const activeContentFilter = {
-  _trashed: { $ne: true },
-  _visibility: { $nin: ["draft", "trash"] },
+const getActiveContentFilter = (contentType: string) => {
+  const contentTypeRecord = getContentTypeByName(contentType)!;
+
+  return {
+    _trashed: { $ne: true },
+    _visibility: contentTypeRecord.documentVisibility
+      ? { $in: ["published", "hidden"] }
+      : { $nin: ["draft", "trash"] },
+  };
 };
 
 const getRouteLocaleVariants = async (
@@ -60,7 +66,7 @@ const getGroupRouteItems = async ({
   return (
     await db.list(contentTypeRecord, {
       filter: {
-        ...activeContentFilter,
+        ...getActiveContentFilter(contentType),
         $or: [
           { _id: { $in: groupIds } },
           { [LOCALE_VARIANT_GROUP_FIELD]: { $in: groupIds } },
@@ -94,7 +100,7 @@ export const regenerateAllRoutesMap = async (): Promise<void> => {
           const localeVariants = await getRouteLocaleVariants(db, route._id);
           const routesItems = (
             await db.list(getContentTypeByName(route.contentType), {
-              filter: activeContentFilter,
+              filter: getActiveContentFilter(route.contentType),
               options: { limit: "all", fields: routFields },
             })
           ).items;
@@ -258,7 +264,7 @@ export async function updateLanguageRoutesMap(
           const localeVariants = await getRouteLocaleVariants(db, route._id);
           const routesItems = (
             await db.list(getContentTypeByName(route.contentType)!, {
-              filter: activeContentFilter,
+              filter: getActiveContentFilter(route.contentType),
               options: { limit: "all", fields: routFields },
             })
           ).items;
@@ -340,7 +346,7 @@ export async function updateRouteRouteMap(
       const localeVariants = await getRouteLocaleVariants(db, route._id);
       const routesItems = (
         await db.list(getContentTypeByName(route.contentType)!, {
-          filter: activeContentFilter,
+          filter: getActiveContentFilter(route.contentType),
           options: { limit: "all", fields: routFields },
         })
       ).items;

@@ -31,10 +31,69 @@ export type RouteLocaleVariantRecord = Pick<
   "routeId" | "groupId" | "languageId" | "documentId"
 >;
 
-export const isVisibleForRouteMap = (item: UnknownItem): boolean =>
+export const isVisibleForRouteMap = (
+  item: UnknownItem,
+  documentVisibility = false,
+): boolean =>
   item._trashed !== true &&
-  item._visibility !== "draft" &&
-  item._visibility !== "trash";
+  (documentVisibility
+    ? item._visibility === "published" || item._visibility === "hidden"
+    : item._visibility !== "draft" && item._visibility !== "trash");
+
+type RouteMapTarget = Pick<
+  DBOutput<RouteMap>,
+  "contentType" | "contentTypeId"
+>;
+
+export const filterVisibleRouteMapEntries = async <T extends RouteMapTarget>(
+  db: DBService,
+  entries: readonly T[],
+): Promise<T[]> => {
+  const entriesByContentType = new Map<string, T[]>();
+
+  for (const entry of entries) {
+    const group = entriesByContentType.get(entry.contentType) ?? [];
+    group.push(entry);
+    entriesByContentType.set(entry.contentType, group);
+  }
+
+  const visibleTargets = new Set<string>();
+
+  await Promise.all(
+    Array.from(entriesByContentType.entries()).map(
+      async ([contentTypeName, contentTypeEntries]) => {
+        const contentType = getContentTypeByName(contentTypeName);
+        if (!contentType) return;
+
+        const ids = Array.from(
+          new Set(contentTypeEntries.map((entry) => entry.contentTypeId)),
+        );
+        const { items } = await db.list(contentType, {
+          filter: { _id: { $in: ids } },
+          options: {
+            limit: "all",
+            fields: ["_visibility", "_trashed"],
+          },
+        });
+
+        for (const item of items) {
+          if (
+            isVisibleForRouteMap(
+              item as UnknownItem,
+              Boolean(contentType.documentVisibility),
+            )
+          ) {
+            visibleTargets.add(`${contentTypeName}:${item._id}`);
+          }
+        }
+      },
+    ),
+  );
+
+  return entries.filter((entry) =>
+    visibleTargets.has(`${entry.contentType}:${entry.contentTypeId}`),
+  );
+};
 
 export async function loadRouteData(): Promise<{
   routes: readonly DBOutput<Route>[];
@@ -181,11 +240,12 @@ const hasRouteFieldValue = (item: UnknownItem, route: DBOutput<Route>) =>
 const groupRouteItems = (
   items: readonly UnknownItem[],
   route: DBOutput<Route>,
+  documentVisibility: boolean,
 ): RouteItemGroup[] => {
   const groups = new Map<string, RouteItemGroup>();
 
   for (const item of items) {
-    if (!isVisibleForRouteMap(item)) continue;
+    if (!isVisibleForRouteMap(item, documentVisibility)) continue;
     if (!hasRouteFieldValue(item, route)) continue;
 
     const groupId = getLocaleVariantGroupId(item);
@@ -209,11 +269,13 @@ const resolveRouteItemForLanguage = ({
   language,
   route,
   localeVariants,
+  documentVisibility,
 }: {
   group: RouteItemGroup;
   language: DBOutput<Language>;
   route: DBOutput<Route>;
   localeVariants: readonly RouteLocaleVariantRecord[];
+  documentVisibility: boolean;
 }): UnknownItem | null => {
   const assignment = localeVariants.find(
     (item) =>
@@ -224,7 +286,9 @@ const resolveRouteItemForLanguage = ({
   if (!assignment) return null;
 
   const item = group.itemsById.get(assignment.documentId);
-  return item && isVisibleForRouteMap(item) && hasRouteFieldValue(item, route)
+  return item &&
+    isVisibleForRouteMap(item, documentVisibility) &&
+    hasRouteFieldValue(item, route)
     ? item
     : null;
 };
@@ -248,7 +312,10 @@ export const generateRouteMapItems = (
 ) =>
   (async () => {
     const result: RouteMapItemInput[] = [];
-    const groups = groupRouteItems(items, route);
+    const documentVisibility = Boolean(
+      getContentTypeByName(route.contentType)?.documentVisibility,
+    );
+    const groups = groupRouteItems(items, route, documentVisibility);
     const homePageId = (routeSettings?.homePage as { _id?: string } | undefined)
       ?._id;
 
@@ -266,6 +333,7 @@ export const generateRouteMapItems = (
           language,
           route,
           localeVariants,
+          documentVisibility,
         });
         if (!item) continue;
 
@@ -448,7 +516,10 @@ const isStaleRouteMapEntry = async (
 
   try {
     const item = await db.get(contentType, routeMap.contentTypeId);
-    return item._trashed === true || item._visibility === "draft" || item._visibility === "trash";
+    return !isVisibleForRouteMap(
+      item,
+      Boolean(contentType.documentVisibility),
+    );
   } catch {
     return true;
   }

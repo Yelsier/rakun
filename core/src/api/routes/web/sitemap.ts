@@ -2,6 +2,7 @@ import { RouteMap } from "../../../internal-content-types";
 import { getMongoService } from "../../../orm";
 import type { SitemapInput, SitemapOutput } from "../../../schemas/web/sitemap";
 import { getLanguages } from "../../utils/getLanguages";
+import { filterVisibleRouteMapEntries } from "../../utils/routes/routeMapHelpers";
 
 export const getSitemap = async (
   input: SitemapInput = {},
@@ -27,12 +28,21 @@ export const getSitemap = async (
   const { items } = await db.list(RouteMap, {
     options: {
       limit: "all",
-      fields: ["path", "languageId", "lastModified", "createdAt", "updatedAt"],
+      fields: [
+        "path",
+        "languageId",
+        "lastModified",
+        "createdAt",
+        "updatedAt",
+        "contentType",
+        "contentTypeId",
+      ],
     },
   });
-  const filteredItems = language
+  const languageItems = language
     ? items.filter((item) => String(item.languageId) === String(language._id))
     : items;
+  const filteredItems = await filterVisibleRouteMapEntries(db, languageItems);
 
   return {
     languages: outputLanguages,
