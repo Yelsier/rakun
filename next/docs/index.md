@@ -97,6 +97,10 @@ export default async function Page(props: RakunNextPageProps) {
 
 Module files export `default` or `component`. They are server components by
 default; put `'use client'` in only the modules that need browser APIs or hooks.
+`RakunPageRenderer` handles the built-in `StructuredData` JSON-LD module
+natively, before calling `loadModule`, so no `modules/StructuredData.tsx` file is
+needed. Add that content type to an iterator or shared Template and use dynamic
+data mappings when all documents of a type share the same schema shape.
 `createRakunDatabaseWeb` initializes core and reads pages and static paths from
 MongoDB. It uses Next's data cache for static routes and the same cache tag as
 the revalidation handler, but stays uncached in development and for dynamic or
@@ -123,6 +127,7 @@ Preview pages rendered with `RakunPageRenderer` install the Rakun preview
 bridge automatically. Besides live snapshot updates and module selection, the
 bridge can return a sanitized on-page SEO snapshot to the manager. It combines
 the resolved Rakun SEO metadata with headings and images from the rendered DOM,
+validates every rendered JSON-LD block and reports its discovered schema types,
 and removes the preview token from the reported URL. Protective metadata added
 by the host preview route, such as `noindex`, is not reported as page metadata;
 the indexability check reflects the routed content's resolved `noIndex` value.

@@ -13,6 +13,7 @@ export type SeoCheck = {
     | 'language'
     | 'indexing'
     | 'social'
+    | 'structuredData'
   status: SeoCheckStatus
   value: number
 }
@@ -34,6 +35,9 @@ export const buildSeoChecks = (report: SeoAnalysisReport): SeoCheck[] => {
     report.openGraph.description,
     report.openGraph.image,
   ].filter((value) => !value).length
+  const invalidStructuredData = report.structuredData.filter(
+    (item) => !item.valid || !item.hasContext || item.types.length === 0
+  ).length
 
   return [
     {
@@ -86,6 +90,16 @@ export const buildSeoChecks = (report: SeoAnalysisReport): SeoCheck[] => {
       id: 'social',
       status: missingSocialFields === 0 ? 'good' : 'warning',
       value: missingSocialFields,
+    },
+    {
+      id: 'structuredData',
+      status:
+        report.structuredData.length === 0
+          ? 'warning'
+          : invalidStructuredData > 0
+            ? 'error'
+            : 'good',
+      value: invalidStructuredData,
     },
   ]
 }

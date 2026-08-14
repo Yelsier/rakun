@@ -410,6 +410,12 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'contentEdit.templateContent': 'Contenido',
   'contentEdit.templateContentDescription':
     'Renderiza aquí los módulos de la pestaña Contenido de este documento.',
+  'structuredData.moduleTitle': 'Datos estructurados (JSON-LD)',
+  'structuredData.moduleDescription':
+    'Añade datos schema.org no visuales. Usa Datos dinámicos y plantillas para reutilizarlos entre documentos.',
+  'structuredData.moduleCategory': 'SEO',
+  'structuredData.customJsonDescription':
+    'Objeto o array JSON-LD avanzado. El JSON no válido se omite de los resultados de búsqueda y aparece en el análisis SEO.',
   'contentEdit.couldNotSaveTemplate': 'No se pudo guardar el template compartido',
   'contentEdit.sharedTemplateWarning':
     'Este template es compartido. Los cambios que hagas aquí se aplicarán a todos los contenidos de este tipo.',
@@ -534,7 +540,26 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'contentEdit.seoSocialGood':
     'El título, la descripción y la imagen de Open Graph están presentes.',
   'contentEdit.seoSocialMissing':
-    '{count, plural, one {Falta un campo de Open Graph} other {Faltan # campos de Open Graph}}.',
+    'Campos de Open Graph ausentes: {fields}.',
+  'contentEdit.seoSocialFieldTitle': 'título',
+  'contentEdit.seoSocialFieldDescription': 'descripción',
+  'contentEdit.seoSocialFieldImage': 'imagen',
+  'contentEdit.seoCheckStructuredData': 'Datos estructurados',
+  'contentEdit.seoStructuredDataTitle': 'Schemas JSON-LD',
+  'contentEdit.seoStructuredDataNone':
+    'No se han encontrado datos estructurados JSON-LD en esta página.',
+  'contentEdit.seoStructuredDataGood':
+    '{count, plural, one {Se ha encontrado un bloque JSON-LD válido} other {Se han encontrado # bloques JSON-LD válidos}}.',
+  'contentEdit.seoStructuredDataInvalid':
+    '{count, plural, one {Un bloque JSON-LD necesita atención} other {# bloques JSON-LD necesitan atención}}.',
+  'contentEdit.seoStructuredDataCount':
+    '{count, plural, =0 {No se han encontrado bloques} one {Se ha encontrado # bloque} other {Se han encontrado # bloques}}.',
+  'contentEdit.seoStructuredDataValid': 'Válido',
+  'contentEdit.seoStructuredDataNeedsAttention': 'Necesita atención',
+  'contentEdit.seoStructuredDataInvalidJson': 'El JSON no es válido.',
+  'contentEdit.seoStructuredDataMissingContext': 'Falta la propiedad @context.',
+  'contentEdit.seoStructuredDataMissingType': 'No se ha encontrado ninguna propiedad @type.',
+  'contentEdit.seoStructuredDataViewJson': 'Ver JSON-LD resuelto',
   'contentEdit.seoGooglePreview': 'Vista previa de Google',
   'contentEdit.seoSocialPreview': 'Vista previa al compartir',
   'contentEdit.seoHeadingOutline': 'Esquema de títulos',
@@ -790,6 +815,7 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'modules.noSavedFound': 'No se encontraron módulos guardados.',
   'modules.allModules': 'Todos los módulos',
   'modules.noModulesFound': 'No se encontraron módulos.',
+  'modules.moreFields': '+{count, plural, one {# campo} other {# campos}}',
   'modules.deleteSavedModule': 'Eliminar módulo guardado',
   'modules.deleteSavedConfirm':
     '¿Eliminar permanentemente “{title}”? Esta acción no se puede deshacer.',

@@ -18,6 +18,15 @@ const report = (overrides: Partial<SeoAnalysisReport> = {}): SeoAnalysisReport =
     { level: 2, text: 'Section' },
   ],
   images: { total: 1, missingAlt: 0, emptyAlt: 0 },
+  structuredData: [
+    {
+      raw: '{"@context":"https://schema.org","@type":"Article"}',
+      valid: true,
+      hasContext: true,
+      types: ['Article'],
+      error: '',
+    },
+  ],
   openGraph: {
     title: 'Page title',
     description: 'Page description',

@@ -63,6 +63,13 @@ export type SeoAnalysisReport = {
   language: string
   headings: Array<{ level: number; text: string }>
   images: { total: number; missingAlt: number; emptyAlt: number }
+  structuredData: Array<{
+    raw: string
+    valid: boolean
+    hasContext: boolean
+    types: string[]
+    error: string
+  }>
   openGraph: {
     title: string
     description: string
@@ -82,6 +89,7 @@ const readSeoAnalysisReport = (value: unknown): SeoAnalysisReport | null => {
   if (!value || typeof value !== 'object') return null
 
   const report = value as SeoAnalysisReport
+  const structuredData = report.structuredData ?? []
   const strings = [
     report.url,
     report.title,
@@ -94,11 +102,25 @@ const readSeoAnalysisReport = (value: unknown): SeoAnalysisReport | null => {
 
   if (strings.some((item) => typeof item !== 'string')) return null
   if (!Array.isArray(report.headings)) return null
+  if (
+    !Array.isArray(structuredData) ||
+    structuredData.some(
+      (item) =>
+        !item ||
+        typeof item.raw !== 'string' ||
+        typeof item.valid !== 'boolean' ||
+        typeof item.hasContext !== 'boolean' ||
+        !Array.isArray(item.types) ||
+        typeof item.error !== 'string'
+    )
+  ) {
+    return null
+  }
   if (!report.images || typeof report.images.total !== 'number') return null
   if (!report.openGraph || typeof report.openGraph.title !== 'string') return null
   if (!report.twitter || typeof report.twitter.title !== 'string') return null
 
-  return report
+  return { ...report, structuredData }
 }
 
 const readNumber = (value: unknown) =>

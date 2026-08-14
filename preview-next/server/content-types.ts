@@ -1,6 +1,6 @@
 import { DataFront } from '@rakun-kit/core/types'
 import { ContentType, f } from '@rakun-kit/next'
-import { HelloWorld } from '@rakun-kit/next/internal-content-types'
+import { HelloWorld, StructuredData } from '@rakun-kit/next/internal-content-types'
 
 export const Header = new ContentType({
   name: 'Header',
@@ -139,6 +139,10 @@ export const UseCase = new ContentType({
       contentType: UseCaseNewsletter,
       type: 'new',
     },
+    {
+      contentType: StructuredData,
+      type: 'new',
+    },
   ],
   uniques: [['slug']],
   listFields: ['title', 'slug', 'industry'],
@@ -156,6 +160,10 @@ export const Category = new ContentType({
     {
       type: 'new',
       contentType: HelloWorld,
+    },
+    {
+      type: 'new',
+      contentType: StructuredData,
     },
   ],
   fields: {
@@ -205,6 +213,10 @@ export const Project = new ContentType({
   iterator: [
     {
       contentType: ProjectHeader,
+      type: 'new',
+    },
+    {
+      contentType: StructuredData,
       type: 'new',
     },
   ],
@@ -307,6 +319,10 @@ export const PreviewPage = new ContentType({
     },
     {
       contentType: CategoriesGallery,
+      type: 'new',
+    },
+    {
+      contentType: StructuredData,
       type: 'new',
     },
   ],

@@ -51,6 +51,7 @@ import { useSession } from '@/state/session'
 
 const ALL_CATEGORIES = '__all__'
 const FALLBACK_CATEGORY = 'modules.otherCategory'
+const MAX_VISIBLE_MODULE_PROPS = 3
 
 type IteratorModuleDisplay = {
   category: string
@@ -224,6 +225,41 @@ const ModulePreviewImage = ({ src }: { src?: string }) => {
       ) : (
         <Box aria-hidden="true" className="size-10 text-muted-foreground/50" />
       )}
+    </div>
+  )
+}
+
+const ModulePropsPreview = ({ props }: { props: ModuleProp[] }) => {
+  const t = useTranslations()
+  const visibleProps = props.slice(0, MAX_VISIBLE_MODULE_PROPS)
+  const hiddenProps = props.slice(MAX_VISIBLE_MODULE_PROPS)
+
+  if (props.length === 0) return null
+
+  return (
+    <div className="flex min-w-0 flex-wrap gap-1.5">
+      {visibleProps.map((prop) => (
+        <Badge key={prop.name} variant="secondary">
+          <span className="truncate">{prop.label}</span>
+          {prop.required ? (
+            <>
+              <span aria-hidden="true" className="text-destructive">
+                {REQUIRED_MARK}
+              </span>
+              <span className="sr-only">{t('common.required')}</span>
+            </>
+          ) : null}
+        </Badge>
+      ))}
+      {hiddenProps.length > 0 ? (
+        <Badge
+          variant="outline"
+          title={hiddenProps.map((prop) => prop.label).join(', ')}
+          className="text-muted-foreground"
+        >
+          {t('modules.moreFields', { count: hiddenProps.length })}
+        </Badge>
+      ) : null}
     </div>
   )
 }
@@ -616,23 +652,7 @@ export const IteratorModulePickerDialog = ({
                               {t(option.description)}
                             </p>
                           ) : null}
-                          {option.props.length > 0 ? (
-                            <div className="flex min-w-0 flex-wrap gap-1.5">
-                              {option.props.map((prop) => (
-                                <Badge key={prop.name} variant="secondary">
-                                  <span className="truncate">{prop.label}</span>
-                                  {prop.required ? (
-                                    <>
-                                      <span aria-hidden="true" className="text-destructive">
-                                        {REQUIRED_MARK}
-                                      </span>
-                                      <span className="sr-only">{t('common.required')}</span>
-                                    </>
-                                  ) : null}
-                                </Badge>
-                              ))}
-                            </div>
-                          ) : null}
+                          <ModulePropsPreview props={option.props} />
                         </div>
                       </button>
                     ))}

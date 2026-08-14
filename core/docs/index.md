@@ -179,6 +179,8 @@ editor makes a special Content slot available at the root and inside
 preview output replace it with the current document's iterator.
 
 ```ts
+import { StructuredData } from '@rakun-kit/core/internal-content-types'
+
 const Page = new ContentType({
   name: 'Page',
   fields: {
@@ -190,9 +192,18 @@ const Page = new ContentType({
     { contentType: Hero, type: 'new' },
     { contentType: LayoutWithInfo, type: 'new' },
     { contentType: Newsletter, type: 'new' },
+    { contentType: StructuredData, type: 'new' },
   ],
 })
 ```
+
+`StructuredData` is Rakun's native JSON-LD module. Add it to an iterator to make
+it available in Content and shared Templates. Its Product, Article,
+Organization, WebSite, and BreadcrumbList variants expose typed fields; Custom
+accepts an arbitrary JSON object. Template fields can use the normal dynamic
+data mappings, so one module can describe every document of a routeable content
+type. Official React and Next renderers emit the corresponding safe
+`application/ld+json` script without an application module file.
 
 For example, place Content inside an otherwise empty
 `LayoutWithInfo.fields.blocks` list to render the document-specific sections

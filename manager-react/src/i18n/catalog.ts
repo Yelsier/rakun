@@ -608,6 +608,16 @@ export const managerMessages = {
   'contentEdit.templateContentDescription': {
     defaultMessage: 'Renders the modules from this document’s Content tab here.',
   },
+  'structuredData.moduleTitle': { defaultMessage: 'Structured data (JSON-LD)' },
+  'structuredData.moduleDescription': {
+    defaultMessage:
+      'Adds non-visual schema.org data. Use Dynamic Data and templates to reuse it across documents.',
+  },
+  'structuredData.moduleCategory': { defaultMessage: 'SEO' },
+  'structuredData.customJsonDescription': {
+    defaultMessage:
+      'Advanced JSON-LD object or array. Invalid JSON is omitted from search output and reported by SEO analysis.',
+  },
   'contentEdit.couldNotSaveTemplate': {
     defaultMessage: 'Could not save the shared template',
   },
@@ -818,10 +828,42 @@ export const managerMessages = {
     defaultMessage: 'Open Graph title, description and image are present.',
   },
   'contentEdit.seoSocialMissing': {
+    defaultMessage: 'Missing Open Graph fields: {fields}.',
+    params: { fields: 'string' },
+  },
+  'contentEdit.seoSocialFieldTitle': { defaultMessage: 'title' },
+  'contentEdit.seoSocialFieldDescription': { defaultMessage: 'description' },
+  'contentEdit.seoSocialFieldImage': { defaultMessage: 'image' },
+  'contentEdit.seoCheckStructuredData': { defaultMessage: 'Structured data' },
+  'contentEdit.seoStructuredDataTitle': { defaultMessage: 'JSON-LD schemas' },
+  'contentEdit.seoStructuredDataNone': {
+    defaultMessage: 'No JSON-LD structured data was found on this page.',
+  },
+  'contentEdit.seoStructuredDataGood': {
     defaultMessage:
-      '{count, plural, one {One Open Graph field is missing} other {# Open Graph fields are missing}}.',
+      '{count, plural, one {One valid JSON-LD block was found} other {# valid JSON-LD blocks were found}}.',
     params: { count: 'number' },
   },
+  'contentEdit.seoStructuredDataInvalid': {
+    defaultMessage:
+      '{count, plural, one {One JSON-LD block needs attention} other {# JSON-LD blocks need attention}}.',
+    params: { count: 'number' },
+  },
+  'contentEdit.seoStructuredDataCount': {
+    defaultMessage:
+      '{count, plural, =0 {No blocks found} one {# block found} other {# blocks found}}.',
+    params: { count: 'number' },
+  },
+  'contentEdit.seoStructuredDataValid': { defaultMessage: 'Valid' },
+  'contentEdit.seoStructuredDataNeedsAttention': { defaultMessage: 'Needs attention' },
+  'contentEdit.seoStructuredDataInvalidJson': { defaultMessage: 'The JSON is not valid.' },
+  'contentEdit.seoStructuredDataMissingContext': {
+    defaultMessage: 'The @context property is missing.',
+  },
+  'contentEdit.seoStructuredDataMissingType': {
+    defaultMessage: 'No @type property was found.',
+  },
+  'contentEdit.seoStructuredDataViewJson': { defaultMessage: 'View resolved JSON-LD' },
   'contentEdit.seoGooglePreview': { defaultMessage: 'Google preview' },
   'contentEdit.seoSocialPreview': { defaultMessage: 'Sharing preview' },
   'contentEdit.seoHeadingOutline': { defaultMessage: 'Heading outline' },
@@ -1254,6 +1296,10 @@ export const managerMessages = {
   'modules.noSavedFound': { defaultMessage: 'No saved modules found.' },
   'modules.allModules': { defaultMessage: 'All modules' },
   'modules.noModulesFound': { defaultMessage: 'No modules found.' },
+  'modules.moreFields': {
+    defaultMessage: '+{count, plural, one {# field} other {# fields}}',
+    params: { count: 'number' },
+  },
   'modules.deleteSavedModule': { defaultMessage: 'Delete saved module' },
   'modules.deleteSavedConfirm': {
     defaultMessage: 'Permanently delete “{title}”? This cannot be undone.',

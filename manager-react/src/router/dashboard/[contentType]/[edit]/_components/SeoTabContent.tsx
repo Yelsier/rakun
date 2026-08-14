@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCircle2, CircleX, Search, Share2, TriangleAlert } from 'lucide-react'
+import { Braces, CheckCircle2, CircleX, Search, Share2, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 
 import ContentTypeEdit from '../ContentTypeEdit'
@@ -36,6 +36,14 @@ const getDisplayUrl = (value: string) => {
   }
 }
 
+const formatJsonLd = (value: string) => {
+  try {
+    return JSON.stringify(JSON.parse(value), null, 2)
+  } catch {
+    return value
+  }
+}
+
 export const SeoTabContent = () => {
   const t = useTranslations()
   const [view, setView] = useState<'metadata' | 'analysis'>('metadata')
@@ -44,6 +52,13 @@ export const SeoTabContent = () => {
   const report = previewState.seoAnalysis
   const checks = report ? buildSeoChecks(report) : []
   const score = getSeoScore(checks)
+  const missingSocialFields = [
+    [report?.openGraph.title, t('contentEdit.seoSocialFieldTitle')],
+    [report?.openGraph.description, t('contentEdit.seoSocialFieldDescription')],
+    [report?.openGraph.image, t('contentEdit.seoSocialFieldImage')],
+  ]
+    .filter(([value]) => !value)
+    .map(([, label]) => label)
 
   const getCheckCopy = (check: SeoCheck) => {
     switch (check.id) {
@@ -124,7 +139,21 @@ export const SeoTabContent = () => {
           description:
             check.value === 0
               ? t('contentEdit.seoSocialGood')
-              : t('contentEdit.seoSocialMissing', { count: check.value }),
+              : t('contentEdit.seoSocialMissing', {
+                  fields: missingSocialFields.join(', '),
+                }),
+        }
+      case 'structuredData':
+        return {
+          title: t('contentEdit.seoCheckStructuredData'),
+          description:
+            report?.structuredData.length === 0
+              ? t('contentEdit.seoStructuredDataNone')
+              : check.status === 'good'
+                ? t('contentEdit.seoStructuredDataGood', {
+                    count: report?.structuredData.length ?? 0,
+                  })
+                : t('contentEdit.seoStructuredDataInvalid', { count: check.value }),
         }
     }
   }
@@ -314,40 +343,117 @@ export const SeoTabContent = () => {
                 </Card>
               </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t('contentEdit.seoHeadingOutline')}</CardTitle>
-                  <CardDescription>
-                    {t('contentEdit.seoHeadingCount', { count: report.headings.length })}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="xl:max-h-[36rem] xl:overflow-y-auto">
-                  {report.headings.length ? (
-                    <ol className="space-y-2">
-                      {report.headings.map((heading, index) => (
-                        <li
-                          key={`${heading.level}:${index}`}
-                          className="flex min-w-0 items-center gap-3 text-sm"
-                          style={{
-                            paddingInlineStart: `${Math.max(0, heading.level - 1) * 1.25}rem`,
-                          }}
-                        >
-                          <Badge variant="outline">
-                            {t('contentEdit.seoHeadingLevel', { level: heading.level })}
-                          </Badge>
-                          <span className="truncate">
-                            {heading.text || t('contentEdit.seoEmptyHeading')}
-                          </span>
-                        </li>
-                      ))}
-                    </ol>
-                  ) : (
-                    <p className="text-muted-foreground text-sm">
-                      {t('contentEdit.seoHeadingsMissing')}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+              <div className="grid gap-5">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{t('contentEdit.seoHeadingOutline')}</CardTitle>
+                    <CardDescription>
+                      {t('contentEdit.seoHeadingCount', { count: report.headings.length })}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="xl:max-h-[36rem] xl:overflow-y-auto">
+                    {report.headings.length ? (
+                      <ol className="space-y-2">
+                        {report.headings.map((heading, index) => (
+                          <li
+                            key={`${heading.level}:${index}`}
+                            className="flex min-w-0 items-center gap-3 text-sm"
+                            style={{
+                              paddingInlineStart: `${Math.max(0, heading.level - 1) * 1.25}rem`,
+                            }}
+                          >
+                            <Badge variant="outline">
+                              {t('contentEdit.seoHeadingLevel', { level: heading.level })}
+                            </Badge>
+                            <span className="truncate">
+                              {heading.text || t('contentEdit.seoEmptyHeading')}
+                            </span>
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <p className="text-muted-foreground text-sm">
+                        {t('contentEdit.seoHeadingsMissing')}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Braces className="size-4" />
+                      {t('contentEdit.seoStructuredDataTitle')}
+                    </CardTitle>
+                    <CardDescription>
+                      {t('contentEdit.seoStructuredDataCount', {
+                        count: report.structuredData.length,
+                      })}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {report.structuredData.length ? (
+                      <div className="space-y-3">
+                        {report.structuredData.map((item, index) => {
+                          const issues = [
+                            !item.valid ? t('contentEdit.seoStructuredDataInvalidJson') : null,
+                            item.valid && !item.hasContext
+                              ? t('contentEdit.seoStructuredDataMissingContext')
+                              : null,
+                            item.valid && item.types.length === 0
+                              ? t('contentEdit.seoStructuredDataMissingType')
+                              : null,
+                          ].filter(Boolean) as string[]
+                          const valid = issues.length === 0
+
+                          return (
+                            <div key={index} className="rounded-lg border p-3">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Badge
+                                  variant="outline"
+                                  className={valid ? statusStyles.good : statusStyles.error}
+                                >
+                                  <StatusIcon status={valid ? 'good' : 'error'} />
+                                  {valid
+                                    ? t('contentEdit.seoStructuredDataValid')
+                                    : t('contentEdit.seoStructuredDataNeedsAttention')}
+                                </Badge>
+                                {item.types.map((type) => (
+                                  <Badge key={type} variant="secondary">
+                                    {type}
+                                  </Badge>
+                                ))}
+                              </div>
+                              {issues.length ? (
+                                <ul className="mt-3 space-y-1 text-sm text-destructive">
+                                  {issues.map((issue) => (
+                                    <li key={issue}>{issue}</li>
+                                  ))}
+                                  {!item.valid && item.error ? (
+                                    <li className="font-mono text-xs">{item.error}</li>
+                                  ) : null}
+                                </ul>
+                              ) : null}
+                              <details className="mt-3">
+                                <summary className="text-muted-foreground cursor-pointer text-sm">
+                                  {t('contentEdit.seoStructuredDataViewJson')}
+                                </summary>
+                                <pre className="mt-2 max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">
+                                  {formatJsonLd(item.raw)}
+                                </pre>
+                              </details>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm">
+                        {t('contentEdit.seoStructuredDataNone')}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </>
         )}

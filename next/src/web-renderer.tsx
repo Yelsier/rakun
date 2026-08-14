@@ -3,6 +3,7 @@ import { permanentRedirect, redirect } from "next/navigation";
 import type { PageModule, PageOutput } from "@rakun-kit/core/contracts";
 import { getPageLayout } from "@rakun-kit/core/web";
 import {
+  getRakunBuiltinModuleComponent,
   getRegistryRecord,
   mergeRakunModuleRegistries,
   type RakunModuleRegistry,
@@ -107,10 +108,9 @@ export async function RakunPageRenderer({
       key: string,
       meta: PreviewModuleRenderMeta,
     ) => {
-      const Component = resolveModuleComponent(
-        module._type,
-        await loadModule(module._type),
-      );
+      const Component =
+        getRakunBuiltinModuleComponent(module._type) ??
+        resolveModuleComponent(module._type, await loadModule(module._type));
 
       const node = <Component key={previewConfig ? undefined : key} {...module} />;
 

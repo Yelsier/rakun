@@ -59,6 +59,13 @@ export type RakunPreviewSeoAnalysisResultMessage = {
     language: string;
     headings: Array<{ level: number; text: string }>;
     images: { total: number; missingAlt: number; emptyAlt: number };
+    structuredData: Array<{
+      raw: string;
+      valid: boolean;
+      hasContext: boolean;
+      types: string[];
+      error: string;
+    }>;
     openGraph: {
       title: string;
       description: string;

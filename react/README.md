@@ -92,6 +92,12 @@ Use the client `ModuleRenderer` when viewport lazy loading or client-side module
 loading is required. `ServerModuleRenderer` also accepts a `registry` and a
 `missing` renderer, but intentionally has no client-only lazy-loading props.
 
+Both renderers handle Rakun's built-in `StructuredData` module without a loader
+entry and emit a safely escaped `application/ld+json` script. An explicit
+registry entry named `StructuredData` overrides the native renderer. The package
+also exports `StructuredData`, `buildStructuredData`, and `serializeJsonLd` for
+direct use.
+
 Web plugins package module registries that the application explicitly merges:
 
 ```tsx

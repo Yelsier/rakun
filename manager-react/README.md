@@ -161,9 +161,10 @@ the URL follows the selected manager language and locale variant.
 Routeable content splits its SEO tab into Metadata and Analysis. Generate
 report renders the current unsaved form through the configured preview and
 reports metadata lengths, heading structure, missing image alt attributes,
-indexability, social metadata, and Google and sharing previews. The report is
-advisory and is not stored. A protective `noindex` on the temporary preview URL
-does not affect the content's indexability result.
+indexability, social metadata, rendered JSON-LD blocks, and Google and sharing
+previews. JSON-LD results identify invalid JSON and missing `@context` or
+`@type`. The report is advisory and is not stored. A protective `noindex` on
+the temporary preview URL does not affect the content's indexability result.
 
 ## Styles
 

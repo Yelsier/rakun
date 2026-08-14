@@ -167,8 +167,9 @@ Generate report creates a temporary preview snapshot from the current form and
 shared template, then inspects the rendered page through the preview bridge.
 The report checks title and description lengths, H1 usage, heading order,
 missing image `alt` attributes, canonical URL, document language, `noindex`,
-and Open Graph coverage. It also renders representative Google and sharing
-previews plus the page's heading outline. The indexability result uses the
+Open Graph coverage, and rendered JSON-LD validity. It also renders
+representative Google and sharing previews plus the page's heading outline and
+the resolved JSON-LD blocks with their detected schema types. The indexability result uses the
 content's resolved SEO value and ignores `noindex` added solely to protect the
 temporary preview URL from indexing. When the canonical field is empty, Rakun
 derives it from Settings → SEO `siteUrl` and the resolved page route; the report
@@ -178,6 +179,11 @@ SEO reports are advisory, are not persisted, and do not claim to predict search
 rankings. They require the route to have manager preview configured. The
 preview adapter must support Rakun's SEO-analysis bridge messages; the official
 Next adapter does so automatically.
+
+Rakun's `StructuredData` iterator module can be placed in Content or a shared
+Template. Its typed fields support normal dynamic data mappings; the Custom
+variant accepts an arbitrary JSON object. Invalid custom JSON remains visible in
+the preview report as an error instead of disappearing silently.
 
 ## Dynamic data mappings
 

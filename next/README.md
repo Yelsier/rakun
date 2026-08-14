@@ -121,6 +121,10 @@ export default async function Page(props: RakunNextPageProps) {
 by default, so they can fetch data and render without client JavaScript. If a
 module needs hooks or browser events, add `"use client"` at the top of that
 module file; Next.js will make only that module a client component.
+The built-in `StructuredData` module is rendered natively before
+`loadModule`, so it does not need a `modules/StructuredData.tsx` file. Add it to
+a routable iterator or shared Template and map its fields dynamically when the
+same schema applies to every document of that type.
 When a Rakun page response includes a redirect, the renderer calls the matching
 Next.js redirect helper before rendering modules.
 
@@ -179,8 +183,8 @@ preview rendering in a separate dynamic route.
 `RakunPageRenderer` automatically adds the preview bridge to preview pages.
 The bridge supports live updates, module selection, and the manager's rendered
 SEO report. The report combines resolved Rakun SEO metadata with the rendered
-heading and image structure, sanitizes the preview token, and ignores protective
-`noindex` metadata added only by the host preview route.
+heading, image, and JSON-LD structure, sanitizes the preview token, and ignores
+protective `noindex` metadata added only by the host preview route.
 
 ### On-demand revalidation
 

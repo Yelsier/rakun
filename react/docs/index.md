@@ -26,6 +26,13 @@ export function Page({ modules }) {
 Registry keys must match module `_type` values. A module file exports either a
 default component or a named `component`.
 
+The built-in `StructuredData` module is handled before the registry or loader.
+It renders a safely escaped `application/ld+json` script for Rakun's typed
+schema forms and needs no application component. An explicit registry entry
+with the same name still takes precedence when an application intentionally
+overrides it. `buildStructuredData`, `serializeJsonLd`, and the component are
+also exported for direct use.
+
 For Vite, `createModuleRegistryFromGlob(import.meta.glob(...))` maps file names
 to module names. Pass `getName` for nested or nonstandard layouts. When using
 the client `ModuleRenderer` with Next.js, define `(name) => import(...)` inside

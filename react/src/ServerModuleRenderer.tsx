@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from 'react'
 import type { PageModule } from '@rakun-kit/core/contracts'
+import { getRakunBuiltinModuleComponent } from './builtin-modules'
 import {
   getRegistryRecord,
   resolveModuleImport,
@@ -39,6 +40,9 @@ const resolveComponent = async <TModule extends PageModule>(
   const entry = registry?.[module._type]
 
   if (!entry) {
+    const BuiltinComponent = getRakunBuiltinModuleComponent(module._type)
+    if (BuiltinComponent) return BuiltinComponent
+
     if (!loadModule) return null
 
     const moduleImport = await loadModule(module._type)

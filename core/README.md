@@ -399,6 +399,8 @@ Page-like content types can define ordered page modules with `iterator` outside
 `fields`. Rakun persists this generated field as `_iterator`:
 
 ```ts
+import { StructuredData } from '@rakun-kit/core/internal-content-types'
+
 const Page = new ContentType({
   name: 'Page',
   fields: {
@@ -410,9 +412,17 @@ const Page = new ContentType({
     { contentType: Hero, type: 'new' },
     { contentType: LayoutWithInfo, type: 'new' },
     { contentType: Newsletter, type: 'new' },
+    { contentType: StructuredData, type: 'new' },
   ],
 })
 ```
+
+`StructuredData` is a built-in iterator module for JSON-LD. It provides typed
+Product, Article, Organization, WebSite, and BreadcrumbList forms plus a Custom
+JSON form. Add it to a shared Template and map its fields from the current
+document to reuse one schema across every page of the content type. The official
+React and Next renderers handle this module natively, so applications do not
+create a matching component file.
 
 `iterator` always belongs to the individual document and is edited in the
 manager's Content tab. When the content type has a configured `hasPage: true`

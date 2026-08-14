@@ -312,6 +312,64 @@ export const RakunPreviewBridge = ({
     typeof value.requestId === "number"
   );
 
+  const getStructuredDataNodes = (value) => {
+    if (Array.isArray(value)) return value;
+    if (!value || typeof value !== "object") return [];
+    if (Array.isArray(value["@graph"])) return value["@graph"];
+    return [value];
+  };
+
+  const hasStructuredDataContext = (value) => {
+    if (!value || typeof value !== "object" || !("@context" in value)) return false;
+
+    const context = value["@context"];
+    if (typeof context === "string") return Boolean(context.trim());
+    if (Array.isArray(context)) return context.length > 0;
+    return Boolean(context && typeof context === "object");
+  };
+
+  const getStructuredData = () =>
+    Array.from(document.querySelectorAll('script[type="application/ld+json"]')).map(
+      (script) => {
+        const raw = (script.textContent || "").trim();
+
+        try {
+          const value = JSON.parse(raw);
+          const nodes = getStructuredDataNodes(value);
+          const types = Array.from(
+            new Set(
+              nodes.flatMap((node) => {
+                if (!node || typeof node !== "object") return [];
+                const type = node["@type"];
+                if (typeof type === "string") return [type];
+                return Array.isArray(type)
+                  ? type.filter((item) => typeof item === "string")
+                  : [];
+              })
+            )
+          );
+
+          return {
+            raw,
+            valid: true,
+            hasContext:
+              hasStructuredDataContext(value) ||
+              nodes.some((node) => hasStructuredDataContext(node)),
+            types,
+            error: "",
+          };
+        } catch (error) {
+          return {
+            raw,
+            valid: false,
+            hasContext: false,
+            types: [],
+            error: error instanceof Error ? error.message : "Invalid JSON",
+          };
+        }
+      }
+    );
+
   const getSeoAnalysis = () => {
     const images = Array.from(document.images);
     const publicUrl = new URL(window.location.href);
@@ -339,6 +397,7 @@ export const RakunPreviewBridge = ({
           (image) => image.hasAttribute("alt") && !image.alt.trim()
         ).length,
       },
+      structuredData: getStructuredData(),
       openGraph: seoAnalysisConfig.openGraph,
       twitter: seoAnalysisConfig.twitter,
     };

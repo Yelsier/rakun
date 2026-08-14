@@ -17,6 +17,7 @@ import {
   iteratePageModules,
 } from "@rakun-kit/core/web";
 import { ModuleErrorBoundary } from "./ErrorBoundary";
+import { getRakunBuiltinModuleComponent } from './builtin-modules'
 import { LazyViewport } from "./LazyViewport";
 import { runWithPageInfo } from "./pageInfoStore";
 import {
@@ -119,6 +120,11 @@ function ModuleView<TModule extends PageModule>({
   missing?: MissingModuleRenderer<TModule>;
 }) {
   const entry = registry?.[module._type];
+  const BuiltinComponent = entry ? null : getRakunBuiltinModuleComponent(module._type)
+
+  if (BuiltinComponent) {
+    return <BuiltinComponent {...module} />
+  }
 
   if (!entry && !loadModule) {
     return missing?.({ module, index }) ?? null;
