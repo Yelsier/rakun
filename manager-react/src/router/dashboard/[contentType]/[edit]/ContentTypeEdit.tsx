@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronsUpDown, Languages } from 'lucide-react'
+import { CircleHelp, ChevronsUpDown, Languages } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
@@ -36,6 +36,7 @@ import { Button } from '@/components/ui/button'
 import { deepEqual } from '@/helpers/deepEqual'
 import { useTRPC } from '@/components/trpc-provider'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   DynamicDataControl,
   isDynamicFallbackRequired,
@@ -86,6 +87,30 @@ const FieldMetaIcon = ({ label, children }: { label: string; children: ReactNode
     </TooltipContent>
   </Tooltip>
 )
+
+const FieldHelp = ({ help }: { help?: string }) => {
+  const t = useTranslations()
+
+  if (!help) return null
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={t('contentEdit.fieldHelp')}
+          className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <CircleHelp className="size-4" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-96 max-w-[calc(100vw-2rem)] space-y-2">
+        <p className="text-sm font-medium">{t('contentEdit.fieldHelp')}</p>
+        <p className="whitespace-pre-line text-sm leading-6 text-muted-foreground">{t(help)}</p>
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 const FieldLabel = ({
   fieldName,
@@ -443,6 +468,7 @@ const ContentTypeEdit = forwardRef<
                         </button>
                       </CollapsibleTrigger>
                       <FieldTags isTranslatable={fieldValue.isTranslatable}>
+                        <FieldHelp help={fieldValue.help} />
                         {dynamicTrigger}
                       </FieldTags>
                     </div>
@@ -463,6 +489,7 @@ const ContentTypeEdit = forwardRef<
                   <CardTitle className="flex items-center justify-between gap-3">
                     <FieldLabel fieldName={fieldName} isRequired={fieldValue.isRequired} />
                     <FieldTags isTranslatable={fieldValue.isTranslatable}>
+                      <FieldHelp help={fieldValue.help} />
                       {dynamicTrigger}
                     </FieldTags>
                   </CardTitle>

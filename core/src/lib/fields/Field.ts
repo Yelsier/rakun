@@ -168,6 +168,7 @@ export type FieldState = {
   visibility: Visibility
   dynamic: boolean
   description?: string
+  help?: string
   condition?: FieldCondition
 }
 
@@ -284,6 +285,7 @@ export type FieldLike<
   getVisibility: () => State['visibility']
   getIsDynamic: () => State['dynamic']
   getDescription: () => State['description']
+  getHelp: () => string | undefined
   getCondition: () => State['condition']
 }
 
@@ -295,6 +297,7 @@ type FieldModifierKeys =
   | 'managerOnly'
   | 'noDynamic'
   | 'description'
+  | 'help'
   | 'condition'
   | 'getPopulatedSchema'
 
@@ -342,7 +345,11 @@ type RebindPopulatedField<F extends AnyFieldLike, State extends FieldState> =
     ? PopulatableFieldLike<FieldPopulatedValueOf<F>, State>
     : unknown
 
-export type FieldWithModifiers<F extends AnyFieldLike> = F & {
+export interface FieldHelpModifier {
+  help(help: string): this
+}
+
+export type FieldWithModifiers<F extends AnyFieldLike> = F & FieldHelpModifier & {
   required: () => WithFieldState<F, SetRequired<FieldStateOf<F>>>
   optional: () => WithFieldState<F, SetOptional<FieldStateOf<F>>>
   translatable: () => WithFieldState<F, SetTranslatable<FieldStateOf<F>>>
@@ -368,6 +375,7 @@ export type EncodedField = {
     [key: string]: unknown
   }
   description?: string
+  help?: string
   isRequired: boolean
   isTranslatable: boolean
   visibility: Visibility
@@ -442,6 +450,7 @@ export function createField<
     getVisibility: () => params.state.visibility,
     getIsDynamic: () => params.state.dynamic,
     getDescription: () => params.state.description,
+    getHelp: () => params.state.help,
     getCondition: () => params.state.condition,
     getInputSchema: () =>
       applyManagerVisibility(
@@ -549,6 +558,12 @@ export function withFieldModifiers<F extends AnyFieldLike>(params: {
         ...field.state,
         description,
       } as SetDescription<FieldStateOf<F>>),
+    help(help) {
+      return rebuild({
+        ...field.state,
+        help: help.trim(),
+      } as FieldStateOf<F>) as typeof this
+    },
     condition: (condition) =>
       rebuild({
         ...field.state,

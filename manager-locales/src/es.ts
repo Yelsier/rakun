@@ -416,6 +416,8 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'structuredData.moduleCategory': 'SEO',
   'structuredData.customJsonDescription':
     'Objeto o array JSON-LD avanzado. El JSON no válido se omite de los resultados de búsqueda y aparece en el análisis SEO.',
+  'structuredData.schemaTypeHelp':
+    'Elige el schema que describa la entidad principal de esta página.\n\nProduct: un producto que se puede comprar, con su oferta y valoración.\nArticle: contenido editorial, noticias, guías o artículos de blog.\nOrganization: la empresa u organización responsable del sitio.\nWebSite: el propio sitio web; normalmente se añade en un template global.\nBreadcrumbList: la jerarquía de la página representada como migas de pan.\nCustom: un objeto o grafo avanzado de schema.org no cubierto por los formularios tipados.',
   'contentEdit.couldNotSaveTemplate': 'No se pudo guardar el template compartido',
   'contentEdit.sharedTemplateWarning':
     'Este template es compartido. Los cambios que hagas aquí se aplicarán a todos los contenidos de este tipo.',
@@ -441,6 +443,7 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'contentEdit.translateDocumentDescription':
     'Traducir los campos compatibles y guardar el documento.',
   'contentEdit.requiredField': 'Campo obligatorio',
+  'contentEdit.fieldHelp': 'Ayuda del campo',
   'contentEdit.translatableField': 'Campo traducible',
   'contentEdit.fallbackValue': 'Valor de respaldo',
   'contentEdit.fixFixErrors': 'Corrige los errores de arriba',

@@ -119,6 +119,11 @@ on the media record.
 
 ## Dynamic data mappings
 
+Fields configured with core `.help(text)` show a compact help icon beside their
+label. Activating it opens the guidance in a popover, including for inline
+modules and nested content types. Translation keys are resolved with the active
+manager locale, while unregistered strings are displayed directly.
+
 The list mapping editor supports recursive `blocks` targets. Select
 `Nested list` for a mapped list property to configure its own source, query,
 filters, item type, and field mapping. `Current document` query values inside

@@ -618,6 +618,10 @@ export const managerMessages = {
     defaultMessage:
       'Advanced JSON-LD object or array. Invalid JSON is omitted from search output and reported by SEO analysis.',
   },
+  'structuredData.schemaTypeHelp': {
+    defaultMessage:
+      'Choose the schema that describes the main entity on this page.\n\nProduct: a purchasable product, including offer and rating data.\nArticle: editorial content, news, guides, or blog posts.\nOrganization: the company or organization behind the site.\nWebSite: the website itself; this normally belongs in a global template.\nBreadcrumbList: the page hierarchy shown as breadcrumbs.\nCustom: an advanced schema.org object or graph not covered by the typed forms.',
+  },
   'contentEdit.couldNotSaveTemplate': {
     defaultMessage: 'Could not save the shared template',
   },
@@ -659,6 +663,7 @@ export const managerMessages = {
     defaultMessage: 'Translate supported fields and save the document.',
   },
   'contentEdit.requiredField': { defaultMessage: 'Required field' },
+  'contentEdit.fieldHelp': { defaultMessage: 'Field help' },
   'contentEdit.translatableField': { defaultMessage: 'Translatable field' },
   'contentEdit.fallbackValue': { defaultMessage: 'Fallback value' },
   'contentEdit.fixFixErrors': {

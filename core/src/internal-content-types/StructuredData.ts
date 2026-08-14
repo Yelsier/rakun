@@ -1,5 +1,5 @@
 import ContentType from '../lib/ContentType'
-import { Fields } from '../lib/fields'
+import { f } from '../lib/fields'
 import type { DataFront, DataInput, DBOutput } from '../lib/types'
 
 const structuredDataSchemaTypes = [
@@ -36,57 +36,60 @@ export const StructuredData = new ContentType({
     keywords: ['JSON-LD', 'schema.org', 'SEO'],
   },
   fields: {
-    schemaType: Fields.select(structuredDataSchemaTypes).required(),
-    name: Fields.string().translatable().optional(),
-    description: Fields.string().type('Textarea').translatable().optional(),
-    url: Fields.string().type('Url').translatable().optional(),
-    image: Fields.file().type('Image').optional(),
-    sku: Fields.string()
+    schemaType: f
+      .select(structuredDataSchemaTypes)
+      .help('structuredData.schemaTypeHelp')
+      .required(),
+    name: f.string().translatable().optional(),
+    description: f.string().type('Textarea').translatable().optional(),
+    url: f.string().type('Url').translatable().optional(),
+    image: f.file().type('Image').optional(),
+    sku: f.string()
       .condition({ field: 'schemaType', equals: 'Product' })
       .optional(),
-    brand: Fields.string()
+    brand: f.string()
       .condition({ field: 'schemaType', equals: 'Product' })
       .optional(),
-    price: Fields.number()
+    price: f.number()
       .condition({ field: 'schemaType', equals: 'Product' })
       .optional(),
-    priceCurrency: Fields.string()
+    priceCurrency: f.string()
       .condition({ field: 'schemaType', equals: 'Product' })
       .optional(),
-    availability: Fields.select(structuredDataAvailabilities)
+    availability: f.select(structuredDataAvailabilities)
       .condition({ field: 'schemaType', equals: 'Product' })
       .optional(),
-    itemCondition: Fields.select(structuredDataItemConditions)
+    itemCondition: f.select(structuredDataItemConditions)
       .condition({ field: 'schemaType', equals: 'Product' })
       .optional(),
-    ratingValue: Fields.number()
+    ratingValue: f.number()
       .condition({ field: 'schemaType', equals: 'Product' })
       .optional(),
-    reviewCount: Fields.number()
+    reviewCount: f.number()
       .condition({ field: 'schemaType', equals: 'Product' })
       .optional(),
-    authorName: Fields.string()
+    authorName: f.string()
       .condition({ field: 'schemaType', equals: 'Article' })
       .optional(),
-    publisherName: Fields.string()
+    publisherName: f.string()
       .condition({ field: 'schemaType', equals: 'Article' })
       .optional(),
-    datePublished: Fields.date()
+    datePublished: f.date()
       .type('DateTime')
       .condition({ field: 'schemaType', equals: 'Article' })
       .optional(),
-    dateModified: Fields.date()
+    dateModified: f.date()
       .type('DateTime')
       .condition({ field: 'schemaType', equals: 'Article' })
       .optional(),
-    logo: Fields.file()
+    logo: f.file()
       .type('Image')
       .condition({ field: 'schemaType', equals: 'Organization' })
       .optional(),
-    breadcrumbs: Fields.array(Fields.link())
+    breadcrumbs: f.array(f.link())
       .condition({ field: 'schemaType', equals: 'BreadcrumbList' })
       .optional(),
-    customJson: Fields.string()
+    customJson: f.string()
       .type('Textarea')
       .translatable()
       .description('structuredData.customJsonDescription')

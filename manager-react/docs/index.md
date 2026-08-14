@@ -160,6 +160,11 @@ Template changes require the content type's `updateAny` permission and are
 saved with optimistic revision checks. Preview includes unsaved changes from
 both tabs.
 
+Fields configured with core `.help(text)` show a compact help icon beside their
+label. Activating it opens the guidance in a popover, including inside iterator
+and nested blocks modules. The manager resolves a translation key through its
+active locale and falls back to displaying the supplied string directly.
+
 ## Route SEO analysis
 
 The SEO tab of routeable content has separate Metadata and Analysis views.

@@ -656,6 +656,26 @@ describe('field type inference', () => {
     })
   })
 
+  it('encodes field help and preserves it through field modifiers', () => {
+    const HelpEncodedCT = new ContentType({
+      name: 'HelpEncoded',
+      fields: {
+        title: Fields.string()
+          .help(' field.help ')
+          .description('Visible guidance')
+          .translatable()
+          .optional(),
+      },
+    })
+
+    const encoded = encodeContentTypeForManager(HelpEncodedCT)
+
+    expect(encoded.fields.title.help).toBe('field.help')
+    expect(encoded.fields.title.description).toBe('Visible guidance')
+    expect(encoded.fields.title.isTranslatable).toBe(true)
+    expect(encoded.fields.title.isRequired).toBe(false)
+  })
+
   it('allows null for required fields when their condition is false', () => {
     const ConditionalRequiredCT = new ContentType({
       name: 'ConditionalRequired',

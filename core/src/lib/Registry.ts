@@ -103,6 +103,7 @@ const removeSchemaFromField = (
     visibility: field.getVisibility(),
     isDynamic: field.getIsDynamic(),
     description: field.getDescription(),
+    help: field.getHelp(),
     condition: field.getCondition(),
   } satisfies EncodedField;
 

@@ -234,13 +234,19 @@ const Hero = new ContentType({
     keywords: ['banner', 'cover'],
   },
   fields: {
-    title: f.string().required(),
+    title: f.string().help('content.heroTitleHelp').required(),
   },
 })
 ```
 
 When `preview` is omitted or cannot be loaded, the picker displays a neutral
 placeholder so module cards keep a consistent height.
+
+Use field `.help(text)` for longer, optional guidance. The manager places a help
+icon beside that field and opens the text on demand, including inside iterator
+and blocks modules. `text` may be direct copy or a manager translation key
+supplied by the application locale packs. Use `.description(...)` instead for
+short guidance that should remain visible below the field label.
 
 `ensureRakunInitialized()` prepares logger, MongoDB, media, and route syncing. It uses a singleton promise to avoid concurrent initialization; if initialization fails, the promise is cleared so the next call can retry.
 

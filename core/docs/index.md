@@ -205,6 +205,12 @@ data mappings, so one module can describe every document of a routeable content
 type. Official React and Next renderers emit the corresponding safe
 `application/ld+json` script without an application module file.
 
+Call `.help(text)` on a field to expose optional guidance from a compact help
+icon in the manager. The metadata survives other field modifiers and nested
+relation encoding. Pass either direct copy or a manager translation key. Use
+`.description(...)` for short guidance that should remain visible below the
+field label.
+
 For example, place Content inside an otherwise empty
 `LayoutWithInfo.fields.blocks` list to render the document-specific sections
 inside that shared wrapper. Route `layout` modules such as header and footer
