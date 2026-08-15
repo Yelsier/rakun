@@ -37,6 +37,7 @@ describe('extendManagerLanguagePack', () => {
     expect(
       ManagerUiLocalesOutputSchema.parse({
         locales: [],
+        homePageGroupId: 'home-group',
         features: {
           passwordRecovery: true,
           login: {
@@ -47,6 +48,7 @@ describe('extendManagerLanguagePack', () => {
       })
     ).toEqual({
       locales: [],
+      homePageGroupId: 'home-group',
       features: {
         passwordRecovery: true,
         login: {

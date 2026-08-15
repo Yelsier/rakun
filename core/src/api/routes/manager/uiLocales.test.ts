@@ -1,6 +1,24 @@
 import { describe, expect, test } from 'bun:test'
 
-import { resolveManagerSiteUrl, resolveManagerUiFeatures } from './uiLocales'
+import {
+  resolveManagerHomePageGroupId,
+  resolveManagerSiteUrl,
+  resolveManagerUiFeatures,
+} from './uiLocales'
+
+describe('resolveManagerHomePageGroupId', () => {
+  test('uses the variant group and falls back to the configured document id', () => {
+    const homePage = { _id: 'home-variant' }
+
+    expect(
+      resolveManagerHomePageGroupId(homePage, {
+        _localeVariantGroupId: 'home-group',
+      }),
+    ).toBe('home-group')
+    expect(resolveManagerHomePageGroupId(homePage)).toBe('home-variant')
+    expect(resolveManagerHomePageGroupId(null)).toBeUndefined()
+  })
+})
 
 describe('resolveManagerSiteUrl', () => {
   test('accepts public HTTP URLs and normalizes them', () => {

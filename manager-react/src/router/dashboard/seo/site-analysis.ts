@@ -1,7 +1,10 @@
+import { LOCALE_VARIANT_GROUP_FIELD } from '@rakun-kit/core/client'
+
 export type SiteSeoFindingSeverity = 'warning' | 'error'
 
 export type SiteSeoFindingCode =
   | 'missingTitle'
+  | 'defaultTitle'
   | 'titleLength'
   | 'missingDescription'
   | 'defaultDescription'
@@ -116,6 +119,16 @@ const hasSeoBinding = (seo: Record<string, unknown>, field: string) => {
   )
 }
 
+const isHomePageDocument = (
+  document: SiteSeoDocument,
+  homePageGroupId?: string,
+) =>
+  Boolean(
+    homePageGroupId &&
+      (document._id === homePageGroupId ||
+        document[LOCALE_VARIANT_GROUP_FIELD] === homePageGroupId),
+  )
+
 const addDuplicateFindings = (
   pages: SiteSeoAuditPage[],
   field: 'title' | 'description',
@@ -145,15 +158,20 @@ const addDuplicateFindings = (
 export const buildSiteSeoAudit = ({
   contents,
   defaultDescription,
+  defaultTitle,
+  homePageGroupId,
   resolveValue,
   siteUrl,
 }: {
   contents: SiteSeoContent[]
   defaultDescription?: unknown
+  defaultTitle?: unknown
+  homePageGroupId?: string
   resolveValue: (value: unknown) => unknown
   siteUrl?: string
 }): SiteSeoAuditPayload => {
   const resolvedDefaultDescription = readString(defaultDescription, resolveValue)
+  const resolvedDefaultTitle = readString(defaultTitle, resolveValue)
   const pages = contents.flatMap((content) =>
     content.documents.flatMap((document) => {
       if (content.documentVisibility && document._visibility !== 'published') {
@@ -161,13 +179,16 @@ export const buildSiteSeoAudit = ({
       }
 
       const seo = getSeo(document)
-      const title = readSeoString({
+      const isHomePage = isHomePageDocument(document, homePageGroupId)
+      const pageTitle = readSeoString({
         contentType: content.contentType,
         document,
         field: 'title',
         resolveValue,
         seo,
       })
+      const usesDefaultTitle = !pageTitle && Boolean(resolvedDefaultTitle)
+      const title = pageTitle || resolvedDefaultTitle
       const pageDescription = readSeoString({
         contentType: content.contentType,
         document,
@@ -183,14 +204,20 @@ export const buildSiteSeoAudit = ({
       const canonical = readString(seo.canonicalUrl, resolveValue)
       const findings: SiteSeoFinding[] = []
 
-      if (!title && !hasTitleBinding) {
+      if (usesDefaultTitle) {
+        if (!isHomePage) {
+          findings.push({ code: 'defaultTitle', severity: 'warning' })
+        }
+      } else if (!title && !hasTitleBinding) {
         findings.push({ code: 'missingTitle', severity: 'error' })
       } else if (title.length < 30 || title.length > 60) {
         if (title) findings.push({ code: 'titleLength', severity: 'warning' })
       }
 
       if (usesDefaultDescription) {
-        findings.push({ code: 'defaultDescription', severity: 'warning' })
+        if (!isHomePage) {
+          findings.push({ code: 'defaultDescription', severity: 'warning' })
+        }
       } else if (!description && !hasDescriptionBinding) {
         findings.push({ code: 'missingDescription', severity: 'error' })
       } else if (description.length < 120 || description.length > 160) {

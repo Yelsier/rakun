@@ -63,6 +63,7 @@ type SeoAuditRecord = {
 type SeoSettingsRecord = {
   defaultSeo?: {
     description?: unknown
+    title?: unknown
   }
 }
 
@@ -102,6 +103,11 @@ export const ManagerSeoScreen = ({
   ])
   const canCreate = hasPermissions(['content.SeoSettings.own' as Permission])
   const createAudit = useManagerMutation('manager.create')
+  const managerUiQuery = useManagerQuery({
+    name: 'manager.uiLocales',
+    input: undefined as never,
+    enabled: canRead,
+  })
   const seoSettingsQuery = useManagerQuery({
     name: 'manager.list',
     input: {
@@ -180,6 +186,8 @@ export const ManagerSeoScreen = ({
     switch (finding.code) {
       case 'missingTitle':
         return t('seoAudit.finding.missingTitle')
+      case 'defaultTitle':
+        return t('seoAudit.finding.defaultTitle')
       case 'titleLength':
         return t('seoAudit.finding.titleLength')
       case 'missingDescription':
@@ -225,6 +233,10 @@ export const ManagerSeoScreen = ({
         defaultDescription: (
           seoSettingsQuery.data?.items?.[0] as SeoSettingsRecord | undefined
         )?.defaultSeo?.description,
+        defaultTitle: (
+          seoSettingsQuery.data?.items?.[0] as SeoSettingsRecord | undefined
+        )?.defaultSeo?.title,
+        homePageGroupId: managerUiQuery.data?.homePageGroupId,
         resolveValue: (value) => {
           if (value === undefined || value === null) return value
           try {
@@ -278,6 +290,7 @@ export const ManagerSeoScreen = ({
     siteHistoryQuery.isLoading ||
     latestSiteAuditQuery.isLoading ||
     pageHistoryQuery.isLoading ||
+    managerUiQuery.isLoading ||
     seoSettingsQuery.isLoading
   ) {
     return <Loading />

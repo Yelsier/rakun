@@ -387,7 +387,8 @@ optional packs such as Spanish through `@rakun-kit/manager-locales/es` and
 Project-defined manager labels may use arbitrary keys. Field labels follow
 `field.<fieldName>` and layout slots follow `layoutModule.<layoutKey>`.
 The public `manager.uiLocales` response also exposes a validated HTTP(S) SEO
-`siteUrl` for manager chrome; no other SEO settings are included.
+`siteUrl` for manager chrome and the configured home-page variant group for SEO
+audits; no other SEO settings are included.
 
 SEO audit snapshots are stored in the hidden internal `SeoAudit` content type.
 It shares the `SeoSettings` permission resource: `own` permits creating dated

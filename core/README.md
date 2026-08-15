@@ -271,7 +271,8 @@ bun add @rakun-kit/manager-locales
 Import the required language subpath and register it with `managerLanguages`;
 the public `manager.uiLocales` operation returns configured packs to the
 manager client. Its safe runtime configuration also includes the public SEO
-`siteUrl`, when configured, so the manager can expose its Visit site action:
+`siteUrl` and the configured home-page variant group, when available, so the
+manager can expose its Visit site action and classify SEO fallbacks correctly:
 
 ```ts
 import { esManagerLocalePack } from '@rakun-kit/manager-locales/es'

@@ -1,5 +1,7 @@
 import { getRakunBootstrapOptions } from '../../../bootstrapState'
-import { SeoSettings } from '../../../internal-content-types'
+import { RouteSettings, SeoSettings } from '../../../internal-content-types'
+import { LOCALE_VARIANT_GROUP_FIELD } from '../../../lib/localeVariants'
+import { getContentTypeByName } from '../../../lib/Registry'
 import { getMongoService } from '../../../orm'
 import type { ManagerUiLocalesOutput } from '../../../schemas/manager/uiLocales'
 
@@ -17,10 +19,49 @@ export const resolveManagerSiteUrl = (siteUrl: unknown) => {
   }
 }
 
-const getManagerSiteUrl = async () => {
+export const resolveManagerHomePageGroupId = (
+  homePage: unknown,
+  document?: Record<string, unknown> | null,
+) => {
+  const relation =
+    homePage && typeof homePage === 'object'
+      ? (homePage as Record<string, unknown>)
+      : null
+  const homePageId = typeof relation?._id === 'string' ? relation._id : undefined
+  const groupId = document?.[LOCALE_VARIANT_GROUP_FIELD]
+
+  return typeof groupId === 'string' && groupId ? groupId : homePageId
+}
+
+const getManagerPublicConfig = async () => {
   const db = await getMongoService()
-  const settings = await db.find(SeoSettings, { key: 'default' })
-  return resolveManagerSiteUrl(settings?.siteUrl)
+  const [routeSettings, seoSettings] = await Promise.all([
+    db.find(RouteSettings, { key: 'default' }),
+    db.find(SeoSettings, { key: 'default' }),
+  ])
+  const homePage = routeSettings?.homePage as
+    | { _id?: unknown; contentType?: unknown }
+    | undefined
+  const homePageId = resolveManagerHomePageGroupId(homePage)
+  const homeContentType = getContentTypeByName(
+    typeof homePage?.contentType === 'string' ? homePage.contentType : 'Page',
+  )
+  let homePageDocument: Record<string, unknown> | null = null
+
+  if (homePageId && homeContentType) {
+    try {
+      homePageDocument = (await db.get(homeContentType, homePageId)) as
+        | Record<string, unknown>
+        | null
+    } catch {
+      // Keep the configured id if the referenced document is unavailable.
+    }
+  }
+
+  return {
+    homePageGroupId: resolveManagerHomePageGroupId(homePage, homePageDocument),
+    siteUrl: resolveManagerSiteUrl(seoSettings?.siteUrl),
+  }
 }
 
 export const resolveManagerUiFeatures = (options?: {
@@ -50,7 +91,7 @@ export const resolveManagerUiFeatures = (options?: {
 
 export const uiLocalesHandler = async (): Promise<ManagerUiLocalesOutput> => {
   const options = getRakunBootstrapOptions()
-  const siteUrl = await getManagerSiteUrl()
+  const { homePageGroupId, siteUrl } = await getManagerPublicConfig()
   const locales = (options?.managerLanguages ?? []).map((locale) => ({
     code: locale.code,
     name: locale.name,
@@ -59,6 +100,7 @@ export const uiLocalesHandler = async (): Promise<ManagerUiLocalesOutput> => {
 
   return {
     locales,
+    homePageGroupId,
     siteUrl,
     features: resolveManagerUiFeatures(options ?? undefined),
   }

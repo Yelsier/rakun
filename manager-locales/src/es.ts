@@ -72,6 +72,8 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'seoAudit.pageHistoryDescription':
     'Informes generados desde la pestaña SEO de documentos individuales.',
   'seoAudit.finding.missingTitle': 'La página no tiene título SEO.',
+  'seoAudit.finding.defaultTitle':
+    'La página usa el título SEO global predeterminado.',
   'seoAudit.finding.titleLength': 'El título está fuera de la longitud recomendada.',
   'seoAudit.finding.missingDescription': 'La página no tiene meta description.',
   'seoAudit.finding.defaultDescription':

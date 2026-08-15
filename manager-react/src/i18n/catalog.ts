@@ -111,6 +111,9 @@ export const managerMessages = {
     defaultMessage: 'Reports generated from the SEO tab of individual documents.',
   },
   'seoAudit.finding.missingTitle': { defaultMessage: 'The page has no SEO title.' },
+  'seoAudit.finding.defaultTitle': {
+    defaultMessage: 'The page uses the global default SEO title.',
+  },
   'seoAudit.finding.titleLength': {
     defaultMessage: 'The title is outside the recommended length.',
   },
