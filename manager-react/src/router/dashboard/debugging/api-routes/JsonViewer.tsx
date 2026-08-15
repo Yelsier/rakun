@@ -55,7 +55,7 @@ const JsonNode = ({
     const emptyCollection = isObject(value) ? `${openToken}${closeToken}` : null
 
     return (
-      <div className="flex min-w-0 pl-5">
+      <div className="flex min-w-0 pl-4">
         <span className="min-w-0 break-words">
           {nameLabel}
           <span className="text-primary">{emptyCollection ?? formatPrimitive(value)}</span>
@@ -96,7 +96,7 @@ const JsonNode = ({
             />
           ))}
         </div>
-        <div className="pl-5 text-muted-foreground">
+        <div className="ml-2 text-muted-foreground">
           {closeToken}
           {suffix}
         </div>
