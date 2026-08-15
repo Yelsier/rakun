@@ -1,6 +1,6 @@
 import type { PageModule, PageOutput } from "../schemas/web/page";
 
-export type PageLayout = NonNullable<PageOutput["layout"]>;
+export type PageLayout = PageOutput["layout"];
 export type PageLayoutItem = PageLayout[number];
 export type PageLayoutContentItem = Extract<PageLayoutItem, { type: "content" }>;
 export type PageLayoutModuleItem = Extract<PageLayoutItem, { type: "module" }>;
@@ -22,11 +22,11 @@ export type PageModuleEntry =
     };
 
 export const getPageLayout = (
-  page: Pick<PageOutput, "layout" | "modules">,
-): PageLayout => page.layout ?? [{ type: "content", modules: page.modules }];
+  page: Pick<PageOutput, "layout">,
+): PageLayout => page.layout;
 
 export const getPageContentModules = (
-  pageOrLayout: Pick<PageOutput, "layout" | "modules"> | PageLayout,
+  pageOrLayout: Pick<PageOutput, "layout"> | PageLayout,
 ): PageModule[] => {
   const layout = Array.isArray(pageOrLayout)
     ? pageOrLayout
@@ -36,7 +36,7 @@ export const getPageContentModules = (
 };
 
 export const getPageLayoutModuleItems = (
-  pageOrLayout: Pick<PageOutput, "layout" | "modules"> | PageLayout,
+  pageOrLayout: Pick<PageOutput, "layout"> | PageLayout,
 ): PageLayoutModuleItem[] => {
   const layout = Array.isArray(pageOrLayout)
     ? pageOrLayout
@@ -48,7 +48,7 @@ export const getPageLayoutModuleItems = (
 };
 
 export const iteratePageModules = (
-  pageOrLayout: Pick<PageOutput, "layout" | "modules"> | PageLayout,
+  pageOrLayout: Pick<PageOutput, "layout"> | PageLayout,
 ): PageModuleEntry[] => {
   const layout = Array.isArray(pageOrLayout)
     ? pageOrLayout
@@ -84,12 +84,12 @@ export const iteratePageModules = (
 };
 
 export const getPageModules = (
-  pageOrLayout: Pick<PageOutput, "layout" | "modules"> | PageLayout,
+  pageOrLayout: Pick<PageOutput, "layout"> | PageLayout,
 ): PageModule[] =>
   iteratePageModules(pageOrLayout).map((entry) => entry.module);
 
 export const getPageModuleTypes = (
-  pageOrLayout: Pick<PageOutput, "layout" | "modules"> | PageLayout,
+  pageOrLayout: Pick<PageOutput, "layout"> | PageLayout,
 ): string[] => {
   const seen = new Set<string>();
   const types: string[] = [];

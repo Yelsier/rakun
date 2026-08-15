@@ -245,6 +245,18 @@ a fixed `layout` with module slots and a `{ type: 'content' }` insertion point.
 When a content type has a `hasPage: true` route, core adds optional `_seo`
 metadata and can expose generated `href` values to dynamic data.
 
+The `web.page` and `web.previewPage` responses expose modules only through their
+required `layout` array. Document modules are in the `modules` property of the
+`{ type: 'content' }` item; there is no duplicate top-level `modules` property.
+Not-found responses use the same shape, while redirects return an empty layout.
+
+The optional `info` object contains normal resolved page fields and route context
+such as `locale` and `variantGroupId`. Translated website literals live in the
+separate top-level `literals` property. Core removes the composition-only
+`_iterator`, `_seo`, and legacy `_iteratorUnlinked` fields recursively,
+including from populated child relations, so nested page modules and SEO data
+are not duplicated in `info`.
+
 Use `@rakun-kit/core/web` for framework-neutral web types/utilities. Use the
 Next or React manual for actual rendering. Route changes can affect configured
 redirects, sitemap, robots output, preview, and adapter behavior.

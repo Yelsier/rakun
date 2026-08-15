@@ -39,7 +39,7 @@ export type ModuleRenderContext<TModule extends PageModule = PageModule> = {
 
 export type ModuleRendererProps<TModule extends PageModule = PageModule> = {
   modules?: TModule[];
-  page?: Pick<PageOutput, "layout" | "modules" | "info">;
+  page?: Pick<PageOutput, "layout" | "info" | "literals">;
   layout?: PageLayout;
   registry?: RakunModuleRegistry<TModule>;
   loadModule?: (name: string) => Promise<unknown>;
@@ -265,7 +265,7 @@ export function ModuleRenderer<TModule extends PageModule = PageModule>({
     </>
   );
 
-  return page ? runWithPageInfo(page.info, render) : render();
+  return page ? runWithPageInfo(page.info, render, page.literals) : render();
 }
 
 export function PageLayoutRenderer<TModule extends PageModule = PageModule>({
@@ -377,5 +377,5 @@ export function PageLayoutRenderer<TModule extends PageModule = PageModule>({
     </>
   );
 
-  return page ? runWithPageInfo(page.info, render) : render();
+  return page ? runWithPageInfo(page.info, render, page.literals) : render();
 }

@@ -1,5 +1,6 @@
 export {
   getCurrentPageInfo,
+  getCurrentPageLiterals,
   getLocaleFromInfo,
   getLiteralsFromInfo,
   PageInfoClientSync,
@@ -9,6 +10,7 @@ export {
   usePageInfo,
   useT,
   type PageInfo,
+  type PageLiterals,
   type TFromInfoArgs,
   type TranslationValues,
 } from "@rakun-kit/react/translation";

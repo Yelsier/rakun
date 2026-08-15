@@ -1,7 +1,11 @@
 import type { ReactNode } from 'react'
 
 import { PageInfoClientProvider } from './PageInfoClientProvider'
-import { getCurrentPageInfo, setCurrentPageInfo } from './pageInfoStore'
+import {
+  getCurrentPageInfo,
+  setCurrentPageInfo,
+  setCurrentPageLiterals,
+} from './pageInfoStore'
 
 const pageInfoScriptEscapes: Record<string, string> = {
   '<': '\\u003c',
@@ -19,11 +23,14 @@ const serializePageInfo = (value?: Record<string, unknown>) =>
 
 export function PageInfoProvider(props: {
   value?: Record<string, unknown>
+  literals?: Record<string, string>
   children: ReactNode
 }) {
-  const { value, children } = props
+  const { value, literals, children } = props
   const serializedValue = serializePageInfo(value)
+  const serializedLiterals = serializePageInfo(literals)
   setCurrentPageInfo(value)
+  setCurrentPageLiterals(literals)
 
   return (
     <>
@@ -33,7 +40,13 @@ export function PageInfoProvider(props: {
           __html: serializedValue,
         }}
       />
-      <PageInfoClientProvider value={value}>
+      <template
+        data-rakun-page-literals=""
+        dangerouslySetInnerHTML={{
+          __html: serializedLiterals,
+        }}
+      />
+      <PageInfoClientProvider value={value} literals={literals}>
         {children}
       </PageInfoClientProvider>
     </>

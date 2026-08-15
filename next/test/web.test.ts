@@ -78,7 +78,7 @@ describe('Rakun static params', () => {
         return Response.json({ items: [{ path: '/', ttl: 60 }] })
       }
 
-      return Response.json({ renderMode: 'static', ttl: 60, modules: [] })
+      return Response.json({ renderMode: 'static', ttl: 60, layout: [] })
     }
 
     try {
@@ -118,7 +118,7 @@ describe('Rakun static params', () => {
     const fetchPage: typeof globalThis.fetch = async (input) =>
       String(input).includes('/web/staticPaths')
         ? Response.json({ items: [{ path: '/', ttl: 60 }] })
-        : Response.json({ renderMode: 'static', ttl: 60, modules: [] })
+        : Response.json({ renderMode: 'static', ttl: 60, layout: [] })
 
     try {
       await getRakunPageFromProps(
@@ -151,7 +151,7 @@ describe('Rakun static params', () => {
     const fetchPage: typeof globalThis.fetch = async (input) =>
       String(input).includes('/web/staticPaths')
         ? Response.json({ items: [{ path: '/', ttl: 60 }] })
-        : Response.json({ renderMode: 'static', ttl: 60, modules: [] })
+        : Response.json({ renderMode: 'static', ttl: 60, layout: [] })
 
     try {
       await getRakunPageFromProps(

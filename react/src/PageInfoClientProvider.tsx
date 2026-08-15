@@ -2,26 +2,39 @@
 
 import { createContext, useContext, useEffect, type ReactNode } from 'react'
 
-import { setCurrentPageInfo, type PageInfo } from './pageInfoStore'
+import {
+  setCurrentPageInfo,
+  setCurrentPageLiterals,
+  type PageInfo,
+  type PageLiterals,
+} from './pageInfoStore'
 
-const PageInfoContext = createContext<PageInfo>(undefined)
+const PageRuntimeContext = createContext<{
+  info: PageInfo
+  literals: PageLiterals
+}>({ info: undefined, literals: undefined })
 
 export function PageInfoClientProvider({
   value,
+  literals,
   children,
 }: {
   value?: Record<string, unknown>
+  literals?: Record<string, string>
   children: ReactNode
 }) {
   useEffect(() => {
     setCurrentPageInfo(value)
-  }, [value])
+    setCurrentPageLiterals(literals)
+  }, [value, literals])
 
   return (
-    <PageInfoContext.Provider value={value}>
+    <PageRuntimeContext.Provider value={{ info: value, literals }}>
       {children}
-    </PageInfoContext.Provider>
+    </PageRuntimeContext.Provider>
   )
 }
 
-export const useClientPageInfo = (): PageInfo => useContext(PageInfoContext)
+export const useClientPageInfo = (): PageInfo => useContext(PageRuntimeContext).info
+export const useClientPageLiterals = (): PageLiterals =>
+  useContext(PageRuntimeContext).literals

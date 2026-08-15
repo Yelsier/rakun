@@ -1,4 +1,10 @@
 export type PageInfo = Record<string, unknown> | undefined
+export type PageLiterals = Record<string, string> | undefined
+
+type PageRuntimeContext = {
+  info: PageInfo
+  literals: PageLiterals
+}
 
 type AsyncLocalStorage<T> = {
   getStore: () => T | undefined
@@ -11,12 +17,14 @@ type AsyncHooksModule = {
 
 type NodeRequire = (id: string) => unknown
 
-let currentServerPageInfo: PageInfo
-let asyncLocalStore: AsyncLocalStorage<PageInfo> | null | undefined
+let currentServerPageContext: PageRuntimeContext | undefined
+let asyncLocalStore: AsyncLocalStorage<PageRuntimeContext> | null | undefined
 const pageInfoTemplateSelector = 'template[data-rakun-page-info]'
+const pageLiteralsTemplateSelector = 'template[data-rakun-page-literals]'
 
 type BrowserWindow = Window & {
   __CMS_PAGE_INFO__?: Record<string, unknown>
+  __CMS_PAGE_LITERALS__?: Record<string, string>
 }
 
 type GlobalWithProcess = typeof globalThis & {
@@ -63,7 +71,7 @@ const getAsyncHooksModule = (): AsyncHooksModule | null => {
   }
 }
 
-const getAsyncLocalStore = (): AsyncLocalStorage<PageInfo> | null => {
+const getAsyncLocalStore = (): AsyncLocalStorage<PageRuntimeContext> | null => {
   if (asyncLocalStore !== undefined) return asyncLocalStore
   if (typeof window !== 'undefined') {
     asyncLocalStore = null
@@ -72,29 +80,33 @@ const getAsyncLocalStore = (): AsyncLocalStorage<PageInfo> | null => {
 
   const asyncHooksModule = getAsyncHooksModule()
   asyncLocalStore = asyncHooksModule
-    ? new asyncHooksModule.AsyncLocalStorage<PageInfo>()
+    ? new asyncHooksModule.AsyncLocalStorage<PageRuntimeContext>()
     : null
 
   return asyncLocalStore
 }
 
-const runWithFallbackPageInfo = <T>(info: PageInfo, fn: () => T): T => {
-  const previous = currentServerPageInfo
-  currentServerPageInfo = info
+const runWithFallbackPageInfo = <T>(
+  info: PageInfo,
+  fn: () => T,
+  literals: PageLiterals,
+): T => {
+  const previous = currentServerPageContext
+  currentServerPageContext = { info, literals }
 
   try {
     const result = fn()
 
     if (isPromiseLike(result)) {
       return Promise.resolve(result).finally(() => {
-        currentServerPageInfo = previous
+        currentServerPageContext = previous
       }) as T
     }
 
-    currentServerPageInfo = previous
+    currentServerPageContext = previous
     return result
   } catch (error) {
-    currentServerPageInfo = previous
+    currentServerPageContext = previous
     throw error
   }
 }
@@ -121,20 +133,51 @@ const getTemplatePageInfo = (): PageInfo => {
   }
 }
 
-export const runWithPageInfo = <T>(info: PageInfo, fn: () => T): T => {
+const getTemplatePageLiterals = (): PageLiterals => {
+  if (typeof document === 'undefined') return undefined
+
+  const template = document.querySelector<HTMLTemplateElement>(
+    pageLiteralsTemplateSelector,
+  )
+  const raw =
+    template?.content.textContent ?? template?.innerHTML ?? template?.textContent
+
+  if (!raw) return undefined
+
+  try {
+    const parsed = JSON.parse(raw) as unknown
+
+    if (!parsed || typeof parsed !== 'object') return undefined
+
+    return Object.fromEntries(
+      Object.entries(parsed as Record<string, unknown>).filter(
+        ([, value]) => typeof value === 'string',
+      ),
+    ) as Record<string, string>
+  } catch {
+    return undefined
+  }
+}
+
+export const runWithPageInfo = <T>(
+  info: PageInfo,
+  fn: () => T,
+  literals?: PageLiterals,
+): T => {
   if (typeof window !== 'undefined') {
     const browserWindow = window as BrowserWindow
     browserWindow.__CMS_PAGE_INFO__ = info
+    browserWindow.__CMS_PAGE_LITERALS__ = literals
     return fn()
   }
 
   const store = getAsyncLocalStore()
 
   if (store) {
-    return store.run(info, fn)
+    return store.run({ info, literals }, fn)
   }
 
-  return runWithFallbackPageInfo(info, fn)
+  return runWithFallbackPageInfo(info, fn, literals)
 }
 
 export const setCurrentPageInfo = (info: PageInfo): void => {
@@ -143,7 +186,22 @@ export const setCurrentPageInfo = (info: PageInfo): void => {
     return
   }
 
-  currentServerPageInfo = info
+  currentServerPageContext = {
+    info,
+    literals: currentServerPageContext?.literals,
+  }
+}
+
+export const setCurrentPageLiterals = (literals: PageLiterals): void => {
+  if (typeof window !== 'undefined') {
+    ;(window as BrowserWindow).__CMS_PAGE_LITERALS__ = literals
+    return
+  }
+
+  currentServerPageContext = {
+    info: currentServerPageContext?.info,
+    literals,
+  }
 }
 
 export const getCurrentPageInfo = (): PageInfo => {
@@ -151,9 +209,24 @@ export const getCurrentPageInfo = (): PageInfo => {
     return (
       (window as BrowserWindow).__CMS_PAGE_INFO__ ??
       getTemplatePageInfo() ??
-      currentServerPageInfo
+      currentServerPageContext?.info
     )
   }
 
-  return getAsyncLocalStore()?.getStore() ?? currentServerPageInfo
+  return getAsyncLocalStore()?.getStore()?.info ?? currentServerPageContext?.info
+}
+
+export const getCurrentPageLiterals = (): PageLiterals => {
+  if (typeof window !== 'undefined') {
+    return (
+      (window as BrowserWindow).__CMS_PAGE_LITERALS__ ??
+      getTemplatePageLiterals() ??
+      currentServerPageContext?.literals
+    )
+  }
+
+  return (
+    getAsyncLocalStore()?.getStore()?.literals ??
+    currentServerPageContext?.literals
+  )
 }

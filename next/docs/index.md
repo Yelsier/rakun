@@ -99,8 +99,10 @@ Module files export `default` or `component`. They are server components by
 default; put `'use client'` in only the modules that need browser APIs or hooks.
 `RakunPageRenderer` handles the built-in `StructuredData` JSON-LD module
 natively, before calling `loadModule`, so no `modules/StructuredData.tsx` file is
-needed. Add that content type to an iterator or shared Template and use dynamic
-data mappings when all documents of a type share the same schema shape.
+needed. It also keeps the page response's top-level `literals` separate from
+`info` while making them available to `useT`. Add that content type to an
+iterator or shared Template and use dynamic data mappings when all documents of
+a type share the same schema shape.
 `createRakunDatabaseWeb` initializes core and reads pages and static paths from
 MongoDB. It uses Next's data cache for static routes and the same cache tag as
 the revalidation handler, but stays uncached in development and for dynamic or

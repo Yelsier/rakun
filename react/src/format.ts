@@ -16,6 +16,7 @@ type LiteralValuesForKey<K extends LiteralKey> =
 
 export type TFromInfoArgs<K extends LiteralKey> = {
   info?: Record<string, unknown>
+  literals?: Record<string, string>
   key: K
 } & (undefined extends LiteralValuesForKey<K>
   ? { values?: Exclude<LiteralValuesForKey<K>, undefined> }
@@ -105,22 +106,25 @@ export const getLocaleFromInfo = (info?: Record<string, unknown>): string => {
 export function tFromInfo<K extends LiteralKey>(args: TFromInfoArgs<K>): string
 export function tFromInfo(args: {
   info?: Record<string, unknown>
+  literals?: Record<string, string>
   key: string
   values?: TranslationValues
 }): string
 export function tFromInfo({
   info,
+  literals,
   key,
   values,
 }: {
   info?: Record<string, unknown>
+  literals?: Record<string, string>
   key: string
   values?: TranslationValues
 }): string {
-  const literals = getLiteralsFromInfo(info)
+  const resolvedLiterals = literals ?? getLiteralsFromInfo(info)
   const locale = getLocaleFromInfo(info)
   const message =
-    literals[key] || getLiteralDefinition(key)?.defaultMessage || String(key)
+    resolvedLiterals[key] || getLiteralDefinition(key)?.defaultMessage || String(key)
 
   return formatIcuLike({
     message,

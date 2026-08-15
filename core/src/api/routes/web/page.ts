@@ -39,10 +39,15 @@ import { filterVisibleRouteMapEntries } from '../../utils/routes/routeMapHelpers
 export const NotFoundResponse: PageOutput = {
   renderMode: 'static',
   ttl: DEFAULT_STATIC_PAGE_TTL,
-  modules: [
+  layout: [
     {
-      _id: 'not-found',
-      _type: 'NotFound',
+      type: 'content',
+      modules: [
+        {
+          _id: 'not-found',
+          _type: 'NotFound',
+        },
+      ],
     },
   ],
 }
@@ -84,6 +89,33 @@ export const filterNestedVisibleIteratorItems = (
     ])
   )
 }
+
+const PAGE_INFO_COMPOSITION_FIELDS = new Set([
+  ITERATOR_FIELD_NAME,
+  SEO_FIELD_NAME,
+  '_iteratorUnlinked',
+])
+
+const stripPageInfoCompositionValue = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map(stripPageInfoCompositionValue)
+  }
+
+  if (!value || typeof value !== 'object' || value instanceof Date) {
+    return value
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => !PAGE_INFO_COMPOSITION_FIELDS.has(key))
+      .map(([key, item]) => [key, stripPageInfoCompositionValue(item)])
+  )
+}
+
+export const stripPageInfoCompositionFields = (
+  info: Record<string, unknown>
+): Record<string, unknown> =>
+  stripPageInfoCompositionValue(info) as Record<string, unknown>
 
 // Add trailing slash
 export const normalizePagePath = (path: string): string => {
@@ -438,20 +470,20 @@ export const buildPageOutput = async ({
           ]
             .sort((a, b) => a.order - b.order)
             .map(({ order: _order, ...item }) => item)
+          const publicInfo = stripPageInfoCompositionFields(info)
 
           return {
             renderMode: route.dynamic ? 'dynamic' : 'static',
             ttl: route.dynamic ? undefined : DEFAULT_STATIC_PAGE_TTL,
-            modules: contentModules,
             templateModuleIds,
             language,
             seo: resolvedSeo,
             layout,
+            literals: literalMap,
             info: {
-              ...info,
+              ...publicInfo,
               locale: localeCode,
               variantGroupId: variantGroupId ?? contentTypeId,
-              literals: literalMap,
             },
           }
         }
@@ -474,7 +506,7 @@ export const getPage = async (input: PageInput): Promise<PageOutput> => {
       Logger.addTrace('web.page: redirect resolved', redirect)
       return {
         renderMode: 'dynamic',
-        modules: [],
+        layout: [],
         redirect,
       }
     }

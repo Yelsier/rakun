@@ -7,8 +7,10 @@ export {
 } from './format'
 export {
   getCurrentPageInfo,
+  getCurrentPageLiterals,
   runWithPageInfo,
   type PageInfo,
+  type PageLiterals,
 } from './pageInfoStore'
 export { PageInfoClientSync } from './PageInfoClientSync'
 export { PageInfoProvider, usePageInfo } from './PageInfoProvider'

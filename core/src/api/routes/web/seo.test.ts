@@ -135,7 +135,7 @@ describe("resolveSeo", () => {
     expect(() =>
       pageOutput.parse({
         renderMode: "static",
-        modules: [],
+        layout: [{ type: "content", modules: [] }],
         seo: result,
       }),
     ).not.toThrow();

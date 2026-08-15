@@ -71,7 +71,14 @@ the client renderer. It also accepts `missing` and `getKey`. Use the client
 
 Use `PageLayoutRenderer` for page responses with fixed layout slots. Its
 `renderContent` callback wraps only the modules at the `{ type: 'content' }`
-slot.
+slot. Page responses carry modules only in their required `layout`; the
+standalone `modules` prop remains available when rendering a module array that
+did not come from the page endpoint.
+
+When a complete page response is passed, its top-level `literals` property is
+made available automatically to `useT`; it is not part of the public page
+`info` object. Custom providers can pass it through the separate `literals`
+prop on `PageInfoProvider`, or as the third argument to `runWithPageInfo`.
 
 Web plugins are explicit browser/runtime facets:
 

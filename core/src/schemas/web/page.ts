@@ -30,7 +30,6 @@ export const pageSeoOutput = z.intersection(
 export const pageOutput = z.object({
   renderMode: z.enum(['static', 'dynamic']),
   ttl: z.number().optional(),
-  modules: z.array(pageModule),
   templateModuleIds: z.array(z.string()).optional(),
   layout: z
     .array(
@@ -45,10 +44,10 @@ export const pageOutput = z.object({
           modules: z.array(pageModule),
         }),
       ])
-    )
-    .optional(),
+    ),
   seo: pageSeoOutput.optional(),
   language: Language.getOutputSchema().optional(),
+  literals: z.record(z.string(), z.string()).optional(),
   info: z.record(z.string(), z.unknown()).optional(),
   redirect: z
     .object({

@@ -214,7 +214,15 @@ rakunBootstrap({
 ```
 
 The web page response includes an ordered `layout` array containing module slots
-plus the content slot.
+plus the content slot. This is the only module collection in the response:
+content modules live in the `modules` property of the `content` layout item and
+are not duplicated at the top level.
+
+The response `info` object contains the page's normal resolved fields plus
+route context such as `locale` and `variantGroupId`. Translated website literals
+live in the separate top-level `literals` property. Composition-only fields
+(`_iterator`, `_seo`, and the legacy `_iteratorUnlinked` marker) are removed
+recursively from the page and all populated relations before `info` is sent.
 
 ## Module picker
 

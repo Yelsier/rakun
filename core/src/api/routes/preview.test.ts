@@ -30,6 +30,7 @@ import {
   createMongoService,
   getMongoService,
 } from "../../orm";
+import { getPageContentModules } from "../../web/page";
 import type { RakunRequestContext } from "../context";
 import { createPreviewHandler } from "./manager/preview/create";
 import { getPage } from "./web/page";
@@ -222,13 +223,17 @@ describe.serial("preview", () => {
       token: result.token,
       path: result.path,
     });
-    expect(preview.modules[0]?._type).toBe(PreviewModule.name);
-    expect(preview.modules[0]?.text).toBe("Live module");
-    expect(preview.modules[0]?.eyebrow).toBeUndefined();
+    const previewModules = getPageContentModules(preview);
+    expect("modules" in preview).toBe(false);
+    expect(previewModules[0]?._type).toBe(PreviewModule.name);
+    expect(previewModules[0]?.text).toBe("Live module");
+    expect(previewModules[0]?.eyebrow).toBeUndefined();
     expect(preview.info?.title).toBe("Draft title");
+    expect(preview.info?.literals).toBeUndefined();
+    expect(preview.literals).toEqual({});
 
     const publicPage = await getPage({ path: result.path });
-    expect(publicPage.modules[0]?._type).toBe("NotFound");
+    expect(getPageContentModules(publicPage)[0]?._type).toBe("NotFound");
   });
 
   it("adds seo and template manager fields for routeable iterator content types", () => {
@@ -275,7 +280,7 @@ describe.serial("preview", () => {
       token: hiddenResult.token,
       path: hiddenResult.path,
     });
-    expect(hiddenPreview.modules).toHaveLength(0);
+    expect(getPageContentModules(hiddenPreview)).toHaveLength(0);
 
     const visibleResult = await createPreviewHandler({
       ctx,
@@ -297,7 +302,9 @@ describe.serial("preview", () => {
       token: visibleResult.token,
       path: visibleResult.path,
     });
-    expect(visiblePreview.modules[0]?._type).toBe(PreviewModule.name);
+    expect(getPageContentModules(visiblePreview)[0]?._type).toBe(
+      PreviewModule.name,
+    );
   });
 
   it("does not fall back to public content for invalid token or path", async () => {
@@ -318,13 +325,13 @@ describe.serial("preview", () => {
       token: "wrong",
       path: result.path,
     });
-    expect(wrongToken.modules[0]?._type).toBe("NotFound");
+    expect(getPageContentModules(wrongToken)[0]?._type).toBe("NotFound");
 
     const wrongPath = await getPreviewPage({
       token: result.token,
       path: "/other/",
     });
-    expect(wrongPath.modules[0]?._type).toBe("NotFound");
+    expect(getPageContentModules(wrongPath)[0]?._type).toBe("NotFound");
   });
 
   it("requires an authenticated manager user", async () => {

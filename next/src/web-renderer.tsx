@@ -178,7 +178,7 @@ export async function RakunPageRenderer({
     }
 
     return (
-      <PageInfoProvider value={page.info}>
+      <PageInfoProvider value={page.info} literals={page.literals}>
         {previewConfig ? (
           <RakunPreviewBridge
             language={page.language?.code}
@@ -189,5 +189,5 @@ export async function RakunPageRenderer({
         {rendered}
       </PageInfoProvider>
     );
-  });
+  }, page.literals);
 }
