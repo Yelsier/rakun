@@ -205,9 +205,9 @@ export default function ApiTest() {
   }
 
   return (
-    <div className="grid w-full grid-cols-[20rem_minmax(0,1fr)] rounded-xl border">
+    <div className="grid w-full grid-cols-[20rem_minmax(0,1fr)] rounded-xl border h-full">
       <ScrollArea
-        className="relative h-[calc(100vh-10rem)] overflow-y-auto border-r p-4"
+        className="relative h-full overflow-y-auto border-r p-4"
         data-tour="api-routes-list"
       >
         <div className="sticky top-0 z-10 mb-4" data-tour="api-routes-search">
@@ -245,10 +245,7 @@ export default function ApiTest() {
         })}
       </ScrollArea>
 
-      <ScrollArea
-        className="h-[calc(100vh-10rem)] overflow-y-auto p-4"
-        data-tour="api-routes-detail"
-      >
+      <ScrollArea className="h-full overflow-y-auto p-4" data-tour="api-routes-detail">
         <section className="space-y-6">
           <div>
             <div className="flex items-center gap-2">
@@ -295,9 +292,7 @@ export default function ApiTest() {
           <Card>
             <CardHeader>
               <CardTitle>{t('apiRoutes.playground')}</CardTitle>
-              <CardDescription>
-                {t('apiRoutes.playgroundDescription')}
-              </CardDescription>
+              <CardDescription>{t('apiRoutes.playgroundDescription')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ApiPlayground
