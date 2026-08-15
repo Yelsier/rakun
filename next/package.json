@@ -1,6 +1,6 @@
 {
   "name": "@rakun-kit/next",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Next.js adapter for Rakun APIs, manager UI, and media endpoints.",
   "license": "MIT",
   "author": {
@@ -22,7 +22,7 @@
   "types": "./dist/esm/index.d.ts",
   "scripts": {
     "build": "rm -rf dist && bun run build:esm && bun run build:cjs && node ../scripts/copy-package-docs.mjs",
-    "build:esm": "tsc -b --force tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm && node ./scripts/write-manager-client-shim.mjs",
+    "build:esm": "tsc -b --force tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm && node ./scripts/write-client-shims.mjs",
     "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../scripts/write-cjs-package-json.mjs dist/cjs"
   },
   "files": [
