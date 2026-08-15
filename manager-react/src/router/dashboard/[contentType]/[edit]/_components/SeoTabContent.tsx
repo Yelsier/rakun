@@ -9,6 +9,7 @@ import {
   RotateCcw,
   Search,
   Share2,
+  Tags,
   TriangleAlert,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -313,14 +314,34 @@ export const SeoTabContent = () => {
         form.saveState()
         setView(value as 'metadata' | 'analysis')
       }}
-      className="min-h-full gap-5"
+      className="min-h-full gap-0"
     >
-      <TabsList>
-        <TabsTrigger value="metadata">{t('contentEdit.seoMetadataView')}</TabsTrigger>
-        <TabsTrigger value="analysis">{t('contentEdit.seoAnalysisView')}</TabsTrigger>
+      <TabsList
+        variant="line"
+        className="sticky top-0 z-20 h-auto w-full justify-start gap-6 rounded-none border-b bg-background/95 p-0 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+      >
+        <TabsTrigger
+          value="metadata"
+          className="-mb-px h-auto flex-none rounded-none border-x-0 border-t-0 border-b-2 border-b-transparent px-0 pt-1 pb-3 after:hidden data-[state=active]:border-b-primary dark:data-[state=active]:border-b-primary"
+        >
+          <Tags />
+          {t('contentEdit.seoMetadataView')}
+        </TabsTrigger>
+        <TabsTrigger
+          value="analysis"
+          className="-mb-px h-auto flex-none rounded-none border-x-0 border-t-0 border-b-2 border-b-transparent px-0 pt-1 pb-3 after:hidden data-[state=active]:border-b-primary dark:data-[state=active]:border-b-primary"
+        >
+          <Search />
+          {t('contentEdit.seoAnalysisView')}
+        </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="metadata" forceMount hidden={view !== 'metadata'} className="min-h-0">
+      <TabsContent
+        value="metadata"
+        forceMount
+        hidden={view !== 'metadata'}
+        className="min-h-0 pt-5"
+      >
         <ContentTypeEdit
           key={`seo:${form.formRevision}`}
           defaultData={form.draft.current}
@@ -337,7 +358,7 @@ export const SeoTabContent = () => {
         value="analysis"
         forceMount
         hidden={view !== 'analysis'}
-        className="space-y-5 pb-6"
+        className="space-y-5 pt-5 pb-6"
       >
         <Card>
           <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">

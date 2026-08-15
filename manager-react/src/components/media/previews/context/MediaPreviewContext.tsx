@@ -35,6 +35,8 @@ type MediaPreviewContextValue = {
   onClearSelection: () => void
   onRequestEdit: (item: MediaRecord | FolderItem) => void
   onRequestImageEdit: (item: MediaRecord) => void
+  isReplacing: (id: string) => boolean
+  onRequestReplace: (item: MediaRecord) => void
   canReimportWithOptimization: boolean
   isReimporting: (id: string) => boolean
   onRequestReimport: (item: MediaRecord) => void

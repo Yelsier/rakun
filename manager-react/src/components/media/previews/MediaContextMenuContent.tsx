@@ -5,6 +5,7 @@ import {
   Crop,
   Download,
   FolderInput,
+  ImageUp,
   LoaderCircle,
   Pencil,
   RefreshCw,
@@ -48,6 +49,8 @@ export default function MediaContextMenuContent({
     onRequestSelect,
     onRequestEdit,
     onRequestImageEdit,
+    isReplacing,
+    onRequestReplace,
     canReimportWithOptimization,
     isReimporting,
     onRequestReimport,
@@ -146,6 +149,17 @@ export default function MediaContextMenuContent({
           <ContextMenuItem onSelect={() => onRequestImageEdit(item)}>
             <Crop className='size-4' />
             {t('media.cropAndRotate')}
+          </ContextMenuItem>
+          <ContextMenuItem
+            disabled={isReplacing(item._id)}
+            onSelect={() => onRequestReplace(item)}
+          >
+            {isReplacing(item._id) ? (
+              <LoaderCircle className='size-4 animate-spin' />
+            ) : (
+              <ImageUp className='size-4' />
+            )}
+            {t('media.replaceImage')}
           </ContextMenuItem>
         </>
       ) : null}

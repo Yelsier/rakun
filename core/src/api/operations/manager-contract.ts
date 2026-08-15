@@ -108,6 +108,8 @@ import {
   prepareUploadOutput,
   reimportMediaInput,
   reimportMediaOutput,
+  replaceMediaInput,
+  replaceMediaOutput,
   createPreviewInput,
   createPreviewOutput,
   previewSlugRedirectsInput,
@@ -645,6 +647,14 @@ export const createManagerOperationContracts = () =>
       description: "Reimport an image using the selected optimization settings",
       input: reimportMediaInput,
       output: reimportMediaOutput,
+      method: "post",
+    }),
+    "manager.media.replace": defineOperationContract({
+      access: "auth",
+      kind: "mutation",
+      description: "Replace an image while preserving its media record and references",
+      input: replaceMediaInput,
+      output: replaceMediaOutput,
       method: "post",
     }),
     "manager.media.getUrl": defineOperationContract({

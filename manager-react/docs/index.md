@@ -76,6 +76,10 @@ When optimization is enabled, right-click an image or video and select
 `Reimport` to regenerate its optimized outputs. The action keeps the existing
 media ID, title, alt text, folder, and content references. You can also
 multi-select images and videos and use the selection toolbar reimport action.
+For an image, the same context menu offers `Replace image`. Choose a new image
+and confirm to replace the underlying file while keeping the media ID, details,
+folder and every reference to it across the site. Referencing pages are
+revalidated when the project has route revalidation configured.
 Optimization is enabled by default in the media library; generated image
 previews are stored as inline `data:image/...` strings on the media record for
 LQIP use.

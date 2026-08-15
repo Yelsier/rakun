@@ -16,3 +16,19 @@ export const isCompatibleMediaUploadKey = (
     Boolean(tokenParsed.name)
   );
 };
+
+/** Responsive variants append a descriptor to the signed upload key stem. */
+export const isCompatibleMediaUploadRelatedKey = (
+  tokenKey: string,
+  relatedKey: string,
+): boolean => {
+  const tokenParsed = path.posix.parse(tokenKey);
+  const relatedParsed = path.posix.parse(relatedKey);
+
+  return (
+    tokenParsed.dir === relatedParsed.dir &&
+    Boolean(tokenParsed.name) &&
+    (relatedParsed.name === tokenParsed.name ||
+      relatedParsed.name.startsWith(`${tokenParsed.name}.`))
+  );
+};

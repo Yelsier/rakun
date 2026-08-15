@@ -351,6 +351,10 @@ The media manager can reimport an existing image or video with its currently
 selected optimization settings. Rakun writes the replacement and its variants
 under new storage keys, updates the existing `Media` record in place, and only
 then removes the previous objects, so content relations keep the same media ID.
+The `manager.media.replace` mutation applies the same safe storage sequence to
+a newly uploaded image. It preserves the existing media ID, editorial details,
+folder and relations while replacing its file metadata and generated variants,
+then revalidates documents that reference it when route revalidation is configured.
 When `generatePreview` is enabled, optimization stores a tiny `data:image/...`
 LQIP string on `previewUrl` instead of uploading a separate preview object.
 Older media that still have a `previewKey` continue to resolve normally.

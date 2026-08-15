@@ -8,6 +8,8 @@ import type {
   GetMediaUrlOutput,
   PrepareUploadInput,
   PrepareUploadOutput,
+  ReplaceMediaInput,
+  ReplaceMediaOutput,
 } from '@rakun-kit/core/client'
 
 import { useManagerClient } from '@/client/react'
@@ -297,6 +299,60 @@ export async function uploadMediaFile(
   return { prepared, finalized }
 }
 
+export async function replaceMediaFile(
+  input: {
+    id: string
+    file: File
+    access: PrepareUploadInput['access']
+    optimizeOptions?: FileOptimizeOptions
+    signal?: AbortSignal
+    fetchImpl?: typeof fetch
+    apiBase?: string
+  },
+  mediaClient: MediaClient,
+): Promise<ReplaceMediaOutput> {
+  const prepared = await prepareMediaUpload(
+    {
+      fileName: input.file.name,
+      mime: input.file.type || 'application/octet-stream',
+      size: input.file.size,
+      access: input.access,
+    },
+    mediaClient,
+  )
+  const uploaded = await uploadFileToPresignedUrl({
+    file: input.file,
+    prepared,
+    optimizeOptions: input.optimizeOptions,
+    signal: input.signal,
+    fetchImpl: input.fetchImpl,
+    apiBase: input.apiBase,
+  })
+  const replacement: ReplaceMediaInput = {
+    id: input.id,
+    key: uploaded.key,
+    access: uploaded.access,
+    uploadToken: prepared.uploadToken,
+    fileName: uploaded.fileName,
+    mime: uploaded.mime,
+    size: uploaded.size,
+    previewKey: uploaded.previewKey,
+    previewUrl: uploaded.previewUrl,
+    previewMime: uploaded.previewMime,
+    sizes: uploaded.sizes,
+    sources: uploaded.sources,
+    width: uploaded.width,
+    height: uploaded.height,
+    orientation: uploaded.orientation,
+    optimized: uploaded.optimized,
+    optimizedFormat: uploaded.optimizedFormat,
+    optimizationQuality: uploaded.optimizationQuality,
+    originalSize: uploaded.originalSize,
+  }
+
+  return await mediaClient.request('manager.media.replace', replacement)
+}
+
 export async function getMediaFolderById(
   id: string,
   mediaClient: MediaClient,
@@ -448,6 +504,9 @@ type MediaContextValue = {
   uploadMedia: (
     input: Parameters<typeof uploadMediaFile>[0],
   ) => Promise<MediaRecord>
+  replaceMedia: (
+    input: Parameters<typeof replaceMediaFile>[0],
+  ) => Promise<MediaRecord>
 }
 
 const MediaContext = createContext<MediaContextValue | null>(null)
@@ -525,6 +584,11 @@ export const ManagerMediaProvider = ({
           throw new Error('Upload finished but no media record was returned.')
         }
         setSelectedMedia(media)
+        return media
+      },
+      replaceMedia: async (input) => {
+        const media = (await replaceMediaFile(input, managerClient)) as MediaRecord
+        setSelectedMedia((current) => (current?._id === media._id ? media : current))
         return media
       },
     }),

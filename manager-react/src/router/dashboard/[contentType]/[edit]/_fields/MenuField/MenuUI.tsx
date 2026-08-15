@@ -153,8 +153,8 @@ const MenuItemCard = ({
       }}
     >
       <Collapsible open={expanded} onOpenChange={onExpandedChange}>
-        <Card className="overflow-hidden py-0">
-          <CardHeader className="flex-row items-center gap-1 space-y-0 px-2 py-2">
+        <Card className="gap-0 overflow-hidden py-0">
+          <CardHeader className="flex min-w-0 flex-row items-center gap-1 px-2 py-2">
             <Button
               aria-label={t('menuField.dragItem')}
               className="shrink-0 cursor-grab text-muted-foreground active:cursor-grabbing"
@@ -175,35 +175,37 @@ const MenuItemCard = ({
                 <span className="truncate">{getItemLabel(item, t('menuField.untitledItem'))}</span>
               </Button>
             </CollapsibleTrigger>
-            <Button
-              aria-label={t('menuField.outdentItem')}
-              disabled={item.depth === 0}
-              onClick={onOutdent}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <ChevronLeft />
-            </Button>
-            <Button
-              aria-label={t('menuField.indentItem')}
-              onClick={onIndent}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <ChevronRight />
-            </Button>
-            <Button
-              aria-label={t('menuField.removeItem')}
-              className="text-destructive hover:text-destructive"
-              onClick={onRemove}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <Trash2 />
-            </Button>
+            <div className="flex shrink-0 items-center gap-0.5">
+              <Button
+                aria-label={t('menuField.outdentItem')}
+                disabled={item.depth === 0}
+                onClick={onOutdent}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <ChevronLeft />
+              </Button>
+              <Button
+                aria-label={t('menuField.indentItem')}
+                onClick={onIndent}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <ChevronRight />
+              </Button>
+              <Button
+                aria-label={t('menuField.removeItem')}
+                className="text-destructive hover:text-destructive"
+                onClick={onRemove}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <Trash2 />
+              </Button>
+            </div>
           </CardHeader>
           <CollapsibleContent>
             <CardContent className="border-t px-4 py-4">

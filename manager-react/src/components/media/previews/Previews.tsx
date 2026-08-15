@@ -1,7 +1,16 @@
 'use client'
 
 import { Folder, FolderPlus, Upload, X } from 'lucide-react'
-import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react'
+import {
+  startTransition,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import type { ChangeEvent } from 'react'
 import { keepPreviousData, useQueryClient } from '@tanstack/react-query'
 import {
   createManagerQueryKey,
@@ -77,7 +86,7 @@ export default function Previews() {
   const t = useTranslations()
   const managerClient = useManagerClient()
   const queryClient = useQueryClient()
-  const { uploadMedia } = useMedia()
+  const { uploadMedia, replaceMedia } = useMedia()
   const {
     currentFolderId,
     currentFolderPath,
@@ -123,6 +132,9 @@ export default function Previews() {
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
   const [reimportingIds, setReimportingIds] = useState<Set<string>>(() => new Set())
+  const [replacingId, setReplacingId] = useState<string | null>(null)
+  const replaceInputRef = useRef<HTMLInputElement>(null)
+  const replaceTargetRef = useRef<MediaRecord | null>(null)
 
   const getMediaQueryFilter = (
     folderId: string | null,
@@ -594,6 +606,57 @@ export default function Previews() {
     }
   }
 
+  const onRequestReplace = (item: MediaRecord) => {
+    if (!item.mime.startsWith('image/') || replacingId) return
+
+    replaceTargetRef.current = item
+    replaceInputRef.current?.click()
+  }
+
+  const handleReplacementFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    const target = replaceTargetRef.current
+    event.target.value = ''
+
+    if (!file || !target) return
+    if (!file.type.startsWith('image/')) {
+      toast.error(t('media.replaceImageInvalidFile'))
+      return
+    }
+
+    void confirm({
+      title: t('media.replaceImageTitle'),
+      description: t('media.replaceImageDescription', {
+        name: target.name,
+        fileName: file.name,
+      }),
+      confirmLabel: t('media.replaceImageConfirm'),
+      onConfirm: async () => {
+        try {
+          setReplacingId(target._id)
+          await replaceMedia({
+            id: target._id,
+            file,
+            access: target.access,
+            optimizeOptions: optimizeEnabled ? optimizeOptions : undefined,
+          })
+          await refetch()
+          toast.success(t('media.imageReplaced'))
+        } catch (error) {
+          toast.error(
+            t('media.replaceImageError', {
+              reason: getActionErrorMessage(error),
+            }),
+          )
+          throw error
+        } finally {
+          setReplacingId(null)
+          replaceTargetRef.current = null
+        }
+      },
+    })
+  }
+
   const handleSaveImageEdit = async (file: File) => {
     if (!imageEditTarget) return
 
@@ -885,6 +948,8 @@ export default function Previews() {
       onClearSelection: clearBulkSelection,
       onRequestEdit,
       onRequestImageEdit,
+      isReplacing: (id: string) => replacingId === id,
+      onRequestReplace,
       canReimportWithOptimization: optimizeEnabled,
       isReimporting: (id: string) => reimportingIds.has(id),
       onRequestReimport,
@@ -918,6 +983,8 @@ export default function Previews() {
       clearBulkSelection,
       onRequestEdit,
       onRequestImageEdit,
+      replacingId,
+      onRequestReplace,
       optimizeEnabled,
       reimportingIds,
       onRequestReimport,
@@ -935,6 +1002,14 @@ export default function Previews() {
       )}
     >
       <MediaPreviewProvider value={mediaPreviewContextValue}>
+        <input
+          ref={replaceInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          tabIndex={-1}
+          onChange={handleReplacementFileChange}
+        />
         <FileUpload
           value={files}
           onValueChange={setFiles}

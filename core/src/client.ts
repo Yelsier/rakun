@@ -208,6 +208,10 @@ export type {
   ReimportMediaOutput,
 } from "./schemas/manager/media/reimportMedia";
 export type {
+  ReplaceMediaInput,
+  ReplaceMediaOutput,
+} from "./schemas/manager/media/replaceMedia";
+export type {
   GetMediaUrlInput,
   GetMediaUrlOutput,
 } from "./schemas/manager/media/getMediaUrl";

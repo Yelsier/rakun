@@ -355,6 +355,22 @@ export const managerMessages = {
   'media.currentFolder': { defaultMessage: 'Current folder:' },
   'media.baseFolder': { defaultMessage: 'Base folder' },
   'media.cropAndRotate': { defaultMessage: 'Crop and rotate' },
+  'media.replaceImage': { defaultMessage: 'Replace image' },
+  'media.replaceImageTitle': { defaultMessage: 'Replace this image?' },
+  'media.replaceImageDescription': {
+    defaultMessage:
+      'Replace "{name}" with "{fileName}". Its title, alt text, folder and references across the site will be preserved.',
+    params: { name: 'string', fileName: 'string' },
+  },
+  'media.replaceImageConfirm': { defaultMessage: 'Replace image' },
+  'media.imageReplaced': { defaultMessage: 'Image replaced everywhere it is referenced' },
+  'media.replaceImageError': {
+    defaultMessage: 'Could not replace the image: {reason}',
+    params: { reason: 'string' },
+  },
+  'media.replaceImageInvalidFile': {
+    defaultMessage: 'Choose an image file to replace this image.',
+  },
   'media.moveToFolder': { defaultMessage: 'Move to folder' },
   'media.createFolder': { defaultMessage: 'Create folder' },
   'media.createFolderDescription': {

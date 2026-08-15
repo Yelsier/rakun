@@ -1,6 +1,9 @@
 import { describe, expect, it } from "bun:test";
 
-import { isCompatibleMediaUploadKey } from "./mediaUploadKey";
+import {
+  isCompatibleMediaUploadKey,
+  isCompatibleMediaUploadRelatedKey,
+} from "./mediaUploadKey";
 
 describe("isCompatibleMediaUploadKey", () => {
   it("accepts exact matches", () => {
@@ -32,6 +35,32 @@ describe("isCompatibleMediaUploadKey", () => {
       isCompatibleMediaUploadKey(
         "public/uploads/hero.png",
         "private/uploads/hero.webp",
+      ),
+    ).toBe(false);
+  });
+});
+
+describe("isCompatibleMediaUploadRelatedKey", () => {
+  it("accepts generated variants under the signed key stem", () => {
+    expect(
+      isCompatibleMediaUploadRelatedKey(
+        "public/uploads/hero.png",
+        "public/uploads/hero.320w.webp",
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects variants outside the signed key stem", () => {
+    expect(
+      isCompatibleMediaUploadRelatedKey(
+        "public/uploads/hero.png",
+        "public/uploads/other.320w.webp",
+      ),
+    ).toBe(false);
+    expect(
+      isCompatibleMediaUploadRelatedKey(
+        "public/uploads/hero.png",
+        "private/uploads/hero.320w.webp",
       ),
     ).toBe(false);
   });

@@ -1043,6 +1043,8 @@ Optimized video uploads use the `ffmpeg-static` peer dependency and produce an M
 
 Existing images and videos can be reimported from the media manager with the selected optimization settings. The replacement uses new storage keys and updates the existing `Media` record only after every requested variant has been written, preserving its ID and content references. Preview generation stores a compact `data:image/...` string on `previewUrl` for LQIP use in `@rakun-kit/react` `Image`, instead of writing a separate preview object to storage.
 
+The `manager.media.replace` mutation accepts a newly uploaded image and swaps it into an existing `Media` record. It preserves the media ID, name, title, alt text, folder, status, and all content references; after the database points to the new storage keys, Rakun removes the previous primary object and generated variants and revalidates directly dependent documents when route revalidation is configured.
+
 ## Persistent Event Log
 
 Rakun keeps business/audit events separate from its technical console logger.

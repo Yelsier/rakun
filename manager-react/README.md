@@ -117,6 +117,11 @@ same reimport action from the selection toolbar. Optimization is on by default,
 and generated image previews are stored as inline `data:image/...` LQIP values
 on the media record.
 
+An image's context menu also offers `Replace image`. The selected file replaces
+the stored image and generated variants while retaining the existing media ID,
+name, title, alt text, folder, status, and every relation to it. Rakun also
+revalidates directly referencing pages when route revalidation is configured.
+
 ## Dynamic data mappings
 
 Fields configured with core `.help(text)` show a compact help icon beside their

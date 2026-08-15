@@ -108,7 +108,6 @@ export const moveMenuSubtree = ({
     ...item,
     depth: item.depth + depthDelta,
   }))
-
   return buildMenuTree([
     ...remaining.slice(0, insertIndex),
     ...movedSubtree,
