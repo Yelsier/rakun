@@ -1,6 +1,6 @@
 {
   "name": "@rakun-kit/react",
-  "version": "1.5.2",
+  "version": "1.6.0",
   "description": "React rendering helpers for Rakun web modules.",
   "license": "MIT",
   "author": {
@@ -29,7 +29,7 @@
     "dist"
   ],
   "dependencies": {
-    "@rakun-kit/core": "^1.5.8"
+    "@rakun-kit/core": "^1.6.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
