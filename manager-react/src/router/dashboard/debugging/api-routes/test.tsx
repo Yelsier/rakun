@@ -7,6 +7,7 @@ import {
   EditableCodeBlock,
   type EditableCodeBlockRef,
 } from './EditableCodeBlock'
+import { JsonViewer } from './JsonViewer'
 
 import { useManagerClient } from '@/client/react'
 import { Button } from '@/components/ui/button'
@@ -31,14 +32,14 @@ export default function ApiPlayground({
 }: Props) {
   const client = useManagerClient()
   const inputRef = useRef<EditableCodeBlockRef>(null)
-  const [out, setOut] = useState('')
+  const [out, setOut] = useState<{ value: unknown } | null>(null)
   const [err, setErr] = useState('')
   const [running, setRunning] = useState(false)
 
   const run = async () => {
     setRunning(true)
     setErr('')
-    setOut('')
+    setOut(null)
 
     let parsedInput: unknown = undefined
 
@@ -58,7 +59,7 @@ export default function ApiPlayground({
             method: operation.method,
           })
         : await client.request(operation.name as never, parsedInput as never)
-      setOut(JSON.stringify(result, null, 2))
+      setOut({ value: result })
     } catch (error) {
       if (error instanceof Error) {
         setErr(error.message)
@@ -66,7 +67,7 @@ export default function ApiPlayground({
         setErr('Unknown error')
       }
 
-      setOut(JSON.stringify(error, null, 2))
+      setOut({ value: error })
     } finally {
       setRunning(false)
     }
@@ -85,7 +86,7 @@ export default function ApiPlayground({
               {err}
             </div>
           ) : null}
-          <CodeBlock>{out}</CodeBlock>
+          {out ? <JsonViewer value={out.value} /> : <CodeBlock />}
         </ResizablePanel>
       </ResizablePanelGroup>
       <Button
