@@ -11,6 +11,7 @@ import {
 } from '@rakun-kit/react'
 
 import { PageInfoProvider, runWithPageInfo } from "./translation";
+import { RakunDevToolbar, type RakunDevToolbarModule } from "./web-dev-toolbar";
 import { RakunPreviewBridge } from "./web-preview-bridge";
 import { getRakunPreviewPageConfig } from "./web-preview";
 
@@ -55,6 +56,12 @@ export type RakunPageRendererProps = {
   page: PageOutput;
   loadModule: RakunPageModuleLoader;
   renderContent?: (children: ReactNode, index: number) => ReactNode;
+  devToolbar?: boolean | RakunDevToolbarOptions;
+};
+
+export type RakunDevToolbarOptions = {
+  managerBasePath?: string;
+  initialOpen?: boolean;
 };
 
 type PreviewModuleRenderMeta = {
@@ -68,6 +75,38 @@ type PreviewModuleRenderMeta = {
 const previewModuleWrapperStyle = {
   display: "contents",
 } satisfies CSSProperties;
+
+export const resolveRakunDevToolbarOptions = (
+  value: RakunPageRendererProps["devToolbar"],
+): RakunDevToolbarOptions | null => {
+  if (value === false) return null;
+  if (value === true) return {};
+  if (value) return value;
+
+  return process.env.NODE_ENV === "development" &&
+    process.env.NEXT_PHASE !== "phase-production-build"
+    ? {}
+    : null;
+};
+
+const getStringInfo = (info: PageOutput["info"], key: string) => {
+  const value = info?.[key];
+  return typeof value === "string" && value ? value : undefined;
+};
+
+export const getRakunManagerEditHref = ({
+  managerBasePath = "/backend",
+  documentType,
+  documentId,
+}: RakunDevToolbarOptions & {
+  documentType?: string;
+  documentId?: string;
+}) => {
+  if (!documentType || !documentId) return undefined;
+
+  const base = managerBasePath.replace(/\/+$/, "");
+  return `${base}/${encodeURIComponent(documentType)}/${encodeURIComponent(documentId)}`;
+};
 
 const resolveModuleComponent = (
   name: string,
@@ -85,6 +124,7 @@ const resolveModuleComponent = (
 export async function RakunPageRenderer({
   page,
   loadModule,
+  devToolbar,
   renderContent = (children, index) => (
     <main key={`content:${index}`}>{children}</main>
   ),
@@ -100,7 +140,11 @@ export async function RakunPageRenderer({
   return runWithPageInfo(page.info, async () => {
     const layout = getPageLayout(page);
     const previewConfig = getRakunPreviewPageConfig(page);
+    const toolbarOptions = previewConfig
+      ? null
+      : resolveRakunDevToolbarOptions(devToolbar);
     const rendered: ReactNode[] = [];
+    const toolbarModules: RakunDevToolbarModule[] = [];
     let pageModuleIndex = 0;
 
     const renderModule = async (
@@ -114,8 +158,12 @@ export async function RakunPageRenderer({
 
       const node = <Component key={previewConfig ? undefined : key} {...module} />;
 
-      if (!previewConfig) {
+      if (!previewConfig && !toolbarOptions) {
         return node;
+      }
+
+      if (toolbarOptions) {
+        toolbarModules.push({ module, ...meta });
       }
 
       return (
@@ -187,6 +235,21 @@ export async function RakunPageRenderer({
           />
         ) : null}
         {rendered}
+        {toolbarOptions ? (
+          <RakunDevToolbar
+            modules={toolbarModules.sort((a, b) => a.index - b.index)}
+            renderMode={page.renderMode}
+            language={page.language?.code}
+            documentType={getStringInfo(page.info, "_type")}
+            documentId={getStringInfo(page.info, "_id")}
+            editHref={getRakunManagerEditHref({
+              ...toolbarOptions,
+              documentType: getStringInfo(page.info, "_type"),
+              documentId: getStringInfo(page.info, "_id"),
+            })}
+            initialOpen={toolbarOptions.initialOpen}
+          />
+        ) : null}
       </PageInfoProvider>
     );
   }, page.literals);

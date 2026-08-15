@@ -143,7 +143,8 @@ for private objects are never converted into public URLs.
 
 ## Public entrypoints and constraints
 
-- `@rakun-kit/react`: registries, module/page renderers, `Image`, and `Video`.
+- `@rakun-kit/react`: registries, module/page renderers, `Image`, `Video`, and
+  the `RakunLogoMark` / `RakunLogoBadge` SVG components.
 - `@rakun-kit/react/plugins`: web plugin contracts and registry composition.
 - `@rakun-kit/react/translation`: React translation helpers.
 

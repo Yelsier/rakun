@@ -2,6 +2,7 @@ export * from "./ErrorBoundary";
 export * from "./Image";
 export * from "./LazyViewport";
 export * from "./ModuleRenderer";
+export * from './RakunLogo'
 export * from './ServerModuleRenderer'
 export * from "./registry";
 export * from "./translation";

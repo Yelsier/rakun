@@ -128,6 +128,34 @@ same schema applies to every document of that type.
 When a Rakun page response includes a redirect, the renderer calls the matching
 Next.js redirect helper before rendering modules.
 
+In development, `RakunPageRenderer` automatically adds a compact Rakun toolbar
+to normal web pages. It shows the current route and document, links to the
+manager edit screen, lists rendered content/template/layout modules, highlights
+the selected module on the page, and displays the props received by that
+module. Manager preview pages keep using their dedicated inspector and do not
+show the development toolbar.
+
+When minimized, only the floating Rakun logo is shown. Use **Hide** to remove
+the toolbar for the current page view; it becomes available again after a
+reload or navigation.
+
+The manager is assumed to live at `/backend`. Configure a different mount path,
+open the toolbar initially, or disable it explicitly:
+
+```tsx
+<RakunPageRenderer
+  page={page}
+  loadModule={loadModule}
+  devToolbar={{ managerBasePath: '/manager', initialOpen: true }}
+/>
+
+<RakunPageRenderer page={page} loadModule={loadModule} devToolbar={false} />
+```
+
+Passing `true` enables it explicitly outside development; avoid doing that on a
+public production site because module props may contain non-public debugging
+context.
+
 Module files should export either `default` or `component`:
 
 ```tsx

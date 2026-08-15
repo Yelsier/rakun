@@ -43,6 +43,7 @@ export { RAKUN_STATIC_PATHS_CACHE_TAG } from './web-cache'
 
 export {
   RakunPageRenderer,
+  type RakunDevToolbarOptions,
   type RakunPageModuleImport,
   type RakunPageModuleLoader,
   type RakunPageRendererProps,

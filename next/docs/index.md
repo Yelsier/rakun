@@ -110,6 +110,23 @@ preview pages. For an optional catch-all, the root path is emitted as
 `{ slug: [] }`, which keeps every generated param valid in Next.js. The helper
 is server-only and must not be imported by client components.
 
+On normal pages, `RakunPageRenderer` enables a development toolbar when
+`NODE_ENV` is `development`. It shows route/document metadata, links to the
+manager edit screen, lists content/template/layout modules, highlights modules
+on hover or page selection, and exposes the props received by the selected
+module. Preview pages retain their separate manager inspector and omit this
+toolbar.
+
+The minimized state is a small floating Rakun logo instead of a full-width
+bar. The expanded toolbar also has a **Hide** action that removes it for the
+current page view; reloading or navigating restores it.
+
+The edit link assumes the manager is mounted at `/backend`. Pass
+`devToolbar={{ managerBasePath: '/manager', initialOpen: true }}` to configure
+it, `devToolbar={false}` to disable it in development, or `devToolbar={true}` to
+enable it explicitly in another environment. Do not enable it on public
+production pages because inspected module props may contain debugging context.
+
 When the API is a separate deployment, use `createRakunGenerateStaticParams`,
 `getRakunPage`, and `getRakunPageFromProps` with an absolute `apiBaseUrl`.
 That API must be reachable during `next build`; Next does not serve the current

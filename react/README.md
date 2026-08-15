@@ -2,6 +2,9 @@
 
 React helpers for rendering Rakun web modules.
 
+The package also exports `RakunLogoMark` and `RakunLogoBadge` for Rakun-owned
+development and manager UI.
+
 Apps provide a module registry, so framework adapters stay open:
 
 ```tsx
