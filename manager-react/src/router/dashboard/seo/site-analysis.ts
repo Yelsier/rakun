@@ -4,6 +4,7 @@ export type SiteSeoFindingCode =
   | 'missingTitle'
   | 'titleLength'
   | 'missingDescription'
+  | 'defaultDescription'
   | 'descriptionLength'
   | 'noIndex'
   | 'missingCanonicalBase'
@@ -143,13 +144,16 @@ const addDuplicateFindings = (
 
 export const buildSiteSeoAudit = ({
   contents,
+  defaultDescription,
   resolveValue,
   siteUrl,
 }: {
   contents: SiteSeoContent[]
+  defaultDescription?: unknown
   resolveValue: (value: unknown) => unknown
   siteUrl?: string
 }): SiteSeoAuditPayload => {
+  const resolvedDefaultDescription = readString(defaultDescription, resolveValue)
   const pages = contents.flatMap((content) =>
     content.documents.flatMap((document) => {
       if (content.documentVisibility && document._visibility !== 'published') {
@@ -164,13 +168,16 @@ export const buildSiteSeoAudit = ({
         resolveValue,
         seo,
       })
-      const description = readSeoString({
+      const pageDescription = readSeoString({
         contentType: content.contentType,
         document,
         field: 'description',
         resolveValue,
         seo,
       })
+      const usesDefaultDescription =
+        !pageDescription && Boolean(resolvedDefaultDescription)
+      const description = pageDescription || resolvedDefaultDescription
       const hasTitleBinding = hasSeoBinding(seo, 'title')
       const hasDescriptionBinding = hasSeoBinding(seo, 'description')
       const canonical = readString(seo.canonicalUrl, resolveValue)
@@ -182,7 +189,9 @@ export const buildSiteSeoAudit = ({
         if (title) findings.push({ code: 'titleLength', severity: 'warning' })
       }
 
-      if (!description && !hasDescriptionBinding) {
+      if (usesDefaultDescription) {
+        findings.push({ code: 'defaultDescription', severity: 'warning' })
+      } else if (!description && !hasDescriptionBinding) {
         findings.push({ code: 'missingDescription', severity: 'error' })
       } else if (description.length < 120 || description.length > 160) {
         if (description) {

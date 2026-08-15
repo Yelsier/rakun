@@ -74,6 +74,8 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'seoAudit.finding.missingTitle': 'La página no tiene título SEO.',
   'seoAudit.finding.titleLength': 'El título está fuera de la longitud recomendada.',
   'seoAudit.finding.missingDescription': 'La página no tiene meta description.',
+  'seoAudit.finding.defaultDescription':
+    'La página usa la meta description global predeterminada.',
   'seoAudit.finding.descriptionLength':
     'La descripción está fuera de la longitud recomendada.',
   'seoAudit.finding.noIndex': 'La página declara noindex.',

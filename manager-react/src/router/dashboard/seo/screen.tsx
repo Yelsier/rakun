@@ -60,6 +60,12 @@ type SeoAuditRecord = {
   createdAt?: Date | string
 }
 
+type SeoSettingsRecord = {
+  defaultSeo?: {
+    description?: unknown
+  }
+}
+
 const scoreStyles = (score: number) =>
   score >= 80
     ? 'text-emerald-700 dark:text-emerald-300'
@@ -96,6 +102,17 @@ export const ManagerSeoScreen = ({
   ])
   const canCreate = hasPermissions(['content.SeoSettings.own' as Permission])
   const createAudit = useManagerMutation('manager.create')
+  const seoSettingsQuery = useManagerQuery({
+    name: 'manager.list',
+    input: {
+      contentType: 'SeoSettings',
+      query: {
+        filter: { key: 'default' },
+        options: { limit: 1 },
+      },
+    },
+    enabled: canRead,
+  })
   const siteHistoryQuery = useManagerQuery({
     name: 'manager.list',
     input: {
@@ -167,6 +184,8 @@ export const ManagerSeoScreen = ({
         return t('seoAudit.finding.titleLength')
       case 'missingDescription':
         return t('seoAudit.finding.missingDescription')
+      case 'defaultDescription':
+        return t('seoAudit.finding.defaultDescription')
       case 'descriptionLength':
         return t('seoAudit.finding.descriptionLength')
       case 'noIndex':
@@ -203,6 +222,9 @@ export const ManagerSeoScreen = ({
       )
       const payload = buildSiteSeoAudit({
         contents,
+        defaultDescription: (
+          seoSettingsQuery.data?.items?.[0] as SeoSettingsRecord | undefined
+        )?.defaultSeo?.description,
         resolveValue: (value) => {
           if (value === undefined || value === null) return value
           try {
@@ -255,7 +277,8 @@ export const ManagerSeoScreen = ({
   if (
     siteHistoryQuery.isLoading ||
     latestSiteAuditQuery.isLoading ||
-    pageHistoryQuery.isLoading
+    pageHistoryQuery.isLoading ||
+    seoSettingsQuery.isLoading
   ) {
     return <Loading />
   }

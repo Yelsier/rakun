@@ -181,7 +181,8 @@ indexability result.
 
 The secondary sidebar also includes a site-wide SEO screen above the media
 library. It audits stored metadata for published routeable documents in the
-active language, highlights duplicates and incomplete custom Open Graph data,
+active language, treats the global default description as a valid fallback
+with a warning, highlights duplicates and incomplete custom Open Graph data,
 and stores every run so its score can be followed over time. Access and report
 creation reuse the `SeoSettings` read and own permissions. Evolution snapshots
 and recent page reports are fetched and displayed in bounded, paginated groups.

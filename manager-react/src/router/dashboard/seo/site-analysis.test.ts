@@ -105,4 +105,29 @@ describe('site SEO analysis', () => {
       'missingDescription',
     )
   })
+
+  it('warns instead of erroring when a page uses the default description', () => {
+    const defaultDescription =
+      'A global description used when a page has no description of its own. It is long enough to satisfy the recommended metadata length for this test.'
+    const payload = buildSiteSeoAudit({
+      siteUrl: 'https://example.com',
+      defaultDescription,
+      resolveValue,
+      contents: [
+        {
+          contentType: 'Page',
+          documents: [{ _id: 'one', _seo: { title: 'A page title' } }],
+        },
+      ],
+    })
+
+    expect(payload.pages[0]?.description).toBe(defaultDescription)
+    expect(payload.pages[0]?.findings).toContainEqual({
+      code: 'defaultDescription',
+      severity: 'warning',
+    })
+    expect(payload.pages[0]?.findings.map((finding) => finding.code)).not.toContain(
+      'missingDescription',
+    )
+  })
 })

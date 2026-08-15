@@ -198,7 +198,9 @@ The secondary sidebar exposes a separate SEO screen above the media library for
 users with SEO settings read access. Its Generate report action scans published
 documents from every readable routeable content type in the active language,
 checks stored metadata, custom Open Graph completeness and duplicate titles or
-descriptions, then persists a dated `SeoAudit` snapshot. Previous site scores
+descriptions, then persists a dated `SeoAudit` snapshot. A page without its own
+description uses Settings → SEO's global default description and receives a
+warning instead of a missing-description error. Previous site scores
 remain visible as a paginated evolution history; recent page reports use an
 independent bounded pagination. `SeoAudit` shares the `SeoSettings`
 permission resource, so `own` controls generation and `readAny` controls shared

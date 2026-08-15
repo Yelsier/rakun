@@ -117,6 +117,9 @@ export const managerMessages = {
   'seoAudit.finding.missingDescription': {
     defaultMessage: 'The page has no meta description.',
   },
+  'seoAudit.finding.defaultDescription': {
+    defaultMessage: 'The page uses the global default meta description.',
+  },
   'seoAudit.finding.descriptionLength': {
     defaultMessage: 'The description is outside the recommended length.',
   },
