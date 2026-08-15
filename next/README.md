@@ -135,6 +135,9 @@ the selected module on the page, and displays the props received by that
 module. Manager preview pages keep using their dedicated inspector and do not
 show the development toolbar.
 
+Module props use the same collapsible JSON tree as the API Routes output. The
+first level starts expanded while nested objects and arrays remain closed.
+
 When minimized, only the floating Rakun logo is shown. Use **Hide** to remove
 the toolbar for the current page view; it becomes available again after a
 reload or navigation.
@@ -152,9 +155,9 @@ open the toolbar initially, or disable it explicitly:
 <RakunPageRenderer page={page} loadModule={loadModule} devToolbar={false} />
 ```
 
-Passing `true` enables it explicitly outside development; avoid doing that on a
-public production site because module props may contain non-public debugging
-context.
+These settings only apply during the development server. Production pages
+ignore `devToolbar`, do not mount the instrumenter, and receive no debugging
+attributes.
 
 Module files should export either `default` or `component`:
 
@@ -164,6 +167,12 @@ export default function Hero({ title }: { title: string }) {
   return <section>{title}</section>
 }
 ```
+
+Preview and development inspection automatically attach their `data-rakun-*`
+attributes to the module's outermost DOM element after hydration. Modules need
+no instrumentation props or special markup. The client-only instrumenter adds
+no DOM wrapper, so direct-child, `:first-child`, and `:nth-child` selectors keep
+the same structure. Normal production pages do not enable the instrumenter.
 
 Web plugin registries can be converted into the loader expected by the Next
 renderer:

@@ -1,5 +1,5 @@
-import Script from "next/script";
-import type { PageOutput } from "@rakun-kit/core/contracts";
+import Script from 'next/script'
+import type { PageOutput } from '@rakun-kit/core/contracts'
 
 import {
   rakunPreviewInspectorMessageType,
@@ -8,53 +8,49 @@ import {
   rakunPreviewReadyMessageType,
   rakunPreviewSeoAnalysisMessageType,
   rakunPreviewSeoAnalysisResultMessageType,
-} from "./web-preview";
+} from './web-preview'
 
-const serializeScriptValue = (value: unknown) =>
-  JSON.stringify(value).replace(/</g, "\\u003c");
+const serializeScriptValue = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c')
 
 const getSeoImageUrl = (value: unknown) => {
-  if (!value || typeof value !== "object" || !("url" in value)) return "";
+  if (!value || typeof value !== 'object' || !('url' in value)) return ''
 
-  return typeof value.url === "string" ? value.url : "";
-};
+  return typeof value.url === 'string' ? value.url : ''
+}
 
-const createSeoAnalysisConfig = (
-  seo: PageOutput["seo"],
-  language: string | undefined,
-) => ({
-  url: seo?.canonicalUrl ?? "",
-  title: seo?.title ?? "",
-  description: seo?.description ?? "",
-  canonical: seo?.canonicalUrl ?? "",
-  siteUrl: seo?.siteUrl ?? "",
-  robots: seo?.noIndex ? "noindex" : "",
-  language: language ?? "",
+const createSeoAnalysisConfig = (seo: PageOutput['seo'], language: string | undefined) => ({
+  url: seo?.canonicalUrl ?? '',
+  title: seo?.title ?? '',
+  description: seo?.description ?? '',
+  canonical: seo?.canonicalUrl ?? '',
+  siteUrl: seo?.siteUrl ?? '',
+  robots: seo?.noIndex ? 'noindex' : '',
+  language: language ?? '',
   openGraph: {
-    title: seo?.openGraphTitle ?? "",
-    description: seo?.openGraphDescription ?? "",
+    title: seo?.openGraphTitle ?? '',
+    description: seo?.openGraphDescription ?? '',
     image: getSeoImageUrl(seo?.openGraphImage),
-    url: seo?.openGraphUrl ?? "",
-    type: seo?.openGraphType ?? "",
+    url: seo?.openGraphUrl ?? '',
+    type: seo?.openGraphType ?? '',
   },
   twitter: {
-    card: seo?.twitterCard ?? "",
-    title: seo?.twitterTitle ?? "",
-    description: seo?.twitterDescription ?? "",
+    card: seo?.twitterCard ?? '',
+    title: seo?.twitterTitle ?? '',
+    description: seo?.twitterDescription ?? '',
     image: getSeoImageUrl(seo?.twitterImage),
   },
-});
+})
 
 export const RakunPreviewBridge = ({
   language,
   seo,
   tokenParam,
 }: {
-  language?: string;
-  seo?: PageOutput["seo"];
-  tokenParam: string;
+  language?: string
+  seo?: PageOutput['seo']
+  tokenParam: string
 }) => {
-  const seoAnalysisConfig = createSeoAnalysisConfig(seo, language);
+  const seoAnalysisConfig = createSeoAnalysisConfig(seo, language)
   const script = `
 (() => {
   const bridgeKey = "__rakunPreviewBridgeInstalled";
@@ -86,7 +82,7 @@ export const RakunPreviewBridge = ({
 
   window[bridgeKey] = true;
 
-  const moduleSelector = "[data-rakun-preview-module]";
+  const moduleSelector = "[data-rakun-module]";
   const inspectClassName = "rakun-preview-module-inspecting";
   const hoverClassName = "rakun-preview-module-hovering";
   let inspectEnabled = false;
@@ -99,7 +95,7 @@ export const RakunPreviewBridge = ({
     const style = document.createElement("style");
     style.id = "__rakunPreviewBridgeStyles";
     style.textContent =
-      "body." + inspectClassName + " [data-rakun-preview-module] { cursor: pointer; }" +
+      "body." + inspectClassName + " [data-rakun-module] { cursor: pointer; }" +
       "body." + hoverClassName + " { cursor: pointer; }" +
       "body." + hoverClassName + " * { cursor: pointer !important; }" +
       ".__rakun-preview-module-outline {" +
@@ -139,15 +135,27 @@ export const RakunPreviewBridge = ({
     rect.left < window.innerWidth
   );
 
-  const getRects = (module) => {
-    const ownRects = Array.from(module.getClientRects()).filter(isVisibleRect);
+  const getModuleElements = (module) => {
+    const index = module.dataset.rakunIndex;
+    if (index === undefined) return [module];
 
-    if (ownRects.length) return ownRects;
-
-    return Array.from(module.children).flatMap((child) =>
-      Array.from(child.getClientRects()).filter(isVisibleRect)
+    return Array.from(
+      document.querySelectorAll(
+        moduleSelector + '[data-rakun-index="' + index + '"]'
+      )
     );
   };
+
+  const getRects = (module) =>
+    getModuleElements(module).flatMap((element) => {
+      const ownRects = Array.from(element.getClientRects()).filter(isVisibleRect);
+
+      if (ownRects.length) return ownRects;
+
+      return Array.from(element.children).flatMap((child) =>
+        Array.from(child.getClientRects()).filter(isVisibleRect)
+      );
+    });
 
   const getModuleRect = (module) => {
     const rects = getRects(module);
@@ -230,17 +238,17 @@ export const RakunPreviewBridge = ({
   const buildSelectMessage = (module) => ({
     type: selectMessageType,
     entryType:
-      module.dataset.rakunPreviewEntryType === "layout"
+      module.dataset.rakunEntryType === "layout"
         ? "layout"
-        : module.dataset.rakunPreviewEntryType === "template"
+        : module.dataset.rakunEntryType === "template"
           ? "template"
           : "content",
-    moduleId: module.dataset.rakunPreviewModuleId || "",
-    moduleType: module.dataset.rakunPreviewModuleType || "",
-    index: readNumber(module.dataset.rakunPreviewIndex) ?? 0,
-    layoutIndex: readNumber(module.dataset.rakunPreviewLayoutIndex) ?? 0,
-    layoutKey: module.dataset.rakunPreviewLayoutKey || undefined,
-    moduleIndex: readNumber(module.dataset.rakunPreviewModuleIndex),
+    moduleId: module.dataset.rakunModuleId || "",
+    moduleType: module.dataset.rakunModuleType || "",
+    index: readNumber(module.dataset.rakunIndex) ?? 0,
+    layoutIndex: readNumber(module.dataset.rakunLayoutIndex) ?? 0,
+    layoutKey: module.dataset.rakunLayoutKey || undefined,
+    moduleIndex: readNumber(module.dataset.rakunModuleIndex),
   });
 
   const handleModulePointerMove = (event) => {
@@ -462,12 +470,7 @@ export const RakunPreviewBridge = ({
 
   postToParent({ type: readyMessageType });
 })();
-`;
+`
 
-  return (
-    <Script
-      id="rakun-preview-bridge"
-      dangerouslySetInnerHTML={{ __html: script }}
-    />
-  );
-};
+  return <Script id="rakun-preview-bridge" dangerouslySetInnerHTML={{ __html: script }} />
+}

@@ -103,6 +103,15 @@ needed. It also keeps the page response's top-level `literals` separate from
 `info` while making them available to `useT`. Add that content type to an
 iterator or shared Template and use dynamic data mappings when all documents of
 a type share the same schema shape.
+
+Preview and development inspection are automatic. In those modes only,
+`RakunPageRenderer` adds a wrapper-free React boundary and a client-side
+instrumenter locates each module's outermost DOM element after hydration. It
+attaches the `data-rakun-*` attributes there and observes later DOM changes.
+Modules do not accept or forward instrumentation props. Normal production pages
+do not render the boundary or load the instrumenter. Both inspectors use a
+single global overlay that moves over the attributed root.
+
 `createRakunDatabaseWeb` initializes core and reads pages and static paths from
 MongoDB. It uses Next's data cache for static routes and the same cache tag as
 the revalidation handler, but stays uncached in development and for dynamic or
@@ -114,8 +123,13 @@ On normal pages, `RakunPageRenderer` enables a development toolbar when
 `NODE_ENV` is `development`. It shows route/document metadata, links to the
 manager edit screen, lists content/template/layout modules, highlights modules
 on hover or page selection, and exposes the props received by the selected
-module. Preview pages retain their separate manager inspector and omit this
+module. Its options are ignored in production, where no instrumentation is
+mounted. Preview pages retain their separate manager inspector and omit this
 toolbar.
+
+The props pane uses the shared collapsible `JsonViewer` also used by the API
+Routes output. Its first level starts expanded, nested objects and arrays remain
+closed, and each collection can be expanded independently.
 
 The minimized state is a small floating Rakun logo instead of a full-width
 bar. The expanded toolbar also has a **Hide** action that removes it for the

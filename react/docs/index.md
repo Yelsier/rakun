@@ -54,12 +54,7 @@ export default async function SectionLayout({ blocks = [] }) {
     _type: name,
   }))
 
-  return (
-    <ServerModuleRenderer
-      modules={modules}
-      loadModule={(name) => import(`./${name}`)}
-    />
-  )
+  return <ServerModuleRenderer modules={modules} loadModule={(name) => import(`./${name}`)} />
 }
 ```
 
@@ -143,8 +138,10 @@ for private objects are never converted into public URLs.
 
 ## Public entrypoints and constraints
 
-- `@rakun-kit/react`: registries, module/page renderers, `Image`, `Video`, and
-  the `RakunLogoMark` / `RakunLogoBadge` SVG components.
+- `@rakun-kit/react`: registries, module/page renderers, `Image`, `Video`, the
+  `JsonViewer` collapsible tree, and the `RakunLogoMark` / `RakunLogoBadge` SVG
+  components. `JsonViewer` accepts theme colors and `defaultExpandedDepth`; use
+  `-1` for a fully collapsed initial tree.
 - `@rakun-kit/react/plugins`: web plugin contracts and registry composition.
 - `@rakun-kit/react/translation`: React translation helpers.
 

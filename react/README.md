@@ -3,20 +3,22 @@
 React helpers for rendering Rakun web modules.
 
 The package also exports `RakunLogoMark` and `RakunLogoBadge` for Rakun-owned
-development and manager UI.
+development and manager UI. `JsonViewer` provides the shared collapsible JSON
+tree used by Rakun debugging interfaces; use `defaultExpandedDepth={-1}` when
+the root should start collapsed.
 
 Apps provide a module registry, so framework adapters stay open:
 
 ```tsx
-import { createModuleRegistry, ModuleRenderer } from "@rakun-kit/react";
+import { createModuleRegistry, ModuleRenderer } from '@rakun-kit/react'
 
 const registry = createModuleRegistry({
-  Hero: () => import("./modules/Hero"),
-  Footer: () => import("./modules/Footer"),
-});
+  Hero: () => import('./modules/Hero'),
+  Footer: () => import('./modules/Footer'),
+})
 
 export function Page({ modules }) {
-  return <ModuleRenderer modules={modules} registry={registry} />;
+  return <ModuleRenderer modules={modules} registry={registry} />
 }
 ```
 
@@ -26,14 +28,12 @@ loading strategies.
 With Vite, use `import.meta.glob`:
 
 ```tsx
-import { createModuleRegistryFromGlob, ModuleRenderer } from "@rakun-kit/react";
+import { createModuleRegistryFromGlob, ModuleRenderer } from '@rakun-kit/react'
 
-const registry = createModuleRegistryFromGlob(
-  import.meta.glob("./modules/*.{tsx,jsx}"),
-);
+const registry = createModuleRegistryFromGlob(import.meta.glob('./modules/*.{tsx,jsx}'))
 
 export function Page({ modules }) {
-  return <ModuleRenderer modules={modules} registry={registry} />;
+  return <ModuleRenderer modules={modules} registry={registry} />
 }
 ```
 
@@ -43,29 +43,21 @@ matches a Rakun module with `_type: "Hero"`.
 For nested folders or custom names:
 
 ```tsx
-const registry = createModuleRegistryFromGlob(
-  import.meta.glob("./modules/**/*.tsx"),
-  {
-    getName: (path) => path.split("/").at(-2),
-  },
-);
+const registry = createModuleRegistryFromGlob(import.meta.glob('./modules/**/*.tsx'), {
+  getName: (path) => path.split('/').at(-2),
+})
 ```
 
 With Next, keep the dynamic import inside a client module when using
 `ModuleRenderer`:
 
 ```tsx
-"use client";
+'use client'
 
-import { ModuleRenderer } from "@rakun-kit/react";
+import { ModuleRenderer } from '@rakun-kit/react'
 
 export function Page({ modules }) {
-  return (
-    <ModuleRenderer
-      modules={modules}
-      loadModule={(name) => import(`@/modules/${name}`)}
-    />
-  );
+  return <ModuleRenderer modules={modules} loadModule={(name) => import(`@/modules/${name}`)} />
 }
 ```
 
@@ -74,20 +66,15 @@ For nested modules rendered by a React Server Component, use
 does not cross a server-to-client boundary:
 
 ```tsx
-import { ServerModuleRenderer } from "@rakun-kit/react";
+import { ServerModuleRenderer } from '@rakun-kit/react'
 
 export default async function SectionLayout({ blocks = [] }) {
   const modules = blocks.map(({ name, value }) => ({
     ...value,
     _type: name,
-  }));
+  }))
 
-  return (
-    <ServerModuleRenderer
-      modules={modules}
-      loadModule={(name) => import(`./${name}`)}
-    />
-  );
+  return <ServerModuleRenderer modules={modules} loadModule={(name) => import(`./${name}`)} />
 }
 ```
 
@@ -134,7 +121,7 @@ dynamic import from inside the application bundle.
 Use `PageLayoutRenderer` when Rakun returns layout slots:
 
 ```tsx
-import { PageLayoutRenderer } from "@rakun-kit/react";
+import { PageLayoutRenderer } from '@rakun-kit/react'
 
 export function Page({ page }) {
   return (
@@ -143,7 +130,7 @@ export function Page({ page }) {
       loadModule={(name) => import(`@/modules/${name}`)}
       renderContent={({ children }) => <main>{children}</main>}
     />
-  );
+  )
 }
 ```
 
