@@ -122,6 +122,12 @@ save operation validates and persists it through the normal template update
 flow. Template state never becomes part of an individual content document's
 room.
 
+The React manager combines this server protocol with per-user IndexedDB
+persistence. Cached Yjs rooms can be opened and edited during a temporary API
+outage and upload their missing updates after reconnection. This local cache is
+working state only: the authenticated server Save remains the persistence
+boundary for MongoDB and public reads.
+
 Core uses a process-memory collaboration adapter by default. This preserves
 unsaved changes across manager navigation while that API process lives. A
 multi-process or restart-durable deployment must pass a shared adapter through

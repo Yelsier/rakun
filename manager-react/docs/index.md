@@ -160,11 +160,23 @@ editor on the same published document or draft sees that shared working state;
 an editor on a different draft uses a different room. Leaving and reopening the
 screen reloads the working state from the collaboration backend.
 
+Each collaborative room is also persisted locally with IndexedDB, isolated by
+manager user and room id. A previously opened document or shared Template loads
+its local Yjs state first and then exchanges updates with core. Edits made while
+the collaboration endpoint is unavailable remain in IndexedDB and are sent
+when connectivity returns; the toolbar reports that state as offline and
+locally stored. The first visit still needs the normal authenticated manager
+read to authorize and describe the document.
+
 Save first flushes pending Yjs updates and then asks core to persist a snapshot
 of the server-side working document. Until it succeeds, public/web reads and
 revalidation remain on the previous saved snapshot. Unsaved therefore means
 shared-but-not-committed, not changes owned by one browser. Draft promotion is
 still separate and uses the saved draft snapshot.
+
+IndexedDB persistence does not replace Save: local and shared CRDT updates are
+working state, while MongoDB and public/web reads change only after the server
+save operation succeeds. Save therefore requires connectivity.
 
 The shared Template tab also uses Yjs, but in a separate room keyed only by
 content type. Consequently, editors who opened different documents collaborate

@@ -2,17 +2,21 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import type { IndexeddbPersistence } from 'y-indexeddb'
 import * as Y from 'yjs'
 
 import { CONTENT_ROOT_NAME, getContentSnapshot, setContentField } from './yDocument'
 
 import { useManagerClient } from '@/client/react'
 import { deepEqual } from '@/helpers/deepEqual'
+import { useSession } from '@/state/session'
 
 const LOCAL_ORIGIN = Symbol('rakun-local-content-edit')
 const REMOTE_ORIGIN = Symbol('rakun-remote-content-sync')
 const SYNC_DELAY_MS = 150
 const POLL_INTERVAL_MS = 1500
+export const SAVED_STATE_VECTOR_KEY = 'rakun-saved-state-vector'
+const LOCAL_METADATA_PREFIX = 'rakun:collaboration:'
 const DOCUMENT_METADATA_FIELDS = new Set([
   '_id',
   '_revision',
@@ -51,7 +55,56 @@ const decodeBinary = (value: string) => {
 const vectorsEqual = (left: Uint8Array, right: Uint8Array) =>
   left.length === right.length && left.every((value, index) => value === right[index])
 
-export type ContentCollaborationStatus = 'connecting' | 'synced' | 'unsaved' | 'error'
+const getLocalRoomName = (
+  resource: 'content' | 'template',
+  contentType: string,
+  documentId?: string,
+  userId?: string,
+) =>
+  resource === 'template'
+    ? `rakun:${encodeURIComponent(userId ?? 'anonymous')}:template:${encodeURIComponent(contentType)}`
+    : `rakun:${encodeURIComponent(userId ?? 'anonymous')}:content:${encodeURIComponent(contentType)}:${encodeURIComponent(documentId ?? '')}`
+
+type LocalRoomMetadata = {
+  dirty: boolean
+  sourceRevision?: string | number
+}
+
+const readLocalRoomMetadata = (roomName: string): LocalRoomMetadata | null => {
+  try {
+    const value = globalThis.localStorage?.getItem(`${LOCAL_METADATA_PREFIX}${roomName}`)
+    if (!value) return null
+    const parsed = JSON.parse(value) as Partial<LocalRoomMetadata>
+    return typeof parsed.dirty === 'boolean'
+      ? { dirty: parsed.dirty, sourceRevision: parsed.sourceRevision }
+      : null
+  } catch {
+    return null
+  }
+}
+
+const writeLocalRoomMetadata = (
+  roomName: string,
+  metadata: LocalRoomMetadata,
+) => {
+  try {
+    globalThis.localStorage?.setItem(
+      `${LOCAL_METADATA_PREFIX}${roomName}`,
+      JSON.stringify(metadata),
+    )
+  } catch {
+    // IndexedDB still keeps the Yjs updates when localStorage is unavailable.
+  }
+}
+
+const toArrayBuffer = (value: Uint8Array) => new Uint8Array(value).buffer
+
+export type ContentCollaborationStatus =
+  | 'connecting'
+  | 'synced'
+  | 'unsaved'
+  | 'offline'
+  | 'error'
 
 type ContentCollaborationContextValue = {
   documentId: string
@@ -59,7 +112,7 @@ type ContentCollaborationContextValue = {
   status: ContentCollaborationStatus
   flush: () => Promise<void>
   setFieldState: (fieldId: string, value: unknown) => void
-  setSavedStateVector: (value: string) => void
+  setSavedStateVector: (value: string, sourceRevision?: string | number) => void
 }
 
 const ContentCollaborationContext = createContext<ContentCollaborationContextValue | null>(null)
@@ -114,6 +167,7 @@ type CollaborationProviderProps = {
   fieldRootId: string
   initialData: Record<string, unknown>
   resource: 'content' | 'template'
+  sourceRevision?: string | number
 }
 
 const CollaborationProvider = ({
@@ -123,9 +177,15 @@ const CollaborationProvider = ({
   fieldRootId,
   initialData,
   resource,
+  sourceRevision,
 }: CollaborationProviderProps) => {
   const client = useManagerClient()
+  const { user } = useSession()
   const doc = useMemo(() => new Y.Doc(), [contentType, documentId, resource])
+  const localRoomName = useMemo(
+    () => getLocalRoomName(resource, contentType, documentId, user?._id),
+    [contentType, documentId, resource, user?._id],
+  )
   const metadataRef = useRef<Record<string, unknown>>({})
   metadataRef.current =
     resource === 'content'
@@ -155,8 +215,17 @@ const CollaborationProvider = ({
   const [status, setStatus] = useState<ContentCollaborationStatus>('connecting')
   const savedStateVectorRef = useRef(new Uint8Array())
   const pendingUpdatesRef = useRef<Uint8Array[]>([])
+  const initialLocalUpdateRef = useRef<Uint8Array | null>(null)
   const syncPromiseRef = useRef<Promise<void> | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const persistenceRef = useRef<IndexeddbPersistence | null>(null)
+  const localReadyRef = useRef(false)
+  const networkConnectedRef = useRef(false)
+  const sourceRevisionRef = useRef(sourceRevision)
+
+  useEffect(() => {
+    sourceRevisionRef.current = sourceRevision
+  }, [sourceRevision])
 
   useEffect(() => {
     setData((previous) => {
@@ -170,19 +239,44 @@ const CollaborationProvider = ({
   }, [initialData])
 
   const updateStatus = useCallback(() => {
+    if (!networkConnectedRef.current) {
+      setStatus(localReadyRef.current ? 'offline' : 'connecting')
+      return
+    }
     const dirty = !vectorsEqual(Y.encodeStateVector(doc), savedStateVectorRef.current)
+    writeLocalRoomMetadata(localRoomName, {
+      dirty,
+      sourceRevision: sourceRevisionRef.current,
+    })
     setStatus(dirty ? 'unsaved' : 'synced')
-  }, [doc])
+  }, [doc, localRoomName])
+
+  const persistSavedStateVector = useCallback((value: Uint8Array) => {
+    const persistence = persistenceRef.current
+    if (!persistence) return
+    void persistence.set(SAVED_STATE_VECTOR_KEY, toArrayBuffer(value)).catch(() => undefined)
+  }, [])
 
   const exchange = useCallback(async () => {
     if (syncPromiseRef.current) {
       await syncPromiseRef.current
-      if (pendingUpdatesRef.current.length === 0) return
+      if (
+        pendingUpdatesRef.current.length === 0 &&
+        !initialLocalUpdateRef.current
+      ) {
+        return
+      }
     }
 
     const pending = pendingUpdatesRef.current
     pendingUpdatesRef.current = []
-    const update = pending.length ? Y.mergeUpdates(pending) : undefined
+    const initialLocalUpdate = initialLocalUpdateRef.current
+    initialLocalUpdateRef.current = null
+    const outgoingUpdates = [
+      ...(initialLocalUpdate ? [initialLocalUpdate] : []),
+      ...pending,
+    ]
+    const update = outgoingUpdates.length ? Y.mergeUpdates(outgoingUpdates) : undefined
     const stateVector = Y.encodeStateVector(doc)
     const encodedInput = {
       contentType,
@@ -196,20 +290,24 @@ const CollaborationProvider = ({
             ...encodedInput,
             documentId: documentId ?? '',
           })
-    )
+      )
       .then((result) => {
+        networkConnectedRef.current = true
         const remoteUpdate = decodeBinary(result.update)
         if (remoteUpdate.length) Y.applyUpdate(doc, remoteUpdate, REMOTE_ORIGIN)
         savedStateVectorRef.current = decodeBinary(result.savedStateVector)
+        persistSavedStateVector(savedStateVectorRef.current)
+        localReadyRef.current = true
         setReady(true)
         setError(null)
         updateStatus()
       })
       .catch((cause) => {
         if (update) pendingUpdatesRef.current.unshift(update)
+        networkConnectedRef.current = false
         const nextError = cause instanceof Error ? cause : new Error(String(cause))
         setError(nextError)
-        setStatus('error')
+        setStatus(localReadyRef.current ? 'offline' : 'error')
         throw cause
       })
       .finally(() => {
@@ -218,7 +316,15 @@ const CollaborationProvider = ({
 
     syncPromiseRef.current = request
     await request
-  }, [client, contentType, doc, documentId, resource, updateStatus])
+  }, [
+    client,
+    contentType,
+    doc,
+    documentId,
+    persistSavedStateVector,
+    resource,
+    updateStatus,
+  ])
 
   const flush = useCallback(async () => {
     if (timerRef.current) {
@@ -230,9 +336,17 @@ const CollaborationProvider = ({
   }, [exchange])
 
   useEffect(() => {
+    let active = true
+    let poll: ReturnType<typeof setInterval> | undefined
+    let persistence: IndexeddbPersistence | undefined
+
     const handleUpdate = (update: Uint8Array, origin: unknown) => {
       if (origin === LOCAL_ORIGIN) {
         pendingUpdatesRef.current.push(update)
+        writeLocalRoomMetadata(localRoomName, {
+          dirty: true,
+          sourceRevision: sourceRevisionRef.current,
+        })
         updateStatus()
         if (timerRef.current) clearTimeout(timerRef.current)
         timerRef.current = setTimeout(() => {
@@ -247,24 +361,75 @@ const CollaborationProvider = ({
     }
 
     doc.on('update', handleUpdate)
-    void exchange()
-      .then(() => {
-        updateData(getContentSnapshot(doc))
-        setReady(true)
-      })
-      .catch(() => undefined)
 
-    const poll = setInterval(() => {
-      void exchange().catch(() => undefined)
-    }, POLL_INTERVAL_MS)
+    const initialize = async () => {
+      if (typeof globalThis.indexedDB !== 'undefined') {
+        try {
+          const { clearDocument, IndexeddbPersistence } = await import('y-indexeddb')
+          if (!active) return
+          const localMetadata = readLocalRoomMetadata(localRoomName)
+          if (
+            sourceRevisionRef.current !== undefined &&
+            localMetadata?.sourceRevision !== undefined &&
+            String(sourceRevisionRef.current) !==
+              String(localMetadata.sourceRevision) &&
+            !localMetadata.dirty
+          ) {
+            await clearDocument(localRoomName)
+            if (!active) return
+          }
+          persistence = new IndexeddbPersistence(localRoomName, doc)
+          persistenceRef.current = persistence
+          await persistence.whenSynced
+          if (!active) return
+
+          const persistedVector = await persistence
+            .get(SAVED_STATE_VECTOR_KEY)
+            .catch(() => undefined)
+          if (!active) return
+          if (persistedVector instanceof ArrayBuffer) {
+            savedStateVectorRef.current = new Uint8Array(persistedVector)
+          }
+
+          const localSnapshot = getContentSnapshot(doc)
+          if (Object.keys(localSnapshot).length > 0) {
+            initialLocalUpdateRef.current = Y.encodeStateAsUpdate(doc)
+            localReadyRef.current = true
+            updateData(localSnapshot)
+            setReady(true)
+            updateStatus()
+          }
+        } catch {
+          const failedPersistence = persistence
+          if (persistenceRef.current === persistence) persistenceRef.current = null
+          persistence = undefined
+          void failedPersistence?.destroy().catch(() => undefined)
+        }
+      }
+
+      if (!active) return
+      await exchange().catch(() => undefined)
+      if (!active) return
+      updateData(getContentSnapshot(doc))
+      poll = setInterval(() => {
+        void exchange().catch(() => undefined)
+      }, POLL_INTERVAL_MS)
+    }
+
+    void initialize()
 
     return () => {
+      active = false
       doc.off('update', handleUpdate)
-      clearInterval(poll)
+      if (poll) clearInterval(poll)
       if (timerRef.current) clearTimeout(timerRef.current)
-      void flush().catch(() => undefined)
+      if (pendingUpdatesRef.current.length || initialLocalUpdateRef.current) {
+        void flush().catch(() => undefined)
+      }
+      if (persistenceRef.current === persistence) persistenceRef.current = null
+      void persistence?.destroy().catch(() => undefined)
     }
-  }, [doc, exchange, flush, updateData, updateStatus])
+  }, [doc, exchange, flush, localRoomName, updateData, updateStatus])
 
   const setFieldState = useCallback(
     (fieldId: string, value: unknown) => {
@@ -282,11 +447,16 @@ const CollaborationProvider = ({
   )
 
   const setSavedStateVector = useCallback(
-    (value: string) => {
+    (value: string, nextSourceRevision?: string | number) => {
       savedStateVectorRef.current = decodeBinary(value)
+      networkConnectedRef.current = true
+      persistSavedStateVector(savedStateVectorRef.current)
+      if (nextSourceRevision !== undefined) {
+        sourceRevisionRef.current = nextSourceRevision
+      }
       updateStatus()
     },
-    [updateStatus]
+    [persistSavedStateVector, updateStatus]
   )
 
   const context = useMemo<ContentCollaborationContextValue>(
@@ -322,6 +492,11 @@ export const ContentCollaborationProvider = ({
     fieldRootId={contentType}
     initialData={initialData}
     resource="content"
+    sourceRevision={
+      typeof initialData._revision === 'string' || typeof initialData._revision === 'number'
+        ? initialData._revision
+        : undefined
+    }
   >
     {children}
   </CollaborationProvider>
@@ -332,12 +507,14 @@ export const TemplateCollaborationProvider = ({
   contentType,
   fieldRootId,
   initialData,
+  sourceRevision,
 }: Omit<CollaborationProviderProps, 'documentId' | 'resource'>) => (
   <CollaborationProvider
     contentType={contentType}
     fieldRootId={fieldRootId}
     initialData={initialData}
     resource="template"
+    sourceRevision={sourceRevision}
   >
     {children}
   </CollaborationProvider>

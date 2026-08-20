@@ -401,7 +401,18 @@ export const useContentDocumentActions = ({
             contentType: contentTypeName,
             documentId: contentTypeId,
           })
-          collaboration.setSavedStateVector(saved.savedStateVector)
+          const savedRevision =
+            saved.document &&
+            typeof saved.document === 'object' &&
+            '_revision' in saved.document &&
+            (typeof saved.document._revision === 'string' ||
+              typeof saved.document._revision === 'number')
+              ? saved.document._revision
+              : undefined
+          collaboration.setSavedStateVector(
+            saved.savedStateVector,
+            savedRevision,
+          )
           return saved.document
         })()
       : await updateMutation.mutateAsync({

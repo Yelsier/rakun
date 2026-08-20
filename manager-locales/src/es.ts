@@ -517,6 +517,8 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'contentEdit.collaboration.connecting': 'Conectando',
   'contentEdit.collaboration.synced': 'Cambios compartidos guardados',
   'contentEdit.collaboration.unsaved': 'Cambios compartidos sin guardar',
+  'contentEdit.collaboration.offline':
+    'Sin conexión · cambios guardados localmente',
   'contentEdit.collaboration.error': 'SincronizaciÃ³n interrumpida',
   'contentEdit.collaborationUnavailable':
     'No se pudo cargar el documento colaborativo.',

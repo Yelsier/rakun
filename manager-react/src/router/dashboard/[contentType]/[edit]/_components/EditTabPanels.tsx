@@ -81,6 +81,7 @@ export const EditTabPanels = () => {
                   parentContentType={contentType}
                   onPendingChange={template.onPendingChange}
                   onStatusChange={template.onStatusChange}
+                  sourceRevision={template.state.revision}
                 />
               ) : (
                 <ContentTypeEdit

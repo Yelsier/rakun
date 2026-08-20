@@ -786,6 +786,9 @@ export const managerMessages = {
   'contentEdit.collaboration.connecting': { defaultMessage: 'Connecting' },
   'contentEdit.collaboration.synced': { defaultMessage: 'Shared changes saved' },
   'contentEdit.collaboration.unsaved': { defaultMessage: 'Shared unsaved changes' },
+  'contentEdit.collaboration.offline': {
+    defaultMessage: 'Offline · changes stored locally',
+  },
   'contentEdit.collaboration.error': { defaultMessage: 'Sync interrupted' },
   'contentEdit.collaborationUnavailable': {
     defaultMessage: 'The collaborative document could not be loaded.',

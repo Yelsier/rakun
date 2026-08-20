@@ -57,7 +57,10 @@ const CollaborativeTemplateForm = forwardRef<
         const saved = await saveMutation.mutateAsync({
           contentType: props.parentContentType.name,
         })
-        collaboration.setSavedStateVector(saved.savedStateVector)
+        collaboration.setSavedStateVector(
+          saved.savedStateVector,
+          saved.template.revision,
+        )
         return saved.template
       },
     }),
@@ -89,6 +92,7 @@ export const CollaborativeTemplateEditor = forwardRef<
     parentContentType: EncodedContentType
     onPendingChange: (pending: boolean) => void
     onStatusChange: (status: ContentCollaborationStatus) => void
+    sourceRevision?: number
   }
 >((props, ref) => {
   const t = useTranslations()
@@ -98,6 +102,7 @@ export const CollaborativeTemplateEditor = forwardRef<
       contentType={props.parentContentType.name}
       fieldRootId={props.contentType.name}
       initialData={props.initialData as Record<string, unknown>}
+      sourceRevision={props.sourceRevision}
     >
       {({ data, error, ready, revision }) => {
         if (error && !ready) {
