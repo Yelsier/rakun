@@ -17,6 +17,7 @@ import {
   assertAuthRateLimit,
   resetAuthRateLimit,
 } from "../../../../utils/authRateLimit";
+import { getPlatform } from '../../../../../platform'
 
 export const webauthnAuthVerifyHandler = async ({
   input,
@@ -100,7 +101,7 @@ export const webauthnAuthVerifyHandler = async ({
   // consume challenge
   await db.update(MfaChallenge, ch._id, { consumedAt: new Date() });
 
-  const token = crypto.randomUUID();
+  const token = getPlatform().crypto.randomUUID()
   const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_MS);
 
   await db.create(Session, {

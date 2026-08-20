@@ -38,6 +38,17 @@ Default seeded login:
 admin@rakun.local / admin1234
 ```
 
+## Runtime platform
+
+The server bootstrap uses `createNextPlatform({ deployment: 'persistent' })`.
+Runtime detection remains automatic: running the preview with Bun selects
+native `Bun.Image` when available, while Node.js uses `sharp`. Because this is a
+persistent Next deployment, realtime uses the authenticated SSE endpoint at
+`/api/realtime/events` in both Node.js and Bun. The manager applies that
+provider to Yjs content collaboration, content messages, unread counts, and
+notifications. WebSocket mode is reserved for a custom Node server that owns
+the upgrade or a server mounted directly with `Bun.serve`.
+
 ## Plugin code editor
 
 This preview registers `@rakun-kit/plugin-code-editor` in the manager client

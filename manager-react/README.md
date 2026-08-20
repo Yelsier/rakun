@@ -67,6 +67,17 @@ const client = createManagerClient(async (name, input, options) => {
 });
 ```
 
+Use `useSync({ key, fetcher })` for synchronized queries, or
+`useManagerSyncQuery` for typed manager operations. Content CRDT exchange,
+comments, unread counts, and notifications use this path, with
+`syncIntervalMs` controlling their polling cadence without coupling them to
+polling. The runtime obtains the configured polling, SSE, or WebSocket metadata
+from core and supplies the provider automatically. A custom
+`ManagerAppProvider` mount may pass either that metadata or its own
+`RealtimeProvider`.
+Relative SSE/WebSocket endpoints are resolved against `realtimeBaseUrl`; the
+official Next manager supplies its `apiBaseUrl` automatically.
+
 ## Navigation
 
 Use `createPathManagerNavigation` for router integrations:

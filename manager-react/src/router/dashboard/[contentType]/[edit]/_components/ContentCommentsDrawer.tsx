@@ -30,7 +30,12 @@ import type {
 import { useEditPageContext } from '../_context/EditPageContext'
 import { ContentReviewPanel } from './ContentReviewPanel'
 
-import { createManagerQueryKey, useManagerMutation, useManagerQuery } from '@/client/react'
+import {
+  createManagerQueryKey,
+  useManagerMutation,
+  useManagerSyncQuery,
+} from '@/client/react'
+import { createSyncTopic } from '@/client/realtime'
 import { UserAvatar } from '@/components/user-avatar'
 import { Bubble, BubbleContent, BubbleGroup, BubbleReactions } from '@/components/ui/bubble'
 import { Badge } from '@/components/ui/badge'
@@ -597,7 +602,9 @@ export const ContentCommentsDrawer = ({
         limit: 1,
       }
     : undefined
-  const commentsQuery = useManagerQuery({
+  const commentsTopic = createSyncTopic('content-comments', contentTypeName, contentTypeId)
+  const notificationsTopic = createSyncTopic('manager-notifications')
+  const commentsQuery = useManagerSyncQuery({
     name: 'manager.comments.list',
     input:
       commentsInput ??
@@ -606,15 +613,18 @@ export const ContentCommentsDrawer = ({
         documentId: '',
       } as never),
     enabled: Boolean(messagesOpen && commentsInput),
-    refetchInterval: messagesOpen ? 5000 : false,
+    syncIntervalMs: 5_000,
+    topic: commentsTopic,
   })
-  const notificationsQuery = useManagerQuery({
+  const notificationsQuery = useManagerSyncQuery({
     name: 'manager.notifications.list',
     input: notificationsInput,
     enabled: Boolean(notificationsInput),
-    refetchInterval: open ? false : 15000,
+    syncEnabled: Boolean(notificationsInput && !open),
+    syncIntervalMs: 15_000,
+    topic: notificationsTopic,
   })
-  const unreadCommentsQuery = useManagerQuery({
+  const unreadCommentsQuery = useManagerSyncQuery({
     name: 'manager.comments.unreadCount',
     input:
       commentsInput ??
@@ -623,7 +633,9 @@ export const ContentCommentsDrawer = ({
         documentId: '',
       } as never),
     enabled: Boolean(commentsInput),
-    refetchInterval: open ? false : 15000,
+    syncEnabled: Boolean(commentsInput && !open),
+    syncIntervalMs: 15_000,
+    topic: commentsTopic,
   })
   const {
     users: mentionUsers,

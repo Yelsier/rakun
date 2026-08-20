@@ -15,6 +15,7 @@ import { getMongoService } from "../../../../../orm";
 import { RakunRequestContext } from "../../../../context";
 import { generateRecoveryCodes } from '../../../../utils/recoveryCodes'
 import { recordAuthEvent } from '../../../../utils/authEvents'
+import { getPlatform } from '../../../../../platform'
 
 const toBase64URL = (buf: Buffer) => buf.toString("base64url");
 
@@ -74,7 +75,7 @@ export const webauthnRegisterVerifyHandler = async ({
   const { id, publicKey, counter } = verification.registrationInfo.credential;
 
   await db.create(WebAuthnCredential, {
-    token: crypto.randomUUID?.() ?? input.token + ":cred",
+    token: getPlatform().crypto.randomUUID(),
     user: { _id: user._id, contentType: ManagerUser.name, type: "existing" },
     // Store credential id in WebAuthn-native base64url format.
     credentialId: toBase64URL(Buffer.from(id, "base64url")),

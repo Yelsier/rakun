@@ -1,6 +1,3 @@
-import { spawn } from "child_process";
-import { mkdtemp, readFile, rm, writeFile } from "fs/promises";
-import os from "os";
 import path from "path";
 
 import {
@@ -10,6 +7,7 @@ import {
 } from "../lib/fields/File";
 import { requirePeerDependency } from "../lib/utils/peerDependencies";
 import type { UploadOptimizationOutput } from "./imageOptimization";
+import { getPlatform } from '../platform'
 
 type VideoTranscodeInput = {
   buffer: Buffer;
@@ -70,31 +68,14 @@ const getFfmpegPath = (): string => {
 
 const runFfmpeg = async (args: string[]): Promise<void> => {
   const ffmpegPath = getFfmpegPath();
-
-  await new Promise<void>((resolve, reject) => {
-    const child = spawn(ffmpegPath, args, {
-      stdio: ["ignore", "ignore", "pipe"],
-      windowsHide: true,
-    });
-    let stderr = "";
-
-    child.stderr?.on("data", (chunk: Buffer | string) => {
-      stderr = `${stderr}${String(chunk)}`.slice(-16_384);
-    });
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolve();
-        return;
-      }
-
-      reject(
-        new Error(
-          `FFmpeg video conversion failed${stderr.trim() ? `: ${stderr.trim()}` : ""}`,
-        ),
-      );
-    });
-  });
+  const result = await getPlatform().workers.runProcess(ffmpegPath, args, {
+    windowsHide: true,
+  })
+  if (result.exitCode !== 0) {
+    throw new Error(
+      `FFmpeg video conversion failed${result.stderr.trim() ? `: ${result.stderr.trim()}` : ''}`,
+    )
+  }
 };
 
 const transcodeWithFfmpeg: VideoTranscoder = async ({
@@ -102,14 +83,15 @@ const transcodeWithFfmpeg: VideoTranscoder = async ({
   format,
   quality,
 }) => {
-  const temporaryDirectory = await mkdtemp(
-    path.join(os.tmpdir(), "rakun-video-"),
-  );
+  const filesystem = getPlatform().filesystem
+  const temporaryDirectory = await filesystem.makeTemporaryDirectory(
+    'rakun-video-',
+  )
   const inputPath = path.join(temporaryDirectory, "input.video");
   const outputPath = path.join(temporaryDirectory, `output.${format}`);
 
   try {
-    await writeFile(inputPath, buffer);
+    await filesystem.writeFile(inputPath, buffer)
     const commonArgs = ["-y", "-i", inputPath, "-map", "0:v:0", "-map", "0:a?"];
 
     if (format === "mp4") {
@@ -150,9 +132,9 @@ const transcodeWithFfmpeg: VideoTranscoder = async ({
       ]);
     }
 
-    return await readFile(outputPath);
+    return Buffer.from(await filesystem.readFile(outputPath))
   } finally {
-    await rm(temporaryDirectory, { recursive: true, force: true });
+    await filesystem.remove(temporaryDirectory, { recursive: true, force: true })
   }
 };
 

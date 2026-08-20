@@ -10,6 +10,7 @@ import {
 import { Readable } from "stream";
 
 import { rakunNextCrud } from "./crud";
+import { rakunNextRealtime } from './realtime'
 import { applyRakunBootstrap } from "./bootstrap";
 import {
   getLocalMediaServiceConfig,
@@ -34,6 +35,7 @@ export type RakunNextOptions = {
   bootstrap?: RakunBootstrapOptions | (() => RakunBootstrapOptions);
   healthPath?: string | false;
   integrations?: RakunNextIntegration[];
+  realtimePath?: string | false;
 };
 
 const jsonResponse = (status: number, body: unknown) => {
@@ -95,6 +97,7 @@ const createHandler = (options: RakunNextOptions = {}): RakunNextHandler => {
     bootstrap,
     healthPath = "health",
     integrations = [rakunNextCrud()],
+    realtimePath = 'realtime/events',
   } = options;
   const healthSegments = healthPath === false ? null : normalizePathSegments(healthPath);
 
@@ -109,6 +112,9 @@ const createHandler = (options: RakunNextOptions = {}): RakunNextHandler => {
     const localMediaIntegration = localMediaConfig
       ? rakunNextLocalService(localMediaConfig)
       : null;
+    const realtimeIntegration = realtimePath
+      ? rakunNextRealtime({ path: realtimePath })
+      : null
 
     return await runWithRakunRequestTrace(
       request.method,
@@ -130,6 +136,13 @@ const createHandler = (options: RakunNextOptions = {}): RakunNextHandler => {
             headers,
           });
         }
+
+        const realtimeResponse = await realtimeIntegration?.({
+          request,
+          context,
+          segments,
+        })
+        if (realtimeResponse) return realtimeResponse
 
         const localMediaResponse = await localMediaIntegration?.({
           request,
@@ -180,6 +193,14 @@ export const rakunNext = (options: RakunNextOptions = {}) => {
 };
 
 export { rakunNextCrud } from "./crud";
+export {
+  createRakunSseResponse,
+  rakunNextRealtime,
+  subscribeRakunWebSocket,
+  type RakunNextRealtimeOptions,
+  type RakunRealtimeWebSocket,
+} from './realtime'
 export { rakunNextLocalService } from "./media";
 export * from "./media";
 export * from "./shared";
+export * from './platform'

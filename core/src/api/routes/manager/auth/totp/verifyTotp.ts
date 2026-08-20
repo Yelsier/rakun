@@ -13,6 +13,7 @@ import {
   assertAuthRateLimit,
   resetAuthRateLimit,
 } from "../../../../utils/authRateLimit";
+import { getPlatform } from '../../../../../platform'
 
 export const verifyTotpHandler = async ({
   input,
@@ -101,7 +102,7 @@ export const verifyTotpHandler = async ({
   // consume challenge (así no se reutiliza)
   await db.update(MfaChallenge, mfaChallenge._id, { consumedAt: new Date() });
 
-  const token = crypto.randomUUID();
+  const token = getPlatform().crypto.randomUUID()
   const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_MS);
 
   await db.create(Session, {

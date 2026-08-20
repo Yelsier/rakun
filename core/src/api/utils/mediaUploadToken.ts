@@ -1,6 +1,5 @@
-import { createHmac, timingSafeEqual } from "crypto";
-
 import type { MediaAccess } from "../../media";
+import { getPlatform } from '../../platform'
 
 export type MediaUploadTokenPayload = {
   key: string;
@@ -28,7 +27,7 @@ const getSecret = () => {
 };
 
 const sign = (value: string) =>
-  createHmac("sha256", getSecret()).update(value).digest("base64url");
+  getPlatform().crypto.hmac('sha256', getSecret(), value, 'base64url')
 
 const encodePayload = (payload: MediaUploadTokenPayload) =>
   Buffer.from(JSON.stringify(payload)).toString("base64url");
@@ -55,7 +54,7 @@ export const verifyMediaUploadToken = (token: string) => {
 
   if (
     receivedBuffer.length !== expectedBuffer.length ||
-    !timingSafeEqual(receivedBuffer, expectedBuffer)
+    !getPlatform().crypto.timingSafeEqual(receivedBuffer, expectedBuffer)
   ) {
     return null;
   }

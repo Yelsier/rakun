@@ -1,6 +1,5 @@
-import { randomUUID } from "crypto";
-
 import type { MediaAccess, PresignedPut, StorageAdapter } from "./adapters";
+import { getPlatform } from '../platform'
 
 type MediaErrorTag =
   | "MediaError"
@@ -149,7 +148,7 @@ const buildObjectKey = (
   const safeFolder = input.folder ? sanitizeSegment(input.folder) : "uploads";
   const ext = getExtension(input.fileName);
   const date = new Date().toISOString().slice(0, 10);
-  const id = randomUUID().replace(/-/g, "");
+  const id = getPlatform().crypto.randomUUID().replace(/-/g, "");
 
   return `${access}/${safeFolder}/${date}/${id}${ext ? `.${ext}` : ""}`;
 };

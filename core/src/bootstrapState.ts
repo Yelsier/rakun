@@ -17,6 +17,7 @@ import type { ManagerLanguagePack } from "./schemas/manager/uiLocales";
 import type { AccountRecoveryConfig } from "./auth/accountRecovery";
 import type { LoginConfig } from "./auth/loginAdapters";
 import type { CollaborationServiceConfig } from './collaboration'
+import type { Platform } from './platform'
 
 export interface RakunBootstrapOptions {
   literals: LiteralCatalogInput;
@@ -53,6 +54,8 @@ export interface RakunBootstrapOptions {
    * Configure a shared adapter when the API runs in more than one process.
    */
   collaboration?: CollaborationServiceConfig;
+  /** Runtime, framework, and deployment capabilities. Defaults are detected. */
+  platform?: Platform;
   logger?: Parameters<typeof createLogger>[0];
   revalidate?:
     | {
@@ -68,10 +71,11 @@ export type RakunContentType = ContentType;
 
 export type ResolvedRakunBootstrapOptions = Omit<
   RakunBootstrapOptions,
-  "contentTypes" | "routes" | "apiOperations" | "literals" | "permissions"
+  "contentTypes" | "routes" | "apiOperations" | "literals" | "permissions" | "platform"
 > &
   RakunResolvedPluginContributions & {
     fields: RakunPluginFieldDefinition[];
+    platform: Platform;
   };
 
 let bootstrapOptions: ResolvedRakunBootstrapOptions | null = null;

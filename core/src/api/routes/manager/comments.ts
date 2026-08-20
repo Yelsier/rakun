@@ -5,6 +5,10 @@ import {
 } from "../../../internal-content-types";
 import { throwAppError } from "../../../lib/errors";
 import { getMongoService } from "../../../orm";
+import {
+  contentCommentsRealtimeTopic,
+  getPlatform,
+} from "../../../platform";
 import type {
   CommentReactionEmoji,
   CommentRecord,
@@ -324,6 +328,9 @@ export const createCommentHandler = async ({
   );
 
   const [resolved] = await resolveComments([comment as StoredComment]);
+  getPlatform().realtime.publish(
+    contentCommentsRealtimeTopic(input.contentType, input.documentId),
+  );
 
   return {
     comment: resolved,
@@ -378,6 +385,9 @@ export const toggleCommentReactionHandler = async ({
     { actorId: user._id },
   );
   const [resolved] = await resolveComments([updated as StoredComment]);
+  getPlatform().realtime.publish(
+    contentCommentsRealtimeTopic(input.contentType, input.documentId),
+  );
 
   return {
     comment: resolved,
@@ -433,6 +443,9 @@ export const markCommentsReadHandler = async ({
       updatedBy: user._id,
     },
     { actorId: user._id },
+  );
+  getPlatform().realtime.publish(
+    contentCommentsRealtimeTopic(input.contentType, input.documentId),
   );
 
   return {

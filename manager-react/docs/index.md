@@ -41,6 +41,23 @@ navigation. Use `ManagerRuntimeApp` when the host supplies navigation.
 Use operation names and payloads from Rakun contracts; do not recreate endpoint
 types in host code. Keep `baseUrl` (API) distinct from `basePath` (manager UI).
 
+Use `useSync({ key, fetcher })` for data that should refetch after platform
+invalidations. It performs the initial TanStack query, subscribes through the
+manager realtime provider, invalidates the exact key, and cleans up on
+unmount. `ManagerRuntimeApp` reads the server's explicit realtime metadata and
+creates polling, SSE, or WebSocket transport accordingly; the hook never probes
+for WebSocket support. Direct `ManagerAppProvider` users may pass `realtime`
+metadata or a custom `RealtimeProvider`.
+
+`useManagerSyncQuery` adds manager-operation typing and accepts
+`syncIntervalMs` plus an explicit `topic`. Rakun uses this synchronization path
+for periodic Yjs CRDT exchange and for content comments, unread counts, and
+notifications. Polling intervals are subscription-specific; SSE and WebSocket
+providers ignore the interval and react to topic invalidations instead.
+Relative SSE/WebSocket endpoints are resolved against the manager API base URL;
+SSE sends the authenticated session cookie and WebSocket URLs are normalized to
+`ws:` or `wss:` in the browser.
+
 ## Link field picker
 
 The `f.link()` editor always shows Title and Destination inputs. A typed or

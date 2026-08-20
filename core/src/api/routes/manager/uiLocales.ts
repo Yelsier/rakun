@@ -89,6 +89,18 @@ export const resolveManagerUiFeatures = (options?: {
   },
 })
 
+export const resolveManagerRealtimeMetadata = (
+  options?: ReturnType<typeof getRakunBootstrapOptions>,
+): ManagerUiLocalesOutput['platform']['realtime'] => {
+  const metadata = options?.platform?.realtime.metadata
+
+  if (!metadata) return { transport: 'polling', intervalMs: 3_000 }
+
+  return metadata.transport === 'polling'
+    ? { transport: 'polling', intervalMs: metadata.intervalMs }
+    : { transport: metadata.transport, endpoint: metadata.endpoint }
+}
+
 export const uiLocalesHandler = async (): Promise<ManagerUiLocalesOutput> => {
   const options = getRakunBootstrapOptions()
   const { homePageGroupId, siteUrl } = await getManagerPublicConfig()
@@ -102,6 +114,9 @@ export const uiLocalesHandler = async (): Promise<ManagerUiLocalesOutput> => {
     locales,
     homePageGroupId,
     siteUrl,
+    platform: {
+      realtime: resolveManagerRealtimeMetadata(options),
+    },
     features: resolveManagerUiFeatures(options ?? undefined),
   }
 }

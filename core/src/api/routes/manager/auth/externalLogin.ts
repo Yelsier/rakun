@@ -1,5 +1,3 @@
-import { createHash, randomBytes, timingSafeEqual } from 'crypto'
-
 import { completePrimaryAuthentication } from '../../../../auth/completePrimaryAuthentication'
 import type { LoginAdapter } from '../../../../auth/loginAdapters'
 import { getRakunBootstrapOptions } from '../../../../bootstrapState'
@@ -19,6 +17,7 @@ import {
   getRequestRateLimitIdentifier,
   resetAuthRateLimit,
 } from '../../../utils/authRateLimit'
+import { getPlatform } from '../../../../platform'
 
 const LOGIN_FLOW_COOKIE = 'rakun_login_flow'
 const LOGIN_FLOW_MAX_AGE_MS = 10 * 60 * 1000
@@ -87,7 +86,10 @@ const getFlowCookie = (ctx?: RakunRequestContext): LoginFlow | null => {
 const statesMatch = (left: string, right: string) => {
   const leftBuffer = Buffer.from(left)
   const rightBuffer = Buffer.from(right)
-  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer)
+  return (
+    leftBuffer.length === rightBuffer.length &&
+    getPlatform().crypto.timingSafeEqual(leftBuffer, rightBuffer)
+  )
 }
 
 export const externalLoginStartHandler = async ({
@@ -98,9 +100,10 @@ export const externalLoginStartHandler = async ({
   ctx?: RakunRequestContext
 }): Promise<ExternalLoginStartOutput> => {
   const adapter = getAdapter(input.provider)
-  const state = `${adapter.id}.${randomBytes(32).toString('base64url')}`
-  const codeVerifier = randomBytes(48).toString('base64url')
-  const codeChallenge = createHash('sha256').update(codeVerifier).digest('base64url')
+  const crypto = getPlatform().crypto
+  const state = `${adapter.id}.${Buffer.from(crypto.randomBytes(32)).toString('base64url')}`
+  const codeVerifier = Buffer.from(crypto.randomBytes(48)).toString('base64url')
+  const codeChallenge = crypto.hash('sha256', codeVerifier, 'base64url')
 
   setFlowCookie(ctx, {
     provider: adapter.id,

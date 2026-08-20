@@ -1,4 +1,3 @@
-import { randomBytes, randomUUID } from 'crypto'
 import { z } from 'zod'
 
 import { getRakunBootstrapOptions } from '../../../../bootstrapState'
@@ -22,10 +21,12 @@ import {
   ContentTemplateValidationError,
   validateContentTemplate,
 } from '../../../utils/contentTemplate'
+import { getPlatform } from '../../../../platform'
 
 const PREVIEW_TTL_MS = 10 * 60 * 1000
 
-const createPreviewToken = () => randomBytes(32).toString('base64url')
+const createPreviewToken = () =>
+  Buffer.from(getPlatform().crypto.randomBytes(32)).toString('base64url')
 
 const getPreviewLanguage = async (languageCode?: string) => {
   const languages = await getLanguages()
@@ -106,7 +107,7 @@ export const createPreviewHandler = async ({
     routeKey: input.routeKey,
   })
   const { language, languages } = await getPreviewLanguage(input.languageCode)
-  const itemId = input.documentId ?? randomUUID()
+  const itemId = input.documentId ?? getPlatform().crypto.randomUUID()
 
   let parsedData: Record<string, unknown>
   try {

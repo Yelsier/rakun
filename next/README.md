@@ -38,12 +38,46 @@ type RakunNextOptions = {
   bootstrap?: RakunBootstrapOptions
   healthPath?: string | false
   integrations?: RakunNextIntegration[]
+  realtimePath?: string | false
 }
 ```
 
 Use `integrations` for extra handlers. Each integration receives the Fetch
 `Request`, Next route context, and normalized path segments. The first
 integration that returns a `Response` wins.
+
+## Runtime Platform
+
+Use `createNextPlatform()` for Next-specific defaults while keeping runtime and
+deployment independent. It detects Node.js or Bun and defaults the deployment
+to `serverless`, which uses polling. A `persistent` Next deployment uses the
+authenticated `realtime/events` SSE Route Handler automatically; this works in
+both runtimes because it is a Web `ReadableStream`.
+
+```ts
+import { createNextPlatform } from '@rakun-kit/next'
+
+const bootstrap = {
+  ...options,
+  platform: createNextPlatform(),
+}
+```
+
+The endpoint is relative to the manager's `apiBaseUrl`, so a manager mounted
+with `/api/rakun` connects to `/api/rakun/realtime/events`. Set
+`realtimePath: false` on `rakunNext` to disable it.
+
+Next Route Handlers do not expose the HTTP upgrade required by WebSockets.
+Persistent custom servers can instead configure
+`websocketRealtime({ endpoint: 'realtime/ws' })` and use
+`attachRakunNodeWebSocketServer({ server })` from `@rakun-kit/next/realtime/node`
+with Node, or pass `createRakunBunWebSocketServerOptions()` from
+`@rakun-kit/next/realtime/bun` to `Bun.serve`. Both bridges
+authenticate the session cookie and subscribe to the same platform topic
+broker. Bun support therefore depends on owning the `Bun.serve` server; merely
+executing the standard Next server with Bun does not make WebSocket upgrades
+available.
+Install the optional `ws` peer when using the Node bridge.
 
 ## tRPC
 
@@ -442,6 +476,7 @@ When this config is detected, `rakunNext` serves:
 - `@rakun-kit/next/trpc`: `rakunNextTrpc`.
 - `@rakun-kit/next/media`: `LocalAdapter`, local media config, and local HTTP handlers.
 - `@rakun-kit/next/manager`: `RakunManagerPage`, `createRakunManagerMetadata`, and manager page types.
+- `@rakun-kit/next/realtime/node` and `/realtime/bun`: persistent WebSocket server bridges.
 - `@rakun-kit/next/web`: HTTP helpers, `createRakunDatabaseWeb`,
   `RakunPageRenderer`, and page path helpers.
 - `@rakun-kit/next/web/client`: Rakun React renderers and typed API client helpers for client components.

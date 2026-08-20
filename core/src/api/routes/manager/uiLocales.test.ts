@@ -4,6 +4,7 @@ import {
   resolveManagerHomePageGroupId,
   resolveManagerSiteUrl,
   resolveManagerUiFeatures,
+  resolveManagerRealtimeMetadata,
 } from './uiLocales'
 
 describe('resolveManagerHomePageGroupId', () => {
@@ -96,6 +97,33 @@ describe('resolveManagerUiFeatures', () => {
         password: false,
         adapters: [{ id: 'github', label: 'GitHub Enterprise', icon: 'github' }],
       },
+    })
+  })
+})
+
+describe('resolveManagerRealtimeMetadata', () => {
+  test('uses polling when no platform is configured', () => {
+    expect(resolveManagerRealtimeMetadata()).toEqual({
+      transport: 'polling',
+      intervalMs: 3000,
+    })
+  })
+
+  test('exposes only transport configuration', () => {
+    expect(
+      resolveManagerRealtimeMetadata({
+        platform: {
+          realtime: {
+            metadata: {
+              transport: 'websocket',
+              endpoint: '/api/realtime',
+            },
+          },
+        },
+      } as never),
+    ).toEqual({
+      transport: 'websocket',
+      endpoint: '/api/realtime',
     })
   })
 })

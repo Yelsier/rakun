@@ -60,6 +60,18 @@ app.use(
 );
 ```
 
+## Runtime Platform
+
+`createExpressPlatform()` detects Node.js or Bun, records the Express framework,
+and defaults to a persistent deployment. Polling remains the realtime default;
+override it only when the Express host mounts an SSE or WebSocket endpoint.
+
+```ts
+import { createExpressPlatform } from '@rakun-kit/express'
+
+rakunBootstrap({ ...options, platform: createExpressPlatform() })
+```
+
 ## llms.txt
 
 Mount the public file at the site root, separately from the Rakun API router:

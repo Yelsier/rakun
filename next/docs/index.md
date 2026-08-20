@@ -41,6 +41,39 @@ Keep bootstrap and operation values in server-only modules. A client may import
 their types with `import type`, but must not import a module that executes
 bootstrap or reads secrets.
 
+Use `createNextPlatform()` when the application wants explicit framework and
+deployment defaults. Next defaults to `serverless` and polling because a
+persistent connection cannot be inferred from the runtime:
+
+```ts
+import { createNextPlatform } from '@rakun-kit/next'
+
+const bootstrap = {
+  literals,
+  contentTypes,
+  mongo,
+  platform: createNextPlatform(),
+}
+```
+
+Pass `deployment: 'persistent'` when true. Next then selects SSE at the relative
+`realtime/events` endpoint, served automatically by `rakunNext`; the manager
+resolves it against its `apiBaseUrl`. Both Node.js and Bun can stream this Route
+Handler. Set `realtimePath: false` to disable it or pass another path to both
+the platform provider and `rakunNext` when mounting it elsewhere.
+
+WebSockets require a server that owns the HTTP upgrade, which a Next Route
+Handler does not expose. A persistent Node custom server can configure
+`websocketRealtime({ endpoint: 'realtime/ws' })` and call
+`attachRakunNodeWebSocketServer({ server })` from
+`@rakun-kit/next/realtime/node`. A Bun-owned HTTP server can pass
+`createRakunBunWebSocketServerOptions()` from `@rakun-kit/next/realtime/bun` to
+`Bun.serve`. These bridges validate
+the manager session and forward platform topic invalidations. Standard Next on
+Bun still selects SSE: runtime detection affects native image processing, while
+the framework server controls whether WebSocket upgrade is available.
+Install the optional `ws` peer when using the Node bridge.
+
 ## Manager route
 
 ```tsx
@@ -230,6 +263,7 @@ outside public directories, and provide a strong `tokenSecret`.
 - `@rakun-kit/next`: API route and integration utilities.
 - `/trpc`, `/media`, `/manager`, `/web`, `/web/client`, and `/revalidate` for
   the features above.
+- `/realtime/node` and `/realtime/bun` for persistent WebSocket server bridges.
 - `/web` also exports `createRakunDatabaseWeb` for monolithic Next applications.
 - `/translation`, `/dev`, `/internal-content-types` for their focused public
   helpers; import only when the application specifically needs them.

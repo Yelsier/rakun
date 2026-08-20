@@ -7,7 +7,8 @@ import * as Y from 'yjs'
 
 import { CONTENT_ROOT_NAME, getContentSnapshot, setContentField } from './yDocument'
 
-import { useManagerClient } from '@/client/react'
+import { useManagerClient, useSync } from '@/client/react'
+import { createSyncTopic } from '@/client/realtime'
 import { deepEqual } from '@/helpers/deepEqual'
 import { useSession } from '@/state/session'
 
@@ -213,6 +214,7 @@ const CollaborationProvider = ({
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [status, setStatus] = useState<ContentCollaborationStatus>('connecting')
+  const [syncRoom, setSyncRoom] = useState<string | null>(null)
   const savedStateVectorRef = useRef(new Uint8Array())
   const pendingUpdatesRef = useRef<Uint8Array[]>([])
   const initialLocalUpdateRef = useRef<Uint8Array | null>(null)
@@ -335,9 +337,23 @@ const CollaborationProvider = ({
     while (pendingUpdatesRef.current.length) await exchange()
   }, [exchange])
 
+  useSync({
+    key: ['rakun-collaboration', localRoomName],
+    topic: createSyncTopic('collaboration', resource, contentType, documentId),
+    fetcher: async () => {
+      await exchange()
+      return null
+    },
+    enabled: syncRoom === localRoomName,
+    initialData: null,
+    meta: { suppressErrorToast: true },
+    retry: false,
+    staleTime: Infinity,
+    syncIntervalMs: POLL_INTERVAL_MS,
+  })
+
   useEffect(() => {
     let active = true
-    let poll: ReturnType<typeof setInterval> | undefined
     let persistence: IndexeddbPersistence | undefined
 
     const handleUpdate = (update: Uint8Array, origin: unknown) => {
@@ -411,9 +427,7 @@ const CollaborationProvider = ({
       await exchange().catch(() => undefined)
       if (!active) return
       updateData(getContentSnapshot(doc))
-      poll = setInterval(() => {
-        void exchange().catch(() => undefined)
-      }, POLL_INTERVAL_MS)
+      setSyncRoom(localRoomName)
     }
 
     void initialize()
@@ -421,7 +435,6 @@ const CollaborationProvider = ({
     return () => {
       active = false
       doc.off('update', handleUpdate)
-      if (poll) clearInterval(poll)
       if (timerRef.current) clearTimeout(timerRef.current)
       if (pendingUpdatesRef.current.length || initialLocalUpdateRef.current) {
         void flush().catch(() => undefined)

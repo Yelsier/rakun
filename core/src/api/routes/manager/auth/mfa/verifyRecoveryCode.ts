@@ -15,6 +15,7 @@ import {
 import { findRecoveryCodeHash } from '../../../../utils/recoveryCodes'
 import { recordAuthEvent } from '../../../../utils/authEvents'
 import type { RakunRequestContext } from '../../../../context'
+import { getPlatform } from '../../../../../platform'
 
 export const verifyRecoveryCodeHandler = async ({
   input,
@@ -82,7 +83,7 @@ export const verifyRecoveryCodeHandler = async ({
   await db.update(MfaChallenge, challenge._id, { consumedAt: new Date() })
   resetAuthRateLimit(rateLimitKey)
 
-  const token = crypto.randomUUID()
+  const token = getPlatform().crypto.randomUUID()
   const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_MS)
 
   await db.create(Session, {

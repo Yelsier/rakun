@@ -43,6 +43,11 @@
     "sharp": "^0.34.5",
     "mongodb": "^7.1.1"
   },
+  "peerDependenciesMeta": {
+    "sharp": {
+      "optional": true
+    }
+  },
   "exports": {
     ".": {
       "types": "./dist/esm/index.d.ts",

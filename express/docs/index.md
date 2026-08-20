@@ -35,6 +35,24 @@ Use `integrations` to compose extra handlers on the same router. If listing
 integrations explicitly, add `rakunExpressCrud()` to retain standard Rakun API
 operations.
 
+`createExpressPlatform()` composes the same runtime capabilities with
+`framework: 'express'` and a `persistent` deployment default:
+
+```ts
+import { createExpressPlatform } from '@rakun-kit/express'
+
+rakunBootstrap({
+  literals,
+  contentTypes,
+  routes,
+  mongo,
+  platform: createExpressPlatform(),
+})
+```
+
+Polling remains the safe realtime default. Configure SSE or WebSocket only
+with an endpoint actually mounted by the host.
+
 ```ts
 app.use(
   '/api/rakun',
@@ -85,7 +103,7 @@ const media = createLocalMediaServiceConfig({
 ## Public entrypoints and constraints
 
 - `@rakun-kit/express`: `rakunExpress`, `rakunExpressCrud`, integration and
-  shared local-service helpers.
+  shared local-service helpers, and `createExpressPlatform`.
 - `@rakun-kit/express/trpc`: optional tRPC integration.
 - `@rakun-kit/express/media`: local media adapter, config and HTTP handlers.
 

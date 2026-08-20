@@ -1,6 +1,7 @@
 import { getCollaborationService } from '../../../collaboration'
 import type ContentType from '../../../lib/ContentType'
 import { getMongoService } from '../../../orm'
+import { collaborationRealtimeTopic, getPlatform } from '../../../platform'
 import type {
   ContentCollaborationReferenceInput,
   SaveContentCollaborationOutput,
@@ -70,12 +71,18 @@ export const syncContentCollaborationHandler = async ({
   ctx: RakunRequestContext
 }): Promise<SyncContentCollaborationOutput> => {
   const { contentType, document } = await getAuthorizedDocument({ input, ctx })
+  const update = decodeBinary(input.update)
   const result = await getCollaborationService().sync({
     roomId: getContentCollaborationRoomId(input.contentType, input.documentId),
     initialSnapshot: toEditableContentSnapshot(contentType, document),
     stateVector: decodeBinary(input.stateVector),
-    update: decodeBinary(input.update),
+    update,
   })
+  if (update?.length) {
+    getPlatform().realtime.publish(
+      collaborationRealtimeTopic('content', input.contentType, input.documentId)
+    )
+  }
 
   return {
     update: encodeBinary(result.update),

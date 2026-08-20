@@ -24,6 +24,7 @@ import {
   hasTranslationService,
 } from "./translation";
 import { createCollaborationService } from './collaboration'
+import { resolvePlatform, setPlatform } from './platform'
 import { Fields } from "./lib/fields";
 import {
   getRakunBootstrapOptions,
@@ -265,9 +266,11 @@ export const rakunBootstrap = (options: RakunBootstrapOptions) => {
   const resolvedOptions: ResolvedRakunBootstrapOptions = {
     ...options,
     ...contributions,
+    platform: resolvePlatform(options.platform),
   };
 
   setRakunBootstrapOptions(resolvedOptions);
+  setPlatform(resolvedOptions.platform);
   setLiteralCatalog(resolvedOptions.literals);
   initPromise = null;
   initializedPluginIds = new Set();
@@ -534,3 +537,4 @@ export * from "./media";
 export * from "./mail";
 export * from "./contracts";
 export * from "./web";
+export * from './platform'

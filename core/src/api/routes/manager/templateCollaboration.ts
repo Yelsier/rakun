@@ -2,6 +2,7 @@ import { getCollaborationService } from '../../../collaboration'
 import { throwAppError } from '../../../lib/errors'
 import { TEMPLATE_FIELD_NAME } from '../../../lib/systemFields'
 import { getMongoService } from '../../../orm'
+import { collaborationRealtimeTopic, getPlatform } from '../../../platform'
 import type {
   SaveTemplateCollaborationOutput,
   SyncTemplateCollaborationInput,
@@ -54,12 +55,18 @@ export const syncTemplateCollaborationHandler = async ({
   ctx: RakunRequestContext
 }): Promise<SyncTemplateCollaborationOutput> => {
   const { initialSnapshot } = await getAuthorizedTemplate({ input, ctx })
+  const update = decodeBinary(input.update)
   const result = await getCollaborationService().sync({
     roomId: getTemplateCollaborationRoomId(input.contentType),
     initialSnapshot,
     stateVector: decodeBinary(input.stateVector),
-    update: decodeBinary(input.update),
+    update,
   })
+  if (update?.length) {
+    getPlatform().realtime.publish(
+      collaborationRealtimeTopic('template', input.contentType)
+    )
+  }
 
   return {
     update: encodeBinary(result.update),

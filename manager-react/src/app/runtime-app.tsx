@@ -2,6 +2,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import type {
   EncodedContentType,
   LoginAdapterMetadata,
+  RealtimeMetadata,
 } from "@rakun-kit/core/client";
 import {
   useCallback,
@@ -24,6 +25,7 @@ import {
 import type { ManagerNavigation } from "../state/navigation";
 import { ManagerProvider } from "../client/react";
 import type { ManagerProviderProps } from "../client/react";
+import { resolveRealtimeMetadata } from '../client/realtime'
 import { ManagerApp } from "../router";
 import { SessionProvider } from "@/state/session";
 import { LanguageProvider } from "@/state/language";
@@ -80,6 +82,7 @@ type BootstrapState =
 
 export type ManagerRuntimeAppProps = {
   client: ManagerProviderProps["client"];
+  realtimeBaseUrl?: string;
   navigation: ManagerNavigation;
   pathname: string;
   basePath?: string;
@@ -115,6 +118,7 @@ const authLoadingPaths = new Set([
 
 export const ManagerRuntimeApp = ({
   client,
+  realtimeBaseUrl,
   navigation,
   pathname,
   basePath,
@@ -133,6 +137,10 @@ export const ManagerRuntimeApp = ({
   const [managerUiLoaded, setManagerUiLoaded] = useState(false);
   const [siteUrl, setSiteUrl] = useState<string>();
   const [passwordRecoveryEnabled, setPasswordRecoveryEnabled] = useState(false);
+  const [realtime, setRealtime] = useState<RealtimeMetadata>({
+    transport: 'polling',
+    intervalMs: 3_000,
+  })
   const [login, setLogin] = useState<{
     password: boolean;
     adapters: LoginAdapterMetadata[];
@@ -175,6 +183,9 @@ export const ManagerRuntimeApp = ({
         const uiConfig = result as {
           locales?: ManagerLocaleInputPack[];
           siteUrl?: string;
+          platform?: {
+            realtime?: RealtimeMetadata;
+          };
           features?: {
             passwordRecovery?: boolean;
             login?: {
@@ -186,6 +197,13 @@ export const ManagerRuntimeApp = ({
         const locales = uiConfig.locales;
         setLocalePacks(Array.isArray(locales) ? locales : []);
         setSiteUrl(uiConfig.siteUrl);
+        setRealtime(resolveRealtimeMetadata(
+          uiConfig.platform?.realtime ?? {
+            transport: 'polling',
+            intervalMs: 3_000,
+          },
+          realtimeBaseUrl,
+        ));
         setPasswordRecoveryEnabled(
           uiConfig.features?.passwordRecovery === true,
         );
@@ -201,6 +219,7 @@ export const ManagerRuntimeApp = ({
         if (cancelled) return;
         setLocalePacks([]);
         setSiteUrl(undefined);
+        setRealtime({ transport: 'polling', intervalMs: 3_000 });
         setPasswordRecoveryEnabled(false);
         setLogin({ password: true, adapters: [] });
         setManagerUiLoaded(true);
@@ -209,7 +228,7 @@ export const ManagerRuntimeApp = ({
     return () => {
       cancelled = true;
     };
-  }, [client]);
+  }, [client, realtimeBaseUrl]);
 
   const bootstrap = useCallback(async (): Promise<boolean> => {
     const run = bootstrapRunRef.current + 1;
@@ -327,7 +346,7 @@ export const ManagerRuntimeApp = ({
       <ManagerI18nProvider localePacks={localePacks}>
         <ConfirmProvider>
           <QueryClientProvider client={queryClient}>
-            <ManagerProvider client={client}>
+            <ManagerProvider client={client} realtime={realtime}>
               <ManagerRuntimeAuthProvider value={runtimeAuth}>
                 <ManagerNavigationProvider navigation={scopedNavigation}>
                   <ManagerLinkProvider component={linkComponent}>

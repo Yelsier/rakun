@@ -25,6 +25,18 @@ export const ManagerUiLocalesOutputSchema = z.object({
   locales: z.array(ManagerLanguagePackSchema),
   homePageGroupId: z.string().optional(),
   siteUrl: z.string().optional(),
+  platform: z.object({
+    realtime: z.discriminatedUnion('transport', [
+      z.object({
+        transport: z.literal('polling'),
+        intervalMs: z.number().int().positive(),
+      }),
+      z.object({
+        transport: z.enum(['sse', 'websocket']),
+        endpoint: z.string().min(1),
+      }),
+    ]),
+  }),
   features: z.object({
     passwordRecovery: z.boolean(),
     login: z.object({
