@@ -25,6 +25,7 @@
         "@simplewebauthn/server": "^13.3.0",
         "otpauth": "^9.5.0",
         "qrcode": "^1.5.4",
+        "yjs": "^13.6.30",
         "zod": "^4.3.6",
       },
       "devDependencies": {
@@ -138,6 +139,7 @@
         "tailwind-merge": "^3.0.0",
         "use-sync-external-store": "^1.5.0",
         "vaul": "^1.1.2",
+        "yjs": "^13.6.30",
         "zod": "^4.0.0",
         "zustand": "^5.0.0",
       },

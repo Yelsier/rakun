@@ -41,6 +41,8 @@ import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { useManagerNavigation } from '@/state/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 
+const VARIANT_SYNC_INTERVAL_MS = 1500
+
 const reviewBadgeVariant = (status?: string) => {
   if (status === 'approved') return 'default' as const
   if (status === 'changes_requested') return 'destructive' as const
@@ -125,6 +127,7 @@ export const ContentVariants = () => {
     name: 'manager.contentVersions.list',
     input: listInput ?? ({ contentType: contentTypeName, documentId: '' } as never),
     enabled: Boolean(listInput && !isTrashed),
+    refetchInterval: VARIANT_SYNC_INTERVAL_MS,
   })
   const createMutation = useManagerMutation('manager.contentVersions.create')
   const promoteMutation = useManagerMutation('manager.contentVersions.promote')

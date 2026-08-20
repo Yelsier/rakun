@@ -20,6 +20,7 @@ import {
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { useTranslations } from '@/i18n'
 import { useManagerNavigation } from '@/state/navigation'
+import { useContentCollaboration } from '@/collaboration/ContentCollaborationProvider'
 
 const DRAFT_COPY_SUFFIX = '-draft'
 
@@ -139,11 +140,15 @@ export const useContentDocumentActions = ({
   const queryClient = useQueryClient()
   const createMutation = useManagerMutation('manager.create')
   const updateMutation = useManagerMutation('manager.update')
+  const collaborationSaveMutation = useManagerMutation(
+    'manager.contentCollaboration.save',
+  )
   const deleteMutation = useManagerMutation('manager.delete')
   const trashMutation = useManagerMutation('manager.trash')
   const translateDocumentMutation = useManagerMutation('manager.translateDocument')
   const createContentVersionMutation = useManagerMutation('manager.contentVersions.create')
   const promoteContentVersionMutation = useManagerMutation('manager.contentVersions.promote')
+  const collaboration = useContentCollaboration()
   const [pendingVariantData, setPendingVariantData] =
     useState<Record<string, unknown> | null>(null)
   const routeableVersionRoute = contentType.routes?.find((route) => route.hasPage)
@@ -389,11 +394,21 @@ export const useContentDocumentActions = ({
       return
     }
 
-    const result = await updateMutation.mutateAsync({
-      contentType: contentTypeName,
-      id: contentTypeId,
-      data,
-    })
+    const result = collaboration
+      ? await (async () => {
+          await collaboration.flush()
+          const saved = await collaborationSaveMutation.mutateAsync({
+            contentType: contentTypeName,
+            documentId: contentTypeId,
+          })
+          collaboration.setSavedStateVector(saved.savedStateVector)
+          return saved.document
+        })()
+      : await updateMutation.mutateAsync({
+          contentType: contentTypeName,
+          id: contentTypeId,
+          data,
+        })
 
     if (result && typeof result === 'object' && '_id' in result) {
       navigation.push?.({
@@ -572,6 +587,7 @@ export const useContentDocumentActions = ({
       trash: trashMutation.isPending,
       translate: translateDocumentMutation.isPending,
       update: updateMutation.isPending,
+      collaboration: collaborationSaveMutation.isPending,
       version: createContentVersionMutation.isPending,
       promote: promoteContentVersionMutation.isPending,
     },

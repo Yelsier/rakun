@@ -46,6 +46,7 @@ import {
 import { useManagerPlugins, type ManagerFieldEditorRef } from '@/plugins'
 import MissingUI from './_fields/Missing'
 import { getInitialSeoBindings } from './_fields/seoBindings'
+import { useContentCollaboration } from '@/collaboration/ContentCollaborationProvider'
 
 const REQUIRED_MARK = '*'
 
@@ -244,6 +245,7 @@ const ContentTypeEdit = forwardRef<
     initializeSeoBindings?: boolean
     collapsible?: boolean
     hideTitle?: boolean
+    collaborative?: boolean
   }
 >((props, ref) => {
   const t = useTranslations()
@@ -251,6 +253,7 @@ const ContentTypeEdit = forwardRef<
   const dynamicSourceContentType = props.parentContentType ?? contentType
   const trpc = useTRPC()
   const pluginRegistry = useManagerPlugins()
+  const collaboration = useContentCollaboration()
   const { data: contentTypesData } = useQuery(trpc.manager.contentTypes.queryOptions())
 
   const { refs, setRef } = useArrayRefs<FieldRef>()
@@ -369,6 +372,8 @@ const ContentTypeEdit = forwardRef<
     <ConditionFieldStateProvider
       fieldState={conditionFieldState}
       onFieldStateChange={handleFieldStateChange}
+      collaborative={props.collaborative}
+      collaborationRootId={id}
     >
       <div className="flex flex-1 flex-col gap-8 mx-auto w-full h-full">
         {allItems.map(([fieldName, fieldValue], i) => {
@@ -418,6 +423,9 @@ const ContentTypeEdit = forwardRef<
               bindings={dynamicBindings}
               onChange={(bindings) => {
                 setDynamicBindings(bindings)
+                if (props.collaborative) {
+                  collaboration?.setFieldState(`${id}._bindings`, cleanBindings(bindings))
+                }
                 removeRelatedErrors(`${id}.${fieldName}`)
               }}
               open={dynamicOpen}
@@ -435,6 +443,9 @@ const ContentTypeEdit = forwardRef<
               bindings={dynamicBindings}
               onChange={(bindings) => {
                 setDynamicBindings(bindings)
+                if (props.collaborative) {
+                  collaboration?.setFieldState(`${id}._bindings`, cleanBindings(bindings))
+                }
                 removeRelatedErrors(`${id}.${fieldName}`)
               }}
               open={dynamicOpen}

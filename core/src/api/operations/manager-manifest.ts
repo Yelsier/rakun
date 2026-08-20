@@ -66,6 +66,26 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/get",
   },
+  "manager.contentCollaboration.sync": {
+    kind: "query",
+    method: "post",
+    path: "/manager/contentCollaboration/sync",
+  },
+  "manager.contentCollaboration.save": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/contentCollaboration/save",
+  },
+  'manager.templateCollaboration.sync': {
+    kind: 'query',
+    method: 'post',
+    path: '/manager/templateCollaboration/sync',
+  },
+  'manager.templateCollaboration.save': {
+    kind: 'mutation',
+    method: 'post',
+    path: '/manager/templateCollaboration/save',
+  },
   "manager.template.get": {
     kind: "query",
     method: "post",

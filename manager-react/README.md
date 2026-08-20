@@ -188,6 +188,29 @@ and stores every run so its score can be followed over time. Access and report
 creation reuse the `SeoSettings` read and own permissions. Evolution snapshots
 and recent page reports are fetched and displayed in bounded, paginated groups.
 
+## Collaborative content editing
+
+Existing content documents use a Yjs working document keyed by content type and
+document `_id`; each draft therefore has its own room. Edits synchronize through
+the manager HTTP client and remain shared unsaved changes until Save. Save
+flushes pending CRDT updates, then core materializes and validates the
+server-side working state before updating MongoDB and revalidating. Public pages
+continue to use the previous saved snapshot while editors type.
+
+The shared Template editor has its own Yjs room keyed by content type, so it is
+collaborative across editors even when they opened different documents. Its
+snapshot is persisted only by Save and remains separate from every document
+room.
+
+Create-form content becomes collaborative after its first save. Route-layout
+overrides, Settings, literals, users, comments, reviews, and other
+administrative forms are intentionally not CRDT-backed. Content translation
+updates the shared working state and also waits for Save.
+
+Variant lifecycle and locale assignments stay transactional, but their manager
+queries refresh while editors are open so changes made by another user appear
+without a page reload.
+
 ## Styles
 
 Import the package stylesheet once:

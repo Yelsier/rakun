@@ -781,7 +781,14 @@ export const managerMessages = {
   },
   'contentEdit.translateDocument': { defaultMessage: 'Translate document' },
   'contentEdit.translateDocumentDescription': {
-    defaultMessage: 'Translate supported fields and save the document.',
+    defaultMessage: 'Translate supported fields in the shared working document.',
+  },
+  'contentEdit.collaboration.connecting': { defaultMessage: 'Connecting' },
+  'contentEdit.collaboration.synced': { defaultMessage: 'Shared changes saved' },
+  'contentEdit.collaboration.unsaved': { defaultMessage: 'Shared unsaved changes' },
+  'contentEdit.collaboration.error': { defaultMessage: 'Sync interrupted' },
+  'contentEdit.collaborationUnavailable': {
+    defaultMessage: 'The collaborative document could not be loaded.',
   },
   'contentEdit.requiredField': { defaultMessage: 'Required field' },
   'contentEdit.fieldHelp': { defaultMessage: 'Field help' },

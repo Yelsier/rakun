@@ -153,6 +153,38 @@ trashed, and route-less documents do not show that contextual action.
 
 ## Content and template tabs
 
+Saved content edit screens load an independent Yjs working document for the
+exact document `_id`. Field changes are synchronized incrementally over the
+manager HTTP client and the toolbar reports shared unsaved changes. Another
+editor on the same published document or draft sees that shared working state;
+an editor on a different draft uses a different room. Leaving and reopening the
+screen reloads the working state from the collaboration backend.
+
+Save first flushes pending Yjs updates and then asks core to persist a snapshot
+of the server-side working document. Until it succeeds, public/web reads and
+revalidation remain on the previous saved snapshot. Unsaved therefore means
+shared-but-not-committed, not changes owned by one browser. Draft promotion is
+still separate and uses the saved draft snapshot.
+
+The shared Template tab also uses Yjs, but in a separate room keyed only by
+content type. Consequently, editors who opened different documents collaborate
+on the same template. Its changes remain shared but uncommitted until Save,
+which persists the template snapshot through the normal validated template
+flow. It is never copied into the current document's room.
+
+This scope intentionally excludes create-form content before its first save,
+route-layout modules, Settings, literals, users, comments, reviews, and other
+manager forms. The shared Template remains collaborative even while reached
+from a create form because it is an existing type-level resource. Automatic
+translation changes the content document's shared working state but does not
+save it.
+
+Variant creation, language assignment, promotion, trash, and restore remain
+validated server mutations rather than CRDT fields. While editors are open,
+the Variants tab and the editor's locale assignments refresh automatically, so
+a variant created by one user appears for the others without reloading the
+page.
+
 For a routeable content type with `iterator`, Content edits the `_iterator`
 modules unique to the current document. Template is enabled automatically and
 edits one shared composition for every document of that type. Both tabs offer
