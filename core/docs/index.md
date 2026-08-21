@@ -49,12 +49,15 @@ repository, not installable packages, so they do not have installed manuals.
 ## Install and peer requirements
 
 ```sh
-bun add @rakun-kit/core mongodb bcrypt sharp ffmpeg-static zod
+bun add @rakun-kit/core mongodb bcrypt ffmpeg-static zod
+# Node.js image optimization only
+bun add sharp
 ```
 
-`mongodb`, `bcrypt`, `sharp` and `ffmpeg-static` are peer dependencies. Install only compatible
-versions declared by the package. Adapters and optional services are separate
-packages.
+`mongodb`, `bcrypt` and `ffmpeg-static` are peer dependencies. `sharp` is an
+optional peer used by the default Node.js image processor and as the fallback
+for Bun versions without `Bun.Image`. Adapters and optional services are
+separate packages.
 
 ## Bootstrap
 
@@ -96,6 +99,39 @@ and `syncRoutes`.
   It is concurrency-safe and retries after a failed initialization.
 
 Do not import React, Next, Express, Vite or tRPC into core configuration modules.
+
+## Runtime platform
+
+Core domain code consumes a resolved `Platform` instead of importing runtime
+image, crypto, filesystem, compression, or worker APIs. Omit `platform` to
+detect Node.js or Bun and apply standalone defaults, or compose capabilities:
+
+```ts
+import { createPlatform, pollingRealtime, sharpImage } from '@rakun-kit/core'
+
+rakunBootstrap({
+  // ...normal Rakun options
+  platform: createPlatform({
+    deployment: 'serverless',
+    image: sharpImage(),
+    realtime: pollingRealtime({ intervalMs: 5_000 }),
+  }),
+})
+```
+
+Runtime, framework, and deployment remain independent dimensions. Runtime is
+detected from `process.versions.bun`. Bun uses native `Bun.Image` when present;
+Node.js and older Bun versions use `sharp`. The Bun adapter also falls back to
+`sharp` when an OS-dependent codec cannot decode or encode the requested
+format, so install the optional peer when formats such as AVIF must work across
+all Bun hosts. `createPlatform` supplies every other default, so overrides
+never require listing unrelated capabilities.
+
+Realtime describes synchronization, not a required WebSocket transport.
+`pollingRealtime`, `sseRealtime`, and `websocketRealtime` expose transport
+metadata and a topic subscription contract. Polling is the conservative
+default; event-driven transports require an endpoint supplied by a host
+adapter.
 
 ## Content types and fields
 

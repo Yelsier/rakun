@@ -68,6 +68,33 @@ Options:
 - `logger`: logger configuration. If omitted, an `info` logger with `prettify` is created.
 - `syncRoutes`: syncs configured routes during initialization. Enabled by default.
 
+## Runtime Platform
+
+`rakunBootstrap` accepts an optional resolved `platform`. Without one, Rakun
+detects Bun through `process.versions.bun` and otherwise uses Node.js defaults.
+Runtime, framework, and deployment are separate values, and every capability
+can be overridden without configuring the rest:
+
+```ts
+import { createPlatform, pollingRealtime, sharpImage } from '@rakun-kit/core'
+
+rakunBootstrap({
+  ...options,
+  platform: createPlatform({
+    deployment: 'serverless',
+    image: sharpImage(),
+    realtime: pollingRealtime({ intervalMs: 5_000 }),
+  }),
+})
+```
+
+The default image processor is native `Bun.Image` when available and `sharp`
+otherwise. Node.js image optimization therefore requires the optional `sharp`
+peer. Bun also falls back to it when an OS-dependent codec cannot handle the
+requested format. The platform resolves crypto, filesystem, compression,
+workers, and realtime capabilities. Polling is the safe realtime default when
+the host cannot keep persistent connections open.
+
 ## External manager login
 
 Configure external login methods in `rakunBootstrap`. The callback URL is the
