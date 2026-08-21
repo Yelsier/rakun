@@ -8,6 +8,7 @@ import VersionHistory from './Versions'
 import { RouteLayoutModuleTabContent } from './RouteLayoutModuleTabContent'
 import { ContentVariants } from './LocaleVariants'
 import { SeoTabContent } from './SeoTabContent'
+import { CollaborativeTemplateEditor } from './CollaborativeTemplateEditor'
 
 import { TabsContent } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -51,6 +52,7 @@ export const EditTabPanels = () => {
               id={contentTypeName}
               collapsible
               hideTitle
+              collaborative
             />
           </TabsContent>
         ) : null}
@@ -71,16 +73,27 @@ export const EditTabPanels = () => {
               className={template.state?.canUpdate ? undefined : 'pointer-events-none opacity-70'}
               aria-disabled={!template.state?.canUpdate}
             >
-              <ContentTypeEdit
-                key={`template:${template.state?.revision ?? 'new'}`}
-                defaultData={template.defaultData}
-                ref={template.ref}
-                contentType={template.contentType}
-                parentContentType={contentType}
-                id={`${contentTypeName}Template`}
-                collapsible
-                hideTitle
-              />
+              {template.state?.canUpdate ? (
+                <CollaborativeTemplateEditor
+                  ref={template.ref}
+                  contentType={template.contentType}
+                  initialData={template.defaultData}
+                  parentContentType={contentType}
+                  onPendingChange={template.onPendingChange}
+                  onStatusChange={template.onStatusChange}
+                />
+              ) : (
+                <ContentTypeEdit
+                  key={`template:${template.state?.revision ?? 'new'}`}
+                  defaultData={template.defaultData}
+                  ref={template.ref}
+                  contentType={template.contentType}
+                  parentContentType={contentType}
+                  id={`${contentTypeName}Template`}
+                  collapsible
+                  hideTitle
+                />
+              )}
             </div>
           </TabsContent>
         ) : null}
@@ -98,6 +111,7 @@ export const EditTabPanels = () => {
               ref={form.nonIterablesRef}
               contentType={sections.nonIterables}
               id={contentTypeName}
+              collaborative
             />
           </TabsContent>
         ) : null}

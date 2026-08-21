@@ -513,7 +513,13 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
     '¿Seguro que quieres mover este elemento a la papelera? Se ocultará de las listas y rutas públicas hasta que se restaure.',
   'contentEdit.translateDocument': 'Traducir documento',
   'contentEdit.translateDocumentDescription':
-    'Traducir los campos compatibles y guardar el documento.',
+    'Traducir los campos compatibles en el documento de trabajo compartido.',
+  'contentEdit.collaboration.connecting': 'Conectando',
+  'contentEdit.collaboration.synced': 'Cambios compartidos guardados',
+  'contentEdit.collaboration.unsaved': 'Cambios compartidos sin guardar',
+  'contentEdit.collaboration.error': 'SincronizaciÃ³n interrumpida',
+  'contentEdit.collaborationUnavailable':
+    'No se pudo cargar el documento colaborativo.',
   'contentEdit.requiredField': 'Campo obligatorio',
   'contentEdit.fieldHelp': 'Ayuda del campo',
   'contentEdit.translatableField': 'Campo traducible',
