@@ -1,9 +1,8 @@
 import * as Y from 'yjs'
 
-export const CONTENT_ROOT_NAME = 'content'
+import { isRecord } from '../lib/utils/isRecord'
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+export const CONTENT_ROOT_NAME = 'content'
 
 const toYValue = (value: unknown): unknown => {
   if (value instanceof Date) {
