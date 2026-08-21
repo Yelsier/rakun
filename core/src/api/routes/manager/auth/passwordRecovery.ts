@@ -1,5 +1,3 @@
-import { createHash, randomBytes } from 'crypto'
-
 import {
   ManagerUser,
   PasswordResetToken,
@@ -22,9 +20,10 @@ import {
 import { PASSWORD_RESET_DEFAULT_EXPIRES_IN_MS } from '../../../../auth/accountRecovery'
 import { passwordResetMailTemplate } from '../../../../auth/passwordResetMailTemplate'
 import { recordAuthEvent } from '../../../utils/authEvents'
+import { getPlatform } from '../../../../platform'
 
 const hashToken = (token: string) =>
-  createHash('sha256').update(token).digest('hex')
+  getPlatform().crypto.hash('sha256', token, 'hex')
 
 const requirePasswordResetConfig = () => {
   const config = getRakunBootstrapOptions()?.accountRecovery?.passwordReset
@@ -70,7 +69,9 @@ export const requestPasswordResetHandler = async ({
     { reason: 'password reset token superseded' },
   )
 
-  const token = randomBytes(32).toString('base64url')
+  const token = Buffer.from(getPlatform().crypto.randomBytes(32)).toString(
+    'base64url',
+  )
   const expiresAt = new Date(
     Date.now() +
       (config.expiresInMs ?? PASSWORD_RESET_DEFAULT_EXPIRES_IN_MS),

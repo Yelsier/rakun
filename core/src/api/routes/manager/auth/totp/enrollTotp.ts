@@ -1,11 +1,10 @@
-import { randomBytes } from "crypto";
-
 import * as OTPAuth from "otpauth";
 import QRCode from "qrcode";
 import { UserMfa, ManagerUser } from "../../../../../internal-content-types";
 import { throwAppError } from "../../../../../lib/errors";
 import { getMongoService } from "../../../../../orm";
 import { RakunRequestContext } from "../../../../context";
+import { getPlatform } from '../../../../../platform'
 
 export const enrollTotpHandler = async ({
   ctx,
@@ -35,7 +34,7 @@ export const enrollTotpHandler = async ({
       _type: "UserMfa",
     }, { reason: 'mfa enrollment started' });
 
-  const bytes = randomBytes(20);
+  const bytes = getPlatform().crypto.randomBytes(20)
   const secret = new OTPAuth.Secret({
     buffer: bytes.buffer.slice(
       bytes.byteOffset,
