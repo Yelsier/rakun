@@ -16,6 +16,7 @@ import type {
 import type { ManagerLanguagePack } from "./schemas/manager/uiLocales";
 import type { AccountRecoveryConfig } from "./auth/accountRecovery";
 import type { LoginConfig } from "./auth/loginAdapters";
+import type { CollaborationServiceConfig } from './collaboration'
 
 export interface RakunBootstrapOptions {
   literals: LiteralCatalogInput;
@@ -47,6 +48,11 @@ export interface RakunBootstrapOptions {
    */
   eventLog?: EventLogServiceConfig;
   translation?: TranslationServiceConfig;
+  /**
+   * Storage for unsaved Yjs working documents. Defaults to process memory.
+   * Configure a shared adapter when the API runs in more than one process.
+   */
+  collaboration?: CollaborationServiceConfig;
   logger?: Parameters<typeof createLogger>[0];
   revalidate?:
     | {

@@ -62,11 +62,22 @@ Options:
 - `mongo`: MongoDB connection. Required before serving Rakun requests.
 - `media`: media adapter/configuration. Optional.
 - `mail`: outbound mail adapter and default sender configuration. Optional.
+- `collaboration`: storage adapter for unsaved Yjs working documents. Optional;
+  defaults to process memory.
 - `accountRecovery`: password-reset URL builder, expiry, and optional custom
   mail template. Requires `mail`; core provides the default template.
 - `login`: manager password-login toggle and external login adapters.
 - `logger`: logger configuration. If omitted, an `info` logger with `prettify` is created.
 - `syncRoutes`: syncs configured routes during initialization. Enabled by default.
+
+## Collaboration storage
+
+Core exposes the Yjs document and storage primitives used for collaborative
+working state. The default adapter stores rooms in process memory. Replicated
+or restart-durable deployments can pass a shared adapter through
+`rakunBootstrap({ collaboration: { adapter } })`; adapter updates and saved
+state vectors are opaque `Uint8Array` values and must remain separate from the
+public content record.
 
 ## External manager login
 

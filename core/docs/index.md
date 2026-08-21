@@ -86,8 +86,8 @@ rakunBootstrap({
 
 Important bootstrap options are `literals`, `contentTypes`,
 `internalContentTypes`, `routes`, `apiOperations`, `plugins`, `mongo`, `media`,
-`mail`, `translation`, `managerLanguages`, `login`, `accountRecovery`, `logger`
-and `syncRoutes`.
+`mail`, `translation`, `collaboration`, `managerLanguages`, `login`,
+`accountRecovery`, `logger` and `syncRoutes`.
 
 - `rakunBootstrap(options)` registers configuration synchronously.
 - `ensureRakunBootstrap(options)` registers it only if needed. Framework
@@ -96,6 +96,14 @@ and `syncRoutes`.
   It is concurrency-safe and retries after a failed initialization.
 
 Do not import React, Next, Express, Vite or tRPC into core configuration modules.
+
+## Collaboration storage
+
+Core exports Yjs document helpers, collaboration service contracts, and
+`createMemoryCollaborationAdapter`. The process-memory adapter is the default;
+multi-process or restart-durable deployments must provide a shared adapter with
+`rakunBootstrap({ collaboration: { adapter } })`. Persist its opaque update and
+saved-state-vector bytes outside public content records.
 
 ## Content types and fields
 
