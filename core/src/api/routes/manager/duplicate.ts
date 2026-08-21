@@ -1,6 +1,7 @@
 import type ContentType from "../../../lib/ContentType";
 import type { AnyField } from "../../../lib/fields/Field";
 import { Logger } from "../../../lib/Logger";
+import { isRecord } from "../../../lib/utils/isRecord";
 import { getMongoService } from "../../../orm";
 import type { DuplicateInput } from "../../../schemas/manager/duplicate";
 import type { RakunRequestContext } from "../../context";
@@ -23,9 +24,6 @@ const SYSTEM_DUPLICATE_FIELDS = new Set([
   "updatedAt",
   "updatedBy",
 ]);
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  !!value && typeof value === "object" && !Array.isArray(value);
 
 const isTranslatableRecord = (
   value: unknown,

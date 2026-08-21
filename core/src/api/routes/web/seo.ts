@@ -1,4 +1,5 @@
 import type { PageSeoOutput } from "../../../schemas/web/page";
+import { isRecord } from "../../../lib/utils/isRecord";
 
 type SeoRecord = Record<string, unknown>;
 
@@ -47,9 +48,6 @@ const seoKeys = [
   "twitterImage",
   "twitterImageAlt",
 ] as const;
-
-const isRecord = (value: unknown): value is SeoRecord =>
-  !!value && typeof value === "object" && !Array.isArray(value);
 
 const isEmptySeoValue = (value: unknown) => {
   if (value === null || value === undefined) return true;
