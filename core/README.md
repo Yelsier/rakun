@@ -104,6 +104,11 @@ document room. Settings, route-layout overrides, and other administrative forms
 remain local. Translation changes join the working document and are persisted
 only by Save.
 
+`@rakun-kit/manager-react` additionally stores these Yjs rooms per user in
+IndexedDB, allowing cached content and Template fields to remain editable during
+temporary connection loss. Reconnection exchanges the local updates with core;
+only an online Save commits them to the public content snapshot.
+
 ## External manager login
 
 Configure external login methods in `rakunBootstrap`. The callback URL is the

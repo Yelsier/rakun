@@ -362,6 +362,7 @@ export const EditToolbar = () => {
               className={cn(
                 'size-2 rounded-full bg-emerald-500',
                 collaborationStatus === 'unsaved' && 'bg-amber-500',
+                collaborationStatus === 'offline' && 'bg-amber-500',
                 collaborationStatus === 'error' && 'bg-destructive',
               )}
             />

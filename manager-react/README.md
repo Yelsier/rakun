@@ -197,6 +197,12 @@ flushes pending CRDT updates, then core materializes and validates the
 server-side working state before updating MongoDB and revalidating. Public pages
 continue to use the previous saved snapshot while editors type.
 
+The manager persists each user's collaborative rooms in IndexedDB. Previously
+opened content and Template fields load from the local Yjs cache first, remain
+editable during a temporary connection loss, and synchronize when the server
+is reachable again. The toolbar distinguishes this locally stored offline state
+from a snapshot committed by Save.
+
 The shared Template editor has its own Yjs room keyed by content type, so it is
 collaborative across editors even when they opened different documents. Its
 snapshot is persisted only by Save and remains separate from every document
