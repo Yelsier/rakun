@@ -153,6 +153,11 @@ trashed, and route-less documents do not show that contextual action.
 
 ## Content and template tabs
 
+The package includes internal Yjs document helpers and a collaboration provider
+that exchanges state vectors and incremental updates through the manager HTTP
+client. It represents shared working state; the normal saved content snapshot
+does not change until the editor invokes the collaboration Save operation.
+
 For a routeable content type with `iterator`, Content edits the `_iterator`
 modules unique to the current document. Template is enabled automatically and
 edits one shared composition for every document of that type. Both tabs offer

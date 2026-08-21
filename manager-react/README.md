@@ -188,6 +188,13 @@ and stores every run so its score can be followed over time. Access and report
 creation reuse the `SeoSettings` read and own permissions. Evolution snapshots
 and recent page reports are fetched and displayed in bounded, paginated groups.
 
+## Collaboration synchronization
+
+The manager package includes Yjs document helpers and an authenticated
+collaboration provider for synchronizing working state with core. The provider
+keeps server synchronization separate from the normal saved content snapshot;
+screen integration and Save controls are layered on top of it.
+
 ## Styles
 
 Import the package stylesheet once:
