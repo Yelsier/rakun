@@ -23,6 +23,8 @@ import {
   LOCALE_VARIANT_GROUP_FIELD,
 } from "../../../lib/localeVariants";
 import { isRouteableContentType } from "../../../lib/routeableContent";
+import { getCollaborationService } from '../../../collaboration'
+import { getContentCollaborationRoomId } from './contentCollaboration'
 
 export const deleteHandler = async ({
   input,
@@ -187,6 +189,22 @@ export const deleteHandler = async ({
   Logger.addTrace("manager.delete: db delete success", {
     documents: documentIds.length,
   });
+  const collaborationCleanup = await Promise.allSettled(
+    documentIds.map((documentId) =>
+      getCollaborationService().delete(
+        getContentCollaborationRoomId(contentType.name, documentId),
+      ),
+    ),
+  )
+  const collaborationCleanupFailures = collaborationCleanup.filter(
+    (result) => result.status === 'rejected',
+  ).length
+  if (collaborationCleanupFailures > 0) {
+    Logger.warn('Could not remove deleted content collaboration rooms', {
+      contentType: contentType.name,
+      failures: collaborationCleanupFailures,
+    })
+  }
 
   await checkRevalidatePath({
     contentType: contentType.name,

@@ -70,7 +70,7 @@ describe("translateDocumentHandler", () => {
     });
   });
 
-  it("translates, updates with version metadata, and returns a summary", async () => {
+  it("translates the working snapshot without persisting or revalidating", async () => {
     const current = {
       _id: "page-id",
       _type: HandlerPage.name,
@@ -113,28 +113,9 @@ describe("translateDocumentHandler", () => {
       },
     } as never);
 
-    expect(update).toHaveBeenCalledWith(
-      HandlerPage,
-      "page-id",
-      {
-        title: {
-          _tag: "Translatable",
-          en: "Hello",
-          fr: "fr:Hello",
-        },
-        updatedBy: "user-id",
-      },
-      {
-        actorId: "user-id",
-        reason: "manager translate",
-      },
-    );
+    expect(update).not.toHaveBeenCalled();
     expect(result.summary.translatedSegments).toBe(1);
     expect(result.item.title.fr).toBe("fr:Hello");
-    expect(mockCheckRevalidatePath).toHaveBeenCalledWith({
-      contentType: HandlerPage.name,
-      contentTypeId: "page-id",
-      operation: "update",
-    });
+    expect(mockCheckRevalidatePath).not.toHaveBeenCalled();
   });
 });

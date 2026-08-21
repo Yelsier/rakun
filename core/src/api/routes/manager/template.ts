@@ -42,7 +42,7 @@ const canUpdateTemplate = (
   return !permission || hasPermissions(ctx.getUser(), [permission]);
 };
 
-const requireTemplateUpdate = (
+export const requireTemplateUpdate = (
   contentType: ContentType,
   ctx: RakunRequestContext,
 ) => {

@@ -97,13 +97,46 @@ Important bootstrap options are `literals`, `contentTypes`,
 
 Do not import React, Next, Express, Vite or tRPC into core configuration modules.
 
-## Collaboration storage
+## Collaborative content working state
 
-Core exports Yjs document helpers, collaboration service contracts, and
-`createMemoryCollaborationAdapter`. The process-memory adapter is the default;
-multi-process or restart-durable deployments must provide a shared adapter with
-`rakunBootstrap({ collaboration: { adapter } })`. Persist its opaque update and
-saved-state-vector bytes outside public content records.
+Saved content documents have a Yjs working document identified by content type
+and document `_id`. This includes published documents and every independent
+draft/version. Incremental edits converge in that working document; they do not
+update the normal MongoDB content record, rebuild routes, or run `revalidate`.
+The public web API therefore continues to read the last saved JSON snapshot.
+
+`manager.contentCollaboration.sync` exchanges state vectors and incremental
+updates over the normal authenticated HTTP operation transport. It is
+idempotent protocol traffic and is not a business mutation.
+`manager.contentCollaboration.save` is the explicit commit boundary: core
+materializes the server-side `Y.Doc`, validates it with the normal
+`ContentType`, persists the snapshot through the existing update flow, and then
+runs revalidation. Promoting a draft remains a separate operation and consumes
+its saved snapshot.
+
+Shared content templates use the same protocol through
+`manager.templateCollaboration.sync` and
+`manager.templateCollaboration.save`. Their room is keyed only by content type,
+so editors working from different documents still see the same template. The
+save operation validates and persists it through the normal template update
+flow. Template state never becomes part of an individual content document's
+room.
+
+Core uses a process-memory collaboration adapter by default. This preserves
+unsaved changes across manager navigation while that API process lives. A
+multi-process or restart-durable deployment must pass a shared adapter through
+`rakunBootstrap({ collaboration: { adapter } })`. An adapter stores opaque Yjs
+updates and saved state vectors; it must not write them into the public content
+document. `createMemoryCollaborationAdapter` is exported as the reference
+implementation.
+
+This feature is scoped to saved content edit screens and their shared Template
+editor. Create-form content becomes collaborative after its first save; its
+shared Template is already collaborative because it exists independently of
+that new document. Settings, route-layout overrides, literals, users, and other
+administrative forms keep their existing local form state. Automatic content
+translation updates the shared working document and still requires Save before
+it changes the stored snapshot.
 
 ## Content types and fields
 

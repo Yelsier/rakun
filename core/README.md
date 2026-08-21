@@ -62,22 +62,47 @@ Options:
 - `mongo`: MongoDB connection. Required before serving Rakun requests.
 - `media`: media adapter/configuration. Optional.
 - `mail`: outbound mail adapter and default sender configuration. Optional.
-- `collaboration`: storage adapter for unsaved Yjs working documents. Optional;
-  defaults to process memory.
+- `collaboration`: storage adapter for unsaved Yjs content working documents.
+  Optional; defaults to process memory.
 - `accountRecovery`: password-reset URL builder, expiry, and optional custom
   mail template. Requires `mail`; core provides the default template.
 - `login`: manager password-login toggle and external login adapters.
 - `logger`: logger configuration. If omitted, an `info` logger with `prettify` is created.
 - `syncRoutes`: syncs configured routes during initialization. Enabled by default.
 
-## Collaboration storage
+## Collaborative content documents
 
-Core exposes the Yjs document and storage primitives used for collaborative
-working state. The default adapter stores rooms in process memory. Replicated
-or restart-durable deployments can pass a shared adapter through
-`rakunBootstrap({ collaboration: { adapter } })`; adapter updates and saved
-state vectors are opaque `Uint8Array` values and must remain separate from the
-public content record.
+Every saved content document and draft has an independent Yjs working document
+keyed by its content type and `_id`. Editor updates synchronize through the
+authenticated `manager.contentCollaboration.sync` operation without changing
+the MongoDB content snapshot or triggering revalidation. Save calls
+`manager.contentCollaboration.save`, which materializes and validates the
+server-side CRDT state before using the normal update and revalidation flow.
+Draft promotion remains separate and promotes only a saved draft snapshot.
+
+The default adapter keeps working documents in process memory. Configure a
+shared, durable implementation for replicated or restart-durable deployments:
+
+```ts
+rakunBootstrap({
+  // ...
+  collaboration: {
+    adapter: {
+      load: async (roomId) => loadRoom(roomId),
+      save: async (roomId, state) => saveRoom(roomId, state),
+      delete: async (roomId) => deleteRoom(roomId),
+    },
+  },
+})
+```
+
+`state.update` and `state.savedStateVector` are opaque `Uint8Array` values.
+Store them outside the public content record. The built-in manager applies this
+to saved content edit screens and to each content type's shared Template.
+Templates use their own `template:<contentType>` room rather than an individual
+document room. Settings, route-layout overrides, and other administrative forms
+remain local. Translation changes join the working document and are persisted
+only by Save.
 
 ## External manager login
 
