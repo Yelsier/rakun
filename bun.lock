@@ -23,6 +23,7 @@
       "version": "1.5.13",
       "dependencies": {
         "@simplewebauthn/server": "^13.3.0",
+        "lib0": "^0.2.117",
         "otpauth": "^9.5.0",
         "qrcode": "^1.5.4",
         "yjs": "^13.6.30",

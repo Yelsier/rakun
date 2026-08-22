@@ -1,3 +1,4 @@
+import { equalFlat } from 'lib0/array'
 import * as Y from 'yjs'
 
 import { getContentSnapshot, initializeContentDocument } from './document'
@@ -11,9 +12,6 @@ type CollaborationRoom = {
   doc: Y.Doc
   savedStateVector: Uint8Array
 }
-
-const vectorsEqual = (left: Uint8Array, right: Uint8Array) =>
-  left.length === right.length && left.every((value, index) => value === right[index])
 
 const storedState = (room: CollaborationRoom): CollaborationRoomState => ({
   update: Y.encodeStateAsUpdate(room.doc),
@@ -122,7 +120,7 @@ export const createCollaborationServiceFromAdapter = (
       }),
     hasUnsavedChanges: async ({ roomId, initialSnapshot }) => {
       const room = await loadRoom(roomId, initialSnapshot)
-      return !vectorsEqual(Y.encodeStateVector(room.doc), room.savedStateVector)
+      return !equalFlat(Y.encodeStateVector(room.doc), room.savedStateVector)
     },
     delete: async (roomId) =>
       await withLock(roomId, async () => {
