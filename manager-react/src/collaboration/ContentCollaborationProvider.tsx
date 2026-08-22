@@ -1,5 +1,6 @@
 'use client'
 
+import { equalFlat } from 'lib0/array'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import * as Y from 'yjs'
@@ -47,9 +48,6 @@ const decodeBinary = (value: string) => {
   }
   return result
 }
-
-const vectorsEqual = (left: Uint8Array, right: Uint8Array) =>
-  left.length === right.length && left.every((value, index) => value === right[index])
 
 export type ContentCollaborationStatus = 'connecting' | 'synced' | 'unsaved' | 'error'
 
@@ -170,7 +168,7 @@ const CollaborationProvider = ({
   }, [initialData])
 
   const updateStatus = useCallback(() => {
-    const dirty = !vectorsEqual(Y.encodeStateVector(doc), savedStateVectorRef.current)
+    const dirty = !equalFlat(Y.encodeStateVector(doc), savedStateVectorRef.current)
     setStatus(dirty ? 'unsaved' : 'synced')
   }, [doc])
 
