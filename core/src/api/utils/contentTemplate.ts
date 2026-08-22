@@ -28,20 +28,17 @@ export const createTemplateContentSlot = () => ({
   },
 });
 
-const isTemplateRecord = (value: unknown): value is Record<string, unknown> =>
-  isRecord(value) && !(value instanceof Date);
-
 export const isTemplateContentSlot = (value: unknown) => {
-  if (!isTemplateRecord(value) || value.name !== TemplateContent.name) return false;
+  if (!isRecord(value) || value.name !== TemplateContent.name) return false;
 
   const itemValue = value.value;
-  if (!isTemplateRecord(itemValue)) return false;
+  if (!isRecord(itemValue)) return false;
 
   if (itemValue._type === TemplateContent.name) return true;
 
   return (
     itemValue.type === "new" &&
-    isTemplateRecord(itemValue.data) &&
+    isRecord(itemValue.data) &&
     itemValue.data._type === TemplateContent.name
   );
 };
@@ -50,7 +47,7 @@ const visitTemplateSlotsInContentType = (
   contentType: ContentType,
   value: unknown,
 ): number => {
-  if (!isTemplateRecord(value)) return 0;
+  if (!isRecord(value)) return 0;
 
   return Object.entries(contentType.fields).reduce(
     (count, [key, field]) =>
@@ -70,7 +67,7 @@ const visitTemplateSlotsInField = (field: AnyField, value: unknown): number => {
 
     return value.reduce((count, item) => {
       if (isTemplateContentSlot(item)) return count + 1;
-      if (!isTemplateRecord(item) || typeof item.name !== "string") return count;
+      if (!isRecord(item) || typeof item.name !== "string") return count;
 
       const entry = entries.find(
         (candidate: { name: string }) => candidate.name === item.name,
@@ -94,9 +91,9 @@ const visitTemplateSlotsInField = (field: AnyField, value: unknown): number => {
   if (
     field.meta.ui === "ContentType" &&
     "contentType" in field &&
-    isTemplateRecord(value) &&
+    isRecord(value) &&
     value.type === "new" &&
-    isTemplateRecord(value.data)
+    isRecord(value.data)
   ) {
     return visitTemplateSlotsInContentType(
       field.contentType as ContentType,
@@ -114,7 +111,7 @@ export const stripTemplateContentSlots = (value: unknown): unknown => {
     );
   }
 
-  if (!isTemplateRecord(value)) return value;
+  if (!isRecord(value)) return value;
 
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => [
@@ -135,7 +132,7 @@ const mergeTemplateSlots = (raw: unknown, parsed: unknown): unknown => {
     });
   }
 
-  if (isTemplateRecord(raw) && isTemplateRecord(parsed)) {
+  if (isRecord(raw) && isRecord(parsed)) {
     return Object.fromEntries(
       Object.entries(parsed).map(([key, item]) => [
         key,
@@ -305,7 +302,7 @@ export const applyContentTemplate = (
       );
     }
 
-    if (!isTemplateRecord(value)) return value;
+    if (!isRecord(value)) return value;
 
     return Object.fromEntries(
       Object.entries(value).map(([key, item]) => [key, expand(item)]),

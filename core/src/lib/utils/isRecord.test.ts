@@ -3,13 +3,13 @@ import { describe, expect, test } from 'bun:test'
 import { isRecord } from './isRecord'
 
 describe('isRecord', () => {
-  test('accepts non-null, non-array objects', () => {
+  test('accepts record objects', () => {
     expect(isRecord({})).toBe(true)
     expect(isRecord({ value: 1 })).toBe(true)
-    expect(isRecord(new Date())).toBe(true)
   })
 
-  test('rejects arrays, null, and primitive values', () => {
+  test('rejects dates, arrays, null, and primitive values', () => {
+    expect(isRecord(new Date())).toBe(false)
     expect(isRecord([])).toBe(false)
     expect(isRecord(null)).toBe(false)
     expect(isRecord(undefined)).toBe(false)
