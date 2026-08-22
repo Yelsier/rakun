@@ -14,14 +14,11 @@ import {
   getContentTemplate,
 } from '../../utils/contentTemplate'
 import { requireContentType } from '../../utils/requireContentType'
+import { decodeBinary, encodeBinary } from './collaborationBinary'
 import { requireTemplateUpdate, templateUpdateHandler } from './template'
 
 export const getTemplateCollaborationRoomId = (contentType: string) =>
   `template:${encodeURIComponent(contentType)}`
-
-const encodeBinary = (value: Uint8Array) => Buffer.from(value).toString('base64')
-const decodeBinary = (value: string | undefined) =>
-  value === undefined ? undefined : new Uint8Array(Buffer.from(value, 'base64'))
 
 const getAuthorizedTemplate = async ({
   input,

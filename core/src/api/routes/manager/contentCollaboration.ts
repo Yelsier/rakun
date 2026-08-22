@@ -10,6 +10,7 @@ import type {
 import type { RakunRequestContext } from '../../context'
 import { checkOwnership } from '../../utils/checkOwnership'
 import { requireContentType } from '../../utils/requireContentType'
+import { decodeBinary, encodeBinary } from './collaborationBinary'
 import { updateHandler } from './update'
 
 const editableMetadataFields = ['_bindings', '_type', '_visibility'] as const
@@ -34,10 +35,6 @@ export const toEditableContentSnapshot = (
     ),
   )
 }
-
-const encodeBinary = (value: Uint8Array) => Buffer.from(value).toString('base64')
-const decodeBinary = (value: string | undefined) =>
-  value === undefined ? undefined : new Uint8Array(Buffer.from(value, 'base64'))
 
 const getAuthorizedDocument = async ({
   input,
