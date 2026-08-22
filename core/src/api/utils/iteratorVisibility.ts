@@ -1,11 +1,9 @@
 import type { IteratorItemVisibilityCondition } from "../../lib/fields/List";
+import { isRecord } from "../../lib/utils/isRecord";
 
 type IteratorItem = {
   visibleWhen?: IteratorItemVisibilityCondition;
 };
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value && typeof value === "object" && !Array.isArray(value));
 
 const getValueAtPath = (
   value: Record<string, unknown>,

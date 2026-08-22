@@ -51,6 +51,7 @@ export {
 export { getListField } from "./lib/utils/getListField";
 export { getTranslation } from "./lib/utils/getTranslation";
 export { Id, isId, type Id as IdType } from "./lib/utils/id";
+export { isRecord } from "./lib/utils/isRecord";
 export { isTranslatableObject } from "./lib/utils/isTranslatableObject";
 export { slugify } from "./lib/utils/slugify";
 export { encodeContentTypeForManager } from "./lib/Registry";

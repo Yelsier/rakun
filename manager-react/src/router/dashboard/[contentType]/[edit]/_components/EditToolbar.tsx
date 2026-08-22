@@ -50,6 +50,7 @@ import { createManagerQueryKey, useManagerMutation, useManagerQuery } from '@/cl
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { translateLayoutModuleLabel, useTranslations } from '@/i18n'
 import { cn } from '@/lib/utils'
+import { useContentCollaboration } from '@/collaboration/ContentCollaborationProvider'
 
 const visibilitySelectStyles: Record<EditableDocumentVisibility, string> = {
   draft: 'border-blue-500/70 text-blue-700 hover:bg-blue-500/10 dark:text-blue-300',
@@ -216,8 +217,10 @@ const FavoriteMenuItem = () => {
 
 export const EditToolbar = () => {
   const t = useTranslations()
+  const collaboration = useContentCollaboration()
   const [commentsOpen, setCommentsOpen] = useState(false)
   const {
+    activeTab,
     canPreview,
     contentType,
     contentTypeId,
@@ -241,11 +244,16 @@ export const EditToolbar = () => {
     translation,
     translationEnabled,
   } = useEditPageContext()
+  const collaborationStatus =
+    activeTab === 'template' && template.state?.canUpdate
+      ? template.collaborationStatus
+      : collaboration?.status
   const VisibilityIcon = visibilityIcons[editableVisibility]
   const pending = documentActions.pending
   const savePending =
     pending.create ||
     pending.update ||
+    pending.collaboration ||
     pending.delete ||
     pending.trash ||
     pending.version ||
@@ -341,6 +349,26 @@ export const EditToolbar = () => {
         </TabsList>
       </TabsScrollArea>
       <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+        {collaborationStatus ? (
+          <span
+            aria-live="polite"
+            className={cn(
+              'inline-flex items-center gap-1.5 text-xs text-muted-foreground',
+              collaborationStatus === 'error' && 'text-destructive',
+            )}
+          >
+            <span
+              aria-hidden
+              className={cn(
+                'size-2 rounded-full bg-emerald-500',
+                collaborationStatus === 'unsaved' && 'bg-amber-500',
+                collaborationStatus === 'offline' && 'bg-amber-500',
+                collaborationStatus === 'error' && 'bg-destructive',
+              )}
+            />
+            {t(`contentEdit.collaboration.${collaborationStatus}`)}
+          </span>
+        ) : null}
         {hasVisibility && !isTrashed ? (
           <div data-tour="content-edit-visibility" className="min-w-0">
             <Select
