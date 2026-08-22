@@ -5,6 +5,7 @@ import type ContentType from "../../lib/ContentType";
 import type { AnyField } from "../../lib/fields/Field";
 import { Logger } from "../../lib/Logger";
 import { ITERATOR_FIELD_NAME } from "../../lib/systemFields";
+import { isRecord } from "../../lib/utils/isRecord";
 import type { DBMutationOptions, DBService } from "../../orm/dbService";
 import { DbErrorConflict } from "../../orm/dbService";
 import { transformStringToObjectIds } from "../../orm/utils/transformStringToObjectIds";
@@ -27,23 +28,20 @@ export const createTemplateContentSlot = () => ({
   },
 });
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  !!value &&
-  typeof value === "object" &&
-  !Array.isArray(value) &&
-  !(value instanceof Date);
+const isTemplateRecord = (value: unknown): value is Record<string, unknown> =>
+  isRecord(value) && !(value instanceof Date);
 
 export const isTemplateContentSlot = (value: unknown) => {
-  if (!isRecord(value) || value.name !== TemplateContent.name) return false;
+  if (!isTemplateRecord(value) || value.name !== TemplateContent.name) return false;
 
   const itemValue = value.value;
-  if (!isRecord(itemValue)) return false;
+  if (!isTemplateRecord(itemValue)) return false;
 
   if (itemValue._type === TemplateContent.name) return true;
 
   return (
     itemValue.type === "new" &&
-    isRecord(itemValue.data) &&
+    isTemplateRecord(itemValue.data) &&
     itemValue.data._type === TemplateContent.name
   );
 };
@@ -52,7 +50,7 @@ const visitTemplateSlotsInContentType = (
   contentType: ContentType,
   value: unknown,
 ): number => {
-  if (!isRecord(value)) return 0;
+  if (!isTemplateRecord(value)) return 0;
 
   return Object.entries(contentType.fields).reduce(
     (count, [key, field]) =>
@@ -72,7 +70,7 @@ const visitTemplateSlotsInField = (field: AnyField, value: unknown): number => {
 
     return value.reduce((count, item) => {
       if (isTemplateContentSlot(item)) return count + 1;
-      if (!isRecord(item) || typeof item.name !== "string") return count;
+      if (!isTemplateRecord(item) || typeof item.name !== "string") return count;
 
       const entry = entries.find(
         (candidate: { name: string }) => candidate.name === item.name,
@@ -96,9 +94,9 @@ const visitTemplateSlotsInField = (field: AnyField, value: unknown): number => {
   if (
     field.meta.ui === "ContentType" &&
     "contentType" in field &&
-    isRecord(value) &&
+    isTemplateRecord(value) &&
     value.type === "new" &&
-    isRecord(value.data)
+    isTemplateRecord(value.data)
   ) {
     return visitTemplateSlotsInContentType(
       field.contentType as ContentType,
@@ -116,7 +114,7 @@ export const stripTemplateContentSlots = (value: unknown): unknown => {
     );
   }
 
-  if (!isRecord(value)) return value;
+  if (!isTemplateRecord(value)) return value;
 
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => [
@@ -137,7 +135,7 @@ const mergeTemplateSlots = (raw: unknown, parsed: unknown): unknown => {
     });
   }
 
-  if (isRecord(raw) && isRecord(parsed)) {
+  if (isTemplateRecord(raw) && isTemplateRecord(parsed)) {
     return Object.fromEntries(
       Object.entries(parsed).map(([key, item]) => [
         key,
@@ -307,7 +305,7 @@ export const applyContentTemplate = (
       );
     }
 
-    if (!isRecord(value)) return value;
+    if (!isTemplateRecord(value)) return value;
 
     return Object.fromEntries(
       Object.entries(value).map(([key, item]) => [key, expand(item)]),
