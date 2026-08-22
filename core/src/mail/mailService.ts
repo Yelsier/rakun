@@ -9,6 +9,7 @@ import type {
 } from './adapters'
 import type { EventLogService } from '../eventLog'
 import { Logger } from '../lib/Logger'
+import { getPlatform } from '../platform'
 
 type MailErrorTag = 'MailError' | 'MailErrorInvalidData' | 'MailErrorSendFailed'
 
@@ -233,7 +234,8 @@ export const createMailServiceFromAdapter = (config: MailServiceConfig): MailSer
 
   async send(input) {
     const message = normalizeMessage(input, config)
-    const correlationId = input.event?.correlationId ?? globalThis.crypto.randomUUID()
+    const correlationId =
+      input.event?.correlationId ?? getPlatform().crypto.randomUUID()
     const safeData = createSafeEventData(message, config, input.event?.template)
     const startedAt = Date.now()
 

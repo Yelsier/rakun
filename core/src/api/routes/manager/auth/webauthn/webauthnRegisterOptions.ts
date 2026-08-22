@@ -1,5 +1,3 @@
-import { randomBytes } from "crypto";
-
 import { generateRegistrationOptions } from "@simplewebauthn/server";
 
 import { RP_ID, toBase64URL } from "./share";
@@ -11,6 +9,7 @@ import {
 import { getMongoService } from "../../../../../orm";
 import { RakunRequestContext } from "../../../../context";
 import { WebauthnRegisterOptionsInput } from "../../../../../schemas/manager/auth/webauthn/webauthnRegisterOptions";
+import { getPlatform } from '../../../../../platform'
 
 const RP_NAME = "CMS";
 
@@ -57,7 +56,7 @@ export const webauthnRegisterOptionsHandler = async ({
     },
   });
 
-  const token = randomBytes(32).toString("hex");
+  const token = Buffer.from(getPlatform().crypto.randomBytes(32)).toString('hex')
   const expiresAt = new Date(Date.now() + 1000 * 60 * 5);
 
   await db.create(WebAuthnRegChallenge, {

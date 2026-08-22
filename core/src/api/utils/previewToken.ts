@@ -1,4 +1,4 @@
-import { createHash } from "crypto";
+import { getPlatform } from '../../platform'
 
 export const hashPreviewToken = (token: string) =>
-  createHash("sha256").update(token).digest("hex");
+  getPlatform().crypto.hash('sha256', token, 'hex')

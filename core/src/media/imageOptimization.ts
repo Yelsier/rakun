@@ -4,19 +4,7 @@ import {
   FileOptimizeOptions,
   FileOptimizeOptionsSchema,
 } from "../lib/fields/File";
-import { requirePeerDependency } from "../lib/utils/peerDependencies";
-
-type Sharp = typeof import("sharp");
-type SharpFactory = Sharp;
-
-const getSharp = (): SharpFactory => {
-  const sharp = requirePeerDependency<Sharp & { default?: SharpFactory }>(
-    "sharp",
-    "npm install sharp",
-    "Rakun uses sharp to read image dimensions and optimize media uploads.",
-  );
-  return sharp.default ?? (sharp as unknown as SharpFactory);
-};
+import { getPlatform } from '../platform'
 
 type UploadOptimizationInput = {
   buffer: Buffer;
@@ -96,17 +84,6 @@ const buildSizeKey = (key: string, width: number, ext: string): string => {
   return path.posix.join(parsed.dir, `${parsed.name}.${width}w.${ext}`);
 };
 
-const applyFormat = (
-  pipeline: ReturnType<SharpFactory>,
-  format: NonNullable<FileOptimizeOptions["format"]>,
-  quality: number,
-) => {
-  if (format === "webp") return pipeline.webp({ quality });
-  if (format === "jpeg") return pipeline.jpeg({ quality });
-  if (format === "png") return pipeline.png({ quality });
-  return pipeline.avif({ quality });
-};
-
 const normalizeResponsiveWidths = (
   widths: number[],
   sourceWidth: number,
@@ -132,8 +109,7 @@ const resolveDimensions = async (
   if (!isImageMime(mime)) return {};
 
   try {
-    const sharp = getSharp();
-    const metadata = await sharp(content, { failOn: "none" }).metadata();
+    const metadata = await getPlatform().image.metadata(content)
     const width = metadata.width;
     const height = metadata.height;
     if (!width || !height) return {};
@@ -165,21 +141,22 @@ const generateResponsiveSizes = async ({
 }): Promise<NonNullable<UploadOptimizationOutput["sizes"]>> => {
   if (!sourceWidth) return [];
 
-  const sharp = getSharp();
   const targetExt = formatToExt[format];
   const targetMime = formatToMime[format];
   const targetWidths = normalizeResponsiveWidths(widths, sourceWidth);
 
   return Promise.all(
     targetWidths.map(async (width) => {
-      const resized = await applyFormat(
-        sharp(content, { failOn: "none" })
-          .rotate()
-          .resize({ width, withoutEnlargement: true }),
-        format,
-        quality,
-      ).toBuffer();
-      const metadata = await sharp(resized, { failOn: "none" }).metadata();
+      const resized = Buffer.from(
+        await getPlatform().image.transform(content, {
+          width,
+          withoutEnlargement: true,
+          autoOrient: true,
+          format,
+          quality,
+        }),
+      )
+      const metadata = await getPlatform().image.metadata(resized)
 
       return {
         key: buildSizeKey(key, width, targetExt),
@@ -204,15 +181,16 @@ const generatePreviewDataUrl = async ({
   format: NonNullable<FileOptimizeOptions["format"]>;
   maxWidth: number;
 }): Promise<NonNullable<UploadOptimizationOutput["preview"]>> => {
-  const sharp = getSharp();
   const targetMime = formatToMime[format];
-  const previewContent = await applyFormat(
-    sharp(content, { failOn: "none" })
-      .rotate()
-      .resize({ width: maxWidth, withoutEnlargement: true }),
-    format,
-    PREVIEW_DATA_URL_QUALITY,
-  ).toBuffer();
+  const previewContent = Buffer.from(
+    await getPlatform().image.transform(content, {
+      width: maxWidth,
+      withoutEnlargement: true,
+      autoOrient: true,
+      format,
+      quality: PREVIEW_DATA_URL_QUALITY,
+    }),
+  )
 
   return {
     dataUrl: `data:${targetMime};base64,${previewContent.toString("base64")}`,
@@ -279,13 +257,13 @@ export async function optimizeImageUpload(
     };
   }
 
-  const sharp = getSharp();
-
-  const optimizedBuffer = await applyFormat(
-    sharp(input.buffer, { failOn: "none" }).rotate(),
-    targetFormat,
-    quality,
-  ).toBuffer();
+  const optimizedBuffer = Buffer.from(
+    await getPlatform().image.transform(input.buffer, {
+      autoOrient: true,
+      format: targetFormat,
+      quality,
+    }),
+  )
 
   const shouldUseOptimized = optimizedBuffer.length < originalSize;
   const finalBuffer = shouldUseOptimized ? optimizedBuffer : input.buffer;
