@@ -59,6 +59,12 @@ Main packages:
 - If a change touches media, review `core/src/media`, `manager-react/src/components/media`, `express/src/media.ts`, `next/src/media.ts`, and `s3/src`.
 - Run the smallest test/build that covers the change; expand to `bun run build` when exports, shared types, or contracts change.
 
+### Thematic Stack Validation
+
+- When using `$thematic-stacked-prs` to split an original/global feature branch into `feature-*` branches, run the relevant tests once on the original source tip that contains the complete cumulative change before extracting the thematic branches.
+- Do not run builds, typechecks, or test suites on each generated `feature-*` branch. Per-layer validation is limited to inspecting `<parent>...<branch>`, running `git diff --check <parent>...<branch>`, and reconciling hunk ownership.
+- This exception overrides package-level build and verification instructions in nested `AGENTS.md` files for the generated thematic branches. Only perform branch-specific builds or tests when the user explicitly requests them.
+
 ## Common Traps
 
 - `manager-react/tsconfig.json` points to `.d.ts` files in `core/dist/esm`; if `core` changes and the manager cannot see new types, build `core`.
