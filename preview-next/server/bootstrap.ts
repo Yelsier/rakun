@@ -1,6 +1,7 @@
 import {
   createGitHubLoginAdapter,
   createLocalMediaServiceConfig,
+  createNextPlatform,
   type RakunBootstrapOptions,
 } from '@rakun-kit/next'
 import {
@@ -49,6 +50,9 @@ export const createPreviewBootstrap = () =>
       },
     },
     contentTypes: previewContentTypes,
+    platform: createNextPlatform({
+      deployment: 'persistent',
+    }),
     managerLanguages: previewManagerLanguages,
     internalContentTypes: {
       Page: PreviewPage,

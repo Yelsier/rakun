@@ -45,6 +45,22 @@ Use `integrations` for extra handlers. Each integration receives the Fetch
 `Request`, Next route context, and normalized path segments. The first
 integration that returns a `Response` wins.
 
+## Runtime Platform
+
+Use `createNextPlatform()` for Next-specific defaults while keeping runtime and
+deployment independent. It detects Node.js or Bun, records the Next framework,
+and defaults to a serverless deployment with polling realtime. Pass explicit
+platform capability overrides when the host provides them.
+
+```ts
+import { createNextPlatform } from '@rakun-kit/next'
+
+const bootstrap = {
+  ...options,
+  platform: createNextPlatform(),
+}
+```
+
 ## tRPC
 
 Mount a tRPC router in the same catch-all route with `@rakun-kit/next/trpc`:
@@ -438,7 +454,8 @@ When this config is detected, `rakunNext` serves:
 
 ## Exports
 
-- `@rakun-kit/next`: `rakunNext`, `rakunNextCrud`, local media helpers, and shared route utilities.
+- `@rakun-kit/next`: `rakunNext`, `rakunNextCrud`, `createNextPlatform`, local
+  media helpers, and shared route utilities.
 - `@rakun-kit/next/trpc`: `rakunNextTrpc`.
 - `@rakun-kit/next/media`: `LocalAdapter`, local media config, and local HTTP handlers.
 - `@rakun-kit/next/manager`: `RakunManagerPage`, `createRakunManagerMetadata`, and manager page types.

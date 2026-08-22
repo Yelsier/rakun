@@ -41,6 +41,21 @@ Keep bootstrap and operation values in server-only modules. A client may import
 their types with `import type`, but must not import a module that executes
 bootstrap or reads secrets.
 
+Use `createNextPlatform()` when the application wants explicit framework and
+deployment defaults. Next defaults to `serverless` and polling; callers can
+override individual runtime capabilities without listing the rest:
+
+```ts
+import { createNextPlatform } from '@rakun-kit/next'
+
+const bootstrap = {
+  literals,
+  contentTypes,
+  mongo,
+  platform: createNextPlatform(),
+}
+```
+
 ## Manager route
 
 ```tsx
@@ -227,7 +242,8 @@ outside public directories, and provide a strong `tokenSecret`.
 
 ## Public entrypoints and constraints
 
-- `@rakun-kit/next`: API route and integration utilities.
+- `@rakun-kit/next`: API route and integration utilities, including
+  `createNextPlatform`.
 - `/trpc`, `/media`, `/manager`, `/web`, `/web/client`, and `/revalidate` for
   the features above.
 - `/web` also exports `createRakunDatabaseWeb` for monolithic Next applications.
