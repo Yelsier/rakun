@@ -44,6 +44,9 @@
         "mongodb": "^7.1.1",
         "sharp": "^0.34.5",
       },
+      "optionalPeers": [
+        "sharp",
+      ],
     },
     "create-rakun-app": {
       "name": "create-rakun-app",

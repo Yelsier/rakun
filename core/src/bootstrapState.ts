@@ -16,7 +16,8 @@ import type {
 import type { ManagerLanguagePack } from "./schemas/manager/uiLocales";
 import type { AccountRecoveryConfig } from "./auth/accountRecovery";
 import type { LoginConfig } from "./auth/loginAdapters";
-import type { CollaborationServiceConfig } from './collaboration'
+import type { Platform } from "./platform";
+import type { CollaborationServiceConfig } from "./collaboration";
 
 export interface RakunBootstrapOptions {
   literals: LiteralCatalogInput;
@@ -48,6 +49,8 @@ export interface RakunBootstrapOptions {
    */
   eventLog?: EventLogServiceConfig;
   translation?: TranslationServiceConfig;
+  /** Runtime, framework, and deployment capabilities. Defaults are detected. */
+  platform?: Platform;
   /**
    * Storage for unsaved Yjs working documents. Defaults to process memory.
    * Configure a shared adapter when the API runs in more than one process.
@@ -68,10 +71,11 @@ export type RakunContentType = ContentType;
 
 export type ResolvedRakunBootstrapOptions = Omit<
   RakunBootstrapOptions,
-  "contentTypes" | "routes" | "apiOperations" | "literals" | "permissions"
+  "contentTypes" | "routes" | "apiOperations" | "literals" | "permissions" | "platform"
 > &
   RakunResolvedPluginContributions & {
     fields: RakunPluginFieldDefinition[];
+    platform: Platform;
   };
 
 let bootstrapOptions: ResolvedRakunBootstrapOptions | null = null;
