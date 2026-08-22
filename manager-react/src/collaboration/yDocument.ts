@@ -1,9 +1,7 @@
+import { isRecord } from '@rakun-kit/core/client'
 import * as Y from 'yjs'
 
 export const CONTENT_ROOT_NAME = 'content'
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 
 const toYValue = (value: unknown): unknown => {
   if (typeof value === 'string') return new Y.Text(value)
