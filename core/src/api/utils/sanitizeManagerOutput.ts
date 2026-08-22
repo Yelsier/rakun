@@ -1,12 +1,10 @@
 import type ContentType from "../../lib/ContentType";
 import type { AnyField } from "../../lib/fields/Field";
 import { getContentTypeByName } from "../../lib/Registry";
+import { isRecord } from "../../lib/utils/isRecord";
 
 const sensitiveKeyPattern =
   /(password|token|secret|totp|mfa|challenge|credential|recoveryCode)/i;
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  !!value && typeof value === "object" && !Array.isArray(value);
 
 const isWriteOnlyField = (field: AnyField) => {
   const config = field.getConfig();

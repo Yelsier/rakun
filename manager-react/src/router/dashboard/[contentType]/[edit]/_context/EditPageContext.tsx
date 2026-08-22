@@ -40,7 +40,7 @@ import type {
   EditPageTab,
 } from '../edit.types'
 import type { FieldValue } from '../_fields/shared'
-import type { FieldRef } from '../ContentTypeEdit'
+import type { CollaborativeTemplateEditorRef } from '../_components/CollaborativeTemplateEditor'
 
 import { useEditErrorStore } from '@/hooks/app-store'
 import { useOptionalManagerNavigation } from '@/state/navigation'
@@ -48,9 +48,10 @@ import { useLanguage } from '@/state/language'
 import { useSession } from '@/state/session'
 import { useManagerMutation, useManagerQuery } from '@/client/react'
 import { confirm } from '@/components/confirm'
-import { deepEqual } from '@/helpers/deepEqual'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { useTranslations } from '@/i18n'
+import { useContentCollaboration } from '@/collaboration/ContentCollaborationProvider'
+import type { ContentCollaborationStatus } from '@/collaboration/ContentCollaborationProvider'
 
 const getDefaultVisibility = (defaultData?: Record<string, FieldValue>) =>
   ((defaultData as { _visibility?: DocumentVisibility } | undefined)?._visibility ??
@@ -68,6 +69,7 @@ const getDefaultTab = ({
   hasNonIterables ? 'info' : hasIterables ? 'content' : hasSeo ? 'seo' : 'history'
 
 const EDIT_TAB_SEARCH_PARAM = 'tab'
+const VARIANT_SYNC_INTERVAL_MS = 1500
 
 const isEditPageTabAvailable = (
   tab: string,
@@ -258,9 +260,12 @@ type EditPageContextValue = {
     enabled: boolean
     state?: TemplateStateOutput
     contentType?: EncodedContentType
-    ref: RefObject<FieldRef | null>
+    ref: RefObject<CollaborativeTemplateEditorRef | null>
     defaultData?: Record<string, FieldValue>
     pending: boolean
+    collaborationStatus: ContentCollaborationStatus
+    onPendingChange: (pending: boolean) => void
+    onStatusChange: (status: ContentCollaborationStatus) => void
   }
 }
 
@@ -318,6 +323,7 @@ export const EditPageProvider = ({
   onAfterRestore,
 }: PropsWithChildren<EditPageProps>) => {
   const t = useTranslations()
+  const collaboration = useContentCollaboration()
   const { language, languageList } = useLanguage()
   const { hasPermissions } = useSession()
   const navigation = useOptionalManagerNavigation()
@@ -336,8 +342,11 @@ export const EditPageProvider = ({
     enabled: Boolean(contentType.hasTemplate),
   })
   const templateState = templateQuery.data as TemplateStateOutput | undefined
-  const templateMutation = useManagerMutation('manager.template.update')
-  const templateRef = useRef<FieldRef>(null)
+  const templateRef = useRef<CollaborativeTemplateEditorRef>(null)
+  const [templateCollaborationPending, setTemplateCollaborationPending] =
+    useState(false)
+  const [templateCollaborationStatus, setTemplateCollaborationStatus] =
+    useState<ContentCollaborationStatus>('connecting')
   const templateContentType = useMemo<EncodedContentType | undefined>(() => {
     if (!contentType.hasTemplate || !contentType.templateField) return undefined
 
@@ -415,16 +424,13 @@ export const EditPageProvider = ({
 
     const modules = readTemplateModules()
     if (!modules) return false
-    if (!templateState.canUpdate || deepEqual(modules, templateState.modules)) {
+    if (!templateState.canUpdate || templateCollaborationStatus === 'synced') {
       return true
     }
+    if (!templateRef.current) return false
 
     try {
-      await templateMutation.mutateAsync({
-        contentType: contentType.name,
-        modules,
-        revision: templateState.revision,
-      })
+      await templateRef.current.save()
       await templateQuery.refetch()
       return true
     } catch (error) {
@@ -438,7 +444,7 @@ export const EditPageProvider = ({
     contentType.name,
     readTemplateModules,
     t,
-    templateMutation,
+    templateCollaborationStatus,
     templateQuery,
     templateState,
   ])
@@ -474,6 +480,7 @@ export const EditPageProvider = ({
             documentId: '',
           } as never),
     enabled: Boolean(contentTypeId && localeVariantRoute && !isTrashed),
+    refetchInterval: VARIANT_SYNC_INTERVAL_MS,
   })
   const translation = useTranslationDialogState({
     currentLanguageCode: language.code,
@@ -692,6 +699,7 @@ export const EditPageProvider = ({
 
   const handleVisibilityChange = (nextVisibility: EditableDocumentVisibility) => {
     setVisibility(nextVisibility)
+    collaboration?.setFieldState(`${contentType.name}._visibility`, nextVisibility)
   }
 
   return (
@@ -724,7 +732,10 @@ export const EditPageProvider = ({
                 [TEMPLATE_FIELD_NAME]: templateState.modules,
               } as Record<string, FieldValue>)
             : undefined,
-          pending: templateMutation.isPending || templateQuery.isLoading,
+          pending: templateCollaborationPending || templateQuery.isLoading,
+          collaborationStatus: templateCollaborationStatus,
+          onPendingChange: setTemplateCollaborationPending,
+          onStatusChange: setTemplateCollaborationStatus,
         },
         onAfterRestore,
         openMoveToTrashDialog: () => {

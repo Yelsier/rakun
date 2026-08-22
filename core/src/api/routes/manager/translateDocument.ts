@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { Logger } from "../../../lib/Logger";
 import { throwAppError } from "../../../lib/errors";
-import { DbErrorConflict, DbErrorInvalidData } from "../../../orm/dbService";
+import { DbErrorInvalidData } from "../../../orm/dbService";
 import { getMongoService } from "../../../orm";
 import {
   createDocumentTranslationPatch,
@@ -17,7 +17,6 @@ import type { RakunRequestContext } from "../../context";
 import { checkOwnership } from "../../utils/checkOwnership";
 import { getLanguages } from "../../utils/getLanguages";
 import { requireContentType } from "../../utils/requireContentType";
-import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
 import { isRouteableContentType } from "../../../lib/routeableContent";
 import {
   getRelationId,
@@ -125,44 +124,24 @@ export const translateDocumentHandler = async ({
     const data: Record<string, unknown> = {
       ...(parsedData as Record<string, unknown> | undefined),
       ...patch,
-      updatedBy: user._id,
     };
-    if (Object.keys(data).length === 1 && "updatedBy" in data) {
-      return { item: current, summary };
-    }
+    if (Object.keys(data).length === 0) return { item: current, summary };
 
     const parsedUpdate = contentType.partialValidate(data);
     Logger.addTrace("manager.translateDocument: input validated");
 
-    const updated = await db.update(contentType, input.id, parsedUpdate, {
-      actorId: user._id,
-      reason: "manager translate",
-    });
-    Logger.addTrace("manager.translateDocument: db update success", {
-      id: updated._id,
+    Logger.addTrace("manager.translateDocument: working snapshot translated", {
+      id: input.id,
       translatedSegments: summary.translatedSegments,
     });
-
-    await checkRevalidatePath({
-      contentType: contentType.name,
-      contentTypeId: updated._id,
-      operation: "update",
-    });
     return {
-      item: updated,
+      item: { ...current, ...parsedUpdate },
       summary,
     };
   } catch (error) {
     if (error instanceof z.ZodError || error instanceof DbErrorInvalidData) {
       throwAppError("VALIDATION", {
         errors: error.issues,
-      });
-    }
-
-    if (error instanceof DbErrorConflict) {
-      throwAppError("CONFLICT", {
-        message: error.message,
-        key: error.details as string,
       });
     }
 

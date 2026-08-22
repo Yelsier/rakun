@@ -24,6 +24,7 @@ import {
   hasTranslationService,
 } from "./translation";
 import { resolvePlatform, setPlatform } from "./platform";
+import { createCollaborationService } from "./collaboration";
 import { Fields } from "./lib/fields";
 import {
   getRakunBootstrapOptions,
@@ -113,6 +114,11 @@ const ensureTranslation = (): void => {
   createTranslationService(translation);
 };
 
+const ensureCollaboration = (): void => {
+  const config = getRakunBootstrapOptions()?.collaboration
+  createCollaborationService(config)
+}
+
 export const ensureRakunInitialized = async () => {
   if (initPromise) {
     await initPromise;
@@ -126,6 +132,7 @@ export const ensureRakunInitialized = async () => {
     ensureMongo();
     ensureMedia();
     ensureTranslation();
+    ensureCollaboration();
 
     const db = await getMongoService();
     ensureEventLog(db);
@@ -318,6 +325,16 @@ export const ensureRakunBootstrap = (options: RakunBootstrapOptions) => {
 };
 
 export type { RakunBootstrapOptions, ResolvedRakunBootstrapOptions };
+export {
+  createCollaborationService,
+  createCollaborationServiceFromAdapter,
+  createMemoryCollaborationAdapter,
+  getCollaborationService,
+  type CollaborationAdapter,
+  type CollaborationRoomState,
+  type CollaborationService,
+  type CollaborationServiceConfig,
+} from './collaboration'
 export type {
   AccountRecoveryConfig,
   PasswordResetMailProps,

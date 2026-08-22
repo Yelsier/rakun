@@ -41,9 +41,17 @@ import { listMentionUsersHandler } from "../routes/manager/users";
 import { trashHandler } from "../routes/manager/trash";
 import { getHandler } from "../routes/manager/get";
 import {
+  saveContentCollaborationHandler,
+  syncContentCollaborationHandler,
+} from "../routes/manager/contentCollaboration";
+import {
   templateGetHandler,
   templateUpdateHandler,
 } from "../routes/manager/template";
+import {
+  saveTemplateCollaborationHandler,
+  syncTemplateCollaborationHandler,
+} from '../routes/manager/templateCollaboration'
 import { listHandler } from "../routes/manager/list";
 import { languagesHandler } from "../routes/manager/languages";
 import { uiLocalesHandler } from "../routes/manager/uiLocales";
@@ -160,6 +168,18 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.get": {
       resolve: getHandler,
+    },
+    "manager.contentCollaboration.sync": {
+      resolve: syncContentCollaborationHandler,
+    },
+    "manager.contentCollaboration.save": {
+      resolve: saveContentCollaborationHandler,
+    },
+    'manager.templateCollaboration.sync': {
+      resolve: syncTemplateCollaborationHandler,
+    },
+    'manager.templateCollaboration.save': {
+      resolve: saveTemplateCollaborationHandler,
     },
     "manager.template.get": {
       resolve: templateGetHandler,

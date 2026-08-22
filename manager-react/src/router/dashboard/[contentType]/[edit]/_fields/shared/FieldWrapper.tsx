@@ -3,6 +3,7 @@ import React, { useEffect, useImperativeHandle, useRef } from 'react'
 import type { FieldRef } from '../../ContentTypeEdit'
 import { deepEqual } from '@/helpers/deepEqual'
 import { useConditionFieldDispatch } from './condition-state'
+import { useCollaborativeFieldBridge } from '@/collaboration/ContentCollaborationProvider'
 
 interface FieldWrapperProps {
   id: string
@@ -22,6 +23,7 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({
   ref,
 }) => {
   const conditionFieldDispatch = useConditionFieldDispatch()
+  const publishCollaborativeField = useCollaborativeFieldBridge()
   const lastNotifiedStateRef = useRef<unknown>(undefined)
   const hasNotifiedRef = useRef(false)
 
@@ -49,6 +51,7 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({
     hasNotifiedRef.current = true
     lastNotifiedStateRef.current = nextState
     conditionFieldDispatch.onFieldStateChange(id, nextState)
+    publishCollaborativeField(id, nextState)
   })
 
   const error = errors.find((e) => e.id === id)?.error

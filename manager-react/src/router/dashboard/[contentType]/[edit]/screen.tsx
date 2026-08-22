@@ -11,6 +11,8 @@ import Loading from '@/components/loading'
 import UnauthorizedMessage from '@/components/unauthorized'
 import { useSession } from '@/state/session'
 import type { ManagerPreviewConfig } from '@/router/shared/types'
+import { ContentCollaborationProvider } from '@/collaboration/ContentCollaborationProvider'
+import { useTranslations } from '@/i18n'
 
 export const ManagerContentTypeEditScreen = ({
   contentType,
@@ -23,6 +25,7 @@ export const ManagerContentTypeEditScreen = ({
   preview?: ManagerPreviewConfig
   siteUrl?: string
 }) => {
+  const t = useTranslations()
   const { user, hasAnyPermission, hasPermissions } = useSession()
   const itemQuery = useManagerQuery({
     name: 'manager.get',
@@ -79,12 +82,33 @@ export const ManagerContentTypeEditScreen = ({
   }
 
   return (
-    <EditPage
-      defaultData={defaultData}
-      contentType={contentType}
-      preview={preview}
-      siteUrl={siteUrl}
-      onAfterRestore={() => itemQuery.refetch()}
-    />
+    <ContentCollaborationProvider
+      key={`${contentType.name}:${id}`}
+      contentType={contentType.name}
+      documentId={id}
+      initialData={defaultData as Record<string, unknown>}
+    >
+      {({ data, error, ready }) => {
+        if (error && !ready) {
+          return (
+            <ErrorMessage
+              _tag="CollaborationUnavailable"
+              message={t('contentEdit.collaborationUnavailable')}
+            />
+          )
+        }
+        if (!ready) return <Loading />
+
+        return (
+          <EditPage
+            defaultData={data as Record<string, FieldValue>}
+            contentType={contentType}
+            preview={preview}
+            siteUrl={siteUrl}
+            onAfterRestore={() => itemQuery.refetch()}
+          />
+        )
+      }}
+    </ContentCollaborationProvider>
   )
 }

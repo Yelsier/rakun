@@ -2,6 +2,7 @@ import type { LanguageSchema } from '../../../internal-content-types/Language'
 import { LlmsSettings, SeoSettings } from '../../../internal-content-types'
 import type { DBOutput } from '../../../lib/types'
 import { getTranslation } from '../../../lib/utils/getTranslation'
+import { isRecord } from '../../../lib/utils/isRecord'
 import { isTranslatableObject } from '../../../lib/utils/isTranslatableObject'
 import { getMongoService } from '../../../orm'
 import type { LlmsInput, LlmsOutput } from '../../../schemas/web/llms'
@@ -28,9 +29,6 @@ export type LlmsRenderedDocument = {
   details?: string
   sections: LlmsRenderedSection[]
 }
-
-const isRecord = (value: unknown): value is UnknownRecord =>
-  !!value && typeof value === 'object' && !Array.isArray(value)
 
 const unwrapRelation = (value: unknown): UnknownRecord | undefined => {
   if (!isRecord(value)) return undefined

@@ -1,6 +1,7 @@
 import type ContentType from "../../lib/ContentType";
 import { throwAppError } from "../../lib/errors";
 import type { Query } from "../../lib/types";
+import { isRecord } from "../../lib/utils/isRecord";
 
 const MAX_LIMIT = 100;
 const MAX_ALL_LIMIT = 1000;
@@ -39,9 +40,6 @@ const comparisonOperators = new Set([
   "$exists",
   "$contains",
 ]);
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  !!value && typeof value === "object" && !Array.isArray(value);
 
 const validationError = (message: string): never =>
   throwAppError("VALIDATION", {

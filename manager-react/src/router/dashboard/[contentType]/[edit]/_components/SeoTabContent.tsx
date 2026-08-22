@@ -351,6 +351,7 @@ export const SeoTabContent = () => {
           initializeSeoBindings={!contentTypeId}
           id={contentTypeName}
           hideTitle
+          collaborative
         />
       </TabsContent>
 

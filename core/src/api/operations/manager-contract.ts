@@ -11,6 +11,12 @@ import {
   templateUpdateInput,
 } from "../../schemas/manager/template";
 import {
+  saveTemplateCollaborationOutput,
+  syncTemplateCollaborationInput,
+  syncTemplateCollaborationOutput,
+  templateCollaborationReferenceInput,
+} from '../../schemas/manager/templateCollaboration'
+import {
   accountInfoOutput,
   backupRecord,
   createCommentInput,
@@ -22,6 +28,10 @@ import {
   createFolderInput,
   createFolderOutput,
   contentVersionRecord,
+  contentCollaborationReferenceInput,
+  saveContentCollaborationOutput,
+  syncContentCollaborationInput,
+  syncContentCollaborationOutput,
   contentTypeInput,
   deleteFolderInput,
   deleteFolderOutput,
@@ -251,6 +261,38 @@ export const createManagerOperationContracts = () =>
       input: getInput,
       output: z.any(),
       method: "post",
+    }),
+    "manager.contentCollaboration.sync": defineOperationContract({
+      access: "auth",
+      kind: "query",
+      description: "Exchange incremental Yjs updates for one editable content document",
+      input: syncContentCollaborationInput,
+      output: syncContentCollaborationOutput,
+      method: "post",
+    }),
+    "manager.contentCollaboration.save": defineOperationContract({
+      access: "auth",
+      kind: "mutation",
+      description: "Persist the current collaborative content snapshot",
+      input: contentCollaborationReferenceInput,
+      output: saveContentCollaborationOutput,
+      method: "post",
+    }),
+    'manager.templateCollaboration.sync': defineOperationContract({
+      access: 'auth',
+      kind: 'query',
+      description: 'Exchange incremental Yjs updates for a shared content template',
+      input: syncTemplateCollaborationInput,
+      output: syncTemplateCollaborationOutput,
+      method: 'post',
+    }),
+    'manager.templateCollaboration.save': defineOperationContract({
+      access: 'auth',
+      kind: 'mutation',
+      description: 'Persist the current collaborative shared-template snapshot',
+      input: templateCollaborationReferenceInput,
+      output: saveTemplateCollaborationOutput,
+      method: 'post',
     }),
     "manager.template.get": defineOperationContract({
       access: "auth",

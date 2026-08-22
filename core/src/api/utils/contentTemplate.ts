@@ -5,6 +5,7 @@ import type ContentType from "../../lib/ContentType";
 import type { AnyField } from "../../lib/fields/Field";
 import { Logger } from "../../lib/Logger";
 import { ITERATOR_FIELD_NAME } from "../../lib/systemFields";
+import { isRecord } from "../../lib/utils/isRecord";
 import type { DBMutationOptions, DBService } from "../../orm/dbService";
 import { DbErrorConflict } from "../../orm/dbService";
 import { transformStringToObjectIds } from "../../orm/utils/transformStringToObjectIds";
@@ -26,12 +27,6 @@ export const createTemplateContentSlot = () => ({
     data: { _type: TemplateContent.name },
   },
 });
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  !!value &&
-  typeof value === "object" &&
-  !Array.isArray(value) &&
-  !(value instanceof Date);
 
 export const isTemplateContentSlot = (value: unknown) => {
   if (!isRecord(value) || value.name !== TemplateContent.name) return false;

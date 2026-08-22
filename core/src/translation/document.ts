@@ -3,6 +3,7 @@ import type { AnyField } from "../lib/fields/Field";
 import type { LanguageSchema } from "../internal-content-types/Language";
 import type { TranslationSegment } from "./adapters";
 import type { TranslationService } from "./translationService";
+import { isRecord } from "../lib/utils/isRecord";
 
 type PathSegment = string | number;
 
@@ -16,9 +17,6 @@ type PendingTranslation = {
 type MutableRecord = Record<string, unknown>;
 
 const supportedStringUis = new Set(["Text", "Textarea", "RichText", "Slug"]);
-
-const isRecord = (value: unknown): value is MutableRecord =>
-  !!value && typeof value === "object" && !Array.isArray(value);
 
 const isTranslatableRecord = (value: unknown): value is MutableRecord =>
   isRecord(value) && value._tag === "Translatable";

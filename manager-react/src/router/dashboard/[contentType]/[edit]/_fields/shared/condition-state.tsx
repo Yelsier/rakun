@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 
+import { CollaborativeFormScope } from '@/collaboration/ContentCollaborationProvider'
+
 type ConditionFieldStateContextValue = {
   fieldState: Record<string, unknown>
 }
@@ -27,10 +29,14 @@ const ConditionFieldDispatchContext =
 export const ConditionFieldStateProvider = ({
   fieldState,
   onFieldStateChange,
+  collaborative = false,
+  collaborationRootId = '',
   children,
 }: {
   fieldState: Record<string, unknown>
   onFieldStateChange: (id: string, state: unknown) => void
+  collaborative?: boolean
+  collaborationRootId?: string
   children: ReactNode
 }) => {
   const dispatchValue = useMemo(
@@ -40,11 +46,13 @@ export const ConditionFieldStateProvider = ({
   const stateValue = useMemo(() => ({ fieldState }), [fieldState])
 
   return (
-    <ConditionFieldDispatchContext.Provider value={dispatchValue}>
-      <ConditionFieldStateContext.Provider value={stateValue}>
-        {children}
-      </ConditionFieldStateContext.Provider>
-    </ConditionFieldDispatchContext.Provider>
+    <CollaborativeFormScope enabled={collaborative} rootId={collaborationRootId}>
+      <ConditionFieldDispatchContext.Provider value={dispatchValue}>
+        <ConditionFieldStateContext.Provider value={stateValue}>
+          {children}
+        </ConditionFieldStateContext.Provider>
+      </ConditionFieldDispatchContext.Provider>
+    </CollaborativeFormScope>
   )
 }
 
