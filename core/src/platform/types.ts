@@ -26,7 +26,7 @@ export interface ImageProcessor {
   transform(input: Uint8Array, options: ImageTransformOptions): Promise<Uint8Array>
 }
 
-export type RealtimeTransport = 'polling' | 'sse' | 'websocket'
+export type RealtimeTransport = 'polling' | 'sse'
 
 export type RealtimeMetadata =
   | {
@@ -35,10 +35,6 @@ export type RealtimeMetadata =
     }
   | {
       transport: 'sse'
-      endpoint: string
-    }
-  | {
-      transport: 'websocket'
       endpoint: string
     }
 

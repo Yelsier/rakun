@@ -2,11 +2,15 @@ import { describe, expect, test } from 'bun:test'
 
 import {
   createPlatform,
+  createRealtimeSseStream,
   bunImage,
   detectRuntime,
   hasBunImage,
   pollingRealtime,
-  websocketRealtime,
+  isRealtimeEndpointRequest,
+  parseRealtimeTopics,
+  resolveRealtimeEndpointPath,
+  sseRealtime,
 } from './index'
 import type {
   CompressionProvider,
@@ -94,9 +98,56 @@ describe('platform resolution', () => {
 })
 
 describe('realtime adapters', () => {
+  test('uses an API-relative SSE endpoint by default', () => {
+    expect(sseRealtime().metadata).toEqual({
+      transport: 'sse',
+      endpoint: '/realtime',
+    })
+  })
+
+  test('parses bounded, unique topics independently of an HTTP adapter', () => {
+    expect(
+      parseRealtimeTopics(
+        'http://localhost/realtime?topic=content%3A1&topic=content%3A1&topic=locales'
+      )
+    ).toEqual(['content:1', 'locales'])
+    expect(parseRealtimeTopics('/realtime?topic=relative')).toEqual(['relative'])
+    expect(parseRealtimeTopics('http://localhost/realtime')).toBeNull()
+    expect(parseRealtimeTopics(`http://localhost/realtime?topic=${'x'.repeat(2_049)}`)).toBeNull()
+  })
+
+  test('matches configured endpoints independently of the host framework', () => {
+    expect(resolveRealtimeEndpointPath('/realtime', '/api/rakun')).toBe('/api/rakun/realtime')
+    expect(resolveRealtimeEndpointPath('/api/rakun/events', '/api/rakun')).toBe('/api/rakun/events')
+    expect(resolveRealtimeEndpointPath('/realtime?token=test', '/api')).toBe('/api/realtime')
+    expect(
+      isRealtimeEndpointRequest({
+        basePath: '/api',
+        endpoint: '/realtime',
+        method: 'GET',
+        requestUrl: '/api/realtime?topic=content',
+      })
+    ).toBe(true)
+    expect(
+      isRealtimeEndpointRequest({
+        basePath: '/api',
+        endpoint: '/realtime',
+        method: 'GET',
+        requestUrl: 'http://localhost/api/nested/realtime?topic=content',
+      })
+    ).toBe(false)
+    expect(
+      isRealtimeEndpointRequest({
+        endpoint: '/api/realtime',
+        method: 'POST',
+        requestUrl: 'http://localhost/api/realtime',
+      })
+    ).toBe(false)
+  })
+
   test('publishes only to subscribers of the matching topic', () => {
     let changes = 0
-    const realtime = websocketRealtime({
+    const realtime = sseRealtime({
       endpoint: '/api/realtime',
     })
 
@@ -112,7 +163,7 @@ describe('realtime adapters', () => {
   })
 
   test('isolates subscribers when one connection is stale', () => {
-    const realtime = websocketRealtime({ endpoint: '/api/realtime' })
+    const realtime = sseRealtime({ endpoint: '/api/realtime' })
     let changes = 0
     realtime.subscribe('content:1', () => {
       throw new Error('closed stream')
@@ -123,5 +174,21 @@ describe('realtime adapters', () => {
 
     expect(() => realtime.publish('content:1')).not.toThrow()
     expect(changes).toBe(1)
+  })
+
+  test('streams SSE events through the shared server primitive', async () => {
+    const realtime = sseRealtime({ endpoint: '/api/realtime' })
+    const reader = createRealtimeSseStream({
+      heartbeatMs: 60_000,
+      realtime,
+      topics: ['content:1', 'locales'],
+    }).getReader()
+    const decoder = new TextDecoder()
+
+    expect(decoder.decode((await reader.read()).value)).toBe(': connected\n\n')
+    realtime.publish('locales')
+    expect(decoder.decode((await reader.read()).value)).toBe('id: 1\ndata: {"topic":"locales"}\n\n')
+
+    await reader.cancel()
   })
 })

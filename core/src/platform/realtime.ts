@@ -1,7 +1,9 @@
 import type { RealtimeMetadata, RealtimeProvider } from './types'
 
 const normalizeInterval = (value: number | undefined): number =>
-  Number.isFinite(value) && (value ?? 0) >= 250 ? Math.round(value!) : 3_000
+  typeof value === 'number' && Number.isFinite(value) && value >= 250 ? Math.round(value) : 3_000
+
+export const DEFAULT_SSE_ENDPOINT = '/realtime'
 
 const eventRealtime = (metadata: RealtimeMetadata): RealtimeProvider => {
   const listeners = new Map<string, Set<() => void>>()
@@ -47,16 +49,10 @@ export const pollingRealtime = (options: { intervalMs?: number } = {}): Realtime
   }
 }
 
-export const websocketRealtime = (options: { endpoint: string }): RealtimeProvider =>
-  eventRealtime({ transport: 'websocket', endpoint: options.endpoint })
-
-export const sseRealtime = (options: { endpoint: string }): RealtimeProvider =>
-  eventRealtime({ transport: 'sse', endpoint: options.endpoint })
+export const sseRealtime = (options: { endpoint?: string } = {}): RealtimeProvider =>
+  eventRealtime({ transport: 'sse', endpoint: options.endpoint ?? DEFAULT_SSE_ENDPOINT })
 
 export const realtimeFromMetadata = (metadata: RealtimeMetadata): RealtimeProvider => {
-  if (metadata.transport === 'websocket') {
-    return websocketRealtime({ endpoint: metadata.endpoint })
-  }
   if (metadata.transport === 'sse') {
     return sseRealtime({ endpoint: metadata.endpoint })
   }
