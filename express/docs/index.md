@@ -70,6 +70,10 @@ rakunBootstrap({
 })
 ```
 
+For collaboration topics, the endpoint also authorizes browser-tab presence
+bindings. Its server heartbeat renews them and the last stream disconnect
+removes them, so SSE managers do not need periodic presence-only sync calls.
+
 Pass `realtime: false` to `rakunExpress()` only if the host serves that SSE
 endpoint itself.
 

@@ -216,6 +216,14 @@ flushes pending CRDT updates, then core materializes and validates the
 server-side working state before updating MongoDB and revalidating. Public pages
 continue to use the previous saved snapshot while editors type.
 
+The edit header shows collaborative presence per browser tab. Two tabs for the
+same account therefore appear independently. After two visible avatars, the
+group collapses to `+N`; its tooltip lists all viewers and their focused field,
+and fields focused in another tab are highlighted in the form. Presence is
+ephemeral and does not affect the saved working document. With SSE it follows
+the authenticated stream lifecycle and server heartbeat, without a periodic
+collaboration sync request. The polling fallback refreshes it during polling.
+
 The manager persists each user's collaborative rooms in IndexedDB. Previously
 opened content and Template fields load from the local Yjs cache first, remain
 editable during a temporary connection loss, and synchronize when the server

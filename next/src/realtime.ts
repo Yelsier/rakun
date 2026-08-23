@@ -8,6 +8,7 @@ import {
   recordApiError,
   type RakunRequestContext,
   type RealtimeProvider,
+  type RealtimeSubscriptionLifecycle,
 } from '@rakun-kit/core'
 
 import type { RakunNextIntegration } from './shared'
@@ -29,7 +30,14 @@ const createRealtimeRequestContext = async (request: Request): Promise<RakunRequ
 
 export const authorizeRakunRealtimeRequest = async (
   request: Request
-): Promise<{ ctx: RakunRequestContext; topics: string[] } | Response> => {
+): Promise<
+  | {
+      ctx: RakunRequestContext
+      topics: string[]
+      lifecycle?: RealtimeSubscriptionLifecycle
+    }
+  | Response
+> => {
   const ctx = await createRealtimeRequestContext(request)
   const authorization = await authorizeRealtimeSubscription({
     ctx,
@@ -37,7 +45,7 @@ export const authorizeRakunRealtimeRequest = async (
   })
 
   return authorization.ok
-    ? { ctx, topics: authorization.topics }
+    ? { ctx, topics: authorization.topics, lifecycle: authorization.lifecycle }
     : Response.json({ message: authorization.message }, { status: authorization.status })
 }
 
@@ -45,17 +53,20 @@ export const createRakunSseStream = ({
   heartbeatMs,
   realtime,
   signal,
+  lifecycle,
   topic,
   topics,
 }: {
   heartbeatMs?: number
   realtime: RealtimeProvider
   signal?: AbortSignal
+  lifecycle?: Parameters<typeof createRealtimeSseStream>[0]['lifecycle']
   topic?: string
   topics?: readonly string[]
 }): ReadableStream<Uint8Array> => {
   return createRealtimeSseStream({
     heartbeatMs,
+    lifecycle,
     realtime,
     signal,
     topics: topics ?? (topic ? [topic] : []),
@@ -73,6 +84,7 @@ export const createRakunSseResponse = async (
   return new Response(
     createRakunSseStream({
       heartbeatMs: options.heartbeatMs,
+      lifecycle: authorization.lifecycle,
       realtime: getPlatform().realtime,
       signal: request.signal,
       topics: authorization.topics,

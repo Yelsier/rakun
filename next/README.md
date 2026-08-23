@@ -87,6 +87,9 @@ serverless deployments. The manager reads this configuration from core and
 uses events instead of periodic collaboration and locale refresh requests.
 One stream may repeat the `topic` query parameter to multiplex multiple
 subscriptions over a single HTTP connection.
+Authenticated collaboration presence bindings share that stream: heartbeats
+renew them and closing the last stream for a browser tab removes them, without
+periodic presence-only sync calls.
 
 ## tRPC
 

@@ -86,6 +86,7 @@ export type { FileOptimizeOptions } from "./lib/fields/File";
 export { loginInput, type LoginInput } from "./schemas/manager/auth/login";
 export type { LoginAdapterMetadata } from "./schemas/manager/auth/externalLogin";
 export type { ManagerUiLocalesOutput } from './schemas/manager/uiLocales'
+export type { CollaborationPresenceOutput } from './schemas/manager/collaborationPresence'
 export type { RealtimeMetadata } from './platform/types'
 export { DEFAULT_SSE_ENDPOINT } from './platform/realtime'
 export {

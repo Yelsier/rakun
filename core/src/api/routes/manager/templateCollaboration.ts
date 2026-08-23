@@ -1,4 +1,7 @@
-import { getCollaborationService } from '../../../collaboration'
+import {
+  getCollaborationService,
+  getTemplateCollaborationRoomId,
+} from '../../../collaboration'
 import { throwAppError } from '../../../lib/errors'
 import { TEMPLATE_FIELD_NAME } from '../../../lib/systemFields'
 import { getMongoService } from '../../../orm'
@@ -18,8 +21,7 @@ import { requireContentType } from '../../utils/requireContentType'
 import { decodeBinary, encodeBinary } from './collaborationBinary'
 import { requireTemplateUpdate, templateUpdateHandler } from './template'
 
-export const getTemplateCollaborationRoomId = (contentType: string) =>
-  `template:${encodeURIComponent(contentType)}`
+export { getTemplateCollaborationRoomId }
 
 const getAuthorizedTemplate = async ({
   input,
@@ -52,15 +54,32 @@ export const syncTemplateCollaborationHandler = async ({
   ctx: RakunRequestContext
 }): Promise<SyncTemplateCollaborationOutput> => {
   const { initialSnapshot } = await getAuthorizedTemplate({ input, ctx })
+  const user = ctx.getUser()
   const update = decodeBinary(input.update)
   const result = await getCollaborationService().sync({
     roomId: getTemplateCollaborationRoomId(input.contentType),
     initialSnapshot,
     stateVector: decodeBinary(input.stateVector),
     update,
+    presence: input.presence
+      ? {
+          ...input.presence,
+          userId: user._id,
+          user: user.user,
+          name: user.name,
+          avatar:
+            user.avatarUrl || user.avatarPreviewUrl
+              ? {
+                  url: user.avatarUrl,
+                  previewUrl: user.avatarPreviewUrl,
+                }
+              : null,
+          fieldId: input.presence.fieldId ?? undefined,
+        }
+      : undefined,
   })
 
-  if (update?.length) {
+  if (update?.length || result.presenceChanged) {
     getPlatform().realtime.publish(
       collaborationRealtimeTopic('template', input.contentType),
     )
@@ -69,6 +88,7 @@ export const syncTemplateCollaborationHandler = async ({
   return {
     update: encodeBinary(result.update),
     savedStateVector: encodeBinary(result.savedStateVector),
+    presence: result.presence,
   }
 }
 

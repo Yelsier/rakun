@@ -3,7 +3,18 @@ import type { RealtimeProvider } from './types'
 const DEFAULT_HEARTBEAT_MS = 15_000
 const MAX_TOPIC_LENGTH = 2_048
 const MAX_TOPICS = 64
+const MAX_PRESENCE_CLIENT_ID_LENGTH = 128
 const REQUEST_URL_BASE = 'http://rakun.local'
+
+export type RealtimePresenceBinding = {
+  topic: string
+  clientId: string
+}
+
+export type RealtimeSubscriptionLifecycle = {
+  heartbeat?: () => void
+  close?: () => void
+}
 
 const parseRequestUrl = (value: string | URL): URL =>
   value instanceof URL ? value : new URL(value, REQUEST_URL_BASE)
@@ -23,6 +34,37 @@ export const parseRealtimeTopics = (requestUrl: string | URL): string[] | null =
   }
 
   return topics
+}
+
+export const parseRealtimePresenceBindings = (
+  requestUrl: string | URL,
+  topics: readonly string[],
+): RealtimePresenceBinding[] | null => {
+  const values = parseRequestUrl(requestUrl).searchParams.getAll('presence')
+  const bindings: RealtimePresenceBinding[] = []
+
+  for (const value of values) {
+    try {
+      const binding: unknown = JSON.parse(value)
+      if (
+        !Array.isArray(binding) ||
+        binding.length !== 2 ||
+        typeof binding[0] !== 'string' ||
+        !topics.includes(binding[0]) ||
+        typeof binding[1] !== 'string' ||
+        !binding[1] ||
+        binding[1].length > MAX_PRESENCE_CLIENT_ID_LENGTH
+      ) {
+        return null
+      }
+      if (bindings.some((current) => current.topic === binding[0])) return null
+      bindings.push({ topic: binding[0], clientId: binding[1] })
+    } catch {
+      return null
+    }
+  }
+
+  return bindings
 }
 
 const normalizePath = (value: string): string => {
@@ -69,11 +111,13 @@ export const createRealtimeSseStream = ({
   heartbeatMs = DEFAULT_HEARTBEAT_MS,
   realtime,
   signal,
+  lifecycle,
   topics,
 }: {
   heartbeatMs?: number
   realtime: RealtimeProvider
   signal?: AbortSignal
+  lifecycle?: RealtimeSubscriptionLifecycle
   topics: readonly string[]
 }): ReadableStream<Uint8Array> => {
   const encoder = new TextEncoder()
@@ -96,7 +140,10 @@ export const createRealtimeSseStream = ({
       }
       const unsubscribers = topics.map((topic) => realtime.subscribe(topic, () => send(topic)))
       const heartbeat = setInterval(() => {
-        if (active) controller.enqueue(encoder.encode(': heartbeat\n\n'))
+        if (active) {
+          lifecycle?.heartbeat?.()
+          controller.enqueue(encoder.encode(': heartbeat\n\n'))
+        }
       }, normalizedHeartbeatMs)
       let abort: () => void
       const close = () => {
@@ -105,6 +152,7 @@ export const createRealtimeSseStream = ({
         active = false
         clearInterval(heartbeat)
         for (const unsubscribe of unsubscribers) unsubscribe()
+        lifecycle?.close?.()
         signal?.removeEventListener('abort', abort)
       }
       abort = () => {

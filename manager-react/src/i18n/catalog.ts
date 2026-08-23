@@ -5,7 +5,7 @@ export type ManagerMessageDefinition = {
   params?: Record<string, ManagerMessageParamSpec>
 }
 
-export const MANAGER_CATALOG_VERSION = 2
+export const MANAGER_CATALOG_VERSION = 3
 
 export const managerMessages = {
   'brand.name': { defaultMessage: 'Rakun' },
@@ -790,6 +790,20 @@ export const managerMessages = {
     defaultMessage: 'Offline · changes stored locally',
   },
   'contentEdit.collaboration.error': { defaultMessage: 'Sync interrupted' },
+  'contentEdit.presence.viewers': {
+    defaultMessage: '{count, plural, one {# person viewing} other {# people viewing}}',
+    params: { count: 'number' },
+  },
+  'contentEdit.presence.thisTab': { defaultMessage: '(this tab)' },
+  'contentEdit.presence.more': {
+    defaultMessage: '+{count}',
+    params: { count: 'number' },
+  },
+  'contentEdit.presence.viewing': { defaultMessage: 'Viewing this document' },
+  'contentEdit.presence.editingField': {
+    defaultMessage: 'Editing {field}',
+    params: { field: 'string' },
+  },
   'contentEdit.collaborationUnavailable': {
     defaultMessage: 'The collaborative document could not be loaded.',
   },

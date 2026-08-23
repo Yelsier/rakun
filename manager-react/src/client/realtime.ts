@@ -17,7 +17,11 @@ const RELATIVE_URL_BASE = 'http://rakun.local'
 
 export interface RealtimeProvider {
   readonly metadata: RealtimeMetadata
-  subscribe(topic: string, onChange: () => void, options?: { intervalMs?: number }): () => void
+  subscribe(
+    topic: string,
+    onChange: () => void,
+    options?: { intervalMs?: number; presenceClientId?: string },
+  ): () => void
 }
 
 const normalizeInterval = (value: number | undefined): number =>
@@ -40,30 +44,63 @@ export const pollingRealtime = (options: { intervalMs?: number } = {}): Realtime
 
 export const sseRealtime = (options: { endpoint?: string } = {}): RealtimeProvider => {
   const endpoint = options.endpoint ?? DEFAULT_SSE_ENDPOINT
-  const listeners = new Map<string, Set<() => void>>()
+  type Listener = {
+    onChange: () => void
+    presenceClientId?: string
+  }
+  const listeners = new Map<string, Set<Listener>>()
   let source: EventSource | undefined
+  const sources = new Set<EventSource>()
   let connectionScheduled = false
 
   const notifyAll = () => {
     for (const topicListeners of listeners.values()) {
-      for (const listener of topicListeners) listener()
+      for (const listener of topicListeners) listener.onChange()
     }
   }
 
   const connect = () => {
-    source?.close()
-    source = undefined
-    if (listeners.size === 0) return
+    if (listeners.size === 0) {
+      for (const currentSource of sources) currentSource.close()
+      sources.clear()
+      source = undefined
+      return
+    }
 
     const separator = endpoint.includes('?') ? '&' : '?'
-    const query = [...listeners.keys()]
+    const topicQuery = [...listeners.keys()]
       .map((topic) => `topic=${encodeURIComponent(topic)}`)
       .join('&')
+    const presenceQuery = [...listeners.entries()]
+      .map(([topic, topicListeners]) => {
+        const listener = [...topicListeners].find(
+          (current): current is Listener & { presenceClientId: string } =>
+            Boolean(current.presenceClientId),
+        )
+        return listener ? JSON.stringify([topic, listener.presenceClientId]) : null
+      })
+      .filter((binding): binding is string => binding !== null)
+      .map((binding) => `presence=${encodeURIComponent(binding)}`)
+      .join('&')
+    const query = presenceQuery ? `${topicQuery}&${presenceQuery}` : topicQuery
     const nextSource = new EventSource(`${endpoint}${separator}${query}`, {
       withCredentials: true,
     })
     source = nextSource
-    nextSource.addEventListener('open', notifyAll)
+    sources.add(nextSource)
+    nextSource.addEventListener('open', () => {
+      if (source !== nextSource) {
+        nextSource.close()
+        sources.delete(nextSource)
+        return
+      }
+      for (const currentSource of sources) {
+        if (currentSource === nextSource) continue
+        currentSource.close()
+        sources.delete(currentSource)
+      }
+      notifyAll()
+    })
     nextSource.addEventListener('message', (event) => {
       if (typeof event.data !== 'string') {
         notifyAll()
@@ -78,11 +115,15 @@ export const sseRealtime = (options: { endpoint?: string } = {}): RealtimeProvid
           'topic' in parsed &&
           typeof parsed.topic === 'string'
         ) {
-          for (const listener of listeners.get(parsed.topic) ?? []) listener()
+          for (const listener of listeners.get(parsed.topic) ?? []) {
+            listener.onChange()
+          }
           return
         }
       } catch {
-        for (const listener of listeners.get(event.data) ?? []) listener()
+        for (const listener of listeners.get(event.data) ?? []) {
+          listener.onChange()
+        }
         return
       }
 
@@ -102,18 +143,19 @@ export const sseRealtime = (options: { endpoint?: string } = {}): RealtimeProvid
 
   return {
     metadata: { transport: 'sse', endpoint },
-    subscribe(topic, onChange) {
-      const topicListeners = listeners.get(topic) ?? new Set<() => void>()
-      const isNewTopic = topicListeners.size === 0
-      topicListeners.add(onChange)
+    subscribe(topic, onChange, subscriptionOptions) {
+      const listener: Listener = {
+        onChange,
+        presenceClientId: subscriptionOptions?.presenceClientId,
+      }
+      const topicListeners = listeners.get(topic) ?? new Set<Listener>()
+      topicListeners.add(listener)
       listeners.set(topic, topicListeners)
-      if (isNewTopic) scheduleConnection()
+      scheduleConnection()
 
       return () => {
-        topicListeners.delete(onChange)
-        if (topicListeners.size > 0) return
-
-        listeners.delete(topic)
+        topicListeners.delete(listener)
+        if (topicListeners.size === 0) listeners.delete(topic)
         scheduleConnection()
       }
     },
@@ -166,6 +208,7 @@ export type UseRealtimeSyncArgs<
   topic?: string
   syncEnabled?: boolean
   syncIntervalMs?: number
+  presenceClientId?: string
   realtime: RealtimeProvider
 }
 
@@ -179,6 +222,7 @@ export const useRealtimeSync = <
   topic,
   syncEnabled,
   syncIntervalMs,
+  presenceClientId,
   realtime,
   ...options
 }: UseRealtimeSyncArgs<TData, TError, TQueryKey>): UseQueryResult<TData, TError> => {
@@ -204,9 +248,9 @@ export const useRealtimeSync = <
           exact: true,
         })
       },
-      { intervalMs: syncIntervalMs }
+      { intervalMs: syncIntervalMs, presenceClientId }
     )
-  }, [queryClient, realtime, subscriptionEnabled, syncIntervalMs, topicKey])
+  }, [presenceClientId, queryClient, realtime, subscriptionEnabled, syncIntervalMs, topicKey])
 
   return query
 }

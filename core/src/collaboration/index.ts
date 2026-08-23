@@ -23,8 +23,16 @@ export const getCollaborationService = () => {
 
 export { createMemoryCollaborationAdapter, createCollaborationServiceFromAdapter }
 export { getContentSnapshot, initializeContentDocument, setContentField } from './document'
+export {
+  getCollaborationRoomReferenceFromTopic,
+  getContentCollaborationRoomId,
+  getTemplateCollaborationRoomId,
+  type CollaborationRoomReference,
+} from './rooms'
 export type {
   CollaborationAdapter,
+  CollaborationPresence,
+  CollaborationPresenceState,
   CollaborationRoomState,
   CollaborationServiceConfig,
 } from './types'

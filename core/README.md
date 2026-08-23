@@ -135,6 +135,8 @@ rakunBootstrap({
     adapter: {
       load: async (roomId) => loadRoom(roomId),
       save: async (roomId, state) => saveRoom(roomId, state),
+      loadPresence: async (roomId) => loadRoomPresence(roomId),
+      savePresence: async (roomId, presence) => saveRoomPresence(roomId, presence),
       delete: async (roomId) => deleteRoom(roomId),
     },
   },
@@ -148,6 +150,16 @@ Templates use their own `template:<contentType>` room rather than an individual
 document room. Settings, route-layout overrides, and other administrative forms
 remain local. Translation changes join the working document and are persisted
 only by Save.
+
+The sync response also includes ephemeral viewers keyed by browser-tab client
+id, including the focused field. Presence expires automatically and is not
+part of `state.update`, `state.savedStateVector`, or the persistent event log.
+With SSE, the authenticated subscription owns the tab presence: server
+heartbeats renew it and closing the last stream for that tab removes it, so the
+manager does not send a periodic collaboration sync request just to stay
+visible. Polling refreshes presence through its normal sync cycle.
+`loadPresence` and `savePresence` are optional; implement both in replicated
+deployments that need presence shared across processes.
 
 `@rakun-kit/manager-react` additionally stores these Yjs rooms per user in
 IndexedDB, allowing cached content and Template fields to remain editable during

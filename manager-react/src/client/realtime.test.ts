@@ -84,9 +84,13 @@ describe('realtimeFromMetadata', () => {
       let contentRefreshes = 0
       let localeRefreshes = 0
       const realtime = sseRealtime({ endpoint: '/api/realtime' })
-      const unsubscribeContent = realtime.subscribe('content:1', () => {
-        contentRefreshes += 1
-      })
+      const unsubscribeContent = realtime.subscribe(
+        'content:1',
+        () => {
+          contentRefreshes += 1
+        },
+        { presenceClientId: 'tab-1' },
+      )
       const unsubscribeLocale = realtime.subscribe('locales:1', () => {
         localeRefreshes += 1
       })
@@ -97,6 +101,9 @@ describe('realtimeFromMetadata', () => {
       expect(sourceCount).toBe(1)
       expect(source?.url).toContain('topic=content%3A1')
       expect(source?.url).toContain('topic=locales%3A1')
+      expect(source?.url).toContain(
+        `presence=${encodeURIComponent(JSON.stringify(['content:1', 'tab-1']))}`,
+      )
       expect(contentRefreshes).toBe(1)
       expect(localeRefreshes).toBe(1)
 
@@ -106,7 +113,30 @@ describe('realtimeFromMetadata', () => {
       expect(contentRefreshes).toBe(2)
       expect(localeRefreshes).toBe(1)
 
+      const previousSource = source
+      const unsubscribeSecondTab = realtime.subscribe(
+        'content:1',
+        () => undefined,
+        { presenceClientId: 'tab-2' },
+      )
+      await Promise.resolve()
+      expect(sourceCount).toBe(2)
+      expect(previousSource?.closed).toBe(false)
+      source?.emit('open')
+      expect(previousSource?.closed).toBe(true)
+
       unsubscribeContent()
+      const sourceWithFirstTab = source
+      await Promise.resolve()
+      expect(sourceCount).toBe(3)
+      expect(sourceWithFirstTab?.closed).toBe(false)
+      expect(source?.url).toContain(
+        `presence=${encodeURIComponent(JSON.stringify(['content:1', 'tab-2']))}`,
+      )
+      source?.emit('open')
+      expect(sourceWithFirstTab?.closed).toBe(true)
+
+      unsubscribeSecondTab()
       unsubscribeLocale()
       await Promise.resolve()
       expect(source?.closed).toBe(true)

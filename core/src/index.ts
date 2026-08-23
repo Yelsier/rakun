@@ -331,6 +331,8 @@ export {
   createMemoryCollaborationAdapter,
   getCollaborationService,
   type CollaborationAdapter,
+  type CollaborationPresence,
+  type CollaborationPresenceState,
   type CollaborationRoomState,
   type CollaborationService,
   type CollaborationServiceConfig,

@@ -35,6 +35,7 @@ import {
 import { ManagerUsersScreen } from "../dashboard/users";
 import LanguageSelector from "../../components/LanguageSelector";
 import { VariantSelector } from "../../components/VariantSelector";
+import { CollaborationPresence } from '../../components/CollaborationPresence'
 
 import {
   defineManagerRoute,
@@ -339,6 +340,10 @@ export const managerRouteDefinitions = [
     }),
     headerEnd: (route, _props, contentType) => (
       <div className="flex items-center gap-2">
+        <CollaborationPresence
+          contentType={route.contentType}
+          documentId={route.id}
+        />
         <VariantSelector
           contentType={route.contentType}
           documentId={route.id}

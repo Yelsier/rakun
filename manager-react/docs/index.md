@@ -193,6 +193,15 @@ editor on the same published document or draft sees that shared working state;
 an editor on a different draft uses a different room. Leaving and reopening the
 screen reloads the working state from the collaboration backend.
 
+The edit header shows one presence avatar per open browser tab, including
+multiple tabs owned by the same user. It keeps two avatars visible and collapses
+additional viewers into a `+N` badge; hovering or focusing the group lists every
+viewer and their focused field. Fields focused by another tab receive a visible
+highlight. Presence is ephemeral and disappears after a tab leaves or its
+connection expires. With SSE, the authenticated stream and its server heartbeat
+maintain that presence without periodic client-side collaboration sync calls;
+the polling provider refreshes it as part of its normal poll.
+
 Each collaborative room is also persisted locally with IndexedDB, isolated by
 manager user and room id. A previously opened document or shared Template loads
 its local Yjs state first and then exchanges updates with core. Edits made while

@@ -99,4 +99,147 @@ describe('content collaboration service', () => {
     expect(persisted?.title).toBe('after')
     expect(await service.hasUnsavedChanges({ roomId, initialSnapshot })).toBe(false)
   })
+
+  test('tracks presence by browser tab even when tabs belong to the same user', async () => {
+    const service = createCollaborationServiceFromAdapter({
+      adapter: createMemoryCollaborationAdapter(),
+    })
+    const roomId = 'content:Article:article-presence'
+    const initialSnapshot = { title: 'hello' }
+    const participant = {
+      active: true,
+      userId: 'user-1',
+      user: 'editor@example.com',
+      name: 'Editor',
+    }
+
+    await service.sync({
+      roomId,
+      initialSnapshot,
+      presence: { ...participant, clientId: 'tab-1', fieldId: 'Article.title' },
+    })
+    const joined = await service.sync({
+      roomId,
+      initialSnapshot,
+      presence: { ...participant, clientId: 'tab-2' },
+    })
+
+    expect(joined.presence.map(({ clientId }) => clientId).sort()).toEqual([
+      'tab-1',
+      'tab-2',
+    ])
+    expect(joined.presence.find(({ clientId }) => clientId === 'tab-1')?.fieldId).toBe(
+      'Article.title',
+    )
+
+    const left = await service.sync({
+      roomId,
+      initialSnapshot,
+      presence: { ...participant, active: false, clientId: 'tab-1' },
+    })
+    expect(left.presence.map(({ clientId }) => clientId)).toEqual(['tab-2'])
+    expect(left.presenceChanged).toBe(true)
+  })
+
+  test('keeps presence alive through SSE connections and removes only the last one', async () => {
+    const service = createCollaborationServiceFromAdapter({
+      adapter: createMemoryCollaborationAdapter(),
+    })
+    const roomId = 'content:Article:article-sse-presence'
+    const initialSnapshot = { title: 'hello' }
+    const participant = {
+      clientId: 'tab-1',
+      userId: 'user-1',
+      user: 'editor@example.com',
+      name: 'Editor',
+    }
+
+    await service.sync({
+      roomId,
+      initialSnapshot,
+      presence: { ...participant, active: true, fieldId: 'Article.title' },
+    })
+    await service.setPresenceConnection({
+      roomId,
+      connectionId: 'sse-1',
+      participant,
+      active: true,
+    })
+    await service.setPresenceConnection({
+      roomId,
+      connectionId: 'sse-2',
+      participant,
+      active: true,
+    })
+
+    expect(
+      await service.setPresenceConnection({
+        roomId,
+        connectionId: 'sse-1',
+        participant,
+        active: false,
+      }),
+    ).toBe(false)
+    expect(
+      await service.setPresenceConnection({
+        roomId,
+        connectionId: 'sse-2',
+        participant,
+        active: false,
+      }),
+    ).toBe(true)
+  })
+
+  test('does not let another user take over an active client id', async () => {
+    const service = createCollaborationServiceFromAdapter({
+      adapter: createMemoryCollaborationAdapter(),
+    })
+    const roomId = 'content:Article:article-presence-owner'
+    const initialSnapshot = { title: 'hello' }
+
+    await service.sync({
+      roomId,
+      initialSnapshot,
+      presence: {
+        active: true,
+        clientId: 'shared-client-id',
+        userId: 'user-1',
+        user: 'first@example.com',
+      },
+    })
+    const attemptedTakeover = await service.sync({
+      roomId,
+      initialSnapshot,
+      presence: {
+        active: true,
+        clientId: 'shared-client-id',
+        userId: 'user-2',
+        user: 'second@example.com',
+      },
+    })
+
+    expect(attemptedTakeover.presence).toEqual([
+      expect.objectContaining({
+        clientId: 'shared-client-id',
+        userId: 'user-1',
+      }),
+    ])
+
+    const attemptedRemoval = await service.sync({
+      roomId,
+      initialSnapshot,
+      presence: {
+        active: false,
+        clientId: 'shared-client-id',
+        userId: 'user-2',
+        user: 'second@example.com',
+      },
+    })
+    expect(attemptedRemoval.presence).toEqual([
+      expect.objectContaining({
+        clientId: 'shared-client-id',
+        userId: 'user-1',
+      }),
+    ])
+  })
 })

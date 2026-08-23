@@ -91,6 +91,11 @@ rakunBootstrap({
 app.use('/api/rakun', rakunExpress())
 ```
 
+Collaboration presence bindings on that stream are authorized for their
+document or Template room. Heartbeats renew them and disconnecting the last
+stream for a browser tab removes them, avoiding periodic presence-only sync
+requests from the manager.
+
 Set `realtime: false` on `rakunExpress()` only when another host component
 owns the configured SSE endpoint.
 

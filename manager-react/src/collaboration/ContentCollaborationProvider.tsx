@@ -5,8 +5,14 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from 'react'
 import type { IndexeddbPersistence } from 'y-indexeddb'
 import * as Y from 'yjs'
+import type { CollaborationPresenceOutput } from '@rakun-kit/core/client'
 
 import { CONTENT_ROOT_NAME, getContentSnapshot, setContentField } from './yDocument'
+import {
+  clearCollaborationPresenceSnapshot,
+  getCollaborationPresenceRoomKey,
+  setCollaborationPresenceSnapshot,
+} from './presence-store'
 
 import { useManagerClient, useSync } from '@/client/react'
 import { createSyncTopic } from '@/client/realtime'
@@ -109,6 +115,8 @@ type ContentCollaborationContextValue = {
   documentId: string
   contentType: string
   status: ContentCollaborationStatus
+  clientId: string
+  presence: CollaborationPresenceOutput[]
   flush: () => Promise<void>
   setFieldState: (fieldId: string, value: unknown) => void
   setSavedStateVector: (value: string, sourceRevision?: string | number) => void
@@ -181,6 +189,11 @@ const CollaborationProvider = ({
   const client = useManagerClient()
   const { user } = useSession()
   const doc = useMemo(() => new Y.Doc(), [contentType, documentId, resource])
+  const [clientId] = useState(() => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`)
+  const presenceRoomKey = useMemo(
+    () => getCollaborationPresenceRoomKey(resource, contentType, documentId),
+    [contentType, documentId, resource],
+  )
   const localRoomName = useMemo(
     () => getLocalRoomName(resource, contentType, documentId, user?._id),
     [contentType, documentId, resource, user?._id],
@@ -212,6 +225,7 @@ const CollaborationProvider = ({
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [status, setStatus] = useState<ContentCollaborationStatus>('connecting')
+  const [presence, setPresence] = useState<CollaborationPresenceOutput[]>([])
   const [syncRoom, setSyncRoom] = useState<string | null>(null)
   const savedStateVectorRef = useRef(new Uint8Array())
   const pendingUpdatesRef = useRef<Uint8Array[]>([])
@@ -222,6 +236,8 @@ const CollaborationProvider = ({
   const localReadyRef = useRef(false)
   const networkConnectedRef = useRef(false)
   const sourceRevisionRef = useRef(sourceRevision)
+  const activeFieldRef = useRef<string | undefined>(undefined)
+  const presenceDirtyRef = useRef(true)
 
   useEffect(() => {
     sourceRevisionRef.current = sourceRevision
@@ -262,7 +278,8 @@ const CollaborationProvider = ({
       await syncPromiseRef.current
       if (
         pendingUpdatesRef.current.length === 0 &&
-        !initialLocalUpdateRef.current
+        !initialLocalUpdateRef.current &&
+        !presenceDirtyRef.current
       ) {
         return
       }
@@ -272,6 +289,7 @@ const CollaborationProvider = ({
     pendingUpdatesRef.current = []
     const initialLocalUpdate = initialLocalUpdateRef.current
     initialLocalUpdateRef.current = null
+    presenceDirtyRef.current = false
     const outgoingUpdates = [
       ...(initialLocalUpdate ? [initialLocalUpdate] : []),
       ...pending,
@@ -282,6 +300,11 @@ const CollaborationProvider = ({
       contentType,
       stateVector: encodeBinary(stateVector),
       ...(update ? { update: encodeBinary(update) } : {}),
+      presence: {
+        active: true,
+        clientId,
+        fieldId: activeFieldRef.current ?? null,
+      },
     }
     const request = (
       resource === 'template'
@@ -296,6 +319,11 @@ const CollaborationProvider = ({
         const remoteUpdate = decodeBinary(result.update)
         if (remoteUpdate.length) Y.applyUpdate(doc, remoteUpdate, REMOTE_ORIGIN)
         savedStateVectorRef.current = decodeBinary(result.savedStateVector)
+        setPresence(result.presence)
+        setCollaborationPresenceSnapshot(presenceRoomKey, {
+          clientId,
+          participants: result.presence,
+        })
         persistSavedStateVector(savedStateVectorRef.current)
         localReadyRef.current = true
         setReady(true)
@@ -318,13 +346,30 @@ const CollaborationProvider = ({
     await request
   }, [
     client,
+    clientId,
     contentType,
     doc,
     documentId,
     persistSavedStateVector,
+    presenceRoomKey,
     resource,
     updateStatus,
   ])
+
+  const sendPresenceLeave = useCallback(async () => {
+    await syncPromiseRef.current?.catch(() => undefined)
+    const input = {
+      contentType,
+      stateVector: encodeBinary(Y.encodeStateVector(doc)),
+      presence: { active: false, clientId },
+    }
+    await (resource === 'template'
+      ? client.request('manager.templateCollaboration.sync', input)
+      : client.request('manager.contentCollaboration.sync', {
+          ...input,
+          documentId: documentId ?? '',
+        }))
+  }, [client, clientId, contentType, doc, documentId, resource])
 
   const flush = useCallback(async () => {
     if (timerRef.current) {
@@ -348,6 +393,7 @@ const CollaborationProvider = ({
     retry: false,
     staleTime: Infinity,
     syncIntervalMs: POLL_INTERVAL_MS,
+    presenceClientId: clientId,
   })
 
   useEffect(() => {
@@ -435,12 +481,49 @@ const CollaborationProvider = ({
       doc.off('update', handleUpdate)
       if (timerRef.current) clearTimeout(timerRef.current)
       if (pendingUpdatesRef.current.length || initialLocalUpdateRef.current) {
-        void flush().catch(() => undefined)
+        void flush()
+          .catch(() => undefined)
+          .finally(() => sendPresenceLeave().catch(() => undefined))
+      } else {
+        void sendPresenceLeave().catch(() => undefined)
       }
+      clearCollaborationPresenceSnapshot(presenceRoomKey, clientId)
       if (persistenceRef.current === persistence) persistenceRef.current = null
       void persistence?.destroy().catch(() => undefined)
     }
-  }, [doc, exchange, flush, localRoomName, updateData, updateStatus])
+  }, [
+    clientId,
+    doc,
+    exchange,
+    flush,
+    localRoomName,
+    presenceRoomKey,
+    sendPresenceLeave,
+    updateData,
+    updateStatus,
+  ])
+
+  useEffect(() => {
+    const resolveActiveField = () => {
+      const activeElement = document.activeElement
+      const field = activeElement?.closest<HTMLElement>(
+        '[data-rakun-collaboration-field-id]',
+      )
+      const nextField = field?.dataset.rakunCollaborationFieldId
+      if (activeFieldRef.current === nextField) return
+      activeFieldRef.current = nextField
+      presenceDirtyRef.current = true
+      void exchange().catch(() => undefined)
+    }
+    const handleFocusOut = () => globalThis.setTimeout(resolveActiveField, 0)
+
+    document.addEventListener('focusin', resolveActiveField)
+    document.addEventListener('focusout', handleFocusOut)
+    return () => {
+      document.removeEventListener('focusin', resolveActiveField)
+      document.removeEventListener('focusout', handleFocusOut)
+    }
+  }, [exchange])
 
   const setFieldState = useCallback(
     (fieldId: string, value: unknown) => {
@@ -473,13 +556,15 @@ const CollaborationProvider = ({
   const context = useMemo<ContentCollaborationContextValue>(
     () => ({
       contentType: fieldRootId,
+      clientId,
       documentId: documentId ?? '',
       flush,
+      presence,
       setFieldState,
       setSavedStateVector,
       status,
     }),
-    [documentId, fieldRootId, flush, setFieldState, setSavedStateVector, status]
+    [clientId, documentId, fieldRootId, flush, presence, setFieldState, setSavedStateVector, status]
   )
 
   return (

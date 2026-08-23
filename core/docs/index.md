@@ -190,6 +190,17 @@ updates and saved state vectors; it must not write them into the public content
 document. `createMemoryCollaborationAdapter` is exported as the reference
 implementation.
 
+Collaboration sync also carries ephemeral presence for each open browser tab.
+Presence reports the authenticated manager user and the currently focused
+field, expires automatically, and is never included in the saved Yjs snapshot
+or persistent event log. Custom shared adapters may implement the optional
+`loadPresence` and `savePresence` methods to share this state across replicated
+API processes; adapters without them keep presence local to one process.
+On SSE deployments, core authorizes the collaboration room independently,
+binds the tab presence to that stream, renews it from server heartbeats, and
+removes it when the tab's last stream closes. This avoids client-side periodic
+sync calls whose only purpose is presence. Polling uses its existing sync cycle.
+
 This feature is scoped to saved content edit screens and their shared Template
 editor. Create-form content becomes collaborative after its first save; its
 shared Template is already collaborative because it exists independently of

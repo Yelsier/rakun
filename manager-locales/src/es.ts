@@ -520,6 +520,12 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'contentEdit.collaboration.offline':
     'Sin conexión · cambios guardados localmente',
   'contentEdit.collaboration.error': 'SincronizaciÃ³n interrumpida',
+  'contentEdit.presence.viewers':
+    '{count, plural, one {# persona viendo} other {# personas viendo}}',
+  'contentEdit.presence.thisTab': '(esta pestaña)',
+  'contentEdit.presence.more': '+{count}',
+  'contentEdit.presence.viewing': 'Viendo este documento',
+  'contentEdit.presence.editingField': 'Editando {field}',
   'contentEdit.collaborationUnavailable':
     'No se pudo cargar el documento colaborativo.',
   'contentEdit.requiredField': 'Campo obligatorio',

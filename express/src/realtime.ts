@@ -93,6 +93,7 @@ export const rakunExpressRealtime = (
         const stream = Readable.fromWeb(
           createRealtimeSseStream({
             heartbeatMs: options.heartbeatMs,
+            lifecycle: authorization.lifecycle,
             realtime: getPlatform().realtime,
             signal: abortController.signal,
             topics: authorization.topics,

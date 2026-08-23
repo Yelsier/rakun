@@ -3,12 +3,14 @@ import { describe, expect, test } from 'bun:test'
 import {
   createPlatform,
   createRealtimeSseStream,
+  collaborationRealtimeTopic,
   bunImage,
   detectRuntime,
   hasBunImage,
   pollingRealtime,
   isRealtimeEndpointRequest,
   parseRealtimeTopics,
+  parseRealtimePresenceBindings,
   resolveRealtimeEndpointPath,
   sseRealtime,
 } from './index'
@@ -116,6 +118,33 @@ describe('realtime adapters', () => {
     expect(parseRealtimeTopics(`http://localhost/realtime?topic=${'x'.repeat(2_049)}`)).toBeNull()
   })
 
+  test('parses presence bindings only for topics in the same subscription', () => {
+    const topic = collaborationRealtimeTopic('content', 'Page', 'page-1')
+    const binding = encodeURIComponent(JSON.stringify([topic, 'tab-1']))
+    expect(
+      parseRealtimePresenceBindings(
+        `/realtime?topic=${encodeURIComponent(topic)}&presence=${binding}`,
+        [topic],
+      ),
+    ).toEqual([{ topic, clientId: 'tab-1' }])
+    expect(
+      parseRealtimePresenceBindings(
+        `http://example.test/realtime?topic=${encodeURIComponent(topic)}` +
+          `&presence=${encodeURIComponent(JSON.stringify([topic, 'tab-1']))}` +
+          `&presence=${encodeURIComponent(JSON.stringify([topic, 'tab-2']))}`,
+        [topic],
+      ),
+    ).toBeNull()
+    expect(
+      parseRealtimePresenceBindings(
+        `/realtime?topic=${encodeURIComponent(topic)}&presence=${encodeURIComponent(
+          JSON.stringify(['another-topic', 'tab-1']),
+        )}`,
+        [topic],
+      ),
+    ).toBeNull()
+  })
+
   test('matches configured endpoints independently of the host framework', () => {
     expect(resolveRealtimeEndpointPath('/realtime', '/api/rakun')).toBe('/api/rakun/realtime')
     expect(resolveRealtimeEndpointPath('/api/rakun/events', '/api/rakun')).toBe('/api/rakun/events')
@@ -178,8 +207,10 @@ describe('realtime adapters', () => {
 
   test('streams SSE events through the shared server primitive', async () => {
     const realtime = sseRealtime({ endpoint: '/api/realtime' })
+    let closed = 0
     const reader = createRealtimeSseStream({
       heartbeatMs: 60_000,
+      lifecycle: { close: () => closed += 1 },
       realtime,
       topics: ['content:1', 'locales'],
     }).getReader()
@@ -190,5 +221,6 @@ describe('realtime adapters', () => {
     expect(decoder.decode((await reader.read()).value)).toBe('id: 1\ndata: {"topic":"locales"}\n\n')
 
     await reader.cancel()
+    expect(closed).toBe(1)
   })
 })

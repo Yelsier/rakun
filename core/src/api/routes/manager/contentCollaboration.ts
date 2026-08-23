@@ -1,4 +1,7 @@
-import { getCollaborationService } from '../../../collaboration'
+import {
+  getCollaborationService,
+  getContentCollaborationRoomId,
+} from '../../../collaboration'
 import type ContentType from '../../../lib/ContentType'
 import { getMongoService } from '../../../orm'
 import { collaborationRealtimeTopic, getPlatform } from '../../../platform'
@@ -16,10 +19,7 @@ import { updateHandler } from './update'
 
 const editableMetadataFields = ['_bindings', '_type', '_visibility'] as const
 
-export const getContentCollaborationRoomId = (
-  contentType: string,
-  documentId: string,
-) => `content:${encodeURIComponent(contentType)}:${encodeURIComponent(documentId)}`
+export { getContentCollaborationRoomId }
 
 export const toEditableContentSnapshot = (
   contentType: ContentType,
@@ -68,15 +68,32 @@ export const syncContentCollaborationHandler = async ({
   ctx: RakunRequestContext
 }): Promise<SyncContentCollaborationOutput> => {
   const { contentType, document } = await getAuthorizedDocument({ input, ctx })
+  const user = ctx.getUser()
   const update = decodeBinary(input.update)
   const result = await getCollaborationService().sync({
     roomId: getContentCollaborationRoomId(input.contentType, input.documentId),
     initialSnapshot: toEditableContentSnapshot(contentType, document),
     stateVector: decodeBinary(input.stateVector),
     update,
+    presence: input.presence
+      ? {
+          ...input.presence,
+          userId: user._id,
+          user: user.user,
+          name: user.name,
+          avatar:
+            user.avatarUrl || user.avatarPreviewUrl
+              ? {
+                  url: user.avatarUrl,
+                  previewUrl: user.avatarPreviewUrl,
+                }
+              : null,
+          fieldId: input.presence.fieldId ?? undefined,
+        }
+      : undefined,
   })
 
-  if (update?.length) {
+  if (update?.length || result.presenceChanged) {
     getPlatform().realtime.publish(
       collaborationRealtimeTopic('content', input.contentType, input.documentId),
     )
@@ -85,6 +102,7 @@ export const syncContentCollaborationHandler = async ({
   return {
     update: encodeBinary(result.update),
     savedStateVector: encodeBinary(result.savedStateVector),
+    presence: result.presence,
   }
 }
 

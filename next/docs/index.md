@@ -83,6 +83,9 @@ deployments. The manager consumes this metadata automatically, so event
 transports replace its periodic collaboration and locale refresh requests.
 The endpoint accepts repeated `topic` query parameters, allowing the manager to
 multiplex all active subscriptions over one SSE connection.
+Authenticated collaboration presence bindings use the same lifecycle: server
+heartbeats renew them and closing the last stream for a browser tab removes
+them, without periodic presence-only sync calls.
 
 ## Manager route
 
