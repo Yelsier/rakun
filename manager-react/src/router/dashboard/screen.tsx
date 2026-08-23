@@ -1,6 +1,9 @@
 'use client'
 
-import type { MaybeTranslatableValue } from '@rakun-kit/core/client'
+import {
+  managerNotificationsRealtimeTopic,
+  type MaybeTranslatableValue,
+} from '@rakun-kit/core/client'
 import {
   Bell,
   BellRing,
@@ -21,6 +24,7 @@ import {
   createManagerQueryKey,
   useManagerMutation,
   useManagerQuery,
+  useManagerSyncQuery,
 } from '@/client/react'
 import { useTranslations } from '@/i18n'
 import { Badge } from '@/components/ui/badge'
@@ -290,12 +294,14 @@ const NotificationHistoryDrawer = ({
 }) => {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
-  const notificationsQuery = useManagerQuery({
+  const notificationsQuery = useManagerSyncQuery({
     name: 'manager.notifications.list',
     input: {
       limit: NOTIFICATION_HISTORY_LIMIT,
     },
     enabled: open,
+    syncIntervalMs: 15_000,
+    topic: managerNotificationsRealtimeTopic(),
   })
   const notifications = notificationsQuery.data?.notifications ?? []
 
@@ -348,13 +354,14 @@ export const ManagerDashboardHomeScreen = () => {
     name: 'manager.favorites.list',
     input: undefined,
   })
-  const notificationsQuery = useManagerQuery({
+  const notificationsQuery = useManagerSyncQuery({
     name: 'manager.notifications.list',
     input: {
       unreadOnly: true,
       limit: HOME_NOTIFICATION_LIMIT,
     },
-    refetchInterval: 15000,
+    syncIntervalMs: 15_000,
+    topic: managerNotificationsRealtimeTopic(),
   })
   const toggleFavoriteMutation = useManagerMutation('manager.favorites.toggle')
   const favorites = data?.favorites ?? []

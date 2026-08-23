@@ -19,6 +19,7 @@ import type {
   TemplateStateOutput,
 } from '@rakun-kit/core/client'
 import { TEMPLATE_FIELD_NAME } from '@rakun-kit/core/client'
+import { localeVariantsRealtimeTopic } from '@rakun-kit/core/client'
 import { toast } from 'sonner'
 
 import { useContentDocumentActions } from '../_hooks/useContentDocumentActions'
@@ -46,7 +47,11 @@ import { useEditErrorStore } from '@/hooks/app-store'
 import { useOptionalManagerNavigation } from '@/state/navigation'
 import { useLanguage } from '@/state/language'
 import { useSession } from '@/state/session'
-import { useManagerMutation, useManagerQuery } from '@/client/react'
+import {
+  useManagerMutation,
+  useManagerQuery,
+  useManagerSyncQuery,
+} from '@/client/react'
 import { confirm } from '@/components/confirm'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { useTranslations } from '@/i18n'
@@ -466,7 +471,7 @@ export const EditPageProvider = ({
     contentTypeName: contentType.name,
     contentTypeId,
   })
-  const localeVariantsQuery = useManagerQuery({
+  const localeVariantsQuery = useManagerSyncQuery({
     name: 'manager.localeVariants.list',
     input:
       contentTypeId && localeVariantRoute
@@ -480,7 +485,8 @@ export const EditPageProvider = ({
             documentId: '',
           } as never),
     enabled: Boolean(contentTypeId && localeVariantRoute && !isTrashed),
-    refetchInterval: VARIANT_SYNC_INTERVAL_MS,
+    topic: localeVariantsRealtimeTopic(contentType.name),
+    syncIntervalMs: VARIANT_SYNC_INTERVAL_MS,
   })
   const translation = useTranslationDialogState({
     currentLanguageCode: language.code,
