@@ -86,6 +86,7 @@ export function RakunManagerClientPage({
   return (
     <ManagerBrowserApp
       client={client}
+      realtimeBaseUrl={apiBaseUrl}
       pathname={pathname}
       searchParams={searchParams}
       basePath={basePath}
