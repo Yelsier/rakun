@@ -2,6 +2,7 @@ import {
   createGitHubLoginAdapter,
   createLocalMediaServiceConfig,
   createNextPlatform,
+  sseRealtime,
   type RakunBootstrapOptions,
 } from '@rakun-kit/next'
 import {
@@ -52,6 +53,11 @@ export const createPreviewBootstrap = () =>
     contentTypes: previewContentTypes,
     platform: createNextPlatform({
       deployment: 'persistent',
+      realtime: sseRealtime(
+        process.env.RAKUN_REALTIME_ENDPOINT
+          ? { endpoint: process.env.RAKUN_REALTIME_ENDPOINT }
+          : undefined
+      ),
     }),
     managerLanguages: previewManagerLanguages,
     internalContentTypes: {
