@@ -25,6 +25,7 @@ import {
   ConditionFieldStateProvider,
   mergeConditionFieldState,
 } from './_fields/shared/condition-state'
+import { resolveCollaborativeRootFieldState } from './_fields/shared/collaborative-field-state'
 import { errorStyle } from './edit.styles'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -300,27 +301,35 @@ const ContentTypeEdit = forwardRef<
     () => new Set(visibleItems.map(([fieldName]) => fieldName)),
     [visibleItems]
   )
+  const fieldIndexByName = useMemo(
+    () => new Map(allItems.map(([fieldName], index) => [fieldName, index] as const)),
+    [allItems]
+  )
   const handleFieldStateChange = useCallback(
     (fieldId: string, state: unknown) => {
-      const prefix = `${id}.`
-      const fieldName = fieldId.startsWith(prefix) ? fieldId.slice(prefix.length) : fieldId
-
-      if (fieldName.includes('.')) {
-        return
-      }
+      const resolved = resolveCollaborativeRootFieldState({
+        fieldId,
+        readRootFieldState: (fieldName) => {
+          const index = fieldIndexByName.get(fieldName)
+          return index === undefined ? undefined : refs.current[index]?.getState()
+        },
+        rootId: id,
+        state,
+      })
+      if (!resolved) return
 
       setFormState((previous) => {
-        if (deepEqual(previous[fieldName], state)) {
+        if (deepEqual(previous[resolved.fieldName], resolved.state)) {
           return previous
         }
 
         return {
           ...previous,
-          [fieldName]: state,
+          [resolved.fieldName]: resolved.state,
         }
       })
     },
-    [id]
+    [fieldIndexByName, id, refs]
   )
 
   useImperativeHandle(

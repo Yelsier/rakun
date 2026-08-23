@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { mergeConditionFieldState } from './condition-state'
+import { dispatchConditionFieldStateChange, mergeConditionFieldState } from './condition-state'
 
 describe('condition field state', () => {
   test('keeps document fields that are outside the current form section', () => {
@@ -34,5 +34,21 @@ describe('condition field state', () => {
     ).toEqual({
       title: 'Current title',
     })
+  })
+
+  test('bubbles nested field changes to the parent form', () => {
+    const calls: string[] = []
+
+    dispatchConditionFieldStateChange({
+      fieldId: 'Page._template.module-1.hero.title',
+      onFieldStateChange: (fieldId) => calls.push(`nested:${fieldId}`),
+      parentOnFieldStateChange: (fieldId) => calls.push(`parent:${fieldId}`),
+      state: 'Hello',
+    })
+
+    expect(calls).toEqual([
+      'nested:Page._template.module-1.hero.title',
+      'parent:Page._template.module-1.hero.title',
+    ])
   })
 })
