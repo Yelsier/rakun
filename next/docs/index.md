@@ -56,6 +56,34 @@ const bootstrap = {
 }
 ```
 
+For a persistent deployment, enable SSE on the same catch-all API route.
+`sseRealtime()` defaults to its API-relative `/realtime` endpoint:
+
+```ts
+import { createNextPlatform, sseRealtime } from '@rakun-kit/next'
+
+const bootstrap = {
+  literals,
+  contentTypes,
+  mongo,
+  platform: createNextPlatform({
+    deployment: 'persistent',
+    realtime: sseRealtime(),
+  }),
+}
+```
+
+`rakunNext()` automatically serves the authenticated
+`GET /api/rakun/realtime?topic=<topic>` stream. It derives the route from the
+configured endpoint, sends heartbeat comments, unsubscribes when the request
+closes, and emits a JSON `{ "topic": "<topic>" }` event when the server-side
+provider publishes that topic. An absolute endpoint is allowed and matched by
+pathname. No extra App Router file is required. Keep polling for serverless
+deployments. The manager consumes this metadata automatically, so event
+transports replace its periodic collaboration and locale refresh requests.
+The endpoint accepts repeated `topic` query parameters, allowing the manager to
+multiplex all active subscriptions over one SSE connection.
+
 ## Manager route
 
 ```tsx
@@ -243,7 +271,7 @@ outside public directories, and provide a strong `tokenSecret`.
 ## Public entrypoints and constraints
 
 - `@rakun-kit/next`: API route and integration utilities, including
-  `createNextPlatform`.
+  `createNextPlatform`, `rakunNextRealtime`, and `createRakunSseResponse`.
 - `/trpc`, `/media`, `/manager`, `/web`, `/web/client`, and `/revalidate` for
   the features above.
 - `/web` also exports `createRakunDatabaseWeb` for monolithic Next applications.

@@ -95,7 +95,25 @@ otherwise. Node.js image optimization therefore requires the optional `sharp`
 peer. Bun also falls back to it when an OS-dependent codec cannot handle the
 requested format. The platform resolves crypto, filesystem, compression,
 workers, and realtime capabilities. Polling is the safe realtime default when
-the host cannot keep persistent connections open.
+the host cannot keep persistent connections open. The Next and Express
+adapters automatically serve configured SSE streams.
+Calling `sseRealtime()` uses the API-relative `/realtime` endpoint; pass an
+explicit `endpoint` only when the public route differs.
+
+The manager bootstrap exposes only the safe transport metadata from this
+provider. Manager mutations publish invalidation topics for collaborative
+documents, locale variants, versions, comments, and notifications. Event
+transports therefore refresh matching queries on demand; polling keeps the
+same behavior through its configured interval.
+
+Server adapters share `parseRealtimeTopics`, `isRealtimeEndpointRequest`,
+`createRealtimeSseStream`, and `authorizeRealtimeSubscription` from core. A
+custom HTTP framework can use these primitives without importing either the
+Next or Express adapter.
+
+The built-in SSE provider uses an in-process topic broker. For multiple server
+processes or replicas, provide a `RealtimeProvider` backed by a shared broker
+while keeping the same transport metadata and subscription contract.
 
 ## Collaborative content documents
 

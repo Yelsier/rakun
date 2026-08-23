@@ -31,6 +31,39 @@ export function ManagerPage() {
 Import the stylesheet exactly once. `ManagerBrowserApp` owns browser-history
 navigation. Use `ManagerRuntimeApp` when the host supplies navigation.
 
+## Realtime synchronization
+
+The runtime loads `platform.realtime` from `manager.uiLocales` and selects
+polling or SSE without a separate client-side transport setting. Set
+`realtimeBaseUrl` to the manager API base URL so package-relative endpoints
+resolve correctly:
+
+```tsx
+<ManagerBrowserApp
+  client={client}
+  realtimeBaseUrl="/api/rakun"
+  pathname={window.location.pathname}
+/>
+```
+
+The default `sseRealtime()` metadata resolves to
+`<realtimeBaseUrl>/realtime`; core bootstrap configuration does not repeat the
+API base path.
+
+Core mutations publish stable topics for collaboration documents, locale
+variants, versions, comments, and notifications. `useManagerSyncQuery` and
+`useSync` invalidate their exact TanStack Query key after a matching event.
+The `syncIntervalMs` option is used only by the polling provider; SSE does not
+create periodic refresh timers. SSE multiplexes all active topics onto one
+`EventSource`, so opening multiple editors does not exhaust the browser's
+per-origin connection pool.
+
+Custom compositions may pass a `RealtimeMetadata` or `RealtimeProvider` to
+`ManagerProvider` / `ManagerAppProvider`. The root package exports
+`pollingRealtime`, `sseRealtime`, `realtimeFromMetadata`, `useSync`, and
+`useManagerSyncQuery`. Prefer the runtime bootstrap path so the core platform
+remains the source of truth.
+
 ## Clients and navigation
 
 - HTTP: `createHttpManagerClient` from `/client/http`.

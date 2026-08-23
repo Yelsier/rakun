@@ -50,8 +50,28 @@ rakunBootstrap({
 })
 ```
 
-Polling remains the safe realtime default. Configure SSE or WebSocket only
-with an endpoint actually mounted by the host.
+Polling remains the safe realtime default. When the platform configures
+`sseRealtime`, `rakunExpress()` automatically serves the authenticated endpoint
+and multiplexes all repeated `topic` query parameters over one stream. Its
+default endpoint is `/realtime` relative to the Express API mount:
+
+```ts
+import { sseRealtime } from '@rakun-kit/core'
+import { createExpressPlatform } from '@rakun-kit/express'
+
+rakunBootstrap({
+  literals,
+  contentTypes,
+  routes,
+  mongo,
+  platform: createExpressPlatform({
+    realtime: sseRealtime(),
+  }),
+})
+```
+
+Pass `realtime: false` to `rakunExpress()` only if the host serves that SSE
+endpoint itself.
 
 ```ts
 app.use(
@@ -103,7 +123,7 @@ const media = createLocalMediaServiceConfig({
 ## Public entrypoints and constraints
 
 - `@rakun-kit/express`: `rakunExpress`, `rakunExpressCrud`, integration and
-  shared local-service helpers, and `createExpressPlatform`.
+  realtime, shared local-service helpers, and `createExpressPlatform`.
 - `@rakun-kit/express/trpc`: optional tRPC integration.
 - `@rakun-kit/express/media`: local media adapter, config and HTTP handlers.
 
