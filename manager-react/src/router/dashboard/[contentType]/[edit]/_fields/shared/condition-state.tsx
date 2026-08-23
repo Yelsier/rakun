@@ -20,11 +20,24 @@ export const mergeConditionFieldState = (
   ...sectionState,
 })
 
-const ConditionFieldStateContext =
-  createContext<ConditionFieldStateContextValue | null>(null)
+export const dispatchConditionFieldStateChange = ({
+  fieldId,
+  onFieldStateChange,
+  parentOnFieldStateChange,
+  state,
+}: {
+  fieldId: string
+  onFieldStateChange: (id: string, state: unknown) => void
+  parentOnFieldStateChange?: (id: string, state: unknown) => void
+  state: unknown
+}) => {
+  onFieldStateChange(fieldId, state)
+  parentOnFieldStateChange?.(fieldId, state)
+}
 
-const ConditionFieldDispatchContext =
-  createContext<ConditionFieldDispatchContextValue | null>(null)
+const ConditionFieldStateContext = createContext<ConditionFieldStateContextValue | null>(null)
+
+const ConditionFieldDispatchContext = createContext<ConditionFieldDispatchContextValue | null>(null)
 
 export const ConditionFieldStateProvider = ({
   fieldState,
@@ -39,9 +52,18 @@ export const ConditionFieldStateProvider = ({
   collaborationRootId?: string
   children: ReactNode
 }) => {
+  const parentDispatch = useContext(ConditionFieldDispatchContext)
   const dispatchValue = useMemo(
-    () => ({ onFieldStateChange }),
-    [onFieldStateChange]
+    () => ({
+      onFieldStateChange: (fieldId: string, state: unknown) =>
+        dispatchConditionFieldStateChange({
+          fieldId,
+          onFieldStateChange,
+          parentOnFieldStateChange: parentDispatch?.onFieldStateChange,
+          state,
+        }),
+    }),
+    [onFieldStateChange, parentDispatch]
   )
   const stateValue = useMemo(() => ({ fieldState }), [fieldState])
 
@@ -58,5 +80,4 @@ export const ConditionFieldStateProvider = ({
 
 export const useConditionFieldState = () => useContext(ConditionFieldStateContext)
 
-export const useConditionFieldDispatch = () =>
-  useContext(ConditionFieldDispatchContext)
+export const useConditionFieldDispatch = () => useContext(ConditionFieldDispatchContext)

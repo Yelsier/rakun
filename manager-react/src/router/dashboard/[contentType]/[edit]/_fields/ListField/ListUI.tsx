@@ -38,10 +38,7 @@ import {
   IteratorModulePickerDialog,
 } from './IteratorModulePicker'
 import { IteratorVisibilityDialog } from './IteratorVisibilityDialog'
-import {
-  getModuleDistinguishingLabel,
-  resolveModuleItemTitle,
-} from './moduleItemLabel'
+import { getModuleDistinguishingLabel, resolveModuleItemTitle } from './moduleItemLabel'
 import {
   REORDER_MODULES_EVENT,
   type ReorderModulesDetail,
@@ -61,7 +58,7 @@ type ListFieldValues = (ListFieldValueItem<FieldValue> & { uid: string })[]
 
 const reconcileListValueRef = (
   current: ListFieldValues,
-  incoming: ListFieldValues,
+  incoming: ListFieldValues
 ): ListFieldValues => {
   if (
     current.length === incoming.length &&
@@ -354,9 +351,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
 
     // Prefer valueRef order so a deferred DOM reorder stays consistent if save
     // happens before React commits.
-    const ordered = valueRef.current.length
-      ? valueRef.current
-      : (values as ListFieldValues)
+    const ordered = valueRef.current.length ? valueRef.current : (values as ListFieldValues)
 
     return ordered
       .map((field) => {
@@ -718,10 +713,12 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                 const moduleDisplay = getIteratorModuleDisplay(fieldConfig)
                 const ModuleIcon = moduleDisplay.icon ?? Box
                 const typeTitle = t(moduleDisplay.title)
+                const liveValue =
+                  (refs.current[item.uid]?.getState() as FieldValue | undefined) ?? item.value
                 const distinguishingLabel = getModuleDistinguishingLabel(
                   fieldConfig.field,
-                  item.value,
-                  getTranslation,
+                  liveValue,
+                  getTranslation
                 )
                 const moduleTitle = resolveModuleItemTitle({
                   typeTitle,
@@ -733,27 +730,6 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                   conditionFieldState?.fieldState ?? {}
                 )
                 const showIteratorChrome = props.config.ui === 'Iterator'
-
-                const syncModuleTitleFromInput = (root: HTMLElement) => {
-                  const liveValue =
-                    (refs.current[item.uid]?.getState() as FieldValue | undefined) ?? item.value
-                  const nextLabel = getModuleDistinguishingLabel(
-                    fieldConfig.field,
-                    liveValue,
-                    getTranslation,
-                  )
-                  const nextTitle = resolveModuleItemTitle({
-                    typeTitle,
-                    distinguishingLabel: nextLabel,
-                  })
-                  root.dataset.rakunManagerModuleTitle = nextTitle
-                  const titleText = root.querySelector<HTMLElement>(
-                    '[data-rakun-manager-module-title-text]',
-                  )
-                  if (titleText && titleText.textContent !== nextTitle) {
-                    titleText.textContent = nextTitle
-                  }
-                }
 
                 return (
                   <SortableItem key={item.uid} value={item.uid} asChild>
@@ -768,7 +744,6 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                       data-rakun-manager-module-item=""
                       data-rakun-manager-module-navigation-id={`${id}.${item.uid}`}
                       data-rakun-manager-module-title={moduleTitle}
-                      onInput={(event) => syncModuleTitleFromInput(event.currentTarget)}
                     >
                       <Collapsible defaultOpen={!noModulesToRender} className="w-full">
                         <Card
@@ -865,9 +840,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                       </TooltipContent>
                                     </Tooltip>
                                   ) : null}
-                                  {showIteratorChrome &&
-                                  !isSavedModule &&
-                                  canSaveGlobal ? (
+                                  {showIteratorChrome && !isSavedModule && canSaveGlobal ? (
                                     <Button
                                       size="icon"
                                       variant="outline"
