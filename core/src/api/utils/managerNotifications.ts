@@ -3,6 +3,7 @@ import {
   ManagerUser,
 } from '../../internal-content-types'
 import { getMongoService } from '../../orm'
+import { getPlatform, managerNotificationsRealtimeTopic } from '../../platform'
 import { relation } from './reviews'
 
 export type ManagerNotificationKind =
@@ -35,7 +36,7 @@ export const createManagerNotification = async ({
   if (userId === authorId) return null
 
   const db = await getMongoService()
-  return await db.create(
+  const notification = await db.create(
     ManagerNotification,
     {
       _type: ManagerNotification.name,
@@ -53,4 +54,6 @@ export const createManagerNotification = async ({
     },
     { actorId: authorId },
   )
+  getPlatform().realtime.publish(managerNotificationsRealtimeTopic())
+  return notification
 }

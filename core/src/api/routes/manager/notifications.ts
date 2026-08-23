@@ -4,6 +4,10 @@ import {
 } from "../../../internal-content-types";
 import { getContentTypeByName } from "../../../lib/Registry";
 import { getMongoService } from "../../../orm";
+import {
+  getPlatform,
+  managerNotificationsRealtimeTopic,
+} from '../../../platform'
 import type {
   ListNotificationsInput,
   ListNotificationsOutput,
@@ -242,6 +246,7 @@ export const markNotificationsReadHandler = async ({
       ),
     ),
   );
+  getPlatform().realtime.publish(managerNotificationsRealtimeTopic())
 
   return {
     markedRead: notifications.length,

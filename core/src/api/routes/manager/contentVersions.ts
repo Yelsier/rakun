@@ -22,6 +22,7 @@ import { requireContentType } from '../../utils/requireContentType'
 import { updateSingleRouteMap } from '../../utils/routes/updateRoutesMap'
 import { createSlugChangeRedirects } from '../../utils/redirects/createSlugChangeRedirects'
 import { computeSlugPathChanges } from '../../utils/redirects/slugPathChanges'
+import { publishLocaleVariantChanges } from '../../utils/realtime'
 import {
   LOCALE_VARIANT_GROUP_FIELD,
   LOCALE_VARIANT_NAME_FIELD,
@@ -157,6 +158,7 @@ export const createContentVersionHandler = async ({
     ctx,
   })
   const documentId = String((document as { _id: string })._id)
+  publishLocaleVariantChanges(input.contentType)
 
   return {
     document: document as Record<string, unknown>,
@@ -312,6 +314,8 @@ export const promoteContentVersionHandler = async ({
 
     versions = await toContentVersions({ input })
   }
+
+  publishLocaleVariantChanges(input.contentType)
 
   return {
     document: updated as Record<string, unknown>,

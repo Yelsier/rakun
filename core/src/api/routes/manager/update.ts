@@ -23,6 +23,7 @@ import {
 } from "../../utils/reviews";
 import { createSlugChangeRedirects } from "../../utils/redirects/createSlugChangeRedirects";
 import { computeSlugPathChanges } from "../../utils/redirects/slugPathChanges";
+import { publishLocaleVariantChanges } from '../../utils/realtime'
 
 export const updateHandler = async ({
   input,
@@ -192,6 +193,10 @@ export const updateHandler = async ({
         sourceContentType: contentType.name,
         sourceDocumentId: updated._id,
       });
+    }
+
+    if (routeableContentType) {
+      publishLocaleVariantChanges(contentType.name)
     }
 
     return sanitizeManagerOutput(updated, contentType);
