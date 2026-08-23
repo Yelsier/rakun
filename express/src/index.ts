@@ -13,12 +13,17 @@ import {
   type LocalMediaServiceConfig,
 } from "./media";
 import { rakunExpressCrud } from "./crud";
+import {
+  rakunExpressRealtime,
+  type RakunExpressRealtimeOptions,
+} from "./realtime";
 
 export type RakunExpressIntegration = (router: Router) => void;
 
 export type RakunExpressOptions = {
   healthPath?: string | false;
   integrations?: RakunExpressIntegration[];
+  realtime?: false | RakunExpressRealtimeOptions;
   useJsonMiddleware?: boolean;
 };
 
@@ -55,6 +60,7 @@ export const rakunExpress = (
   const {
     healthPath = "/health",
     integrations = [rakunExpressCrud()],
+    realtime = {},
     useJsonMiddleware = true,
   } = options;
 
@@ -83,6 +89,10 @@ export const rakunExpress = (
     });
   }
 
+  if (realtime) {
+    rakunExpressRealtime(realtime)(router);
+  }
+
   if (useJsonMiddleware) {
     router.use(express.json());
   }
@@ -109,6 +119,10 @@ export const rakunExpress = (
 };
 
 export { rakunExpressCrud } from "./crud";
+export {
+  rakunExpressRealtime,
+  type RakunExpressRealtimeOptions,
+} from "./realtime";
 export {
   createRakunLlmsTxtHandler,
   type RakunExpressLlmsTxtOptions,

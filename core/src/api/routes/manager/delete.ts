@@ -15,6 +15,10 @@ import { checkOwnership } from "../../utils/checkOwnership";
 import { deleteMediaStorage } from "./media/deleteMediaStorage";
 import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
+import {
+  publishDeletedContentChanges,
+  publishLocaleVariantChanges,
+} from '../../utils/realtime'
 import { prepareLocaleVariantRemoval } from "../../utils/localeVariants";
 import { forbidContentTemplateAccess } from "./template";
 import {
@@ -212,6 +216,11 @@ export const deleteHandler = async ({
     operation:
       localeVariantRemoval.revalidateContentTypeId === id ? "delete" : "update",
   });
+
+  publishDeletedContentChanges(contentType.name, documentIds)
+  if (current) {
+    publishLocaleVariantChanges(contentType.name)
+  }
 
   return { ok: true };
 };

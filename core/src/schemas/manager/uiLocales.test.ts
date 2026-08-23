@@ -33,11 +33,14 @@ describe('extendManagerLanguagePack', () => {
     })
   })
 
-  test('exposes manager feature flags and login methods', () => {
+  test('exposes manager feature flags, login methods, and realtime metadata', () => {
     expect(
       ManagerUiLocalesOutputSchema.parse({
         locales: [],
         homePageGroupId: 'home-group',
+        platform: {
+          realtime: { transport: 'polling', intervalMs: 3000 },
+        },
         features: {
           passwordRecovery: true,
           login: {
@@ -49,6 +52,9 @@ describe('extendManagerLanguagePack', () => {
     ).toEqual({
       locales: [],
       homePageGroupId: 'home-group',
+      platform: {
+        realtime: { transport: 'polling', intervalMs: 3000 },
+      },
       features: {
         passwordRecovery: true,
         login: {

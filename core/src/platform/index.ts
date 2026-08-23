@@ -36,5 +36,7 @@ export const resolvePlatform = (platform?: Platform): Platform => platform ?? cr
 export * from './image'
 export * from './node'
 export * from './realtime'
+export * from './realtimeServer'
+export * from './realtimeTopics'
 export * from './runtime'
 export type * from './types'

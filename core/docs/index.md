@@ -127,11 +127,29 @@ format, so install the optional peer when formats such as AVIF must work across
 all Bun hosts. `createPlatform` supplies every other default, so overrides
 never require listing unrelated capabilities.
 
-Realtime describes synchronization, not a required WebSocket transport.
-`pollingRealtime`, `sseRealtime`, and `websocketRealtime` expose transport
-metadata and a topic subscription contract. Polling is the conservative
-default; event-driven transports require an endpoint supplied by a host
-adapter.
+Realtime synchronization uses `pollingRealtime` or `sseRealtime`, both of
+which expose transport metadata and a topic subscription contract. Polling is
+the conservative default. `@rakun-kit/next` and `@rakun-kit/express`
+automatically serve a configured SSE endpoint.
+`sseRealtime()` defaults to `/realtime` relative to the adapter's API mount;
+set `endpoint` only for a custom public route.
+
+Custom server adapters can compose the framework-neutral helpers exported by
+core: `parseRealtimeTopics`, `isRealtimeEndpointRequest`,
+`createRealtimeSseStream`, and `authorizeRealtimeSubscription`. The host
+remains responsible only for mapping its request/response APIs to those
+primitives.
+
+The built-in SSE provider keeps topic listeners in the current process.
+Replicated deployments must supply a shared-broker `RealtimeProvider` that
+implements the same `metadata`, `subscribe`, and `publish` contract.
+
+`manager.uiLocales` exposes the provider's safe transport metadata so the
+manager selects the same transport automatically. Core publishes stable
+invalidation topics after collaboration updates and mutations affecting locale
+variants, versions, comments, or notifications. Topic builders are exported
+from `@rakun-kit/core/client`; use those helpers on both sides of custom
+integrations instead of duplicating topic strings.
 
 ## Collaborative content working state
 

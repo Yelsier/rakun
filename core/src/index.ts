@@ -464,6 +464,10 @@ export {
   type RakunRequestContext,
   type RakunRequestContextInput,
 } from "./api/context";
+export {
+  authorizeRealtimeSubscription,
+  type RealtimeSubscriptionAuthorization,
+} from "./api/realtime";
 export { getSessionCookie, setSessionCookie } from "./api/sessionCookie";
 export {
   handleMediaBinaryUpload,

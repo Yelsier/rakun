@@ -10,6 +10,7 @@ import {
 import { Readable } from "stream";
 
 import { rakunNextCrud } from "./crud";
+import { rakunNextRealtime } from "./realtime";
 import { applyRakunBootstrap } from "./bootstrap";
 import {
   getLocalMediaServiceConfig,
@@ -109,6 +110,7 @@ const createHandler = (options: RakunNextOptions = {}): RakunNextHandler => {
     const localMediaIntegration = localMediaConfig
       ? rakunNextLocalService(localMediaConfig)
       : null;
+    const realtimeIntegration = rakunNextRealtime();
 
     return await runWithRakunRequestTrace(
       request.method,
@@ -129,6 +131,16 @@ const createHandler = (options: RakunNextOptions = {}): RakunNextHandler => {
             status: 200,
             headers,
           });
+        }
+
+        const realtimeResponse = await realtimeIntegration({
+          request,
+          context,
+          segments,
+        });
+
+        if (realtimeResponse) {
+          return realtimeResponse;
         }
 
         const localMediaResponse = await localMediaIntegration?.({
@@ -180,6 +192,12 @@ export const rakunNext = (options: RakunNextOptions = {}) => {
 };
 
 export { rakunNextCrud } from "./crud";
+export {
+  authorizeRakunRealtimeRequest,
+  createRakunSseResponse,
+  rakunNextRealtime,
+  type RakunNextRealtimeOptions,
+} from "./realtime";
 export { rakunNextLocalService } from "./media";
 export * from "./media";
 export * from "./shared";

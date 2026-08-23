@@ -45,6 +45,7 @@ function PreviewManagerApp() {
   return (
     <ManagerBrowserApp
       client={client}
+      realtimeBaseUrl={apiBaseUrl}
       pathname={getPreviewPathname()}
       searchParams={new URLSearchParams(window.location.search)}
       basePath={basePath}

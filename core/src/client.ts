@@ -85,6 +85,17 @@ export {
 export type { FileOptimizeOptions } from "./lib/fields/File";
 export { loginInput, type LoginInput } from "./schemas/manager/auth/login";
 export type { LoginAdapterMetadata } from "./schemas/manager/auth/externalLogin";
+export type { ManagerUiLocalesOutput } from './schemas/manager/uiLocales'
+export type { RealtimeMetadata } from './platform/types'
+export { DEFAULT_SSE_ENDPOINT } from './platform/realtime'
+export {
+  collaborationRealtimeTopic,
+  contentCommentsRealtimeTopic,
+  contentVersionsRealtimeTopic,
+  createRealtimeTopic,
+  localeVariantsRealtimeTopic,
+  managerNotificationsRealtimeTopic,
+} from './platform/realtimeTopics'
 export type { ApiOperationsOutput } from "./schemas/manager/apiOperations";
 export type {
   BackupRecord,

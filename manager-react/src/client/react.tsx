@@ -8,7 +8,8 @@ import {
   useMutation,
   useQuery,
 } from "@tanstack/react-query";
-import { createContext, useContext, type ReactNode } from "react";
+import type { RealtimeMetadata } from "@rakun-kit/core/client";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 
 import type {
   ManagerMutationOperationName,
@@ -17,20 +18,40 @@ import type {
   ManagerQueryOperationName,
 } from "./operations";
 import type { ManagerClient } from "./request";
+import {
+  pollingRealtime,
+  realtimeFromMetadata,
+  type RealtimeProvider,
+  useRealtimeSync,
+  type UseRealtimeSyncArgs,
+} from "./realtime";
 
 const MANAGER_QUERY_PREFIX = "rakun-manager";
 
 const ManagerClientContext = createContext<ManagerClient | null>(null);
+const ManagerRealtimeContext = createContext<RealtimeProvider | null>(null);
 
 export type ManagerProviderProps = {
   client: ManagerClient;
+  realtime?: RealtimeProvider | RealtimeMetadata;
   children: ReactNode;
 };
 
-export const ManagerProvider = ({ client, children }: ManagerProviderProps) => {
+export const ManagerProvider = ({
+  client,
+  realtime,
+  children,
+}: ManagerProviderProps) => {
+  const resolvedRealtime = useMemo(() => {
+    if (!realtime) return pollingRealtime();
+    return "subscribe" in realtime ? realtime : realtimeFromMetadata(realtime);
+  }, [realtime]);
+
   return (
     <ManagerClientContext.Provider value={client}>
-      {children}
+      <ManagerRealtimeContext.Provider value={resolvedRealtime}>
+        {children}
+      </ManagerRealtimeContext.Provider>
     </ManagerClientContext.Provider>
   );
 };
@@ -43,6 +64,33 @@ export const useManagerClient = () => {
   }
 
   return client;
+};
+
+export const useManagerRealtime = (): RealtimeProvider => {
+  const realtime = useContext(ManagerRealtimeContext);
+
+  if (!realtime) {
+    throw new Error("useManagerRealtime must be used inside <ManagerProvider>.");
+  }
+
+  return realtime;
+};
+
+export type UseSyncArgs<
+  TData,
+  TError = DefaultError,
+  TQueryKey extends QueryKey = QueryKey,
+> = Omit<UseRealtimeSyncArgs<TData, TError, TQueryKey>, "realtime">;
+
+export const useSync = <
+  TData,
+  TError = DefaultError,
+  TQueryKey extends QueryKey = QueryKey,
+>(
+  options: UseSyncArgs<TData, TError, TQueryKey>,
+): UseQueryResult<TData, TError> => {
+  const realtime = useManagerRealtime();
+  return useRealtimeSync({ ...options, realtime });
 };
 
 export type ManagerQueryKey<TName extends ManagerQueryOperationName> =
@@ -113,6 +161,41 @@ export const useManagerQuery = <TName extends ManagerQueryOperationName>({
   return useQuery({
     ...options,
     ...createManagerQueryOptions(client, name, input, { consumeSignal }),
+  });
+};
+
+export type UseManagerSyncQueryArgs<
+  TName extends ManagerQueryOperationName,
+> = Omit<UseManagerQueryArgs<TName>, "refetchInterval"> & {
+  topic?: string;
+  syncEnabled?: boolean;
+  syncIntervalMs?: number;
+};
+
+export const useManagerSyncQuery = <TName extends ManagerQueryOperationName>({
+  name,
+  input,
+  consumeSignal = false,
+  topic,
+  syncEnabled,
+  syncIntervalMs,
+  ...options
+}: UseManagerSyncQueryArgs<TName>): UseQueryResult<
+  ManagerOperationOutput<TName>,
+  DefaultError
+> => {
+  const client = useManagerClient();
+  const query = createManagerQueryOptions(client, name, input, {
+    consumeSignal,
+  });
+
+  return useSync({
+    ...options,
+    key: query.queryKey,
+    fetcher: query.queryFn,
+    topic,
+    syncEnabled,
+    syncIntervalMs,
   });
 };
 

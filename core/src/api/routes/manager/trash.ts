@@ -12,6 +12,7 @@ import { RakunRequestContext } from "../../context";
 import { checkOwnership } from "../../utils/checkOwnership";
 import { requireContentType } from "../../utils/requireContentType";
 import { checkRevalidatePath } from "../../utils/routes/revalidatePath";
+import { publishLocaleVariantChanges } from '../../utils/realtime'
 import { forbidContentTemplateAccess } from "./template";
 
 type TrashableDocument = Record<string, unknown> & {
@@ -169,6 +170,10 @@ export const trashHandler = async ({
     contentTypeId: hasPageRoute ? groupId : id,
     operation: hasPageRoute ? "update" : "delete",
   });
+
+  if (hasPageRoute) {
+    publishLocaleVariantChanges(contentType.name)
+  }
 
   return { ok: true, trashedDocuments: documents.length };
 };

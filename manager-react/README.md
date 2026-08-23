@@ -11,60 +11,79 @@ published for custom integrations.
 Render the manager with a manager client and navigation implementation:
 
 ```tsx
-import {
-  ManagerBrowserApp,
-  createHttpManagerClient,
-} from "@rakun-kit/manager-react";
-import "@rakun-kit/manager-react/styles.css";
+import { ManagerBrowserApp, createHttpManagerClient } from '@rakun-kit/manager-react'
+import '@rakun-kit/manager-react/styles.css'
 
 const client = createHttpManagerClient({
-  baseUrl: "/api/rakun",
-});
+  baseUrl: '/api/rakun',
+})
 
 export function ManagerPage() {
   return (
-    <ManagerBrowserApp
-      client={client}
-      pathname={window.location.pathname}
-      basePath="/backend"
-    />
-  );
+    <ManagerBrowserApp client={client} pathname={window.location.pathname} basePath="/backend" />
+  )
 }
 ```
 
 `ManagerBrowserApp` creates browser path navigation by default. Use
 `ManagerRuntimeApp` when you need to provide custom navigation.
 
+## Realtime synchronization
+
+`ManagerBrowserApp` and `ManagerRuntimeApp` read the realtime transport from
+the core `manager.uiLocales` bootstrap response. They automatically use
+polling or SSE according to the configured Rakun platform. Pass the API base
+URL when a relative realtime endpoint must be resolved:
+
+```tsx
+<ManagerBrowserApp
+  client={client}
+  realtimeBaseUrl="/api/rakun"
+  pathname={window.location.pathname}
+/>
+```
+
+The default `sseRealtime()` endpoint resolves to `<realtimeBaseUrl>/realtime`,
+so core bootstrap configuration does not repeat the API base path.
+
+Event transports subscribe to invalidation topics published by core. Content
+collaboration, locale variants, versions, comments, and notifications refresh
+only after a matching event; their periodic POST requests remain only as the
+polling fallback. The SSE provider multiplexes all active topics over one
+`EventSource`, avoiding per-origin browser connection limits when several
+manager sessions are open. Custom hosts can also pass a `RealtimeProvider`
+directly to `ManagerProvider` or `ManagerAppProvider`.
+
 ## Clients
 
 HTTP client:
 
 ```ts
-import { createHttpManagerClient } from "@rakun-kit/manager-react/client/http";
+import { createHttpManagerClient } from '@rakun-kit/manager-react/client/http'
 
 const client = createHttpManagerClient({
-  baseUrl: "/api/rakun",
-});
+  baseUrl: '/api/rakun',
+})
 
-const contentTypes = await client.request("manager.contentTypes");
+const contentTypes = await client.request('manager.contentTypes')
 ```
 
 tRPC client adapter:
 
 ```ts
-import { createTrpcManagerClient } from "@rakun-kit/manager-react/client/trpc";
+import { createTrpcManagerClient } from '@rakun-kit/manager-react/client/trpc'
 
-const managerClient = createTrpcManagerClient(trpcProxyClient);
+const managerClient = createTrpcManagerClient(trpcProxyClient)
 ```
 
 Custom client:
 
 ```ts
-import { createManagerClient } from "@rakun-kit/manager-react/client/request";
+import { createManagerClient } from '@rakun-kit/manager-react/client/request'
 
 const client = createManagerClient(async (name, input, options) => {
   // call your transport here
-});
+})
 ```
 
 ## Navigation
@@ -72,13 +91,13 @@ const client = createManagerClient(async (name, input, options) => {
 Use `createPathManagerNavigation` for router integrations:
 
 ```ts
-import { createPathManagerNavigation } from "@rakun-kit/manager-react/state/navigation";
+import { createPathManagerNavigation } from '@rakun-kit/manager-react/state/navigation'
 
 const navigation = createPathManagerNavigation({
-  basePath: "/backend",
+  basePath: '/backend',
   push: (href) => router.push(href),
   replace: (href) => router.replace(href),
-});
+})
 ```
 
 ## Link fields
@@ -222,7 +241,7 @@ without a page reload.
 Import the package stylesheet once:
 
 ```ts
-import "@rakun-kit/manager-react/styles.css";
+import '@rakun-kit/manager-react/styles.css'
 ```
 
 ## Manager languages

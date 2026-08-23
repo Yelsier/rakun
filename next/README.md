@@ -61,6 +61,33 @@ const bootstrap = {
 }
 ```
 
+For a persistent deployment, enable SSE on the same catch-all API route.
+`sseRealtime()` uses the API-relative `/realtime` endpoint by default, and
+`rakunNext()` serves the authenticated stream automatically; no additional
+Route Handler is needed:
+
+```ts
+import { createNextPlatform, sseRealtime } from '@rakun-kit/next'
+
+const bootstrap = {
+  ...options,
+  platform: createNextPlatform({
+    deployment: 'persistent',
+    realtime: sseRealtime(),
+  }),
+}
+```
+
+Clients subscribe with `GET /api/rakun/realtime?topic=<topic>`. The response is
+`text/event-stream`, includes heartbeats, uses the manager session cookie for
+authentication, and emits `{ "topic": "<topic>" }` whenever the configured
+server-side realtime provider publishes that topic. Absolute endpoint URLs are
+also accepted; `rakunNext()` matches their pathname. Keep polling for
+serverless deployments. The manager reads this configuration from core and
+uses events instead of periodic collaboration and locale refresh requests.
+One stream may repeat the `topic` query parameter to multiplex multiple
+subscriptions over a single HTTP connection.
+
 ## tRPC
 
 Mount a tRPC router in the same catch-all route with `@rakun-kit/next/trpc`:
@@ -454,8 +481,9 @@ When this config is detected, `rakunNext` serves:
 
 ## Exports
 
-- `@rakun-kit/next`: `rakunNext`, `rakunNextCrud`, `createNextPlatform`, local
-  media helpers, and shared route utilities.
+- `@rakun-kit/next`: `rakunNext`, `rakunNextCrud`, `rakunNextRealtime`,
+  `createRakunSseResponse`, `createNextPlatform`, local media helpers, and
+  shared route utilities.
 - `@rakun-kit/next/trpc`: `rakunNextTrpc`.
 - `@rakun-kit/next/media`: `LocalAdapter`, local media config, and local HTTP handlers.
 - `@rakun-kit/next/manager`: `RakunManagerPage`, `createRakunManagerMetadata`, and manager page types.

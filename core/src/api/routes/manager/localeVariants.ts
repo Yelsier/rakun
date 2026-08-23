@@ -32,6 +32,7 @@ import type {
 import type { RakunRequestContext } from "../../context";
 import { checkPermissions } from "../../utils/checkPermissions";
 import { checkOwnership } from "../../utils/checkOwnership";
+import { publishLocaleVariantChanges } from '../../utils/realtime'
 import { getLanguages } from "../../utils/getLanguages";
 import { requireContentType } from "../../utils/requireContentType";
 import { routeSignature } from "../../utils/routes/routeDefinitions";
@@ -480,6 +481,8 @@ export const createLocaleVariantHandler = async ({
     });
   }
 
+  publishLocaleVariantChanges(input.contentType)
+
   return {
     document: created as Record<string, unknown>,
     variants: await buildLocaleVariantList({
@@ -519,7 +522,9 @@ export const assignLocaleVariantHandler = async ({
     });
   }
 
-  return await assignLocaleVariant(input);
+  const variants = await assignLocaleVariant(input);
+  publishLocaleVariantChanges(input.contentType)
+  return variants;
 };
 
 export const unassignLocaleVariantHandler = async ({
@@ -564,6 +569,8 @@ export const unassignLocaleVariantHandler = async ({
     contentType: input.contentType,
     contentTypeId: input.documentId,
   });
+
+  publishLocaleVariantChanges(input.contentType)
 
   return await buildLocaleVariantList(input);
 };
@@ -661,6 +668,8 @@ export const setPrimaryLocaleVariantHandler = async ({
     previousGroupIds: [previousPrimaryDocumentId],
   });
 
+  publishLocaleVariantChanges(input.contentType)
+
   return { primaryDocumentId: input.documentId };
 };
 
@@ -739,6 +748,8 @@ export const trashLocaleVariantHandler = async ({
     operation: "update",
   });
 
+  publishLocaleVariantChanges(input.contentType)
+
   return { primaryDocumentId };
 };
 
@@ -810,6 +821,8 @@ export const restoreLocaleVariantHandler = async ({
     contentTypeId: primaryDocumentId,
     operation: "update",
   });
+
+  publishLocaleVariantChanges(input.contentType)
 
   return { primaryDocumentId };
 };

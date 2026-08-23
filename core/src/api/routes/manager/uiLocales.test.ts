@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import {
   resolveManagerHomePageGroupId,
+  resolveManagerRealtimeMetadata,
   resolveManagerSiteUrl,
   resolveManagerUiFeatures,
 } from './uiLocales'
@@ -96,6 +97,33 @@ describe('resolveManagerUiFeatures', () => {
         password: false,
         adapters: [{ id: 'github', label: 'GitHub Enterprise', icon: 'github' }],
       },
+    })
+  })
+})
+
+describe('resolveManagerRealtimeMetadata', () => {
+  test('uses polling when no platform is configured', () => {
+    expect(resolveManagerRealtimeMetadata()).toEqual({
+      transport: 'polling',
+      intervalMs: 3000,
+    })
+  })
+
+  test('exposes only transport configuration', () => {
+    expect(
+      resolveManagerRealtimeMetadata({
+        platform: {
+          realtime: {
+            metadata: {
+              transport: 'sse',
+              endpoint: '/api/realtime',
+            },
+          },
+        },
+      } as never),
+    ).toEqual({
+      transport: 'sse',
+      endpoint: '/api/realtime',
     })
   })
 })

@@ -5,6 +5,7 @@ import {
 } from '@tanstack/react-query'
 import { useMemo, type ReactNode } from 'react'
 import type { LanguageSchema, ManagerUserSchema } from '@rakun-kit/core/client'
+import type { RealtimeMetadata } from '@rakun-kit/core/client'
 import { toast } from 'sonner'
 
 import { ManagerLinkProvider, type ManagerLinkComponent } from '@/link'
@@ -19,6 +20,7 @@ import {
   type ManagerNavigation,
 } from '@/state/navigation'
 import { ManagerProvider, type ManagerProviderProps } from '@/client/react'
+import type { RealtimeProvider } from '@/client/realtime'
 import { SessionProvider } from '@/state/session'
 import { ManagerUsersProvider } from '@/state/users'
 
@@ -140,6 +142,7 @@ export type ManagerAppProviderProps = {
   languages: LanguageSchema[]
   initialLanguage?: LanguageSchema
   queryClient?: QueryClient
+  realtime?: RealtimeProvider | RealtimeMetadata
   renderMediaPicker?: (args: ManagerMediaPickerRenderArgs) => ReactNode
   linkComponent?: ManagerLinkComponent
   children: ReactNode
@@ -152,6 +155,7 @@ export const ManagerAppProvider = ({
   languages,
   initialLanguage,
   queryClient,
+  realtime,
   renderMediaPicker,
   linkComponent,
   children,
@@ -184,7 +188,7 @@ export const ManagerAppProvider = ({
 
   return (
     <QueryClientProvider client={ownedQueryClient}>
-      <ManagerProvider client={client}>
+      <ManagerProvider client={client} realtime={realtime}>
         <ManagerNavigationProvider navigation={navigation}>
           <ManagerLinkProvider component={linkComponent}>
             <ManagerMediaProvider

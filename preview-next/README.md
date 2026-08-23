@@ -38,6 +38,15 @@ Default seeded login:
 admin@rakun.local / admin1234
 ```
 
+## Runtime platform
+
+The bootstrap configures a persistent Next platform with authenticated SSE at
+`/api/realtime`. The existing catch-all API handler serves the stream
+automatically, so the preview does not need a custom server or another route
+file. The manager discovers this through the core bootstrap response, so idle
+edit screens do not poll collaboration or locale endpoints. Set
+`RAKUN_REALTIME_ENDPOINT` only when the public endpoint differs.
+
 ## Plugin code editor
 
 This preview registers `@rakun-kit/plugin-code-editor` in the manager client

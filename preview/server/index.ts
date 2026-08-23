@@ -1,7 +1,7 @@
 import express from "express";
 
-import { defineOperation, rakunBootstrap } from "@rakun-kit/core";
-import { rakunExpress } from "@rakun-kit/express";
+import { defineOperation, rakunBootstrap, sseRealtime } from "@rakun-kit/core";
+import { createExpressPlatform, rakunExpress } from "@rakun-kit/express";
 import { createLocalMediaServiceConfig } from "@rakun-kit/express/media";
 import { createResendMailServiceConfig } from '@rakun-kit/resend'
 import { z } from "zod";
@@ -18,6 +18,9 @@ rakunBootstrap({
   },
   contentTypes: previewContentTypes,
   managerLanguages: previewManagerLanguages,
+  platform: createExpressPlatform({
+    realtime: sseRealtime(),
+  }),
   routes: [
     {
       key: "pages",

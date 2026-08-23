@@ -15,14 +15,21 @@ import {
   Star,
   Trash2,
 } from 'lucide-react'
-import type { ListContentVersionsOutput } from '@rakun-kit/core/client'
+import {
+  contentVersionsRealtimeTopic,
+  type ListContentVersionsOutput,
+} from '@rakun-kit/core/client'
 import { confirm } from '@/components/confirm'
 import { useTranslations } from '@/i18n'
 
 import { useEditPageContext } from '../_context/EditPageContext'
 import { VariantNameDialog } from './VariantNameDialog'
 
-import { createManagerQueryKey, useManagerMutation, useManagerQuery } from '@/client/react'
+import {
+  createManagerQueryKey,
+  useManagerMutation,
+  useManagerSyncQuery,
+} from '@/client/react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -123,11 +130,12 @@ export const ContentVariants = () => {
           routeKey: localeVariantRoute.key,
         }
       : undefined
-  const versionsQuery = useManagerQuery({
+  const versionsQuery = useManagerSyncQuery({
     name: 'manager.contentVersions.list',
     input: listInput ?? ({ contentType: contentTypeName, documentId: '' } as never),
     enabled: Boolean(listInput && !isTrashed),
-    refetchInterval: VARIANT_SYNC_INTERVAL_MS,
+    topic: contentVersionsRealtimeTopic(contentTypeName),
+    syncIntervalMs: VARIANT_SYNC_INTERVAL_MS,
   })
   const createMutation = useManagerMutation('manager.contentVersions.create')
   const promoteMutation = useManagerMutation('manager.contentVersions.promote')

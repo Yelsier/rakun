@@ -1,6 +1,7 @@
 'use client'
 
 import { GitBranch } from 'lucide-react'
+import { localeVariantsRealtimeTopic } from '@rakun-kit/core/client'
 
 import {
   Select,
@@ -12,7 +13,7 @@ import {
   SelectValue,
 } from './ui/select'
 
-import { useManagerQuery } from '@/client/react'
+import { useManagerSyncQuery } from '@/client/react'
 import { useTranslations } from '@/i18n'
 import { useManagerNavigation } from '@/state/navigation'
 
@@ -34,7 +35,7 @@ export const VariantSelector = ({
         routeKey,
       }
     : undefined
-  const variantsQuery = useManagerQuery({
+  const variantsQuery = useManagerSyncQuery({
     name: 'manager.localeVariants.list',
     input:
       input ??
@@ -43,6 +44,7 @@ export const VariantSelector = ({
         documentId,
       } as never),
     enabled: Boolean(input),
+    topic: localeVariantsRealtimeTopic(contentType),
   })
   const variants = variantsQuery.data?.documents ?? []
 
