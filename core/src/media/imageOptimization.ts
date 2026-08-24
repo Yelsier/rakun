@@ -181,21 +181,13 @@ const generatePreviewDataUrl = async ({
   format: NonNullable<FileOptimizeOptions["format"]>;
   maxWidth: number;
 }): Promise<NonNullable<UploadOptimizationOutput["preview"]>> => {
-  const targetMime = formatToMime[format];
-  const previewContent = Buffer.from(
-    await getPlatform().image.transform(content, {
-      width: maxWidth,
-      withoutEnlargement: true,
-      autoOrient: true,
-      format,
-      quality: PREVIEW_DATA_URL_QUALITY,
-    }),
-  )
-
-  return {
-    dataUrl: `data:${targetMime};base64,${previewContent.toString("base64")}`,
-    mime: targetMime,
-  };
+  return await getPlatform().image.placeholder(content, {
+    width: maxWidth,
+    withoutEnlargement: true,
+    autoOrient: true,
+    format,
+    quality: PREVIEW_DATA_URL_QUALITY,
+  })
 };
 
 export async function optimizeImageUpload(

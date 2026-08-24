@@ -1,7 +1,11 @@
 import { equalFlat } from 'lib0/array'
 import * as Y from 'yjs'
 
-import { getContentSnapshot, initializeContentDocument } from './document'
+import {
+  getContentSnapshot,
+  initializeContentDocument,
+  replaceContentSnapshot,
+} from './document'
 import type {
   CollaborationAdapter,
   CollaborationPresence,
@@ -49,6 +53,11 @@ export interface CollaborationService {
     initialSnapshot: Record<string, unknown>
     save: (snapshot: Record<string, unknown>) => Promise<T>
   }) => Promise<{ result: T; savedStateVector: Uint8Array }>
+  discard: (input: {
+    roomId: string
+    initialSnapshot: Record<string, unknown>
+    stateVector?: Uint8Array
+  }) => Promise<{ update: Uint8Array; savedStateVector: Uint8Array }>
   hasUnsavedChanges: (input: {
     roomId: string
     initialSnapshot: Record<string, unknown>
@@ -271,6 +280,19 @@ export const createCollaborationServiceFromAdapter = (
         room.savedStateVector = Y.encodeStateVector(room.doc)
         await config.adapter.save(roomId, storedState(room))
         return { result, savedStateVector: room.savedStateVector }
+      }),
+    discard: async ({ roomId, initialSnapshot, stateVector }) =>
+      await withLock(roomId, async () => {
+        const room = await loadRoom(roomId, initialSnapshot)
+        replaceContentSnapshot(room.doc, initialSnapshot)
+        room.savedStateVector = Y.encodeStateVector(room.doc)
+        await config.adapter.save(roomId, storedState(room))
+        return {
+          update: stateVector
+            ? Y.encodeStateAsUpdate(room.doc, stateVector)
+            : Y.encodeStateAsUpdate(room.doc),
+          savedStateVector: room.savedStateVector,
+        }
       }),
     hasUnsavedChanges: async ({ roomId, initialSnapshot }) => {
       const room = await loadRoom(roomId, initialSnapshot)

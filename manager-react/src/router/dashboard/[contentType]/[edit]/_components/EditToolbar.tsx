@@ -69,13 +69,7 @@ const tabErrorClassName =
 
 const tabsFadeVisibleClassName = 'opacity-100'
 
-const TabsScrollArea = ({
-  children,
-  contentKey,
-}: {
-  children: ReactNode
-  contentKey: string
-}) => {
+const TabsScrollArea = ({ children, contentKey }: { children: ReactNode; contentKey: string }) => {
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const leftFadeRef = useRef<HTMLDivElement>(null)
@@ -95,7 +89,7 @@ const TabsScrollArea = ({
       leftFade.classList.toggle(tabsFadeVisibleClassName, scrollLeft > 1)
       rightFade.classList.toggle(
         tabsFadeVisibleClassName,
-        maxScrollLeft > 1 && scrollLeft < maxScrollLeft - 1,
+        maxScrollLeft > 1 && scrollLeft < maxScrollLeft - 1
       )
     }
 
@@ -164,9 +158,7 @@ const FavoriteMenuItem = () => {
   })
   const toggleFavoriteMutation = useManagerMutation('manager.favorites.toggle')
   const isFavorite = (favoriteQuery.data?.favorites.length ?? 0) > 0
-  const label = isFavorite
-    ? t('common.removeFromFavorites')
-    : t('common.addToFavorites')
+  const label = isFavorite ? t('common.removeFromFavorites') : t('common.addToFavorites')
 
   const invalidateFavorites = async () => {
     await Promise.all([
@@ -190,15 +182,9 @@ const FavoriteMenuItem = () => {
         favorite: !isFavorite,
       })
       await invalidateFavorites()
-      toast.success(
-        result.favorite
-          ? t('common.addedToFavorites')
-          : t('dashboard.removedFavorite'),
-      )
+      toast.success(result.favorite ? t('common.addedToFavorites') : t('dashboard.removedFavorite'))
     } catch (error) {
-      toast.error(
-        getActionErrorMessage(error, t('common.couldNotUpdateFavorite')),
-      )
+      toast.error(getActionErrorMessage(error, t('common.couldNotUpdateFavorite')))
     }
   }
 
@@ -224,6 +210,7 @@ export const EditToolbar = () => {
     canPreview,
     contentType,
     contentTypeId,
+    discardPending,
     documentActions,
     editableVisibility,
     handleVisibilityChange,
@@ -233,6 +220,7 @@ export const EditToolbar = () => {
     isTrashed,
     languageCode,
     openMoveToTrashDialog,
+    openDiscardChangesDialog,
     openPermanentDeleteDialog,
     previewState,
     publicUrl,
@@ -260,6 +248,8 @@ export const EditToolbar = () => {
     pending.promote ||
     template.pending
   const canSaveAsDraft = hasVisibility && contentTypeId && !isTrashed
+  const canSaveAsVariant = hasLocaleVariants && !isTrashed
+  const hasSaveOptions = canSaveAsDraft || canSaveAsVariant
   const commentsEnabled = Boolean(contentTypeId)
   const hasMoreActions = Boolean(contentTypeId) || canPreview || translationEnabled || isTrashed
   const hasPrimaryMenuActions =
@@ -267,9 +257,7 @@ export const EditToolbar = () => {
 
   useEffect(() => {
     const search = new URLSearchParams(window.location.search)
-    setCommentsOpen(
-      search.get('comments') === 'open' || search.get('review') === 'open',
-    )
+    setCommentsOpen(search.get('comments') === 'open' || search.get('review') === 'open')
   }, [contentTypeId])
 
   const openTranslationDialog = () => {
@@ -308,10 +296,7 @@ export const EditToolbar = () => {
             </TabsTrigger>
           ) : null}
           {template.enabled ? (
-            <TabsTrigger
-              value="template"
-              className={cn(tabErrors.template && tabErrorClassName)}
-            >
+            <TabsTrigger value="template" className={cn(tabErrors.template && tabErrorClassName)}>
               <LayoutTemplate />
               {t('contentEdit.tabTemplate')}
               {tabErrors.template ? <TabErrorText /> : null}
@@ -327,11 +312,7 @@ export const EditToolbar = () => {
           {routeLayout.routeLayoutModules.map((layoutModule) => (
             <TabsTrigger key={layoutModule._id} value={`layout:${layoutModule._id}`}>
               <LayoutPanelTop />
-              {translateLayoutModuleLabel(
-                t,
-                layoutModule.key,
-                layoutModule.contentType,
-              )}
+              {translateLayoutModuleLabel(t, layoutModule.key, layoutModule.contentType)}
             </TabsTrigger>
           ))}
           {hasLocaleVariants ? (
@@ -354,7 +335,7 @@ export const EditToolbar = () => {
             aria-live="polite"
             className={cn(
               'inline-flex items-center gap-1.5 text-xs text-muted-foreground',
-              collaborationStatus === 'error' && 'text-destructive',
+              collaborationStatus === 'error' && 'text-destructive'
             )}
           >
             <span
@@ -363,7 +344,7 @@ export const EditToolbar = () => {
                 'size-2 rounded-full bg-emerald-500',
                 collaborationStatus === 'unsaved' && 'bg-amber-500',
                 collaborationStatus === 'offline' && 'bg-amber-500',
-                collaborationStatus === 'error' && 'bg-destructive',
+                collaborationStatus === 'error' && 'bg-destructive'
               )}
             />
             {t(`contentEdit.collaboration.${collaborationStatus}`)}
@@ -392,7 +373,7 @@ export const EditToolbar = () => {
             </Select>
           </div>
         ) : null}
-        {canSaveAsDraft ? (
+        {hasSaveOptions ? (
           <div
             className="inline-flex overflow-hidden rounded-md shadow-xs focus-within:ring-[3px] focus-within:ring-ring/50"
             data-tour="content-edit-save"
@@ -401,6 +382,7 @@ export const EditToolbar = () => {
               <TooltipTrigger asChild>
                 <Button
                   loading={savePending}
+                  disabled={discardPending}
                   className="cursor-pointer rounded-none shadow-none focus-visible:z-10 focus-visible:ring-0"
                   onClick={() => void documentActions.handleSave()}
                 >
@@ -415,17 +397,25 @@ export const EditToolbar = () => {
               <DropdownMenuTrigger asChild>
                 <Button
                   aria-label={t('contentEdit.saveOptions')}
-                  disabled={savePending}
+                  disabled={savePending || discardPending}
                   className="w-9 rounded-none border-l border-primary-foreground/25 px-0! shadow-none focus-visible:z-10 focus-visible:ring-0"
                 >
                   <ChevronDown />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => void documentActions.handleSaveAsDraft()}>
-                  <Copy />
-                  {t('contentEdit.saveAsDraft')}
-                </DropdownMenuItem>
+                {canSaveAsVariant ? (
+                  <DropdownMenuItem onClick={() => void documentActions.handleSaveAsVariant()}>
+                    <GitBranch />
+                    {t('contentEdit.saveAsVariant')}
+                  </DropdownMenuItem>
+                ) : null}
+                {canSaveAsDraft ? (
+                  <DropdownMenuItem onClick={() => void documentActions.handleSaveAsDraft()}>
+                    <Copy />
+                    {t('contentEdit.saveAsDraft')}
+                  </DropdownMenuItem>
+                ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -434,6 +424,7 @@ export const EditToolbar = () => {
             <TooltipTrigger asChild>
               <Button
                 loading={savePending}
+                disabled={discardPending}
                 className="cursor-pointer"
                 onClick={() => void documentActions.handleSave()}
                 data-tour="content-edit-save"
@@ -446,6 +437,23 @@ export const EditToolbar = () => {
             </TooltipContent>
           </Tooltip>
         )}
+        {contentTypeId && !isTrashed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label={t('contentEdit.discardChanges')}
+                loading={discardPending}
+                disabled={savePending}
+                size="icon"
+                variant="outline"
+                onClick={openDiscardChangesDialog}
+              >
+                <RotateCcw />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t('contentEdit.discardChanges')}</TooltipContent>
+          </Tooltip>
+        ) : null}
         {publicUrl ? (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -499,9 +507,7 @@ export const EditToolbar = () => {
                     }}
                   >
                     <Monitor />
-                    {previewState.previewOpen
-                      ? t('contentEdit.closePreview')
-                      : t('common.preview')}
+                    {previewState.previewOpen ? t('contentEdit.closePreview') : t('common.preview')}
                   </DropdownMenuItem>
                 ) : null}
                 {hasPrimaryMenuActions && (contentTypeId || isTrashed) ? (

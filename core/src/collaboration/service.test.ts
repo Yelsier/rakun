@@ -100,6 +100,43 @@ describe('content collaboration service', () => {
     expect(await service.hasUnsavedChanges({ roomId, initialSnapshot })).toBe(false)
   })
 
+  test('discards shared edits and returns the restored saved snapshot', async () => {
+    const service = createCollaborationServiceFromAdapter({
+      adapter: createMemoryCollaborationAdapter(),
+    })
+    const roomId = 'content:Article:article-discard'
+    const initialSnapshot = { title: 'saved', summary: 'keep' }
+    const client = new Y.Doc()
+    const initial = await service.sync({
+      roomId,
+      initialSnapshot,
+      stateVector: Y.encodeStateVector(client),
+    })
+    Y.applyUpdate(client, initial.update)
+    const updates = captureUpdates(client)
+    const root = client.getMap<unknown>(CONTENT_ROOT_NAME)
+    const title = root.get('title') as Y.Text
+    title.delete(0, title.length)
+    title.insert(0, 'edited')
+    root.delete('summary')
+    root.set('temporary', new Y.Text('remove'))
+    await service.sync({
+      roomId,
+      initialSnapshot,
+      update: Y.mergeUpdates(updates),
+    })
+
+    const discarded = await service.discard({
+      roomId,
+      initialSnapshot,
+      stateVector: Y.encodeStateVector(client),
+    })
+    Y.applyUpdate(client, discarded.update)
+
+    expect(getContentSnapshot(client)).toEqual(initialSnapshot)
+    expect(await service.hasUnsavedChanges({ roomId, initialSnapshot })).toBe(false)
+  })
+
   test('tracks presence by browser tab even when tabs belong to the same user', async () => {
     const service = createCollaborationServiceFromAdapter({
       adapter: createMemoryCollaborationAdapter(),

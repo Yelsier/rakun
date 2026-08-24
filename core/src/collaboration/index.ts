@@ -22,7 +22,11 @@ export const getCollaborationService = () => {
 }
 
 export { createMemoryCollaborationAdapter, createCollaborationServiceFromAdapter }
-export { getContentSnapshot, initializeContentDocument, setContentField } from './document'
+export {
+  getContentSnapshot,
+  initializeContentDocument,
+  setContentField,
+} from './document'
 export {
   getCollaborationRoomReferenceFromTopic,
   getContentCollaborationRoomId,

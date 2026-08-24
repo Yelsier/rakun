@@ -127,6 +127,14 @@ format, so install the optional peer when formats such as AVIF must work across
 all Bun hosts. `createPlatform` supplies every other default, so overrides
 never require listing unrelated capabilities.
 
+Every custom `ImageProcessor` implements `metadata`, `transform`, and
+`placeholder`. `placeholder` returns `{ dataUrl, mime }` for direct storage as
+an inline LQIP. The Bun adapter uses the native `Bun.Image.placeholder()` data
+URL, while the Sharp adapter applies the requested reduced transform and
+encodes its result as a data URL. Bun falls back to that Sharp path when its
+runtime lacks the placeholder method or its native codec reports an unsupported
+format or encode failure.
+
 Realtime synchronization uses `pollingRealtime` or `sseRealtime`, both of
 which expose transport metadata and a topic subscription contract. Polling is
 the conservative default. `@rakun-kit/next` and `@rakun-kit/express`
@@ -168,13 +176,20 @@ materializes the server-side `Y.Doc`, validates it with the normal
 runs revalidation. Promoting a draft remains a separate operation and consumes
 its saved snapshot.
 
+`manager.contentCollaboration.discard` replaces the shared working document
+with the last persisted content snapshot and advances its saved state vector,
+so every connected editor converges on the restored state without writing a
+new content revision. It is a mutation because it intentionally removes shared
+working changes.
+
 Shared content templates use the same protocol through
 `manager.templateCollaboration.sync` and
 `manager.templateCollaboration.save`. Their room is keyed only by content type,
 so editors working from different documents still see the same template. The
 save operation validates and persists it through the normal template update
-flow. Template state never becomes part of an individual content document's
-room.
+flow. `manager.templateCollaboration.discard` provides the equivalent reset to
+the last persisted shared template. Template state never becomes part of an
+individual content document's room.
 
 The React manager combines this server protocol with per-user IndexedDB
 persistence. Cached Yjs rooms can be opened and edited during a temporary API
@@ -481,6 +496,8 @@ folder and relations while replacing its file metadata and generated variants,
 then revalidates documents that reference it when route revalidation is configured.
 When `generatePreview` is enabled, optimization stores a tiny `data:image/...`
 LQIP string on `previewUrl` instead of uploading a separate preview object.
+Its exact MIME may be selected by the runtime image processor; native Bun
+placeholders are PNG data URLs, while Sharp uses the configured output format.
 Older media that still have a `previewKey` continue to resolve normally.
 
 Optimized video uploads use the `ffmpeg-static` peer dependency. Rakun keeps

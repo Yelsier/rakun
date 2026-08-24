@@ -239,6 +239,7 @@ type EditPageContextValue = {
   contentTypeId?: string
   contentTypeName: string
   documentActions: ReturnType<typeof useContentDocumentActions>
+  discardPending: boolean
   editableVisibility: EditableDocumentVisibility
   form: ReturnType<typeof useEditFormController>
   handleTabChange: (value: string) => void
@@ -250,6 +251,7 @@ type EditPageContextValue = {
   languageCode: string
   languageList: ReturnType<typeof useLanguage>['languageList']
   onAfterRestore?: () => Promise<unknown> | unknown
+  openDiscardChangesDialog: () => void
   openMoveToTrashDialog: () => void
   openPermanentDeleteDialog: () => void
   previewState: ReturnType<typeof useContentPreview>
@@ -352,6 +354,7 @@ export const EditPageProvider = ({
     useState(false)
   const [templateCollaborationStatus, setTemplateCollaborationStatus] =
     useState<ContentCollaborationStatus>('connecting')
+  const [discardPending, setDiscardPending] = useState(false)
   const templateContentType = useMemo<EncodedContentType | undefined>(() => {
     if (!contentType.hasTemplate || !contentType.templateField) return undefined
 
@@ -708,6 +711,37 @@ export const EditPageProvider = ({
     collaboration?.setFieldState(`${contentType.name}._visibility`, nextVisibility)
   }
 
+  const handleDiscardChanges = async () => {
+    setDiscardPending(true)
+    try {
+      const discards: Promise<unknown>[] = []
+      if (collaboration) {
+        discards.push(collaboration.discardChanges())
+      } else {
+        form.replaceDraft(structuredClone(defaultData ?? {}))
+      }
+      if (
+        templateState?.canUpdate &&
+        (templateCollaborationStatus === 'unsaved' ||
+          templateCollaborationStatus === 'offline')
+      ) {
+        const templateDiscard = templateRef.current?.discardChanges()
+        if (templateDiscard) discards.push(templateDiscard)
+      }
+
+      await Promise.all(discards)
+      setVisibility(getDefaultVisibility(defaultData))
+      toast.success(t('contentEdit.changesDiscarded'))
+    } catch (error) {
+      toast.error(
+        getActionErrorMessage(error, t('contentEdit.couldNotDiscardChanges')),
+      )
+      throw error
+    } finally {
+      setDiscardPending(false)
+    }
+  }
+
   return (
     <EditPageContext.Provider
       value={{
@@ -717,6 +751,7 @@ export const EditPageProvider = ({
         contentType,
         contentTypeId,
         contentTypeName: contentType.name,
+        discardPending,
         documentActions,
         editableVisibility,
         form,
@@ -744,6 +779,21 @@ export const EditPageProvider = ({
           onStatusChange: setTemplateCollaborationStatus,
         },
         onAfterRestore,
+        openDiscardChangesDialog: () => {
+          const includesSharedTemplate =
+            templateState?.canUpdate &&
+            (templateCollaborationStatus === 'unsaved' ||
+              templateCollaborationStatus === 'offline')
+          void confirm({
+            title: t('contentEdit.discardChangesTitle'),
+            description: includesSharedTemplate
+              ? t('contentEdit.discardChangesWithTemplateDescription')
+              : t('contentEdit.discardChangesDescription'),
+            confirmLabel: t('contentEdit.discardChanges'),
+            variant: 'destructive',
+            onConfirm: handleDiscardChanges,
+          })
+        },
         openMoveToTrashDialog: () => {
           void confirm({
             title: t('contentEdit.moveItemToTrash'),

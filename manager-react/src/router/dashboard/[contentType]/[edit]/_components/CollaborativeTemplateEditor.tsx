@@ -18,6 +18,7 @@ import Loading from '@/components/loading'
 import { useTranslations } from '@/i18n'
 
 export type CollaborativeTemplateEditorRef = FieldRef & {
+  discardChanges: () => Promise<void>
   save: () => Promise<TemplateStateOutput>
 }
 
@@ -51,6 +52,10 @@ const CollaborativeTemplateForm = forwardRef<
     (): CollaborativeTemplateEditorRef => ({
       getState: () => formRef.current?.getState(),
       getValue: () => formRef.current?.getValue(),
+      discardChanges: async () => {
+        if (!collaboration) throw new Error('Template collaboration is unavailable')
+        await collaboration.discardChanges()
+      },
       save: async () => {
         if (!collaboration) throw new Error('Template collaboration is unavailable')
         await collaboration.flush()

@@ -149,8 +149,10 @@ export const useContentDocumentActions = ({
   const createContentVersionMutation = useManagerMutation('manager.contentVersions.create')
   const promoteContentVersionMutation = useManagerMutation('manager.contentVersions.promote')
   const collaboration = useContentCollaboration()
-  const [pendingVariantData, setPendingVariantData] =
-    useState<Record<string, unknown> | null>(null)
+  const [pendingVariant, setPendingVariant] = useState<{
+    data: Record<string, unknown>
+    reason: 'review' | 'saveAsVariant'
+  } | null>(null)
   const routeableVersionRoute = contentType.routes?.find((route) => route.hasPage)
   const reviewStateQuery = useManagerQuery({
     name: 'manager.reviews.get',
@@ -328,7 +330,7 @@ export const useContentDocumentActions = ({
   }
 
   const createReviewVariant = async (name: string) => {
-    if (!contentTypeId || !routeableVersionRoute || !pendingVariantData) return
+    if (!contentTypeId || !routeableVersionRoute || !pendingVariant) return
 
     try {
       const result = await createContentVersionMutation.mutateAsync({
@@ -336,10 +338,11 @@ export const useContentDocumentActions = ({
         documentId: contentTypeId,
         name,
         routeKey: routeableVersionRoute.key,
-        data: pendingVariantData,
+        data: pendingVariant.data,
       })
       const nextId = result.document._id
-      setPendingVariantData(null)
+      const reason = pendingVariant.reason
+      setPendingVariant(null)
 
       if (typeof nextId === 'string') {
         navigation.push?.({
@@ -352,7 +355,11 @@ export const useContentDocumentActions = ({
         invalidateContentListQueries(),
         invalidateLocaleVariantQueries(),
       ])
-      toast.success(t('contentEdit.draftVariantCreatedForReview'))
+      toast.success(
+        reason === 'review'
+          ? t('contentEdit.draftVariantCreatedForReview')
+          : t('variants.draftVariantCreated'),
+      )
     } catch (error) {
       toast.error(
         getActionErrorMessage(error, t('contentEdit.couldNotCreateDraftVariant')),
@@ -390,7 +397,7 @@ export const useContentDocumentActions = ({
       routeableVersionRoute &&
       reviewStateQuery.data?.actorRequiresReview
     ) {
-      setPendingVariantData(cloneRecord(data))
+      setPendingVariant({ data: cloneRecord(data), reason: 'review' })
       return
     }
 
@@ -480,6 +487,16 @@ export const useContentDocumentActions = ({
     } catch (error) {
       toast.error(getActionErrorMessage(error, t('contentEdit.couldNotCreateDraftCopy')))
     }
+  }
+
+  const handleSaveAsVariant = async () => {
+    if (!contentTypeId || !routeableVersionRoute) return
+    const data = readFormData()
+
+    if (!isRecord(data)) return
+    if (saveTemplate && !(await saveTemplate())) return
+
+    setPendingVariant({ data: cloneRecord(data), reason: 'saveAsVariant' })
   }
 
   const handleRestoreFromTrash = async () => {
@@ -581,13 +598,14 @@ export const useContentDocumentActions = ({
     handleRestoreFromTrash,
     handleSave,
     handleSaveAsDraft,
+    handleSaveAsVariant,
     handleTranslateDocument,
     variantNameDialog: {
-      open: Boolean(pendingVariantData),
+      open: Boolean(pendingVariant),
       loading: createContentVersionMutation.isPending,
       onOpenChange: (open: boolean) => {
         if (!open && !createContentVersionMutation.isPending) {
-          setPendingVariantData(null)
+          setPendingVariant(null)
         }
       },
       onConfirm: createReviewVariant,

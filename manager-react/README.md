@@ -140,6 +140,8 @@ An image's context menu also offers `Replace image`. The selected file replaces
 the stored image and generated variants while retaining the existing media ID,
 name, title, alt text, folder, status, and every relation to it. Rakun also
 revalidates directly referencing pages when route revalidation is configured.
+The image editor can crop to a rectangle or circle, rotate, and flip the saved
+copy horizontally or vertically.
 
 ## Dynamic data mappings
 
@@ -234,6 +236,11 @@ The shared Template editor has its own Yjs room keyed by content type, so it is
 collaborative across editors even when they opened different documents. Its
 snapshot is persisted only by Save and remains separate from every document
 room.
+
+The edit toolbar offers a confirmed Discard changes action that restores the
+last saved shared state, including an unsaved shared Template when applicable.
+Its save menu can also save the current form as a named draft variant copy or
+create an independent draft copy.
 
 Create-form content becomes collaborative after its first save. Route-layout
 overrides, Settings, literals, users, comments, reviews, and other

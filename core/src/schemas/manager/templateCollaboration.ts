@@ -31,6 +31,16 @@ export const saveTemplateCollaborationOutput = z.object({
   savedStateVector: encodedBinary,
 })
 
+export const discardTemplateCollaborationInput =
+  templateCollaborationReferenceInput.extend({
+    stateVector: encodedBinary.optional(),
+  })
+
+export const discardTemplateCollaborationOutput = z.object({
+  update: encodedBinary,
+  savedStateVector: encodedBinary,
+})
+
 export type TemplateCollaborationReferenceInput = z.infer<
   typeof templateCollaborationReferenceInput
 >
@@ -42,4 +52,10 @@ export type SyncTemplateCollaborationOutput = z.infer<
 >
 export type SaveTemplateCollaborationOutput = z.infer<
   typeof saveTemplateCollaborationOutput
+>
+export type DiscardTemplateCollaborationInput = z.infer<
+  typeof discardTemplateCollaborationInput
+>
+export type DiscardTemplateCollaborationOutput = z.infer<
+  typeof discardTemplateCollaborationOutput
 >

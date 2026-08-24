@@ -117,6 +117,7 @@ type ContentCollaborationContextValue = {
   status: ContentCollaborationStatus
   clientId: string
   presence: CollaborationPresenceOutput[]
+  discardChanges: () => Promise<void>
   flush: () => Promise<void>
   setFieldState: (fieldId: string, value: unknown) => void
   setSavedStateVector: (value: string, sourceRevision?: string | number) => void
@@ -525,6 +526,43 @@ const CollaborationProvider = ({
     }
   }, [exchange])
 
+  const discardChanges = useCallback(async () => {
+    await flush()
+    const stateVector = encodeBinary(Y.encodeStateVector(doc))
+    const result =
+      resource === 'template'
+        ? await client.request('manager.templateCollaboration.discard', {
+            contentType,
+            stateVector,
+          })
+        : await client.request('manager.contentCollaboration.discard', {
+            contentType,
+            documentId: documentId ?? '',
+            stateVector,
+          })
+    const restoredUpdate = decodeBinary(result.update)
+    if (restoredUpdate.length) {
+      Y.applyUpdate(doc, restoredUpdate, REMOTE_ORIGIN)
+    }
+    savedStateVectorRef.current = decodeBinary(result.savedStateVector)
+    networkConnectedRef.current = true
+    localReadyRef.current = true
+    setError(null)
+    persistSavedStateVector(savedStateVectorRef.current)
+    updateData(getContentSnapshot(doc))
+    updateStatus()
+  }, [
+    client,
+    contentType,
+    doc,
+    documentId,
+    flush,
+    persistSavedStateVector,
+    resource,
+    updateData,
+    updateStatus,
+  ])
+
   const setFieldState = useCallback(
     (fieldId: string, value: unknown) => {
       const prefix = `${fieldRootId}.`
@@ -557,6 +595,7 @@ const CollaborationProvider = ({
     () => ({
       contentType: fieldRootId,
       clientId,
+      discardChanges,
       documentId: documentId ?? '',
       flush,
       presence,
@@ -564,7 +603,17 @@ const CollaborationProvider = ({
       setSavedStateVector,
       status,
     }),
-    [clientId, documentId, fieldRootId, flush, presence, setFieldState, setSavedStateVector, status]
+    [
+      clientId,
+      discardChanges,
+      documentId,
+      fieldRootId,
+      flush,
+      presence,
+      setFieldState,
+      setSavedStateVector,
+      status,
+    ]
   )
 
   return (

@@ -5,7 +5,7 @@ export type ManagerMessageDefinition = {
   params?: Record<string, ManagerMessageParamSpec>
 }
 
-export const MANAGER_CATALOG_VERSION = 3
+export const MANAGER_CATALOG_VERSION = 6
 
 export const managerMessages = {
   'brand.name': { defaultMessage: 'Rakun' },
@@ -448,6 +448,9 @@ export const managerMessages = {
   'media.rotation': { defaultMessage: 'Rotation' },
   'media.left': { defaultMessage: 'Left' },
   'media.right': { defaultMessage: 'Right' },
+  'media.flip': { defaultMessage: 'Flip' },
+  'media.horizontal': { defaultMessage: 'Horizontal' },
+  'media.vertical': { defaultMessage: 'Vertical' },
   'media.cropArea': { defaultMessage: 'Crop area' },
   'media.cropInputPercent': {
     defaultMessage: '{label} %',
@@ -749,8 +752,21 @@ export const managerMessages = {
   'contentEdit.sharedTemplateWarning': {
     defaultMessage: 'This template is shared. Changes made here apply to all content of this type.',
   },
-  'contentEdit.saveAsDraft': { defaultMessage: 'Save as draft' },
+  'contentEdit.saveAsDraft': { defaultMessage: 'Save copy as draft' },
+  'contentEdit.saveAsVariant': { defaultMessage: 'Save copy as variant' },
   'contentEdit.saveOptions': { defaultMessage: 'Save options' },
+  'contentEdit.discardChanges': { defaultMessage: 'Discard changes' },
+  'contentEdit.discardChangesTitle': {
+    defaultMessage: 'Discard unsaved changes?',
+  },
+  'contentEdit.discardChangesDescription': {
+    defaultMessage:
+      'This restores the last saved version of this item. Shared unsaved edits from every editor will be lost.',
+  },
+  'contentEdit.discardChangesWithTemplateDescription': {
+    defaultMessage:
+      'This restores the last saved version of this item and its shared template. Shared unsaved edits from every editor will be lost.',
+  },
   'contentEdit.moreActions': { defaultMessage: 'More actions' },
   'contentEdit.fixHasErrors': {
     defaultMessage: 'There are errors to fix',
@@ -820,6 +836,7 @@ export const managerMessages = {
     defaultMessage: 'Translated successfully',
   },
   'contentEdit.draftCopyCreated': { defaultMessage: 'Draft copy created' },
+  'contentEdit.changesDiscarded': { defaultMessage: 'Changes discarded' },
   'contentEdit.restoredFromTrash': { defaultMessage: 'Restored from trash' },
   'contentEdit.movedToTrash': { defaultMessage: 'Moved to trash' },
   'contentEdit.deletedPermanently': { defaultMessage: 'Deleted permanently' },
@@ -838,6 +855,9 @@ export const managerMessages = {
   },
   'contentEdit.couldNotCreateDraftCopy': {
     defaultMessage: 'Could not create draft copy',
+  },
+  'contentEdit.couldNotDiscardChanges': {
+    defaultMessage: 'Could not discard changes',
   },
   'contentEdit.couldNotMoveToTrash': {
     defaultMessage: 'Could not move item to trash',

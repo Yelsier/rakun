@@ -11,6 +11,8 @@ import {
   templateUpdateInput,
 } from "../../schemas/manager/template";
 import {
+  discardTemplateCollaborationInput,
+  discardTemplateCollaborationOutput,
   saveTemplateCollaborationOutput,
   syncTemplateCollaborationInput,
   syncTemplateCollaborationOutput,
@@ -29,6 +31,8 @@ import {
   createFolderOutput,
   contentVersionRecord,
   contentCollaborationReferenceInput,
+  discardContentCollaborationInput,
+  discardContentCollaborationOutput,
   saveContentCollaborationOutput,
   syncContentCollaborationInput,
   syncContentCollaborationOutput,
@@ -278,6 +282,14 @@ export const createManagerOperationContracts = () =>
       output: saveContentCollaborationOutput,
       method: "post",
     }),
+    "manager.contentCollaboration.discard": defineOperationContract({
+      access: "auth",
+      kind: "mutation",
+      description: "Discard shared edits and restore the saved content snapshot",
+      input: discardContentCollaborationInput,
+      output: discardContentCollaborationOutput,
+      method: "post",
+    }),
     'manager.templateCollaboration.sync': defineOperationContract({
       access: 'auth',
       kind: 'query',
@@ -292,6 +304,14 @@ export const createManagerOperationContracts = () =>
       description: 'Persist the current collaborative shared-template snapshot',
       input: templateCollaborationReferenceInput,
       output: saveTemplateCollaborationOutput,
+      method: 'post',
+    }),
+    'manager.templateCollaboration.discard': defineOperationContract({
+      access: 'auth',
+      kind: 'mutation',
+      description: 'Discard shared edits and restore the saved template snapshot',
+      input: discardTemplateCollaborationInput,
+      output: discardTemplateCollaborationOutput,
       method: 'post',
     }),
     "manager.template.get": defineOperationContract({

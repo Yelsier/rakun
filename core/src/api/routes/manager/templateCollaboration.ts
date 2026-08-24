@@ -7,6 +7,8 @@ import { TEMPLATE_FIELD_NAME } from '../../../lib/systemFields'
 import { getMongoService } from '../../../orm'
 import { collaborationRealtimeTopic, getPlatform } from '../../../platform'
 import type {
+  DiscardTemplateCollaborationInput,
+  DiscardTemplateCollaborationOutput,
   SaveTemplateCollaborationOutput,
   SyncTemplateCollaborationInput,
   SyncTemplateCollaborationOutput,
@@ -119,5 +121,28 @@ export const saveTemplateCollaborationHandler = async ({
   return {
     template: saved.result,
     savedStateVector: encodeBinary(saved.savedStateVector),
+  }
+}
+
+export const discardTemplateCollaborationHandler = async ({
+  input,
+  ctx,
+}: {
+  input: DiscardTemplateCollaborationInput
+  ctx: RakunRequestContext
+}): Promise<DiscardTemplateCollaborationOutput> => {
+  const { initialSnapshot } = await getAuthorizedTemplate({ input, ctx })
+  const discarded = await getCollaborationService().discard({
+    roomId: getTemplateCollaborationRoomId(input.contentType),
+    initialSnapshot,
+    stateVector: decodeBinary(input.stateVector),
+  })
+  getPlatform().realtime.publish(
+    collaborationRealtimeTopic('template', input.contentType),
+  )
+
+  return {
+    update: encodeBinary(discarded.update),
+    savedStateVector: encodeBinary(discarded.savedStateVector),
   }
 }

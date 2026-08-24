@@ -76,6 +76,11 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/contentCollaboration/save",
   },
+  "manager.contentCollaboration.discard": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/contentCollaboration/discard",
+  },
   'manager.templateCollaboration.sync': {
     kind: 'query',
     method: 'post',
@@ -85,6 +90,11 @@ export const managerOperationManifest = {
     kind: 'mutation',
     method: 'post',
     path: '/manager/templateCollaboration/save',
+  },
+  'manager.templateCollaboration.discard': {
+    kind: 'mutation',
+    method: 'post',
+    path: '/manager/templateCollaboration/discard',
   },
   "manager.template.get": {
     kind: "query",

@@ -113,6 +113,8 @@ For an image, the same context menu offers `Replace image`. Choose a new image
 and confirm to replace the underlying file while keeping the media ID, details,
 folder and every reference to it across the site. Referencing pages are
 revalidated when the project has route revalidation configured.
+The image editor can crop to a rectangle or circle, rotate, and flip the saved
+copy horizontally or vertically.
 Optimization is enabled by default in the media library; generated image
 previews are stored as inline `data:image/...` strings on the media record for
 LQIP use.
@@ -215,6 +217,12 @@ of the server-side working document. Until it succeeds, public/web reads and
 revalidation remain on the previous saved snapshot. Unsaved therefore means
 shared-but-not-committed, not changes owned by one browser. Draft promotion is
 still separate and uses the saved draft snapshot.
+
+The edit toolbar can discard changes through the shared confirmation dialog.
+Discard restores the last saved content snapshot for every editor; when the
+shared Template also has unsaved work, the confirmation states that it will be
+restored too. The save menu can save the current unsaved form as a separately
+named, unassigned draft variant copy or create an independent draft copy.
 
 IndexedDB persistence does not replace Save: local and shared CRDT updates are
 working state, while MongoDB and public/web reads change only after the server

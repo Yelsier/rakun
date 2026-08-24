@@ -12,6 +12,7 @@ import {
   parseRealtimeTopics,
   parseRealtimePresenceBindings,
   resolveRealtimeEndpointPath,
+  sharpImage,
   sseRealtime,
 } from './index'
 import type {
@@ -25,6 +26,7 @@ import type {
 const image: ImageProcessor = {
   id: 'test-image',
   metadata: async () => ({ width: 1, height: 1 }),
+  placeholder: async () => ({ dataUrl: 'data:image/png;base64,', mime: 'image/png' }),
   transform: async (input) => input,
 }
 
@@ -96,6 +98,29 @@ describe('platform resolution', () => {
       })
       expect(output.byteLength).toBeGreaterThan(0)
     }
+  })
+
+  test('uses native Bun placeholders and a transformed Sharp fallback', async () => {
+    const source = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      'base64'
+    )
+    const options = {
+      width: 32,
+      format: 'webp' as const,
+      quality: 20,
+      autoOrient: true,
+      withoutEnlargement: true,
+    }
+
+    const sharpPlaceholder = await sharpImage().placeholder(source, options)
+    expect(sharpPlaceholder.mime).toBe('image/webp')
+    expect(sharpPlaceholder.dataUrl.startsWith('data:image/webp;base64,')).toBe(true)
+
+    if (!hasBunImage()) return
+    const bunPlaceholder = await bunImage().placeholder(source, options)
+    expect(bunPlaceholder.mime).toBe('image/png')
+    expect(bunPlaceholder.dataUrl.startsWith('data:image/png;base64,')).toBe(true)
   })
 })
 

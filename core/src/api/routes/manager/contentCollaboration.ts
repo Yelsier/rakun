@@ -7,6 +7,8 @@ import { getMongoService } from '../../../orm'
 import { collaborationRealtimeTopic, getPlatform } from '../../../platform'
 import type {
   ContentCollaborationReferenceInput,
+  DiscardContentCollaborationInput,
+  DiscardContentCollaborationOutput,
   SaveContentCollaborationOutput,
   SyncContentCollaborationInput,
   SyncContentCollaborationOutput,
@@ -131,5 +133,28 @@ export const saveContentCollaborationHandler = async ({
   return {
     document: saved.result,
     savedStateVector: encodeBinary(saved.savedStateVector),
+  }
+}
+
+export const discardContentCollaborationHandler = async ({
+  input,
+  ctx,
+}: {
+  input: DiscardContentCollaborationInput
+  ctx: RakunRequestContext
+}): Promise<DiscardContentCollaborationOutput> => {
+  const { contentType, document } = await getAuthorizedDocument({ input, ctx })
+  const discarded = await getCollaborationService().discard({
+    roomId: getContentCollaborationRoomId(input.contentType, input.documentId),
+    initialSnapshot: toEditableContentSnapshot(contentType, document),
+    stateVector: decodeBinary(input.stateVector),
+  })
+  getPlatform().realtime.publish(
+    collaborationRealtimeTopic('content', input.contentType, input.documentId),
+  )
+
+  return {
+    update: encodeBinary(discarded.update),
+    savedStateVector: encodeBinary(discarded.savedStateVector),
   }
 }

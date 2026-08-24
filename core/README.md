@@ -93,7 +93,12 @@ rakunBootstrap({
 The default image processor is native `Bun.Image` when available and `sharp`
 otherwise. Node.js image optimization therefore requires the optional `sharp`
 peer. Bun also falls back to it when an OS-dependent codec cannot handle the
-requested format. The platform resolves crypto, filesystem, compression,
+requested format. Custom `ImageProcessor` implementations provide
+`metadata`, `transform`, and `placeholder`; the latter returns an inline
+`{ dataUrl, mime }` LQIP. Bun uses native `Bun.Image.placeholder()`, while
+Sharp produces the placeholder through its normal reduced transform and serves
+as the fallback when the Bun method is unavailable. The
+platform resolves crypto, filesystem, compression,
 workers, and realtime capabilities. Polling is the safe realtime default when
 the host cannot keep persistent connections open. The Next and Express
 adapters automatically serve configured SSE streams.
@@ -124,6 +129,10 @@ the MongoDB content snapshot or triggering revalidation. Save calls
 `manager.contentCollaboration.save`, which materializes and validates the
 server-side CRDT state before using the normal update and revalidation flow.
 Draft promotion remains separate and promotes only a saved draft snapshot.
+`manager.contentCollaboration.discard` restores the room from that persisted
+snapshot, publishes the reset to connected editors, and marks the restored Yjs
+state as saved without creating a new content revision. Shared templates expose
+the equivalent `manager.templateCollaboration.discard` operation.
 
 The default adapter keeps working documents in process memory. Configure a
 shared, durable implementation for replicated or restart-durable deployments:

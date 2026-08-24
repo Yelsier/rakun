@@ -1,4 +1,9 @@
-import type { ImageFormat, ImageProcessor, ImageTransformOptions } from './types'
+import type {
+  ImageFormat,
+  ImagePlaceholderResult,
+  ImageProcessor,
+  ImageTransformOptions,
+} from './types'
 import { requirePeerDependency } from '../lib/utils/peerDependencies'
 
 type Sharp = typeof import('sharp')
@@ -24,6 +29,40 @@ const applySharpFormat = (
   return pipeline.avif({ quality })
 }
 
+const imageFormatMime: Record<ImageFormat, string> = {
+  avif: 'image/avif',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+}
+
+const transformWithSharp = async (
+  input: Uint8Array,
+  options: ImageTransformOptions,
+) => {
+  let pipeline = getSharp()(input, { failOn: 'none' })
+  if (options.autoOrient !== false) pipeline = pipeline.rotate()
+  if (options.width) {
+    pipeline = pipeline.resize({
+      width: options.width,
+      withoutEnlargement: options.withoutEnlargement,
+    })
+  }
+  return await applySharpFormat(pipeline, options.format, options.quality).toBuffer()
+}
+
+const placeholderFromTransform = async (
+  input: Uint8Array,
+  options: ImageTransformOptions,
+): Promise<ImagePlaceholderResult> => {
+  const content = await transformWithSharp(input, options)
+  const mime = imageFormatMime[options.format]
+  return {
+    dataUrl: `data:${mime};base64,${content.toString('base64')}`,
+    mime,
+  }
+}
+
 export const sharpImage = (): ImageProcessor => ({
   id: 'sharp',
   async metadata(input) {
@@ -34,17 +73,8 @@ export const sharpImage = (): ImageProcessor => ({
       format: metadata.format,
     }
   },
-  async transform(input, options) {
-    let pipeline = getSharp()(input, { failOn: 'none' })
-    if (options.autoOrient !== false) pipeline = pipeline.rotate()
-    if (options.width) {
-      pipeline = pipeline.resize({
-        width: options.width,
-        withoutEnlargement: options.withoutEnlargement,
-      })
-    }
-    return await applySharpFormat(pipeline, options.format, options.quality).toBuffer()
-  },
+  placeholder: placeholderFromTransform,
+  transform: transformWithSharp,
 })
 
 type BunImagePipeline = {
@@ -58,6 +88,7 @@ type BunImagePipeline = {
   jpeg(options: { quality: number }): BunImagePipeline
   png(options: { compressionLevel: number }): BunImagePipeline
   avif(options: { quality: number }): BunImagePipeline
+  placeholder?(format?: 'dataurl'): Promise<string>
   bytes(): Promise<Uint8Array>
 }
 
@@ -107,6 +138,21 @@ const shouldFallbackFromBunImage = (error: unknown): boolean =>
   'code' in error &&
   (error.code === 'ERR_IMAGE_FORMAT_UNSUPPORTED' || error.code === 'ERR_IMAGE_ENCODE_FAILED')
 
+const bunPlaceholder = async (
+  input: Uint8Array,
+  options: ImageTransformOptions,
+): Promise<ImagePlaceholderResult> => {
+  const pipeline = new (getBunImage())(input, {
+    autoOrient: options.autoOrient !== false,
+  })
+  if (!pipeline.placeholder) return await placeholderFromTransform(input, options)
+
+  const dataUrl = await pipeline.placeholder('dataurl')
+  const mime = /^data:([^;,]+)[;,]/.exec(dataUrl)?.[1]
+  if (!mime) throw new Error('Bun.Image.placeholder() returned an invalid data URL.')
+  return { dataUrl, mime }
+}
+
 export const bunImage = (): ImageProcessor => ({
   id: 'bun',
   async metadata(input) {
@@ -115,6 +161,16 @@ export const bunImage = (): ImageProcessor => ({
     } catch (error) {
       if (shouldFallbackFromBunImage(error)) {
         return await sharpImage().metadata(input)
+      }
+      throw error
+    }
+  },
+  async placeholder(input, options) {
+    try {
+      return await bunPlaceholder(input, options)
+    } catch (error) {
+      if (shouldFallbackFromBunImage(error)) {
+        return await placeholderFromTransform(input, options)
       }
       throw error
     }

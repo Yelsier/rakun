@@ -88,10 +88,10 @@ describe("optimizeImageUpload responsive sizes", () => {
       },
     });
 
-    expect(result.preview?.mime).toBe("image/webp");
-    expect(result.preview?.dataUrl.startsWith("data:image/webp;base64,")).toBe(
-      true,
-    );
+    expect(result.preview?.mime).toMatch(/^image\//);
+    expect(
+      result.preview?.dataUrl.startsWith(`data:${result.preview.mime};base64,`),
+    ).toBe(true);
     expect(result.preview?.dataUrl.length).toBeGreaterThan(
       "data:image/webp;base64,".length,
     );

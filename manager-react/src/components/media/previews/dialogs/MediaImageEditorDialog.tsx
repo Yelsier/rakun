@@ -1,6 +1,13 @@
 'use client'
 
-import { Circle, RotateCcw, RotateCw, Square } from 'lucide-react'
+import {
+  Circle,
+  FlipHorizontal2,
+  FlipVertical2,
+  RotateCcw,
+  RotateCw,
+  Square,
+} from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '../../../ui/button'
@@ -311,6 +318,8 @@ export default function MediaImageEditorDialog({
   })
   const [shape, setShape] = useState<CropShape>('rectangle')
   const [rotation, setRotation] = useState(0)
+  const [flipHorizontal, setFlipHorizontal] = useState(false)
+  const [flipVertical, setFlipVertical] = useState(false)
   const [isLoadingImage, setIsLoadingImage] = useState(false)
 
   const getCircleBounds = (): CropBounds | null => {
@@ -336,6 +345,8 @@ export default function MediaImageEditorDialog({
     setCrop({ x: 12, y: 12, width: 76, height: 76 })
     setShape('rectangle')
     setRotation(0)
+    setFlipHorizontal(false)
+    setFlipVertical(false)
 
     void (async () => {
       const response = await fetch(imageUrl)
@@ -486,6 +497,7 @@ export default function MediaImageEditorDialog({
 
     ctx.translate(canvas.width / 2, canvas.height / 2)
     ctx.rotate((normalizedRotation * Math.PI) / 180)
+    ctx.scale(flipHorizontal ? -1 : 1, flipVertical ? -1 : 1)
     ctx.drawImage(image, sx, sy, sw, sh, -sw / 2, -sh / 2, sw, sh)
 
     if (shape === 'circle') {
@@ -558,7 +570,11 @@ export default function MediaImageEditorDialog({
                   alt={target?.alt || target?.name || ''}
                   className="block max-h-[55vh] max-w-full object-contain"
                   draggable={false}
-                  style={{ transform: `rotate(${rotation}deg)` }}
+                  style={{
+                    transform: `rotate(${rotation}deg) scale(${flipHorizontal ? -1 : 1}, ${
+                      flipVertical ? -1 : 1
+                    })`,
+                  }}
                 />
                 <div ref={layerRef} className="absolute inset-0">
                   <div
@@ -634,6 +650,30 @@ export default function MediaImageEditorDialog({
                 <Button type="button" variant="outline" onClick={() => setRotation((v) => v + 90)}>
                   <RotateCw className="size-4" />
                   {t('media.right')}
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>{t('media.flip')}</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={flipHorizontal ? 'default' : 'outline'}
+                  aria-pressed={flipHorizontal}
+                  onClick={() => setFlipHorizontal((value) => !value)}
+                >
+                  <FlipHorizontal2 className="size-4" />
+                  {t('media.horizontal')}
+                </Button>
+                <Button
+                  type="button"
+                  variant={flipVertical ? 'default' : 'outline'}
+                  aria-pressed={flipVertical}
+                  onClick={() => setFlipVertical((value) => !value)}
+                >
+                  <FlipVertical2 className="size-4" />
+                  {t('media.vertical')}
                 </Button>
               </div>
             </div>

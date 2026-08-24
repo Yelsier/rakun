@@ -20,9 +20,18 @@ export type ImageTransformOptions = {
   withoutEnlargement?: boolean
 }
 
+export type ImagePlaceholderResult = {
+  dataUrl: string
+  mime: string
+}
+
 export interface ImageProcessor {
   readonly id: string
   metadata(input: Uint8Array): Promise<ImageMetadata>
+  placeholder(
+    input: Uint8Array,
+    options: ImageTransformOptions
+  ): Promise<ImagePlaceholderResult>
   transform(input: Uint8Array, options: ImageTransformOptions): Promise<Uint8Array>
 }
 

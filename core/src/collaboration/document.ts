@@ -123,5 +123,23 @@ export const setContentField = (doc: Y.Doc, field: string, value: unknown) => {
   })
 }
 
+export const replaceContentSnapshot = (
+  doc: Y.Doc,
+  snapshot: Record<string, unknown>,
+) => {
+  const root = doc.getMap<unknown>(CONTENT_ROOT_NAME)
+  doc.transact(() => {
+    for (const key of Array.from(root.keys())) {
+      if (!(key in snapshot) || snapshot[key] === undefined) root.delete(key)
+    }
+    for (const [key, value] of Object.entries(snapshot)) {
+      if (value === undefined) continue
+      const previous = root.get(key)
+      const next = updateYValue(previous, value)
+      if (next !== previous) root.set(key, next)
+    }
+  })
+}
+
 export const getContentSnapshot = (doc: Y.Doc): Record<string, unknown> =>
   doc.getMap<unknown>(CONTENT_ROOT_NAME).toJSON() as Record<string, unknown>

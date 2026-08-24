@@ -30,9 +30,25 @@ export const saveContentCollaborationOutput = z.object({
   savedStateVector: encodedBinary,
 })
 
+export const discardContentCollaborationInput =
+  contentCollaborationReferenceInput.extend({
+    stateVector: encodedBinary.optional(),
+  })
+
+export const discardContentCollaborationOutput = z.object({
+  update: encodedBinary,
+  savedStateVector: encodedBinary,
+})
+
 export type ContentCollaborationReferenceInput = z.infer<
   typeof contentCollaborationReferenceInput
 >
 export type SyncContentCollaborationInput = z.infer<typeof syncContentCollaborationInput>
 export type SyncContentCollaborationOutput = z.infer<typeof syncContentCollaborationOutput>
 export type SaveContentCollaborationOutput = z.infer<typeof saveContentCollaborationOutput>
+export type DiscardContentCollaborationInput = z.infer<
+  typeof discardContentCollaborationInput
+>
+export type DiscardContentCollaborationOutput = z.infer<
+  typeof discardContentCollaborationOutput
+>
