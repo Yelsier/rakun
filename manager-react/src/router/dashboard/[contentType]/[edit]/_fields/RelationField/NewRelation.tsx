@@ -6,6 +6,7 @@ import type { FieldRef } from '../../ContentTypeEdit'
 import ContentTypeEdit from '../../ContentTypeEdit'
 import { FieldWrapper } from '../shared/FieldWrapper'
 import { FieldValue } from '../shared'
+import { createNewRelationState } from './relation-state'
 
 const NewRelation: React.FC<RelationPropsRef> = ({ ref, ...props }) => {
   const innerRef = useRef<FieldRef>(null)
@@ -15,10 +16,11 @@ const NewRelation: React.FC<RelationPropsRef> = ({ ref, ...props }) => {
     data: innerRef.current?.getValue() as object,
   })
 
-  const getState = () => ({
-    type: 'new',
-    data: innerRef.current?.getState() as object,
-  })
+  const getState = () =>
+    createNewRelationState(
+      props.contentType.name,
+      innerRef.current?.getState() as object | undefined,
+    )
 
   return (
     <FieldWrapper
