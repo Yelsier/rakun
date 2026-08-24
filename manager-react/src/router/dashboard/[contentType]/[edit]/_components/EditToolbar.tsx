@@ -112,9 +112,9 @@ const TabsScrollArea = ({ children, contentKey }: { children: ReactNode; content
     <div className="relative min-w-0 flex-1">
       <div
         ref={scrollRef}
-        className="min-w-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="min-w-0 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        <div ref={contentRef} className="w-max min-w-full">
+        <div ref={contentRef} className="w-max min-w-full pb-1.5">
           {children}
         </div>
       </div>
