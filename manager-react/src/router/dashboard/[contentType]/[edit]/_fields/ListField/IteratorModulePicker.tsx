@@ -491,11 +491,11 @@ export const IteratorModulePickerDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <div className="flex w-full pb-4 lg:hidden">
+        <div className="flex w-full pt-4">
           <DialogTrigger asChild>
             <Button
               variant="outline"
-              className="m-0"
+              className="m-0 w-full justify-center border-dashed"
               data-rakun-manager-add-module-trigger
             >
               <Plus />

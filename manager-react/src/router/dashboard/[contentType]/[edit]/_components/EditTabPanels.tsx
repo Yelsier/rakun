@@ -32,8 +32,8 @@ export const EditTabPanels = () => {
   } = useEditPageContext()
 
   return (
-    <ScrollArea className="h-full min-h-0 pr-4" data-rakun-manager-edit-scroll-area>
-      <div className="min-h-full min-w-0">
+    <ScrollArea className="h-full min-h-0 pr-2" data-rakun-manager-edit-scroll-area>
+      <div className="min-h-full min-w-0 py-4 md:py-5">
         {sections.hasIterables ? (
           <TabsContent
             value="content"
@@ -65,7 +65,7 @@ export const EditTabPanels = () => {
             data-rakun-manager-tab-panel="template"
             data-tour="content-edit-fields"
           >
-            <div className="flex items-start gap-3 rounded-md border border-amber-300 bg-amber-500/10 p-3 text-sm text-amber-950 dark:border-amber-500/40 dark:text-amber-100">
+            <div className="mb-2 flex items-start gap-3 rounded-md border border-amber-300 bg-amber-500/10 p-3 text-sm text-amber-950 dark:border-amber-500/40 dark:text-amber-100">
               <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
               <p>{t('contentEdit.sharedTemplateWarning')}</p>
             </div>

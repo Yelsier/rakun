@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { ListTree, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
+import { EditSectionNavigation } from './_components/EditSectionNavigation'
 import { EditTabPanels } from './_components/EditTabPanels'
 import { EditToolbar } from './_components/EditToolbar'
 import { PreviewPanel } from './_components/PreviewPanel'
@@ -9,18 +11,22 @@ import { ModuleNavigation } from './_components/ModuleNavigation'
 import { EditPageProvider, useEditPageContext } from './_context/EditPageContext'
 import type { EditPageProps } from './edit.types'
 
+import { Button } from '@/components/ui/button'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
+import { useSidebar } from '@/components/ui/sidebar'
 import { Tabs } from '@/components/ui/tabs'
+import { useIsomorphicLayoutEffect } from '@/hooks/use-isomorphic-layout-effect'
 import { useTranslations } from '@/i18n'
+import { cn } from '@/lib/utils'
 
-const previewResizableQuery = '(min-width: 1280px)'
+const splitEditorQuery = '(min-width: 1440px)'
 
-const useCanResizePreview = () => {
-  const [canResizePreview, setCanResizePreview] = useState(false)
+const useCanSplitEditor = () => {
+  const [canSplitEditor, setCanSplitEditor] = useState(false)
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia(previewResizableQuery)
-    const update = () => setCanResizePreview(mediaQuery.matches)
+    const mediaQuery = window.matchMedia(splitEditorQuery)
+    const update = () => setCanSplitEditor(mediaQuery.matches)
 
     mediaQuery.addEventListener('change', update)
     update()
@@ -28,50 +34,166 @@ const useCanResizePreview = () => {
     return () => mediaQuery.removeEventListener('change', update)
   }, [])
 
-  return canResizePreview
+  return canSplitEditor
+}
+
+const EditorSurface = () => {
+  const t = useTranslations()
+  const { activeTab } = useEditPageContext()
+  const [moduleNavigationOpen, setModuleNavigationOpen] = useState(false)
+  const moduleNavigationTab =
+    activeTab === 'content' || activeTab === 'template' ? activeTab : undefined
+
+  useEffect(() => {
+    setModuleNavigationOpen(false)
+  }, [activeTab])
+
+  return (
+    <section className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border bg-background md:flex-row">
+      <EditSectionNavigation />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {moduleNavigationTab ? (
+          <div className="flex shrink-0 items-center border-b px-3 py-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-expanded={moduleNavigationOpen}
+              onClick={() => setModuleNavigationOpen((open) => !open)}
+            >
+              <ListTree />
+              {t('modules.navigation')}
+            </Button>
+          </div>
+        ) : null}
+        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
+          <div className="h-full min-h-0 min-w-0 px-4 md:px-5 pr-2 md:pr-3">
+            <EditTabPanels />
+          </div>
+          {moduleNavigationTab ? (
+            <>
+              <button
+                type="button"
+                aria-label={t('common.close')}
+                className={cn(
+                  'absolute inset-0 z-20 bg-background/55 backdrop-blur-[1px] transition-opacity',
+                  moduleNavigationOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+                )}
+                onClick={() => setModuleNavigationOpen(false)}
+              />
+              <div
+                className={cn(
+                  'absolute inset-y-2 left-2 z-30 w-[min(19rem,calc(100%_-_1rem))] transition-[transform,opacity] duration-200 ease-out',
+                  moduleNavigationOpen
+                    ? 'translate-x-0 opacity-100 shadow-2xl'
+                    : 'pointer-events-none -translate-x-[calc(100%_+_1rem)] opacity-0'
+                )}
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-2 z-10 size-8"
+                  aria-label={t('common.close')}
+                  onClick={() => setModuleNavigationOpen(false)}
+                >
+                  <X />
+                </Button>
+                <ModuleNavigation
+                  tab={moduleNavigationTab}
+                  className="border bg-background"
+                  onNavigate={() => setModuleNavigationOpen(false)}
+                />
+              </div>
+            </>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  )
 }
 
 const EditPageContent = () => {
   const t = useTranslations()
   const { activeTab, canPreview, handleTabChange, previewState } = useEditPageContext()
-  const canResizePreview = useCanResizePreview()
-  const previewOpen = canPreview && previewState.previewOpen
-  const moduleNavigationTab =
-    activeTab === 'content' || activeTab === 'template' ? activeTab : undefined
+  const {
+    isMobile,
+    setOpen: setLayoutSidebarOpen,
+    setOpenMobile: setLayoutSidebarOpenMobile,
+  } = useSidebar()
+  const canSplitEditor = useCanSplitEditor()
+  const autoPreviewRequested = useRef(false)
+  const layoutSidebarClosed = useRef(false)
+  const [compactEditorOpen, setCompactEditorOpen] = useState(false)
+  const compactEditorAvailable = !isMobile && canPreview && !canSplitEditor
+
+  useEffect(() => {
+    if (isMobile || !canPreview || autoPreviewRequested.current) return
+
+    autoPreviewRequested.current = true
+    void previewState.handlePreview()
+  }, [canPreview, isMobile, previewState.handlePreview])
+
+  useIsomorphicLayoutEffect(() => {
+    if (layoutSidebarClosed.current) return
+
+    layoutSidebarClosed.current = true
+    setLayoutSidebarOpen(false)
+    setLayoutSidebarOpenMobile(false)
+  }, [setLayoutSidebarOpen, setLayoutSidebarOpenMobile])
 
   return (
-    <div className="container mx-auto h-full min-h-0 px-4 pt-5 pb-4">
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full min-h-0 w-full">
-        <EditToolbar />
-        {previewOpen && canResizePreview ? (
+    <div className="h-full min-h-0 w-full md:px-3 pt-3 pb-3">
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        orientation={isMobile ? 'horizontal' : 'vertical'}
+        className="flex h-full min-h-0 w-full flex-col gap-3"
+      >
+        <EditToolbar
+          compactEditorAvailable={compactEditorAvailable}
+          compactEditorOpen={compactEditorOpen}
+          onCompactEditorOpenChange={setCompactEditorOpen}
+        />
+        {isMobile ? (
+          <div className="min-h-0 flex-1">
+            <EditorSurface />
+          </div>
+        ) : canPreview && canSplitEditor ? (
           <ResizablePanelGroup className="min-h-0 w-full flex-1" orientation="horizontal">
-            <ResizablePanel style={{ overflow: 'hidden' }} defaultSize={50} minSize={350}>
-              <div className="flex h-full min-h-0 min-w-0 gap-4 pr-2">
-                {moduleNavigationTab ? <ModuleNavigation tab={moduleNavigationTab} /> : null}
-                <div className="min-h-0 min-w-0 flex-1">
-                  <EditTabPanels />
-                </div>
+            <ResizablePanel style={{ overflow: 'hidden' }} defaultSize="28%" minSize="480px">
+              <div className="h-full min-h-0 min-w-0 pr-2">
+                <EditorSurface />
               </div>
             </ResizablePanel>
             <ResizableHandle withHandle className="mx-2" />
-            <ResizablePanel defaultSize={50} minSize={350}>
-              <div className="pl-2">
-                <PreviewPanel />
+            <ResizablePanel style={{ overflow: 'hidden' }} defaultSize="72%" minSize="520px">
+              <div className="h-full min-h-0 min-w-0 pl-2">
+                <PreviewPanel className="shadow-sm" />
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
-        ) : (
-          <div className="grid min-h-0 flex-1 gap-4">
-            <div className="flex h-full min-h-0 min-w-0 gap-4">
-              {moduleNavigationTab ? <ModuleNavigation tab={moduleNavigationTab} /> : null}
-              <div className="min-h-0 min-w-0 flex-1">
-                <EditTabPanels />
-              </div>
+        ) : canPreview ? (
+          <div className="relative min-h-0 flex-1 overflow-hidden">
+            <PreviewPanel className="shadow-sm" />
+            <div
+              aria-hidden={!compactEditorOpen}
+              className={cn(
+                'absolute inset-y-2 left-2 z-40 w-[min(calc(100%_-_1rem),36rem)]',
+                compactEditorOpen ? 'block shadow-2xl' : 'hidden'
+              )}
+            >
+              <EditorSurface />
             </div>
-            {previewOpen ? <PreviewPanel /> : null}
+          </div>
+        ) : (
+          <div className="min-h-0 flex-1">
+            <EditorSurface />
           </div>
         )}
-        {!previewOpen && previewState.isSeoAnalysisPending && previewState.previewUrl ? (
+        {(isMobile || !canPreview) &&
+        previewState.isSeoAnalysisPending &&
+        previewState.previewUrl ? (
           <iframe
             key={`seo-analysis:${previewState.previewUrl}`}
             ref={previewState.previewFrameRef}

@@ -224,6 +224,19 @@ shared Template also has unsaved work, the confirmation states that it will be
 restored too. The save menu can save the current unsaved form as a separately
 named, unassigned draft variant copy or create an independent draft copy.
 
+Routeable documents keep the live preview visible as the main editing surface
+and collapse the manager's global navigation when opened. Editors can reopen
+that navigation from the normal header control. On wide screens, fields and the
+available Info, Content, Template, SEO, layout, variant, and history sections
+live in a resizable sidebar with compact vertical navigation and a preview-first
+initial split. Content and Template expose their module tree in an overlay
+navigator so it can be used for selection and reordering without permanently
+narrowing module forms. Module card actions use a separate wrapping row. On
+tablet-sized screens, the editor opens as an overlay while the preview remains
+the underlying canvas. On mobile, Rakun hides the preview, renders the editor as
+the main surface, and changes the section rail into a horizontally scrollable
+top bar.
+
 IndexedDB persistence does not replace Save: local and shared CRDT updates are
 working state, while MongoDB and public/web reads change only after the server
 save operation succeeds. Save therefore requires connectivity.

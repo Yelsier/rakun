@@ -74,6 +74,18 @@ type PreviewModuleRenderMeta = {
   moduleIndex?: number
 }
 
+export const getPreviewContentModuleIndexes = (
+  modules: PageModule[],
+  templateModuleIds?: string[]
+) => {
+  const templateIds = new Set(templateModuleIds)
+  let contentModuleIndex = 0
+
+  return modules.map((module) =>
+    templateIds.has(module._id) ? undefined : contentModuleIndex++
+  )
+}
+
 export const resolveRakunDevToolbarOptions = (
   value: RakunPageRendererProps['devToolbar']
 ): RakunDevToolbarOptions | null => {
@@ -195,15 +207,20 @@ export async function RakunPageRenderer({
           continue
         }
 
+        const contentModuleIndexes = getPreviewContentModuleIndexes(
+          item.modules,
+          page.templateModuleIds
+        )
         const children = await Promise.all(
           item.modules.map((module, moduleIndex) => {
             const index = pageModuleIndex++
+            const contentModuleIndex = contentModuleIndexes[moduleIndex]
 
             return renderModule(module, `content:${module._id}:${moduleIndex}`, {
-              entryType: page.templateModuleIds?.includes(module._id) ? 'template' : 'content',
+              entryType: contentModuleIndex === undefined ? 'template' : 'content',
               index,
               layoutIndex,
-              moduleIndex,
+              moduleIndex: contentModuleIndex,
             })
           })
         )

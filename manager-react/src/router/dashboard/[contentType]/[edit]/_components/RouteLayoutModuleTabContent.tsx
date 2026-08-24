@@ -1,5 +1,6 @@
 'use client'
 
+import { Pencil } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -20,6 +21,7 @@ import {
 } from '@/components/ui/select'
 import { TabsContent } from '@/components/ui/tabs'
 import { translateLayoutModuleLabel, useTranslations } from '@/i18n'
+import { useOptionalManagerNavigation } from '@/state/navigation'
 
 const getLayoutOverrideValue = (override?: RouteLayoutModuleOverrideRecord) => {
   if (!override) return '__default__'
@@ -32,6 +34,7 @@ export const RouteLayoutModuleTabContent = ({
   layoutModule: RouteLayoutModuleRecord
 }) => {
   const t = useTranslations()
+  const navigation = useOptionalManagerNavigation()
   const { activeTab, contentTypeId, contentTypeName, routeLayout } =
     useEditPageContext()
   const override = routeLayout.overridesByKey.get(`${layoutModule.routeId}:${layoutModule.key}`)
@@ -81,6 +84,22 @@ export const RouteLayoutModuleTabContent = ({
     layoutModule.key,
     layoutModule.contentType,
   )
+  const selectedModuleId =
+    selected === '__default__'
+      ? layoutModule.moduleId
+      : selected === '__none__'
+        ? undefined
+        : selected
+
+  const editSelectedModule = () => {
+    if (!selectedModuleId || !navigation?.push) return
+
+    navigation.push({
+      name: 'content.edit',
+      contentType: layoutModule.contentType,
+      id: selectedModuleId,
+    })
+  }
 
   return (
     <TabsContent
@@ -113,13 +132,23 @@ export const RouteLayoutModuleTabContent = ({
             ))}
           </SelectContent>
         </Select>
-        <Button
-          className='w-fit'
-          loading={isSaving}
-          onClick={() => saveLayoutOverride(layoutModule, selected)}
-        >
-          {t('contentEdit.saveOverride')}
-        </Button>
+        <div className='flex flex-wrap items-center gap-2'>
+          <Button
+            loading={isSaving}
+            onClick={() => saveLayoutOverride(layoutModule, selected)}
+          >
+            {t('contentEdit.saveOverride')}
+          </Button>
+          <Button
+            type='button'
+            variant='outline'
+            disabled={!selectedModuleId || !navigation?.push}
+            onClick={editSelectedModule}
+          >
+            <Pencil />
+            {t('contentEdit.editSelectedModule')}
+          </Button>
+        </div>
       </div>
     </TabsContent>
   )
