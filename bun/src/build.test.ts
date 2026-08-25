@@ -15,7 +15,7 @@ afterEach(async () => {
 })
 
 test('builds server/client graphs and a static route', async () => {
-  const root = await mkdtemp(resolve(process.cwd(), 'bun', '.tmp-rakun-bun-'))
+  const root = await mkdtemp(resolve(import.meta.dir, '..', '.tmp-rakun-bun-'))
   directories.push(root)
   const modulesDir = resolve(root, 'src', 'modules')
   await mkdir(modulesDir, { recursive: true })

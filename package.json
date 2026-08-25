@@ -31,6 +31,7 @@
     "manager-react",
     "manager-locales",
     "preview",
+    "preview-bun",
     "preview-next",
     "plugin-code-editor",
     "create-rakun-app"
@@ -69,6 +70,7 @@
     "preview:mail": "bun run --filter @rakun-kit/preview mail:preview",
     "preview:mail:check": "bun run --filter @rakun-kit/preview mail:check",
     "preview:mail:send": "bun run --filter @rakun-kit/preview mail:send-test",
+    "preview:bun": "bun run --filter @rakun-kit/preview-bun dev",
     "preview:next": "bun run --elide-lines=0 --filter @rakun-kit/preview-next dev",
     "preview:next:mail": "bun run --filter @rakun-kit/preview-next mail:preview",
     "preview:next:mail:check": "bun run --filter @rakun-kit/preview-next mail:check",

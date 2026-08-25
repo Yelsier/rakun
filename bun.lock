@@ -313,6 +313,24 @@
         "vite": "^8.0.8",
       },
     },
+    "preview-bun": {
+      "name": "@rakun-kit/preview-bun",
+      "version": "0.1.0",
+      "dependencies": {
+        "@rakun-kit/bun": "workspace:*",
+        "@rakun-kit/core": "workspace:*",
+        "@rakun-kit/react": "workspace:*",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.3.13",
+        "@types/node": "^25.6.0",
+        "@types/react": "^19.2.2",
+        "@types/react-dom": "^19.2.3",
+        "typescript": "^6.0.2",
+      },
+    },
     "preview-next": {
       "name": "@rakun-kit/preview-next",
       "version": "0.1.0",
@@ -1024,6 +1042,8 @@
     "@rakun-kit/plugin-code-editor": ["@rakun-kit/plugin-code-editor@workspace:plugin-code-editor"],
 
     "@rakun-kit/preview": ["@rakun-kit/preview@workspace:preview"],
+
+    "@rakun-kit/preview-bun": ["@rakun-kit/preview-bun@workspace:preview-bun"],
 
     "@rakun-kit/preview-next": ["@rakun-kit/preview-next@workspace:preview-next"],
 

@@ -50,7 +50,11 @@ const run = async (): Promise<void> => {
   throw new Error(`Unknown rakun-bun command "${command}".`)
 }
 
-void run().catch((error) => {
-  console.error(error instanceof Error ? error.message : error)
-  process.exitCode = 1
-})
+void run()
+  .then(() => {
+    if (command === 'build') process.exit(0)
+  })
+  .catch((error) => {
+    console.error(error instanceof Error ? error.message : error)
+    process.exit(1)
+  })

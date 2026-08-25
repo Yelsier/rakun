@@ -34,7 +34,7 @@ wants tRPC, one media adapter if uploads are required, and one mail adapter if
 outbound mail is required. `manager-react` is normally consumed through the Bun
 or Next adapter; use it directly for custom hosts.
 
-`preview` and `preview-next` are private example applications in the Rakun
+`preview`, `preview-bun`, and `preview-next` are private example applications in the Rakun
 repository, not installable packages, so they do not have installed manuals.
 
 ## Typical architecture
