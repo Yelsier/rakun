@@ -31,6 +31,11 @@ export function ManagerPage() {
 Import the stylesheet exactly once. `ManagerBrowserApp` owns browser-history
 navigation. Use `ManagerRuntimeApp` when the host supplies navigation.
 
+Built-in screens are split by manager route and loaded on first visit. Lucide
+names configured for content-type and module-picker icons remain unrestricted;
+the manager accepts kebab-case or PascalCase names and loads the selected icon
+on demand.
+
 ## Realtime synchronization
 
 The runtime loads `platform.realtime` from `manager.uiLocales` and selects

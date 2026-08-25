@@ -1,7 +1,8 @@
 import type { EncodedContentType } from "@rakun-kit/core/client";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 
 import { ManagerAuthLayout, ManagerDashboardLayout } from "../../layouts";
+import { LoadingSpinner } from "../../components/loading-spinner";
 import { managerRouteDefinitions } from "./route-list";
 import { matchRoutePath, type AnyManagerRouteDefinition } from "./route-schema";
 import { getManagerRelativePathname } from "../../state/navigation";
@@ -16,6 +17,12 @@ import type {
   ManagerRouteRendererProps,
   ManagerSearchParams,
 } from "./types";
+
+const ManagerRouteLoadingFallback = () => (
+  <div className="flex min-h-48 items-center justify-center">
+    <LoadingSpinner />
+  </div>
+);
 
 export const resolveManagerRoute = (args: {
   pathname: string;
@@ -126,7 +133,11 @@ export const renderManagerRoute = (args: {
       ? contentTypes.find((item) => item.name === route.contentType)
       : undefined;
 
-  const children = definition.render(route as never, props, matchedContentType);
+  const children = (
+    <Suspense fallback={<ManagerRouteLoadingFallback />}>
+      {definition.render(route as never, props, matchedContentType)}
+    </Suspense>
+  );
   const headerEnd = definition.headerEnd?.(
     route as never,
     props,

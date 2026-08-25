@@ -1,23 +1,43 @@
-import { icons, type LucideIcon } from 'lucide-react'
+import { createElement, forwardRef } from 'react'
+import type { LucideIcon, LucideProps } from 'lucide-react'
+import { DynamicIcon, iconNames, type IconName } from 'lucide-react/dynamic'
 
-const lucideIconByName = icons as Record<string, LucideIcon | undefined>
+const availableIconNames: ReadonlySet<string> = new Set(iconNames)
+const resolvedIcons = new Map<IconName, LucideIcon>()
 
-const toPascalCase = (value: string) =>
+const isIconName = (name: string): name is IconName =>
+  availableIconNames.has(name)
+
+const toKebabCase = (value: string) =>
   value
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .trim()
+    .replace(/[-_\s]?icon$/i, '')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
     .split(/[\s_-]+/)
     .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join('')
+    .join('-')
+    .toLowerCase()
 
-export const resolveLucideIcon = (name?: string): LucideIcon | undefined => {
+export const resolveLucideIconName = (name?: string): IconName | undefined => {
   if (!name) return undefined
 
-  const pascalName = toPascalCase(name)
-  const candidates = [name, `${name}Icon`, pascalName, `${pascalName}Icon`]
+  const normalizedName = toKebabCase(name)
+  return isIconName(normalizedName) ? normalizedName : undefined
+}
 
-  for (const candidate of candidates) {
-    const icon = lucideIconByName[candidate]
-    if (icon) return icon
-  }
+export const resolveLucideIcon = (name?: string): LucideIcon | undefined => {
+  const iconName = resolveLucideIconName(name)
+  if (!iconName) return undefined
+
+  const cachedIcon = resolvedIcons.get(iconName)
+  if (cachedIcon) return cachedIcon
+
+  const icon = forwardRef<SVGSVGElement, LucideProps>((props, ref) =>
+    createElement(DynamicIcon, { ...props, name: iconName, ref }),
+  )
+  icon.displayName = `DynamicLucideIcon(${iconName})`
+  resolvedIcons.set(iconName, icon)
+
+  return icon
 }

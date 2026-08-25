@@ -1,38 +1,5 @@
-import { ManagerAccountScreen } from "../dashboard/account";
-import { ManagerApiRoutesScreen } from "../dashboard/debugging/api-routes";
-import { ManagerDebuggingHomeScreen } from "../dashboard/debugging";
-import { ManagerSettingsSecurityScreen } from "../dashboard/debugging/security";
-import { ManagerSettingsLogsScreen } from "../dashboard/debugging/logs";
-import { ManagerContentTypeListScreen } from "../dashboard/[contentType]/(list)";
-import { ManagerContentTypeEditScreen } from "../dashboard/[contentType]/[edit]";
-import { ManagerContentTypeCreateScreen } from "../dashboard/[contentType]/create";
-import { ManagerDashboardHomeScreen } from "../dashboard";
-import { ManagerLoginScreen } from "../login";
-import { ManagerLoginCallbackScreen } from "../login/callback";
-import { ManagerMediaLibraryScreen } from "../dashboard/media";
-import { ManagerSeoScreen } from '../dashboard/seo'
-import { ManagerMfaScreen } from "../mfa";
-import {
-  ManagerForgotPasswordScreen,
-  ManagerResetPasswordScreen,
-} from "../password-recovery";
-import { ManagerSettingsLanguagesScreen } from "../dashboard/settings/languages";
-import { ManagerSettingsLiteralsScreen } from "../dashboard/settings/literals";
-import { ManagerSettingsRedirectsScreen } from "../dashboard/settings/redirects";
-import { ManagerSettingsRobotsScreen } from "../dashboard/settings/robots";
-import { ManagerSettingsSeoScreen } from "../dashboard/settings/seo";
-import { ManagerSettingsLlmsScreen } from "../dashboard/settings/llms";
-import { ManagerSettingsRoutePathsScreen } from "../dashboard/settings/routes/paths";
-import { ManagerSettingsRoutesScreen } from "../dashboard/settings/routes";
-import { ManagerSettingsHomeScreen } from "../dashboard/settings";
-import { ManagerSettingsSystemScreen } from "../dashboard/settings/system";
-import { ManagerSettingsReviewPoliciesScreen } from "../dashboard/settings/review-policies";
-import {
-  ManagerSettingsUserRoleCreateScreen,
-  ManagerSettingsUserRoleEditScreen,
-  ManagerSettingsUserRolesScreen,
-} from "../dashboard/settings/user-roles";
-import { ManagerUsersScreen } from "../dashboard/users";
+import { lazy } from "react";
+
 import LanguageSelector from "../../components/LanguageSelector";
 import { VariantSelector } from "../../components/VariantSelector";
 import { CollaborationPresence } from '../../components/CollaborationPresence'
@@ -42,6 +9,162 @@ import {
   getSearchParam,
   type AnyManagerRouteDefinition,
 } from "./route-schema";
+
+const ManagerAccountScreen = lazy(() =>
+  import("../dashboard/account").then((module) => ({
+    default: module.ManagerAccountScreen,
+  })),
+);
+const ManagerApiRoutesScreen = lazy(() =>
+  import("../dashboard/debugging/api-routes").then((module) => ({
+    default: module.ManagerApiRoutesScreen,
+  })),
+);
+const ManagerDebuggingHomeScreen = lazy(() =>
+  import("../dashboard/debugging").then((module) => ({
+    default: module.ManagerDebuggingHomeScreen,
+  })),
+);
+const ManagerSettingsSecurityScreen = lazy(() =>
+  import("../dashboard/debugging/security").then((module) => ({
+    default: module.ManagerSettingsSecurityScreen,
+  })),
+);
+const ManagerSettingsLogsScreen = lazy(() =>
+  import("../dashboard/debugging/logs").then((module) => ({
+    default: module.ManagerSettingsLogsScreen,
+  })),
+);
+const ManagerContentTypeListScreen = lazy(() =>
+  import("../dashboard/[contentType]/(list)").then((module) => ({
+    default: module.ManagerContentTypeListScreen,
+  })),
+);
+const ManagerContentTypeEditScreen = lazy(() =>
+  import("../dashboard/[contentType]/[edit]").then((module) => ({
+    default: module.ManagerContentTypeEditScreen,
+  })),
+);
+const ManagerContentTypeCreateScreen = lazy(() =>
+  import("../dashboard/[contentType]/create").then((module) => ({
+    default: module.ManagerContentTypeCreateScreen,
+  })),
+);
+const ManagerDashboardHomeScreen = lazy(() =>
+  import("../dashboard").then((module) => ({
+    default: module.ManagerDashboardHomeScreen,
+  })),
+);
+const ManagerLoginScreen = lazy(() =>
+  import("../login/screen").then((module) => ({
+    default: module.ManagerLoginScreen,
+  })),
+);
+const ManagerLoginCallbackScreen = lazy(() =>
+  import("../login/callback").then((module) => ({
+    default: module.ManagerLoginCallbackScreen,
+  })),
+);
+const ManagerMediaLibraryScreen = lazy(() =>
+  import("../dashboard/media").then((module) => ({
+    default: module.ManagerMediaLibraryScreen,
+  })),
+);
+const ManagerSeoScreen = lazy(() =>
+  import('../dashboard/seo').then((module) => ({
+    default: module.ManagerSeoScreen,
+  })),
+)
+const ManagerMfaScreen = lazy(() =>
+  import("../mfa").then((module) => ({
+    default: module.ManagerMfaScreen,
+  })),
+);
+const ManagerForgotPasswordScreen = lazy(() =>
+  import("../password-recovery").then((module) => ({
+    default: module.ManagerForgotPasswordScreen,
+  })),
+);
+const ManagerResetPasswordScreen = lazy(() =>
+  import("../password-recovery").then((module) => ({
+    default: module.ManagerResetPasswordScreen,
+  })),
+);
+const ManagerSettingsLanguagesScreen = lazy(() =>
+  import("../dashboard/settings/languages").then((module) => ({
+    default: module.ManagerSettingsLanguagesScreen,
+  })),
+);
+const ManagerSettingsLiteralsScreen = lazy(() =>
+  import("../dashboard/settings/literals").then((module) => ({
+    default: module.ManagerSettingsLiteralsScreen,
+  })),
+);
+const ManagerSettingsRedirectsScreen = lazy(() =>
+  import("../dashboard/settings/redirects").then((module) => ({
+    default: module.ManagerSettingsRedirectsScreen,
+  })),
+);
+const ManagerSettingsRobotsScreen = lazy(() =>
+  import("../dashboard/settings/robots").then((module) => ({
+    default: module.ManagerSettingsRobotsScreen,
+  })),
+);
+const ManagerSettingsSeoScreen = lazy(() =>
+  import("../dashboard/settings/seo").then((module) => ({
+    default: module.ManagerSettingsSeoScreen,
+  })),
+);
+const ManagerSettingsLlmsScreen = lazy(() =>
+  import("../dashboard/settings/llms").then((module) => ({
+    default: module.ManagerSettingsLlmsScreen,
+  })),
+);
+const ManagerSettingsRoutePathsScreen = lazy(() =>
+  import("../dashboard/settings/routes/paths").then((module) => ({
+    default: module.ManagerSettingsRoutePathsScreen,
+  })),
+);
+const ManagerSettingsRoutesScreen = lazy(() =>
+  import("../dashboard/settings/routes").then((module) => ({
+    default: module.ManagerSettingsRoutesScreen,
+  })),
+);
+const ManagerSettingsHomeScreen = lazy(() =>
+  import("../dashboard/settings").then((module) => ({
+    default: module.ManagerSettingsHomeScreen,
+  })),
+);
+const ManagerSettingsSystemScreen = lazy(() =>
+  import("../dashboard/settings/system").then((module) => ({
+    default: module.ManagerSettingsSystemScreen,
+  })),
+);
+const ManagerSettingsReviewPoliciesScreen = lazy(() =>
+  import("../dashboard/settings/review-policies").then((module) => ({
+    default: module.ManagerSettingsReviewPoliciesScreen,
+  })),
+);
+const ManagerSettingsUserRolesScreen = lazy(() =>
+  import("../dashboard/settings/user-roles/screen").then((module) => ({
+    default: module.ManagerSettingsUserRolesScreen,
+  })),
+);
+const ManagerSettingsUserRoleCreateScreen = lazy(() =>
+  import("../dashboard/settings/user-roles/create/screen").then((module) => ({
+    default: module.ManagerSettingsUserRoleCreateScreen,
+  })),
+);
+const ManagerSettingsUserRoleEditScreen = lazy(() =>
+  import("../dashboard/settings/user-roles/[edit]/screen").then((module) => ({
+    default: module.ManagerSettingsUserRoleEditScreen,
+  })),
+);
+const ManagerUsersScreen = lazy(() =>
+  import("../dashboard/users").then((module) => ({
+    default: module.ManagerUsersScreen,
+  })),
+);
 
 export const managerRouteDefinitions = [
   defineManagerRoute({

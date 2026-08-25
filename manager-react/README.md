@@ -28,6 +28,11 @@ export function ManagerPage() {
 `ManagerBrowserApp` creates browser path navigation by default. Use
 `ManagerRuntimeApp` when you need to provide custom navigation.
 
+Built-in screens are split by manager route and loaded on first visit. Lucide
+names configured for content-type and module-picker icons remain unrestricted;
+the manager accepts kebab-case or PascalCase names and loads the selected icon
+on demand.
+
 ## Realtime synchronization
 
 `ManagerBrowserApp` and `ManagerRuntimeApp` read the realtime transport from
