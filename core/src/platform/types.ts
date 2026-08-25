@@ -1,6 +1,6 @@
 export type RakunRuntime = 'node' | 'bun'
 
-export type RakunFramework = 'standalone' | 'next' | 'express'
+export type RakunFramework = 'standalone' | 'next' | 'express' | 'bun'
 
 export type RakunDeployment = 'serverless' | 'persistent' | 'edge'
 

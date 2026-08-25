@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "rootDir": "src",
+    "outDir": "dist/esm",
+    "paths": {
+      "@rakun-kit/core": ["../core/dist/esm/index.d.ts"],
+      "@rakun-kit/core/contracts": ["../core/dist/esm/contracts.d.ts"],
+      "@rakun-kit/core/errors": ["../core/dist/esm/lib/errors/index.d.ts"],
+      "@rakun-kit/core/web": ["../core/dist/esm/web/index.d.ts"],
+      "@rakun-kit/react": ["../react/dist/esm/index.d.ts"]
+    }
+  },
+  "references": [
+    { "path": "../core/tsconfig.build.json" },
+    { "path": "../react/tsconfig.build.json" }
+  ],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+}

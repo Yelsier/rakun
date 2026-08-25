@@ -1,7 +1,7 @@
 {
   "name": "rakun-manual",
   "private": true,
-  "packageManager": "bun@1.3.4",
+  "packageManager": "bun@1.4.0",
   "description": "Monorepo for Rakun, a TypeScript toolkit for content, routing, manager UI, and web integrations.",
   "license": "MIT",
   "author": {
@@ -20,6 +20,7 @@
     "core",
     "trpc",
     "express",
+    "bun",
     "next",
     "s3",
     "smtp",
@@ -40,14 +41,15 @@
     "qs": "6.15.2"
   },
   "scripts": {
-    "clean": "rm -rf core/dist trpc/dist express/dist next/dist s3/dist smtp/dist resend/dist jsx-email/dist openai/dist react/dist manager-react/dist manager-locales/dist plugin-code-editor/dist create-rakun-app/dist",
+    "clean": "rm -rf core/dist trpc/dist express/dist bun/dist next/dist s3/dist smtp/dist resend/dist jsx-email/dist openai/dist react/dist manager-react/dist manager-locales/dist plugin-code-editor/dist create-rakun-app/dist",
     "test": "bun run --filter @rakun-kit/core test",
-    "build": "bun run clean && bun run --filter @rakun-kit/core build && bun run --filter @rakun-kit/jsx-email build && bun run --filter @rakun-kit/smtp build && bun run --filter @rakun-kit/resend build && bun run --filter @rakun-kit/trpc build && bun run --filter @rakun-kit/react build && bun run --filter @rakun-kit/manager-react build && bun run --filter @rakun-kit/manager-locales build && bun run --filter @rakun-kit/plugin-code-editor build && bun run --filter @rakun-kit/express build && bun run --filter @rakun-kit/next build && bun run --filter @rakun-kit/s3 build && bun run --filter @rakun-kit/openai build && bun run --filter create-rakun-app build",
-    "build:esm": "bun run --filter @rakun-kit/core build:esm && bun run --filter @rakun-kit/jsx-email build:esm && bun run --filter @rakun-kit/smtp build:esm && bun run --filter @rakun-kit/resend build:esm && bun run --filter @rakun-kit/trpc build:esm && bun run --filter @rakun-kit/express build:esm && bun run --filter @rakun-kit/react build:esm && bun run --filter @rakun-kit/manager-react build:esm && bun run --filter @rakun-kit/manager-locales build:esm && bun run --filter @rakun-kit/plugin-code-editor build:esm && bun run --filter @rakun-kit/next build:esm && bun run --filter @rakun-kit/s3 build:esm && bun run --filter @rakun-kit/openai build:esm",
+    "build": "bun run clean && bun run --filter @rakun-kit/core build && bun run --filter @rakun-kit/jsx-email build && bun run --filter @rakun-kit/smtp build && bun run --filter @rakun-kit/resend build && bun run --filter @rakun-kit/trpc build && bun run --filter @rakun-kit/react build && bun run --filter @rakun-kit/manager-react build && bun run --filter @rakun-kit/manager-locales build && bun run --filter @rakun-kit/plugin-code-editor build && bun run --filter @rakun-kit/express build && bun run --filter @rakun-kit/bun build && bun run --filter @rakun-kit/next build && bun run --filter @rakun-kit/s3 build && bun run --filter @rakun-kit/openai build && bun run --filter create-rakun-app build",
+    "build:esm": "bun run --filter @rakun-kit/core build:esm && bun run --filter @rakun-kit/jsx-email build:esm && bun run --filter @rakun-kit/smtp build:esm && bun run --filter @rakun-kit/resend build:esm && bun run --filter @rakun-kit/trpc build:esm && bun run --filter @rakun-kit/express build:esm && bun run --filter @rakun-kit/react build:esm && bun run --filter @rakun-kit/manager-react build:esm && bun run --filter @rakun-kit/manager-locales build:esm && bun run --filter @rakun-kit/plugin-code-editor build:esm && bun run --filter @rakun-kit/bun build:esm && bun run --filter @rakun-kit/next build:esm && bun run --filter @rakun-kit/s3 build:esm && bun run --filter @rakun-kit/openai build:esm",
     "build:cjs": "bun run --filter @rakun-kit/core build:cjs && bun run --filter @rakun-kit/smtp build:cjs && bun run --filter @rakun-kit/resend build:cjs && bun run --filter @rakun-kit/trpc build:cjs && bun run --filter @rakun-kit/express build:cjs && bun run --filter @rakun-kit/react build:cjs && bun run --filter @rakun-kit/manager-react build:cjs && bun run --filter @rakun-kit/manager-locales build:cjs && bun run --filter @rakun-kit/plugin-code-editor build:cjs && bun run --filter @rakun-kit/next build:cjs && bun run --filter @rakun-kit/s3 build:cjs && bun run --filter @rakun-kit/openai build:cjs",
     "build:core": "bun run --filter @rakun-kit/core build",
     "build:trpc": "bun run --filter @rakun-kit/trpc build",
     "build:express": "bun run --filter @rakun-kit/express build",
+    "build:bun": "bun run --filter @rakun-kit/bun build",
     "build:next": "bun run --filter @rakun-kit/next build",
     "build:s3": "bun run --filter @rakun-kit/s3 build",
     "build:smtp": "bun run --filter @rakun-kit/smtp build",
