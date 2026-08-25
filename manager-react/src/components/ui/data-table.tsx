@@ -419,11 +419,15 @@ export function DataTable<TData, TValue>({
       >
         <div
           ref={tableWrapperRef}
-          className='w-full min-w-full overflow-hidden rounded-lg border'
+          className={cn(
+            'min-w-full overflow-hidden rounded-lg border',
+            useFixedLayout ? 'w-full' : 'w-max',
+          )}
           style={useFixedLayout ? { minWidth: totalSize } : undefined}
         >
           <Table
             className={cn(useFixedLayout ? 'table-fixed' : 'w-full')}
+            containerClassName='overflow-visible'
             style={tableStyle}
           >
             <colgroup>

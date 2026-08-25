@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'bun:test'
 
-import { getRakunManagerEditHref, resolveRakunDevToolbarOptions } from '../src/web-renderer'
+import {
+  getPreviewContentModuleIndexes,
+  getRakunManagerEditHref,
+  resolveRakunDevToolbarOptions,
+} from '../src/web-renderer'
 
 describe('Rakun development toolbar', () => {
   it('resolves explicit toolbar settings', () => {
@@ -57,5 +61,18 @@ describe('Rakun development toolbar', () => {
       })
     ).toBe('/backend/Landing%20Page/page%2F1')
     expect(getRakunManagerEditHref({ documentType: 'Page' })).toBeUndefined()
+  })
+
+  it('indexes content modules without counting template modules', () => {
+    const modules = [
+      { _id: 'template-header', _type: 'Header' },
+      { _id: 'content-hero', _type: 'Hero' },
+      { _id: 'template-promo', _type: 'Promo' },
+      { _id: 'content-carousel', _type: 'Carousel' },
+    ]
+
+    expect(
+      getPreviewContentModuleIndexes(modules, ['template-header', 'template-promo'])
+    ).toEqual([undefined, 0, undefined, 1])
   })
 })

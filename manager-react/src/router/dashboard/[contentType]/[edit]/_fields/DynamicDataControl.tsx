@@ -54,6 +54,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useManagerQuery } from '@/client/react'
 import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
+import { cn } from '@/lib/utils'
 
 type FieldBinding = DynamicBindingSource | undefined
 type ListMapSource = DynamicListMapSource | undefined
@@ -2184,6 +2185,7 @@ export const DynamicDataControl = ({
     listBinding,
     documentContentTypeName: currentDocumentContentType.name,
   })
+  const triggerSummary = usesListBinding ? summary.split(' · ')[0] : summary
   const updateFieldBinding = (binding: FieldBinding) => {
     const fields = { ...(activeBindings?.fields ?? {}) }
     if (binding) fields[fieldName] = binding
@@ -2249,25 +2251,30 @@ export const DynamicDataControl = ({
   }
 
   const trigger = (
-    <div className="flex min-w-0 items-center gap-1.5">
+    <div
+      className={cn(
+        'flex max-w-full min-w-0 items-center justify-end gap-1.5',
+        bound ? 'max-w-72' : 'w-auto'
+      )}
+    >
       <Tooltip>
         <TooltipTrigger asChild>
           <button
             type="button"
-            className="min-w-0 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex max-w-full min-w-0 cursor-pointer justify-end rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={() => setOpen((value) => !value)}
           >
             {bound && summary ? (
               <Badge
                 variant="secondary"
-                className="max-w-80 min-w-0 gap-1.5 rounded-md px-2 py-1 hover:bg-secondary/80"
+                className="max-w-full min-w-0 gap-1.5 rounded-md px-2 py-1 hover:bg-secondary/80"
               >
                 {usesListBinding ? (
                   <ListFilter className="h-3.5 w-3.5 shrink-0" />
                 ) : (
                   <Link2 className="h-3.5 w-3.5 shrink-0" />
                 )}
-                <span className="truncate">{summary}</span>
+                <span className="truncate">{triggerSummary}</span>
               </Badge>
             ) : (
               <Badge
@@ -2280,8 +2287,9 @@ export const DynamicDataControl = ({
             )}
           </button>
         </TooltipTrigger>
-        <TooltipContent side="top" sideOffset={6}>
-          {triggerLabel}
+        <TooltipContent side="top" sideOffset={6} className="max-w-sm">
+          <span className="block font-medium">{triggerLabel}</span>
+          {bound && summary ? <span className="mt-1 block opacity-80">{summary}</span> : null}
         </TooltipContent>
       </Tooltip>
       {bound ? (
@@ -2291,7 +2299,7 @@ export const DynamicDataControl = ({
               type="button"
               size="icon"
               variant="ghost"
-              className="size-6"
+              className="size-6 shrink-0"
               onClick={clearBinding}
             >
               <X className="h-4 w-4" />

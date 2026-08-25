@@ -539,28 +539,28 @@ export const EditPageProvider = ({
         return
       }
 
-      if (message.moduleId && message.moduleType && navigation?.push) {
-        navigation.push({
-          name: 'content.edit',
-          contentType: message.moduleType,
-          id: message.moduleId,
-        })
-        return
-      }
-
       const layoutModule = routeLayout.routeLayoutModules.find(
         (item) =>
           item.key === message.layoutKey &&
           (!previewRoute || item.routeKey === previewRoute.key),
       )
 
-      if (!layoutModule) return
+      if (layoutModule) {
+        saveFormState()
+        setActiveTab(`layout:${layoutModule._id}`)
+        highlightManagerPreviewTarget([
+          `[data-rakun-manager-layout-key="${escapeCssValue(layoutModule.key)}"]`,
+        ])
+        return
+      }
 
-      saveFormState()
-      setActiveTab(`layout:${layoutModule._id}`)
-      highlightManagerPreviewTarget([
-        `[data-rakun-manager-layout-key="${escapeCssValue(layoutModule.key)}"]`,
-      ])
+      if (message.moduleId && message.moduleType && navigation?.push) {
+        navigation.push({
+          name: 'content.edit',
+          contentType: message.moduleType,
+          id: message.moduleId,
+        })
+      }
     },
     [
       navigation,
