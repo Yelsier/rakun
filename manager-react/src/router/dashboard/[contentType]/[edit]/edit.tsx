@@ -52,23 +52,28 @@ const EditorSurface = () => {
     <section className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border bg-background md:flex-row">
       <EditSectionNavigation />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        {moduleNavigationTab ? (
-          <div className="flex shrink-0 items-center border-b px-3 py-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              aria-expanded={moduleNavigationOpen}
-              onClick={() => setModuleNavigationOpen((open) => !open)}
-            >
-              <ListTree />
-              {t('modules.navigation')}
-            </Button>
-          </div>
-        ) : null}
-        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
-          <div className="h-full min-h-0 min-w-0 px-4 md:px-5 pr-2 md:pr-3">
-            <EditTabPanels />
+        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden flex flex-col">
+          {moduleNavigationTab ? (
+            <div className="flex items-center border-b px-3 py-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-expanded={moduleNavigationOpen}
+                onClick={() => setModuleNavigationOpen((open) => !open)}
+              >
+                <ListTree />
+                {t('modules.navigation')}
+              </Button>
+            </div>
+          ) : null}
+          <div
+            className={cn(
+              'h-full min-h-0 min-w-0',
+              activeTab !== 'seo' && 'px-4 pr-2 md:px-5 md:pr-3 py-4'
+            )}
+          >
+            <EditTabPanels moduleNavigationInset={Boolean(moduleNavigationTab)} />
           </div>
           {moduleNavigationTab ? (
             <>
@@ -166,7 +171,7 @@ const EditPageContent = () => {
                 <EditorSurface />
               </div>
             </ResizablePanel>
-            <ResizableHandle withHandle className="mx-2" />
+            <ResizableHandle withHandle className="mx-2 transition-colors hover:bg-primary" />
             <ResizablePanel style={{ overflow: 'hidden' }} defaultSize="72%" minSize="520px">
               <div className="h-full min-h-0 min-w-0 pl-2">
                 <PreviewPanel className="shadow-sm" />

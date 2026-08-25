@@ -23,6 +23,7 @@ import { useManagerQuery } from '@/client/react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { useTranslations } from '@/i18n'
@@ -172,12 +173,12 @@ export const SeoTabContent = () => {
   const selectedAudit = history.find((audit) => audit._id === selectedAuditId)
   const selectedSnapshot = useMemo(
     () => (selectedAudit ? readPageSeoAuditSnapshot(selectedAudit.payload) : null),
-    [selectedAudit],
+    [selectedAudit]
   )
   const liveReport = previewState.seoAnalysis
-  const report = selectedAudit ? selectedSnapshot?.report ?? null : liveReport
+  const report = selectedAudit ? (selectedSnapshot?.report ?? null) : liveReport
   const checks = selectedAudit
-    ? selectedSnapshot?.checks ?? []
+    ? (selectedSnapshot?.checks ?? [])
     : report
       ? buildSeoChecks(report)
       : []
@@ -314,421 +315,435 @@ export const SeoTabContent = () => {
         form.saveState()
         setView(value as 'metadata' | 'analysis')
       }}
-      className="min-h-full gap-0"
+      className="h-full min-h-0 gap-0 overflow-hidden"
     >
       <TabsList
         variant="line"
-        className="sticky top-0 z-20 h-auto w-full justify-start gap-6 rounded-none border-b bg-background/95 p-0 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+        className="flex items-center justify-start gap-4 flex-row! w-full border-b px-5.5 py-2 h-12.25!"
       >
         <TabsTrigger
           value="metadata"
-          className="-mb-px h-auto flex-none rounded-none border-x-0 border-t-0 border-b-2 border-b-transparent px-0 pt-1 pb-3 after:hidden data-[state=active]:border-b-primary dark:data-[state=active]:border-b-primary"
+          className="-mb-px h-8 w-auto! flex-none justify-center! rounded-none border-x-0 border-t-0 border-b-2 border-b-transparent px-0 py-0 after:hidden data-[state=active]:border-b-primary! dark:data-[state=active]:border-b-primary!"
         >
           <Tags />
           {t('contentEdit.seoMetadataView')}
         </TabsTrigger>
         <TabsTrigger
           value="analysis"
-          className="-mb-px h-auto flex-none rounded-none border-x-0 border-t-0 border-b-2 border-b-transparent px-0 pt-1 pb-3 after:hidden data-[state=active]:border-b-primary dark:data-[state=active]:border-b-primary"
+          className="-mb-px h-8 w-auto! flex-none justify-center! rounded-none border-x-0 border-t-0 border-b-2 border-b-transparent px-0 py-0 after:hidden data-[state=active]:border-b-primary! dark:data-[state=active]:border-b-primary!"
         >
           <Search />
           {t('contentEdit.seoAnalysisView')}
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent
-        value="metadata"
-        forceMount
-        hidden={view !== 'metadata'}
-        className="min-h-0 pt-5"
-      >
-        <ContentTypeEdit
-          key={`seo:${form.formRevision}`}
-          defaultData={form.draft.current}
-          ref={form.seoRef}
-          contentType={sections.seo}
-          parentContentType={contentType}
-          initializeSeoBindings={!contentTypeId}
-          id={contentTypeName}
-          hideTitle
-          collaborative
-        />
-      </TabsContent>
+      <div hidden={view !== 'metadata'} className="min-h-0 flex-1 px-4 py-4 pr-2 md:px-5 md:pr-3">
+        <ScrollArea asChild>
+          <TabsContent
+            value="metadata"
+            forceMount
+            hidden={view !== 'metadata'}
+            className="h-full min-h-0 pr-2"
+          >
+            <ContentTypeEdit
+              key={`seo:${form.formRevision}`}
+              defaultData={form.draft.current}
+              ref={form.seoRef}
+              contentType={sections.seo}
+              parentContentType={contentType}
+              initializeSeoBindings={!contentTypeId}
+              id={contentTypeName}
+              hideTitle
+              collaborative
+            />
+          </TabsContent>
+        </ScrollArea>
+      </div>
 
-      <TabsContent
-        value="analysis"
-        forceMount
-        hidden={view !== 'analysis'}
-        className="space-y-5 pt-5 pb-6"
-      >
-        <Card>
-          <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1.5">
-              <CardTitle>{t('contentEdit.seoAnalysisTitle')}</CardTitle>
-              <CardDescription>{t('contentEdit.seoAnalysisDescription')}</CardDescription>
-            </div>
-            <Button
-              className="shrink-0"
-              disabled={
-                !canPreview || previewState.isPreviewPending || previewState.isSeoAnalysisPending
-              }
-              loading={previewState.isSeoAnalysisPending}
-              onClick={() => void previewState.handleSeoAnalysis()}
-            >
-              <Search />
-              {liveReport
-                ? t('contentEdit.seoRegenerateReport')
-                : t('contentEdit.seoGenerateReport')}
-            </Button>
-          </CardHeader>
-          {!canPreview ? (
-            <CardContent className="text-muted-foreground text-sm">
-              {t('contentEdit.seoAnalysisUnavailable')}
-            </CardContent>
-          ) : null}
-          {previewState.seoAnalysisError ? (
-            <CardContent className="text-destructive text-sm">
-              {previewState.seoAnalysisError}
-            </CardContent>
-          ) : null}
-        </Card>
-
-        {contentTypeId && canReadHistory ? (
-          <Card>
-            <CardHeader className='gap-3 sm:flex-row sm:items-center sm:justify-between'>
-              <div className='space-y-1.5'>
-                <CardTitle className='flex items-center gap-2'>
-                  <History className='size-4' />
-                  {t('contentEdit.seoHistoryTitle')}
-                </CardTitle>
-                <CardDescription>{t('contentEdit.seoHistoryDescription')}</CardDescription>
-              </div>
-              {selectedAudit ? (
-                <Button variant='outline' size='sm' onClick={() => setSelectedAuditId(null)}>
-                  <RotateCcw />
-                  {t('contentEdit.seoHistoryCurrent')}
-                </Button>
-              ) : null}
-            </CardHeader>
-            <CardContent>
-              {historyQuery.isLoading ? (
-                <p className='text-sm text-muted-foreground'>
-                  {t('contentEdit.seoHistoryLoading')}
-                </p>
-              ) : historyQuery.isError ? (
-                <p className='text-sm text-destructive'>
-                  {getActionErrorMessage(
-                    historyQuery.error,
-                    t('contentEdit.seoHistoryLoadError'),
-                  )}
-                </p>
-              ) : history.length ? (
-                <div className='flex gap-3 overflow-x-auto pb-1'>
-                  {history.map((audit) => (
-                    <button
-                      key={audit._id}
-                      type='button'
-                      className={cn(
-                        'min-w-48 rounded-lg border p-3 text-left transition-colors hover:bg-accent',
-                        selectedAuditId === audit._id && 'border-primary bg-primary/5',
-                      )}
-                      onClick={() => setSelectedAuditId(audit._id)}
-                    >
-                      <span className='block text-xs text-muted-foreground'>
-                        {audit.createdAt
-                          ? formatDate(new Date(audit.createdAt))
-                          : t('common.unknown')}
-                      </span>
-                      <span className='mt-2 flex items-center justify-between gap-3'>
-                        <strong>{t('contentEdit.seoHistoryScore', { score: audit.score })}</strong>
-                        <span className='flex gap-1'>
-                          {audit.errorCount ? (
-                            <Badge variant='destructive'>{audit.errorCount}</Badge>
-                          ) : null}
-                          {audit.warningCount ? (
-                            <Badge variant='secondary'>{audit.warningCount}</Badge>
-                          ) : null}
-                        </span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className='text-sm text-muted-foreground'>
-                  {t('contentEdit.seoHistoryEmpty')}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        ) : null}
-
-        {selectedAudit ? (
-          <div className='flex flex-wrap items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm'>
-            <History className='size-4 text-primary' />
-            <span className='font-medium'>{t('contentEdit.seoHistoryViewing')}</span>
-            <span className='text-muted-foreground'>
-              {selectedAudit.createdAt
-                ? formatDate(new Date(selectedAudit.createdAt))
-                : t('common.unknown')}
-            </span>
-          </div>
-        ) : null}
-
-        {!report && selectedAudit && checks.length ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('contentEdit.seoHistorySnapshotTitle')}</CardTitle>
-              <CardDescription>{t('contentEdit.seoHistorySnapshotDescription')}</CardDescription>
-            </CardHeader>
-            <CardContent className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
-              {checks.map((check) => {
-                const copy = getCheckCopy(check)
-
-                return (
-                  <div
-                    key={check.id}
-                    className={cn('rounded-lg border p-4', statusStyles[check.status])}
-                  >
-                    <div className='flex items-center gap-2 font-medium'>
-                      <StatusIcon status={check.status} />
-                      {copy.title}
-                    </div>
-                  </div>
-                )
-              })}
-            </CardContent>
-          </Card>
-        ) : !report ? (
-          <div className="text-muted-foreground flex min-h-64 flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-8 text-center">
-            <Search className="size-9" />
-            <div>
-              <p className="font-medium text-foreground">{t('contentEdit.seoNoReportTitle')}</p>
-              <p className="mt-1 max-w-lg text-sm">{t('contentEdit.seoNoReportDescription')}</p>
-            </div>
-          </div>
-        ) : (
-          <>
+      <div hidden={view !== 'analysis'} className="min-h-0 flex-1 px-4 py-4 pr-2 md:px-5 md:pr-3">
+        <ScrollArea asChild>
+          <TabsContent
+            value="analysis"
+            forceMount
+            hidden={view !== 'analysis'}
+            className="h-full min-h-0 space-y-5 pr-2"
+          >
             <Card>
-              <CardContent className="flex flex-col gap-5 pt-6 sm:flex-row sm:items-center">
-                <div
-                  className={cn(
-                    'flex size-24 shrink-0 items-center justify-center rounded-full border-8 text-2xl font-semibold',
-                    score >= 80
-                      ? statusStyles.good
-                      : score >= 50
-                        ? statusStyles.warning
-                        : statusStyles.error
-                  )}
+              <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1.5">
+                  <CardTitle>{t('contentEdit.seoAnalysisTitle')}</CardTitle>
+                  <CardDescription>{t('contentEdit.seoAnalysisDescription')}</CardDescription>
+                </div>
+                <Button
+                  className="shrink-0"
+                  disabled={
+                    !canPreview ||
+                    previewState.isPreviewPending ||
+                    previewState.isSeoAnalysisPending
+                  }
+                  loading={previewState.isSeoAnalysisPending}
+                  onClick={() => void previewState.handleSeoAnalysis()}
                 >
-                  {score}
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">{t('contentEdit.seoScoreTitle')}</h3>
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    {t('contentEdit.seoScoreDescription')}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {(['good', 'warning', 'error'] as const).map((status) => (
-                      <Badge key={status} variant="outline" className={statusStyles[status]}>
-                        <StatusIcon status={status} />
-                        {t(
-                          `contentEdit.seoStatus${status === 'good' ? 'Good' : status === 'warning' ? 'Warning' : 'Error'}`
-                        )}
-                        {' · '}
-                        {checks.filter((check) => check.status === status).length}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
+                  <Search />
+                  {liveReport
+                    ? t('contentEdit.seoRegenerateReport')
+                    : t('contentEdit.seoGenerateReport')}
+                </Button>
+              </CardHeader>
+              {!canPreview ? (
+                <CardContent className="text-muted-foreground text-sm">
+                  {t('contentEdit.seoAnalysisUnavailable')}
+                </CardContent>
+              ) : null}
+              {previewState.seoAnalysisError ? (
+                <CardContent className="text-destructive text-sm">
+                  {previewState.seoAnalysisError}
+                </CardContent>
+              ) : null}
             </Card>
 
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {checks.map((check) => {
-                const copy = getCheckCopy(check)
-
-                return (
-                  <div
-                    key={check.id}
-                    className={cn('rounded-lg border p-4', statusStyles[check.status])}
-                  >
-                    <div className="flex items-center gap-2 font-medium">
-                      <StatusIcon status={check.status} />
-                      {copy.title}
-                    </div>
-                    <p className="mt-2 text-sm text-foreground/75">{copy.description}</p>
+            {contentTypeId && canReadHistory ? (
+              <Card>
+                <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1.5">
+                    <CardTitle className="flex items-center gap-2">
+                      <History className="size-4" />
+                      {t('contentEdit.seoHistoryTitle')}
+                    </CardTitle>
+                    <CardDescription>{t('contentEdit.seoHistoryDescription')}</CardDescription>
                   </div>
-                )
-              })}
-            </div>
-
-            <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,3fr)_minmax(18rem,2fr)]">
-              <div className="grid gap-5">
-                <Card className="overflow-hidden">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Search className="size-4" />
-                      {t('contentEdit.seoGooglePreview')}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="rounded-lg border bg-white p-5 text-slate-900 shadow-sm">
-                      <p className="truncate text-sm text-emerald-800">
-                        {getDisplayUrl(resultUrl)}
-                      </p>
-                      <p className="mt-1 line-clamp-1 text-xl text-blue-800">{report.title}</p>
-                      <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600">
-                        {report.description}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="overflow-hidden">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Share2 className="size-4" />
-                      {t('contentEdit.seoSocialPreview')}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-hidden rounded-lg border bg-muted/30">
-                      {socialImage ? (
-                        <img
-                          src={socialImage}
-                          alt=""
-                          className="aspect-[1.91/1] w-full bg-muted object-cover"
-                        />
-                      ) : null}
-                      <div className="space-y-1 p-4">
-                        <p className="text-muted-foreground truncate text-xs uppercase">
-                          {getDisplayUrl(report.openGraph.url || report.url)}
-                        </p>
-                        <p className="line-clamp-1 font-semibold">{socialTitle}</p>
-                        <p className="text-muted-foreground line-clamp-2 text-sm">
-                          {socialDescription}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="grid gap-5">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t('contentEdit.seoHeadingOutline')}</CardTitle>
-                    <CardDescription>
-                      {t('contentEdit.seoHeadingCount', { count: report.headings.length })}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="xl:max-h-[36rem] xl:overflow-y-auto">
-                    {report.headings.length ? (
-                      <ol className="space-y-2">
-                        {report.headings.map((heading, index) => (
-                          <li
-                            key={`${heading.level}:${index}`}
-                            className="flex min-w-0 items-center gap-3 text-sm"
-                            style={{
-                              paddingInlineStart: `${Math.max(0, heading.level - 1) * 1.25}rem`,
-                            }}
-                          >
-                            <Badge variant="outline">
-                              {t('contentEdit.seoHeadingLevel', { level: heading.level })}
-                            </Badge>
-                            <span className="truncate">
-                              {heading.text || t('contentEdit.seoEmptyHeading')}
-                            </span>
-                          </li>
-                        ))}
-                      </ol>
-                    ) : (
-                      <p className="text-muted-foreground text-sm">
-                        {t('contentEdit.seoHeadingsMissing')}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Braces className="size-4" />
-                      {t('contentEdit.seoStructuredDataTitle')}
-                    </CardTitle>
-                    <CardDescription>
-                      {t('contentEdit.seoStructuredDataCount', {
-                        count: report.structuredData.length,
-                      })}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {report.structuredData.length ? (
-                      <div className="space-y-3">
-                        {report.structuredData.map((item, index) => {
-                          const issues = [
-                            !item.valid ? t('contentEdit.seoStructuredDataInvalidJson') : null,
-                            item.valid && !item.hasContext
-                              ? t('contentEdit.seoStructuredDataMissingContext')
-                              : null,
-                            item.valid && item.types.length === 0
-                              ? t('contentEdit.seoStructuredDataMissingType')
-                              : null,
-                          ].filter(Boolean) as string[]
-                          const valid = issues.length === 0
-
-                          return (
-                            <div key={index} className="rounded-lg border p-3">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <Badge
-                                  variant="outline"
-                                  className={valid ? statusStyles.good : statusStyles.error}
-                                >
-                                  <StatusIcon status={valid ? 'good' : 'error'} />
-                                  {valid
-                                    ? t('contentEdit.seoStructuredDataValid')
-                                    : t('contentEdit.seoStructuredDataNeedsAttention')}
-                                </Badge>
-                                {item.types.map((type) => (
-                                  <Badge key={type} variant="secondary">
-                                    {type}
-                                  </Badge>
-                                ))}
-                              </div>
-                              {issues.length ? (
-                                <ul className="mt-3 space-y-1 text-sm text-destructive">
-                                  {issues.map((issue) => (
-                                    <li key={issue}>{issue}</li>
-                                  ))}
-                                  {!item.valid && item.error ? (
-                                    <li className="font-mono text-xs">{item.error}</li>
-                                  ) : null}
-                                </ul>
+                  {selectedAudit ? (
+                    <Button variant="outline" size="sm" onClick={() => setSelectedAuditId(null)}>
+                      <RotateCcw />
+                      {t('contentEdit.seoHistoryCurrent')}
+                    </Button>
+                  ) : null}
+                </CardHeader>
+                <CardContent>
+                  {historyQuery.isLoading ? (
+                    <p className="text-sm text-muted-foreground">
+                      {t('contentEdit.seoHistoryLoading')}
+                    </p>
+                  ) : historyQuery.isError ? (
+                    <p className="text-sm text-destructive">
+                      {getActionErrorMessage(
+                        historyQuery.error,
+                        t('contentEdit.seoHistoryLoadError')
+                      )}
+                    </p>
+                  ) : history.length ? (
+                    <div className="flex gap-3 overflow-x-auto pb-1">
+                      {history.map((audit) => (
+                        <button
+                          key={audit._id}
+                          type="button"
+                          className={cn(
+                            'min-w-48 rounded-lg border p-3 text-left transition-colors hover:bg-accent',
+                            selectedAuditId === audit._id && 'border-primary bg-primary/5'
+                          )}
+                          onClick={() => setSelectedAuditId(audit._id)}
+                        >
+                          <span className="block text-xs text-muted-foreground">
+                            {audit.createdAt
+                              ? formatDate(new Date(audit.createdAt))
+                              : t('common.unknown')}
+                          </span>
+                          <span className="mt-2 flex items-center justify-between gap-3">
+                            <strong>
+                              {t('contentEdit.seoHistoryScore', { score: audit.score })}
+                            </strong>
+                            <span className="flex gap-1">
+                              {audit.errorCount ? (
+                                <Badge variant="destructive">{audit.errorCount}</Badge>
                               ) : null}
-                              <details className="mt-3">
-                                <summary className="text-muted-foreground cursor-pointer text-sm">
-                                  {t('contentEdit.seoStructuredDataViewJson')}
-                                </summary>
-                                <pre className="mt-2 max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">
-                                  {formatJsonLd(item.raw)}
-                                </pre>
-                              </details>
-                            </div>
-                          )
-                        })}
+                              {audit.warningCount ? (
+                                <Badge variant="secondary">{audit.warningCount}</Badge>
+                              ) : null}
+                            </span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {t('contentEdit.seoHistoryEmpty')}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {selectedAudit ? (
+              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+                <History className="size-4 text-primary" />
+                <span className="font-medium">{t('contentEdit.seoHistoryViewing')}</span>
+                <span className="text-muted-foreground">
+                  {selectedAudit.createdAt
+                    ? formatDate(new Date(selectedAudit.createdAt))
+                    : t('common.unknown')}
+                </span>
+              </div>
+            ) : null}
+
+            {!report && selectedAudit && checks.length ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('contentEdit.seoHistorySnapshotTitle')}</CardTitle>
+                  <CardDescription>
+                    {t('contentEdit.seoHistorySnapshotDescription')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {checks.map((check) => {
+                    const copy = getCheckCopy(check)
+
+                    return (
+                      <div
+                        key={check.id}
+                        className={cn('rounded-lg border p-4', statusStyles[check.status])}
+                      >
+                        <div className="flex items-center gap-2 font-medium">
+                          <StatusIcon status={check.status} />
+                          {copy.title}
+                        </div>
                       </div>
-                    ) : (
-                      <p className="text-muted-foreground text-sm">
-                        {t('contentEdit.seoStructuredDataNone')}
+                    )
+                  })}
+                </CardContent>
+              </Card>
+            ) : !report ? (
+              <div className="text-muted-foreground flex min-h-64 flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-8 text-center">
+                <Search className="size-9" />
+                <div>
+                  <p className="font-medium text-foreground">{t('contentEdit.seoNoReportTitle')}</p>
+                  <p className="mt-1 max-w-lg text-sm">{t('contentEdit.seoNoReportDescription')}</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Card>
+                  <CardContent className="flex flex-col gap-5 pt-6 sm:flex-row sm:items-center">
+                    <div
+                      className={cn(
+                        'flex size-24 shrink-0 items-center justify-center rounded-full border-8 text-2xl font-semibold',
+                        score >= 80
+                          ? statusStyles.good
+                          : score >= 50
+                            ? statusStyles.warning
+                            : statusStyles.error
+                      )}
+                    >
+                      {score}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">{t('contentEdit.seoScoreTitle')}</h3>
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        {t('contentEdit.seoScoreDescription')}
                       </p>
-                    )}
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {(['good', 'warning', 'error'] as const).map((status) => (
+                          <Badge key={status} variant="outline" className={statusStyles[status]}>
+                            <StatusIcon status={status} />
+                            {t(
+                              `contentEdit.seoStatus${status === 'good' ? 'Good' : status === 'warning' ? 'Warning' : 'Error'}`
+                            )}
+                            {' · '}
+                            {checks.filter((check) => check.status === status).length}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              </div>
-            </div>
-          </>
-        )}
-      </TabsContent>
+
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {checks.map((check) => {
+                    const copy = getCheckCopy(check)
+
+                    return (
+                      <div
+                        key={check.id}
+                        className={cn('rounded-lg border p-4', statusStyles[check.status])}
+                      >
+                        <div className="flex items-center gap-2 font-medium">
+                          <StatusIcon status={check.status} />
+                          {copy.title}
+                        </div>
+                        <p className="mt-2 text-sm text-foreground/75">{copy.description}</p>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,3fr)_minmax(18rem,2fr)]">
+                  <div className="grid gap-5">
+                    <Card className="overflow-hidden">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Search className="size-4" />
+                          {t('contentEdit.seoGooglePreview')}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="rounded-lg border bg-white p-5 text-slate-900 shadow-sm">
+                          <p className="truncate text-sm text-emerald-800">
+                            {getDisplayUrl(resultUrl)}
+                          </p>
+                          <p className="mt-1 line-clamp-1 text-xl text-blue-800">{report.title}</p>
+                          <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600">
+                            {report.description}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="overflow-hidden">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Share2 className="size-4" />
+                          {t('contentEdit.seoSocialPreview')}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="overflow-hidden rounded-lg border bg-muted/30">
+                          {socialImage ? (
+                            <img
+                              src={socialImage}
+                              alt=""
+                              className="aspect-[1.91/1] w-full bg-muted object-cover"
+                            />
+                          ) : null}
+                          <div className="space-y-1 p-4">
+                            <p className="text-muted-foreground truncate text-xs uppercase">
+                              {getDisplayUrl(report.openGraph.url || report.url)}
+                            </p>
+                            <p className="line-clamp-1 font-semibold">{socialTitle}</p>
+                            <p className="text-muted-foreground line-clamp-2 text-sm">
+                              {socialDescription}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="grid gap-5">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>{t('contentEdit.seoHeadingOutline')}</CardTitle>
+                        <CardDescription>
+                          {t('contentEdit.seoHeadingCount', { count: report.headings.length })}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="xl:max-h-[36rem] xl:overflow-y-auto">
+                        {report.headings.length ? (
+                          <ol className="space-y-2">
+                            {report.headings.map((heading, index) => (
+                              <li
+                                key={`${heading.level}:${index}`}
+                                className="flex min-w-0 items-center gap-3 text-sm"
+                                style={{
+                                  paddingInlineStart: `${Math.max(0, heading.level - 1) * 1.25}rem`,
+                                }}
+                              >
+                                <Badge variant="outline">
+                                  {t('contentEdit.seoHeadingLevel', { level: heading.level })}
+                                </Badge>
+                                <span className="truncate">
+                                  {heading.text || t('contentEdit.seoEmptyHeading')}
+                                </span>
+                              </li>
+                            ))}
+                          </ol>
+                        ) : (
+                          <p className="text-muted-foreground text-sm">
+                            {t('contentEdit.seoHeadingsMissing')}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Braces className="size-4" />
+                          {t('contentEdit.seoStructuredDataTitle')}
+                        </CardTitle>
+                        <CardDescription>
+                          {t('contentEdit.seoStructuredDataCount', {
+                            count: report.structuredData.length,
+                          })}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {report.structuredData.length ? (
+                          <div className="space-y-3">
+                            {report.structuredData.map((item, index) => {
+                              const issues = [
+                                !item.valid ? t('contentEdit.seoStructuredDataInvalidJson') : null,
+                                item.valid && !item.hasContext
+                                  ? t('contentEdit.seoStructuredDataMissingContext')
+                                  : null,
+                                item.valid && item.types.length === 0
+                                  ? t('contentEdit.seoStructuredDataMissingType')
+                                  : null,
+                              ].filter(Boolean) as string[]
+                              const valid = issues.length === 0
+
+                              return (
+                                <div key={index} className="rounded-lg border p-3">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <Badge
+                                      variant="outline"
+                                      className={valid ? statusStyles.good : statusStyles.error}
+                                    >
+                                      <StatusIcon status={valid ? 'good' : 'error'} />
+                                      {valid
+                                        ? t('contentEdit.seoStructuredDataValid')
+                                        : t('contentEdit.seoStructuredDataNeedsAttention')}
+                                    </Badge>
+                                    {item.types.map((type) => (
+                                      <Badge key={type} variant="secondary">
+                                        {type}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                  {issues.length ? (
+                                    <ul className="mt-3 space-y-1 text-sm text-destructive">
+                                      {issues.map((issue) => (
+                                        <li key={issue}>{issue}</li>
+                                      ))}
+                                      {!item.valid && item.error ? (
+                                        <li className="font-mono text-xs">{item.error}</li>
+                                      ) : null}
+                                    </ul>
+                                  ) : null}
+                                  <details className="mt-3">
+                                    <summary className="text-muted-foreground cursor-pointer text-sm">
+                                      {t('contentEdit.seoStructuredDataViewJson')}
+                                    </summary>
+                                    <pre className="mt-2 max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">
+                                      {formatJsonLd(item.raw)}
+                                    </pre>
+                                  </details>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground text-sm">
+                            {t('contentEdit.seoStructuredDataNone')}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </>
+            )}
+          </TabsContent>
+        </ScrollArea>
+      </div>
     </Tabs>
   )
 }
