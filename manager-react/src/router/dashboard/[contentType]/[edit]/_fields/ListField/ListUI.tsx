@@ -1,6 +1,16 @@
 'use client'
 
-import { Box, ChevronsUpDown, Eye, GripVertical, Unlink, Plus, Save, Trash } from 'lucide-react'
+import {
+  Box,
+  ChevronsUpDown,
+  Eye,
+  GripVertical,
+  MoreVertical,
+  Plus,
+  Save,
+  Trash,
+  Unlink,
+} from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import type {
@@ -22,8 +32,14 @@ import { useManagerClient, useManagerMutation } from '@/client/react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   Sortable,
@@ -682,14 +698,12 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
         getState={getStateWithNested}
         ref={ref}
       >
-        {props.config.ui === 'Iterator' ? (
-          <IteratorModulePickerDialog fields={props.fields} onAdd={handleAddItem} />
-        ) : (
+        {props.config.ui !== 'Iterator' ? (
           <AddListButtons fields={props.fields} onAdd={handleAddItem} />
-        )}
+        ) : null}
         {listItems.length > 0 && (
           <SortableContent className="max-h-full">
-            <div className="flex flex-col gap-4 mt-4">
+            <div className="flex flex-col gap-4">
               {listItems.map((item, i) => {
                 const fieldConfig = props.fields.find((f) => f.name === item.name)
                 if (!fieldConfig) {
@@ -754,140 +768,127 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                               'border-dashed opacity-70'
                           )}
                         >
-                          <CardHeader className="gap-0">
+                          <CardHeader className="gap-3">
                             <CollapsibleTrigger asChild disabled={noModulesToRender}>
                               <div
-                                className="flex cursor-pointer items-center justify-between gap-2"
+                                className="flex min-w-0 cursor-pointer flex-col gap-3"
                                 data-rakun-manager-module-trigger=""
                               >
                                 <CardTitle className="flex min-w-0 items-center gap-2">
-                                  <div className="flex shrink-0 items-center gap-2">
-                                    <SortableItemHandle asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="size-8"
-                                        aria-label={t('modules.reorder')}
-                                      >
-                                        <GripVertical className="h-4 w-4" />
-                                      </Button>
-                                    </SortableItemHandle>
-                                    {!noModulesToRender ? (
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="size-8"
-                                        asChild
-                                      >
-                                        <div>
-                                          <ChevronsUpDown />
-                                          <span className="sr-only">{t('common.toggle')}</span>
-                                        </div>
-                                      </Button>
-                                    ) : null}
-                                  </div>
-                                  <div className="flex min-w-0 items-center gap-2">
-                                    <ModuleIcon className="size-4 shrink-0 text-muted-foreground" />
+                                  <SortableItemHandle asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="size-8 shrink-0"
+                                      aria-label={t('modules.reorder')}
+                                    >
+                                      <GripVertical className="h-4 w-4" />
+                                    </Button>
+                                  </SortableItemHandle>
+                                  <ModuleIcon className="size-4 shrink-0 text-muted-foreground" />
+                                  <div className="min-w-0 flex-1">
                                     <span
-                                      className="truncate"
+                                      className="block truncate"
                                       data-rakun-manager-module-title-text=""
                                     >
                                       {moduleTitle}
                                     </span>
                                     {distinguishingLabel && distinguishingLabel !== typeTitle ? (
-                                      <span className="hidden truncate text-xs font-normal text-muted-foreground sm:inline">
+                                      <span className="mt-1 block truncate text-xs font-normal text-muted-foreground">
                                         {typeTitle}
                                       </span>
                                     ) : null}
+                                  </div>
+                                  {!noModulesToRender ? (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="size-8 shrink-0"
+                                      asChild
+                                    >
+                                      <div>
+                                        <ChevronsUpDown />
+                                        <span className="sr-only">{t('common.toggle')}</span>
+                                      </div>
+                                    </Button>
+                                  ) : null}
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="size-8 shrink-0"
+                                        aria-label={t('contentEdit.moreActions')}
+                                        onClick={(event) => event.stopPropagation()}
+                                      >
+                                        <MoreVertical />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                      align="end"
+                                      className="min-w-52"
+                                      onClick={(event) => event.stopPropagation()}
+                                    >
+                                      {showIteratorChrome ? (
+                                        <DropdownMenuItem
+                                          onSelect={() => setVisibilityUid(item.uid)}
+                                        >
+                                          <Eye />
+                                          {t('modules.moduleVisibility')}
+                                        </DropdownMenuItem>
+                                      ) : null}
+                                      {showIteratorChrome && !isSavedModule && canSaveGlobal ? (
+                                        <DropdownMenuItem
+                                          disabled={savingUid === item.uid}
+                                          onSelect={() => void handleSaveModule(item, moduleTitle)}
+                                        >
+                                          <Save />
+                                          {t('modules.saveModule', { title: moduleTitle })}
+                                        </DropdownMenuItem>
+                                      ) : null}
+                                      {showIteratorChrome && isSavedModule ? (
+                                        <DropdownMenuItem
+                                          disabled={unlinkingUid === item.uid}
+                                          onSelect={() => void handleUnlinkModule(item, moduleTitle)}
+                                        >
+                                          <Unlink />
+                                          {t('modules.unlinkModule', { title: moduleTitle })}
+                                        </DropdownMenuItem>
+                                      ) : null}
+                                      {showIteratorChrome ? <DropdownMenuSeparator /> : null}
+                                      <DropdownMenuItem
+                                        variant="destructive"
+                                        onSelect={() => handleDelete(item.uid)}
+                                      >
+                                        <Trash />
+                                        {t('common.delete')}
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </CardTitle>
+                                {isSavedModule || item.visibleWhen ? (
+                                  <div className="flex min-w-0 flex-wrap items-center gap-2">
                                     {isSavedModule ? (
-                                      <Badge variant="secondary" className="shrink-0">
-                                        {t('common.global')}
+                                      <Badge variant="secondary" className="max-w-full shrink">
+                                        <span className="truncate">{t('common.global')}</span>
                                       </Badge>
                                     ) : null}
                                     {item.visibleWhen ? (
-                                      <Badge variant="outline" className="shrink-0">
-                                        {isVisibleForCurrentDocument
-                                          ? t('modules.conditional')
-                                          : t('modules.hiddenForDocument', {
-                                              contentType:
-                                                props.parentContentType?.name ??
-                                                t('modules.documentFallback'),
-                                            })}
+                                      <Badge variant="outline" className="max-w-full shrink">
+                                        <span className="truncate">
+                                          {isVisibleForCurrentDocument
+                                            ? t('modules.conditional')
+                                            : t('modules.hiddenForDocument', {
+                                                contentType:
+                                                  props.parentContentType?.name ??
+                                                  t('modules.documentFallback'),
+                                              })}
+                                        </span>
                                       </Badge>
                                     ) : null}
                                   </div>
-                                </CardTitle>
-                                <div className="flex shrink-0 items-center gap-2">
-                                  {showIteratorChrome ? (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          size="icon"
-                                          variant="outline"
-                                          aria-label={t('modules.changeVisibility', {
-                                            title: moduleTitle,
-                                          })}
-                                          onClick={(event) => {
-                                            event.stopPropagation()
-                                            setVisibilityUid(item.uid)
-                                          }}
-                                        >
-                                          <Eye />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="top">
-                                        {t('modules.moduleVisibility')}
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  ) : null}
-                                  {showIteratorChrome && !isSavedModule && canSaveGlobal ? (
-                                    <Button
-                                      size="icon"
-                                      variant="outline"
-                                      aria-label={t('modules.saveModule', { title: moduleTitle })}
-                                      disabled={savingUid === item.uid}
-                                      onClick={(event) => {
-                                        event.stopPropagation()
-                                        void handleSaveModule(item, moduleTitle)
-                                      }}
-                                    >
-                                      <Save />
-                                    </Button>
-                                  ) : null}
-                                  {showIteratorChrome && isSavedModule ? (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          size="icon"
-                                          variant="outline"
-                                          aria-label={t('modules.unlinkModule', {
-                                            title: moduleTitle,
-                                          })}
-                                          disabled={unlinkingUid === item.uid}
-                                          onClick={(event) => {
-                                            event.stopPropagation()
-                                            void handleUnlinkModule(item, moduleTitle)
-                                          }}
-                                        >
-                                          <Unlink />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="top">
-                                        {t('modules.unlinkGlobalModule')}
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  ) : null}
-                                  <Button
-                                    size="icon"
-                                    variant="destructive"
-                                    onClick={(event) => {
-                                      event.stopPropagation()
-                                      handleDelete(item.uid)
-                                    }}
-                                  >
-                                    <Trash />
-                                  </Button>
-                                </div>
+                                ) : null}
                               </div>
                             </CollapsibleTrigger>
                           </CardHeader>
@@ -915,6 +916,9 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
             </div>
           </SortableContent>
         )}
+        {props.config.ui === 'Iterator' ? (
+          <IteratorModulePickerDialog fields={props.fields} onAdd={handleAddItem} />
+        ) : null}
         <IteratorVisibilityDialog
           open={visibilityItem !== undefined}
           condition={visibilityItem?.visibleWhen}

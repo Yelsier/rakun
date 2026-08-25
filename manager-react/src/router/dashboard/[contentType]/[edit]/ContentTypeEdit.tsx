@@ -144,13 +144,15 @@ const FieldLabel = ({
 const FieldTags = ({
   isTranslatable,
   children,
+  className,
 }: {
   isTranslatable?: boolean
   children?: ReactNode
+  className?: string
 }) => {
   const t = useTranslations()
   return (
-    <div className="flex min-w-0 shrink-0 items-center gap-2">
+    <div className={cn('flex min-w-0 items-center gap-2', className)}>
       {children}
       {isTranslatable ? (
         <FieldMetaIcon label={t('contentEdit.translatableField')}>
@@ -473,9 +475,12 @@ const ContentTypeEdit = forwardRef<
               <Collapsible defaultOpen key={fieldName}>
                 <Card className={errorStyle({ error: !!error })}>
                   <CardHeader className="gap-0">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 flex-wrap items-center gap-3">
                       <CollapsibleTrigger asChild>
-                        <button type="button" className="min-w-0 flex-1 cursor-pointer text-left">
+                        <button
+                          type="button"
+                          className="min-w-0 flex-[1_1_8rem] cursor-pointer text-left"
+                        >
                           <CardTitle className="flex min-w-0 items-center gap-2">
                             <Button variant="ghost" size="icon" className="size-8" asChild>
                               <span>
@@ -487,7 +492,10 @@ const ContentTypeEdit = forwardRef<
                           </CardTitle>
                         </button>
                       </CollapsibleTrigger>
-                      <FieldTags isTranslatable={fieldValue.isTranslatable}>
+                      <FieldTags
+                        isTranslatable={fieldValue.isTranslatable}
+                        className="ml-auto max-w-full flex-[1_1_16rem] justify-end"
+                      >
                         <FieldHelp help={fieldValue.help} />
                         {dynamicTrigger}
                       </FieldTags>
@@ -506,9 +514,16 @@ const ContentTypeEdit = forwardRef<
             <div key={fieldName} className={`${canCollapse ? 'bg-red-600' : ''}`}>
               {hideTitle ? null : (
                 <div className="mb-4 space-y-1">
-                  <CardTitle className="flex items-center justify-between gap-3">
-                    <FieldLabel fieldName={fieldName} isRequired={fieldValue.isRequired} />
-                    <FieldTags isTranslatable={fieldValue.isTranslatable}>
+                  <CardTitle className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+                    <FieldLabel
+                      fieldName={fieldName}
+                      isRequired={fieldValue.isRequired}
+                      className="flex-[0_1_auto]"
+                    />
+                    <FieldTags
+                      isTranslatable={fieldValue.isTranslatable}
+                      className="ml-auto max-w-full flex-[1_1_16rem] justify-end"
+                    >
                       <FieldHelp help={fieldValue.help} />
                       {dynamicTrigger}
                     </FieldTags>

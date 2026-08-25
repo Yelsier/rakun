@@ -567,6 +567,7 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'contentEdit.useRouteDefault': 'Usar predeterminado de la ruta',
   'contentEdit.noModule': 'Sin módulo',
   'contentEdit.saveOverride': 'Guardar anulación',
+  'contentEdit.editSelectedModule': 'Editar módulo seleccionado',
   'contentEdit.updating': 'Actualizando',
   'contentEdit.updatePreview': 'Actualizar vista previa',
   'contentEdit.selectModule': 'Seleccionar módulo',

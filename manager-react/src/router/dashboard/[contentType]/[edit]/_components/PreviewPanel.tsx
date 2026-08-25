@@ -1,14 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  EyeOff,
-  Maximize2,
-  Monitor,
-  RefreshCw,
-  SquareDashedMousePointer,
-  X,
-} from 'lucide-react'
+import { Maximize2, Monitor, RefreshCw, SquareDashedMousePointer, X } from 'lucide-react'
 
 import { useEditPageContext } from '../_context/EditPageContext'
 
@@ -16,15 +9,18 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTranslations } from '@/i18n'
+import { cn } from '@/lib/utils'
 
-export const PreviewPanel = () => {
+export const PreviewPanel = ({ className }: { className?: string }) => {
   const t = useTranslations()
   const { previewState } = useEditPageContext()
   const [fullscreenOpen, setFullscreenOpen] = useState(false)
 
   return (
     <>
-      <aside className="min-h-130 overflow-hidden rounded-md border bg-background xl:sticky xl:top-20 xl:h-[calc(100vh-15rem)]">
+      <aside
+        className={cn('h-full min-h-0 overflow-hidden rounded-lg border bg-background', className)}
+      >
         <div className="flex h-full min-h-0 flex-col">
           <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b px-3">
             <div className="flex min-w-0 items-center gap-2">
@@ -86,19 +82,6 @@ export const PreviewPanel = () => {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">{t('contentEdit.openLargePreview')}</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => previewState.setPreviewOpen(false)}
-                  >
-                    <EyeOff />
-                    <span className="sr-only">{t('contentEdit.closePreview')}</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left">{t('contentEdit.closePreview')}</TooltipContent>
               </Tooltip>
             </div>
           </div>

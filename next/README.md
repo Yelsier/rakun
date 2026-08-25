@@ -91,6 +91,21 @@ Authenticated collaboration presence bindings share that stream: heartbeats
 renew them and closing the last stream for a browser tab removes them, without
 periodic presence-only sync calls.
 
+When the manager and API run in the same Next.js process, externalize both core
+and Yjs so separate App Router server bundles do not initialize duplicate Yjs
+constructors:
+
+```ts
+// next.config.ts
+import type { NextConfig } from 'next'
+
+const nextConfig: NextConfig = {
+  serverExternalPackages: ['@rakun-kit/core', 'yjs'],
+}
+
+export default nextConfig
+```
+
 ## tRPC
 
 Mount a tRPC router in the same catch-all route with `@rakun-kit/next/trpc`:

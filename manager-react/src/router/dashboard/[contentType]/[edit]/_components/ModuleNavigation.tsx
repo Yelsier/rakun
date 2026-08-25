@@ -404,9 +404,11 @@ const ModuleNavAddButton = memo(function ModuleNavAddButton({
     const tabPanel = document.querySelector<HTMLElement>(
       `[data-rakun-manager-tab-panel="${tab}"]`,
     )
-    const trigger = tabPanel?.querySelector<HTMLButtonElement>(
-      '[data-rakun-manager-add-module-trigger]',
-    )
+    const trigger = Array.from(
+      tabPanel?.querySelectorAll<HTMLButtonElement>(
+        '[data-rakun-manager-add-module-trigger]',
+      ) ?? [],
+    ).find((element) => !element.closest('[data-rakun-manager-module-item]'))
     trigger?.click()
   }
 
@@ -594,7 +596,13 @@ const NavigationItems = memo(function NavigationItems({
   )
 })
 
-const ModuleNavList = ({ tab }: { tab: ModuleNavigationTab }) => {
+const ModuleNavList = ({
+  tab,
+  onNavigate,
+}: {
+  tab: ModuleNavigationTab
+  onNavigate?: () => void
+}) => {
   const t = useTranslations()
   const [activeId, setActiveId] = useState<string>()
   const [items, setItems] = useState<ModuleNavigationItem[]>([])
@@ -609,12 +617,16 @@ const ModuleNavList = ({ tab }: { tab: ModuleNavigationTab }) => {
     [t],
   )
 
-  const selectUid = useCallback((uid: string) => {
-    const item = findNavItemByUid(itemsRef.current, uid)
-    if (!item) return
-    setActiveId(item.id)
-    revealAndScrollTo(item)
-  }, [])
+  const selectUid = useCallback(
+    (uid: string) => {
+      const item = findNavItemByUid(itemsRef.current, uid)
+      if (!item) return
+      setActiveId(item.id)
+      revealAndScrollTo(item)
+      onNavigate?.()
+    },
+    [onNavigate],
+  )
 
   const handleReorder = useCallback((nextItems: ModuleNavigationItem[]) => {
     if (nextItems.length === 0) return
@@ -737,16 +749,24 @@ const ModuleNavList = ({ tab }: { tab: ModuleNavigationTab }) => {
   )
 }
 
-export const ModuleNavigation = ({ tab }: { tab: ModuleNavigationTab }) => {
+export const ModuleNavigation = ({
+  className,
+  onNavigate,
+  tab,
+}: {
+  className?: string
+  onNavigate?: () => void
+  tab: ModuleNavigationTab
+}) => {
   const t = useTranslations()
 
   return (
     <aside
-      className="sticky top-4 hidden h-full w-60 shrink-0 self-start overflow-hidden rounded-xl bg-muted/40 lg:block"
+      className={cn('h-full min-h-0 overflow-hidden rounded-xl bg-muted/95', className)}
       aria-label={t('modules.navigation')}
     >
       <div className="flex h-full min-h-0 flex-col">
-        <ModuleNavList tab={tab} />
+        <ModuleNavList tab={tab} onNavigate={onNavigate} />
       </div>
     </aside>
   )

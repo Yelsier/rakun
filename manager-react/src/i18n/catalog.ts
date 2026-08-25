@@ -881,6 +881,7 @@ export const managerMessages = {
   'contentEdit.useRouteDefault': { defaultMessage: 'Use route default' },
   'contentEdit.noModule': { defaultMessage: 'No module' },
   'contentEdit.saveOverride': { defaultMessage: 'Save override' },
+  'contentEdit.editSelectedModule': { defaultMessage: 'Edit selected module' },
   'contentEdit.updating': { defaultMessage: 'Updating' },
   'contentEdit.updatePreview': { defaultMessage: 'Update preview' },
   'contentEdit.selectModule': { defaultMessage: 'Select module' },

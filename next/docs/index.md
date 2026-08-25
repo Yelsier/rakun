@@ -104,6 +104,21 @@ around `RakunManagerClientPage`, register plugin objects there, and pass that
 wrapper as `managerComponent`. Do not pass plugin objects across the
 server/client serialization boundary.
 
+Keep Yjs as one native server dependency when the manager and Rakun API share a
+Next.js process. This prevents the App Router's separate server bundles from
+initializing multiple Yjs constructors:
+
+```ts
+// next.config.ts
+import type { NextConfig } from 'next'
+
+const nextConfig: NextConfig = {
+  serverExternalPackages: ['@rakun-kit/core', 'yjs'],
+}
+
+export default nextConfig
+```
+
 ## Web page route
 
 When the Rakun API and the website live in the same Next.js application, create

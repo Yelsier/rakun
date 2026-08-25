@@ -77,7 +77,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: repoRoot,
   },
-  serverExternalPackages: [...rakunServerPackages],
+  serverExternalPackages: [...rakunServerPackages, 'yjs'],
   webpack: (config, { isServer, nextRuntime }) => {
     config.resolve = config.resolve ?? {}
     config.resolve.alias = {

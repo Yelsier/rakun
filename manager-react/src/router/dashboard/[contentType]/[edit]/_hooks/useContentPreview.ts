@@ -516,7 +516,7 @@ export const useContentPreview = ({
     } catch {
       if (requestId !== previewRequestId.current) return
 
-      setPreviewError('Preview could not be loaded')
+      setPreviewError(t('contentEdit.previewCouldNotLoad'))
       toast.error(t('contentEdit.previewCouldNotLoad'))
     }
   }, [
@@ -530,6 +530,7 @@ export const useContentPreview = ({
     previewUrl,
     readFormData,
     readTemplateModules,
+    t,
     updatePreviewFrame,
   ])
 
