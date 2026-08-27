@@ -1,4 +1,3 @@
-import bcrypt from 'bcrypt'
 import { MongoClient, type Db, type Document } from 'mongodb'
 
 import {
@@ -89,7 +88,10 @@ const seed = async () => {
         $setOnInsert: {
           user: 'Bun Preview Admin',
           email: 'admin@example.com',
-          password: await bcrypt.hash('admin123', 10),
+          password: await Bun.password.hash('admin123', {
+            algorithm: 'bcrypt',
+            cost: 10,
+          }),
           role: {
             type: 'existing',
             contentType: 'ManagerRole',
