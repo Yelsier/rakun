@@ -6,18 +6,23 @@
   "scripts": {
     "dev": "rakun-bun dev",
     "build": "rakun-bun build",
+    "seed": "bun seed.ts",
     "start": "rakun-bun start",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@rakun-kit/bun": "workspace:*",
     "@rakun-kit/core": "workspace:*",
+    "@rakun-kit/manager-react": "workspace:*",
     "@rakun-kit/react": "workspace:*",
+    "bcrypt": "^6.0.0",
+    "mongodb": "^7.1.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@types/bun": "^1.3.13",
+    "@types/bcrypt": "^6.0.0",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.3",

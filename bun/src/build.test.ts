@@ -20,6 +20,11 @@ test('builds server/client graphs and a static route', async () => {
   const modulesDir = resolve(root, 'src', 'modules')
   await mkdir(modulesDir, { recursive: true })
   await Promise.all([
+    writeFile(resolve(root, 'src', 'document.css'), 'body { color: rgb(12, 34, 56); }'),
+    writeFile(
+      resolve(root, 'src', 'document.tsx'),
+      `import './document.css'\nexport default function Document({ children }) { return <html lang="es"><head><meta name="shell" content="document" /></head><body><header>Document shell</header>{children}</body></html> }`
+    ),
     writeFile(
       resolve(modulesDir, 'Hero.tsx'),
       `export default function Hero({ title }) { return <h1>{title}</h1> }`
@@ -38,19 +43,30 @@ test('builds server/client graphs and a static route', async () => {
       server: { development: false, hostname: '127.0.0.1', port: 0 },
       web: {
         getStaticPaths: () => ({ items: [{ path: '/', ttl: 60 }] }),
-        getPage: ({ path }) => ({
-          renderMode: 'static',
-          seo: { title: `Title ${path}` },
-          layout: [
-            {
-              type: 'content',
-              modules: [
-                { _id: 'hero', _type: 'Hero', title: `${heading} ${path}` },
-                { _id: 'counter', _type: 'Counter', initial: 2 },
-              ],
-            },
-          ],
-        }),
+        getPage: ({ path }) =>
+          path === '/missing'
+            ? {
+                renderMode: 'dynamic',
+                layout: [
+                  {
+                    type: 'content',
+                    modules: [{ _id: 'not-found', _type: 'NotFound' }],
+                  },
+                ],
+              }
+            : {
+                renderMode: 'static',
+                seo: { title: `Title ${path}` },
+                layout: [
+                  {
+                    type: 'content',
+                    modules: [
+                      { _id: 'hero', _type: 'Hero', title: `${heading} ${path}` },
+                      { _id: 'counter', _type: 'Counter', initial: 2 },
+                    ],
+                  },
+                ],
+              },
       },
     },
     { cwd: root }
@@ -62,12 +78,33 @@ test('builds server/client graphs and a static route', async () => {
   expect(result.manifest.client.Hero).toBeUndefined()
   expect(result.manifest.managerAssets.some((asset) => asset.endsWith('.js'))).toBe(true)
   expect(result.manifest.managerAssets.some((asset) => asset.endsWith('.css'))).toBe(true)
+  expect(result.manifest.assets.some((asset) => asset.endsWith('.css'))).toBe(true)
+  const managerScript = result.manifest.managerAssets.find((asset) => asset.endsWith('.js'))
+  expect(managerScript).toBeDefined()
+  expect(await readFile(resolve(root, 'dist', managerScript!.slice(1)), 'utf8')).toContain(
+    '/manager/contentTypes'
+  )
+  expect(await readFile(resolve(root, 'dist', managerScript!.slice(1)), 'utf8')).toContain(
+    'realtimeBaseUrl'
+  )
 
   const response = await application.fetch(new Request('http://localhost/'))
   expect(response.status).toBe(200)
   const responseHtml = await response.text()
   expect(responseHtml).toContain('<h1>Page /</h1>')
+  expect(responseHtml).toContain('<html lang="es">')
+  expect(responseHtml).toContain('<header>Document shell</header><div id="rakun-root">')
+  expect(responseHtml).toContain('<meta name="shell" content="document"/>')
   expect(responseHtml).toContain('<title data-rakun-head="">Title /</title>')
+  expect(responseHtml).toContain('<link rel="stylesheet" href="/assets/')
+  expect(responseHtml).toContain('"reloadBasePaths":["/api"')
+  expect(responseHtml.indexOf('<meta charset="utf-8"')).toBeLessThan(
+    responseHtml.indexOf('<meta name="shell"')
+  )
+
+  const notFoundResponse = await application.fetch(new Request('http://localhost/missing'))
+  expect(notFoundResponse.status).toBe(404)
+  expect(await notFoundResponse.text()).toContain('data-rakun-not-found=""')
 
   const server = await application.serve()
   try {
@@ -123,8 +160,18 @@ test('builds server/client graphs and a static route', async () => {
   }
   try {
     const productionResponse = await production.app.fetch(new Request('http://localhost/dynamic'))
-    expect(await productionResponse.text()).toContain('<h1>Production /dynamic</h1>')
+    const productionHtml = await productionResponse.text()
+    expect(productionHtml).toContain('<header>Document shell</header>')
+    expect(productionHtml).toContain('<h1>Production /dynamic</h1>')
   } finally {
     production.app.stop()
   }
-})
+
+  await writeFile(
+    resolve(root, 'src', 'document.tsx'),
+    `export const Document = ({ children }) => <html><head /><body>{children}</body></html>`
+  )
+  await expect(application.build()).rejects.toThrow(
+    'Rakun src/document.tsx must export a default component.'
+  )
+}, 15_000)

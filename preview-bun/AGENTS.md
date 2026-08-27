@@ -1,10 +1,11 @@
 # AGENTS.md
 
-`preview-bun` is a private, database-free consumer of `@rakun-kit/bun`.
+`preview-bun` is a private MongoDB-backed consumer of `@rakun-kit/bun`.
 
-- Keep it small and runnable without external services.
+- Keep it small and use the real Rakun bootstrap contracts.
 - Use filesystem modules under `src/modules`.
-- Keep one static route and at least one dynamic route.
+- Keep the application shell in the server-only `src/document.tsx` convention.
+- Keep one seeded static route.
 - Keep user-facing copy in the page literal record and pass resolved values to modules.
-- Do not add manager or MongoDB setup here; use the larger previews for those flows.
+- Keep manager and MongoDB setup minimal.
 - Verify with `bun run --filter @rakun-kit/preview-bun typecheck` and `build`.

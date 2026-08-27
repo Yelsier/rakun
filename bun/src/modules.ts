@@ -86,4 +86,18 @@ export const discoverRakunModules = async (
   return modules
 }
 
+export const discoverRakunDocument = async (documentFile: string): Promise<string | undefined> => {
+  const source = await readFile(documentFile, 'utf8').catch((error: NodeJS.ErrnoException) => {
+    if (error.code === 'ENOENT') return undefined
+    throw error
+  })
+
+  if (source === undefined) return undefined
+  if (hasUseClientDirective(source)) {
+    throw new Error('Rakun src/document.tsx must be a server component.')
+  }
+
+  return resolve(documentFile)
+}
+
 export { hasUseClientDirective }

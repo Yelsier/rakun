@@ -2,11 +2,12 @@ import { copyFile, mkdir, rm, writeFile } from 'node:fs/promises'
 import { basename, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { discoverRakunModules } from './modules'
+import { discoverRakunDocument, discoverRakunModules } from './modules'
 import type {
   RakunBuildManifest,
   RakunBunBuildResult,
   RakunClientManifest,
+  RakunBunDocumentImport,
   RakunModuleDefinition,
   RakunServerModuleRegistry,
   ResolvedRakunBunConfig,
@@ -36,9 +37,23 @@ const assertBuild = (result: Bun.BuildOutput, label: string): void => {
   throw new Error(`${label} failed${messages ? `:\n${messages}` : '.'}`)
 }
 
+const createRakunRuntimeResolver = (rootDir: string): Bun.BunPlugin => ({
+  name: 'rakun-runtime-resolver',
+  setup(builder) {
+    builder.onResolve({ filter: /^@rakun-kit\/core(?:\/.*)?$/ }, ({ path }) => {
+      try {
+        return { path: Bun.resolveSync(path, rootDir) }
+      } catch {
+        return undefined
+      }
+    })
+  },
+})
+
 const writeServerRegistry = async (
   generatedDir: string,
-  modules: RakunModuleDefinition[]
+  modules: RakunModuleDefinition[],
+  documentFile?: string
 ): Promise<string> => {
   const imports = modules.map(
     (module, index) =>
@@ -49,7 +64,13 @@ const writeServerRegistry = async (
       `${JSON.stringify(module.name)}: { ...${JSON.stringify(module)}, module: module${index} }`
   )
   const path = resolve(generatedDir, 'modules.generated.ts')
-  await writeFile(path, `${imports.join('\n')}\nexport const modules = {${entries.join(',\n')}}\n`)
+  const documentImport = documentFile
+    ? `import * as document from ${JSON.stringify(toImportSpecifier(documentFile))}`
+    : 'const document = undefined'
+  await writeFile(
+    path,
+    `${imports.join('\n')}\n${documentImport}\nexport { document }\nexport const modules = {${entries.join(',\n')}}\n`
+  )
   return path
 }
 
@@ -107,6 +128,11 @@ const writeClientEntries = async (
         `import '@rakun-kit/manager-react/styles.css'`,
         `const apiBasePath = ${JSON.stringify(apiBasePath)}`,
         `const basePath = ${JSON.stringify(manager.basePath)}`,
+        `const preview = ${
+          manager.preview === false
+            ? 'undefined'
+            : `{ webBaseUrl: ${JSON.stringify(manager.preview.webBaseUrl)}, tokenParam: ${JSON.stringify(manager.preview.tokenParam)} }`
+        }`,
         `const client = createHttpManagerClient({ baseUrl: apiBasePath })`,
         `function App() {`,
         `  const [current, setCurrent] = useState(() => location.pathname + location.search)`,
@@ -116,7 +142,7 @@ const writeClientEntries = async (
         `    return () => removeEventListener('popstate', update)`,
         `  }, [])`,
         `  const url = new URL(current, location.origin)`,
-        `  return <ManagerBrowserApp client={client} basePath={basePath} pathname={url.pathname} searchParams={url.searchParams} />`,
+        `  return <ManagerBrowserApp client={client} realtimeBaseUrl={apiBasePath} preview={preview} basePath={basePath} pathname={url.pathname} searchParams={url.searchParams} />`,
         `}`,
         `const root = document.querySelector('#rakun-manager-root')`,
         `if (root) createRoot(root).render(<App />)`,
@@ -185,6 +211,7 @@ export const buildRakunCode = async (
   options: { clean?: boolean } = {}
 ): Promise<{
   generatedRegistry: string
+  document?: RakunBunDocumentImport
   manifest: RakunBuildManifest
   registry: RakunServerModuleRegistry
 }> => {
@@ -200,8 +227,11 @@ export const buildRakunCode = async (
     mkdir(serverDir, { recursive: true }),
   ])
 
-  const modules = await discoverRakunModules(config.modulesDir)
-  const generatedRegistry = await writeServerRegistry(generatedDir, modules)
+  const [modules, documentFile] = await Promise.all([
+    discoverRakunModules(config.modulesDir),
+    discoverRakunDocument(config.documentFile),
+  ])
+  const generatedRegistry = await writeServerRegistry(generatedDir, modules, documentFile)
   const clientEntries = await writeClientEntries(
     generatedDir,
     modules,
@@ -230,6 +260,7 @@ export const buildRakunCode = async (
         entry: '[name]-[hash].[ext]',
       },
       outdir: assetsDir,
+      plugins: [createRakunRuntimeResolver(config.rootDir)],
       publicPath: '/assets/',
       sourcemap: config.server.development ? 'linked' : 'none',
       splitting: true,
@@ -242,9 +273,13 @@ export const buildRakunCode = async (
   const serverArtifact = serverBuild.outputs.find((output) => output.kind === 'entry-point')
   if (!serverArtifact) throw new Error('Rakun server graph has no entry output.')
   const loaded = (await import(`${pathToFileURL(serverArtifact.path).href}?t=${Date.now()}`)) as {
+    document?: RakunBunDocumentImport
     modules?: RakunServerModuleRegistry
   }
   if (!loaded.modules) throw new Error('Generated Rakun module registry is invalid.')
+  if (loaded.document && !loaded.document.default) {
+    throw new Error('Rakun src/document.tsx must export a default component.')
+  }
 
   const client: RakunClientManifest = {}
   for (const [name, entry] of clientEntries.modules) {
@@ -265,7 +300,7 @@ export const buildRakunCode = async (
     ...(managerArtifact ? [toAssetUrl(assetsDir, managerArtifact)] : []),
     ...(managerMeta?.cssBundle ? [`/assets/${basename(managerMeta.cssBundle)}`] : []),
   ]
-  const serverCss = serverBuild.outputs.filter((output) => output.loader === 'css')
+  const serverCss = serverBuild.outputs.filter((output) => output.path.endsWith('.css'))
   await Promise.all(
     serverCss.map((output) => copyFile(output.path, resolve(assetsDir, basename(output.path))))
   )
@@ -274,7 +309,7 @@ export const buildRakunCode = async (
   const assets = [
     ...serverCss.map((output) => `/assets/${basename(output.path)}`),
     ...clientBuild.outputs
-      .filter((output) => output.loader === 'css')
+      .filter((output) => output.path.endsWith('.css'))
       .map((output) => toAssetUrl(assetsDir, output))
       .filter((asset) => !clientModuleStyles.has(asset) && !managerStyleSet.has(asset)),
   ]
@@ -287,7 +322,7 @@ export const buildRakunCode = async (
   }
   await writeRakunManifests(config.outDir, manifest)
 
-  return { generatedRegistry, manifest, registry: loaded.modules }
+  return { document: loaded.document, generatedRegistry, manifest, registry: loaded.modules }
 }
 
 export const buildRakunServerBundle = async ({
@@ -306,10 +341,10 @@ export const buildRakunServerBundle = async ({
     [
       `import config from ${JSON.stringify(toImportSpecifier(configPath))}`,
       `import { startRakunBun } from ${JSON.stringify(getInternalServerPath())}`,
-      `import { modules } from ${JSON.stringify(toImportSpecifier(generatedRegistry))}`,
+      `import { document, modules } from ${JSON.stringify(toImportSpecifier(generatedRegistry))}`,
       `export const app = await startRakunBun(config, { cwd: ${JSON.stringify(
         config.rootDir
-      )}, registry: modules })`,
+      )}, document, registry: modules })`,
     ].join('\n')
   )
   const result = await Bun.build({

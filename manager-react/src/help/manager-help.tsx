@@ -202,13 +202,11 @@ export function ManagerHelpProvider({ route, children }: ManagerHelpProviderProp
     <ManagerHelpContext.Provider value={contextValue}>
       {children}
 
-      <Dialog open={promptOpen}>
+      <Dialog open={promptOpen} onOpenChange={setPromptOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t('help.tutorialsPromptTitle')}</DialogTitle>
-            <DialogDescription>
-              {t('help.tutorialsPromptDescription')}
-            </DialogDescription>
+            <DialogDescription>{t('help.tutorialsPromptDescription')}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button

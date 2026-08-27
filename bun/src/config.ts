@@ -8,9 +8,6 @@ const normalizeBasePath = (value: string, fallback: string): string => {
   return `/${normalized}`
 }
 
-export const defineRakunConfig = <TConfig extends RakunBunConfig>(config: TConfig): TConfig =>
-  config
-
 export const resolveRakunConfig = (
   config: RakunBunConfig,
   cwd = process.cwd()
@@ -20,11 +17,19 @@ export const resolveRakunConfig = (
   return {
     ...config,
     apiBasePath: normalizeBasePath(config.apiBasePath ?? '', '/api'),
+    documentFile: resolve(rootDir, 'src', 'document.tsx'),
     manager:
       config.manager === false
         ? false
         : {
             basePath: normalizeBasePath(config.manager?.basePath ?? '', '/manager'),
+            preview:
+              config.manager?.preview === false
+                ? false
+                : {
+                    webBaseUrl: config.manager?.preview?.webBaseUrl?.toString() ?? '',
+                    tokenParam: config.manager?.preview?.tokenParam?.trim() || 'rakun_preview',
+                  },
           },
     modulesDir: resolve(rootDir, config.modulesDir ?? 'src/modules'),
     outDir: resolve(rootDir, config.outDir ?? 'dist'),

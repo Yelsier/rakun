@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer'
 
-import { Fragment, createElement, isValidElement, type ComponentType, type ReactNode } from 'react'
+import { Fragment, createElement, type ComponentType, type ReactNode } from 'react'
 import { renderToReadableStream } from 'react-dom/server.browser'
 import type { PageModule, PageOutput } from '@rakun-kit/core/contracts'
 import { getPageLayout } from '@rakun-kit/core/web'
@@ -8,11 +8,11 @@ import { PageInfoProvider, getRakunBuiltinModuleComponent, runWithPageInfo } fro
 
 import type {
   RakunBuildManifest,
-  RakunBunConfig,
-  RakunBunDocument,
+  RakunBunDocumentImport,
   RakunBunPageAssets,
   RakunServerModuleRegistry,
   RenderedRoute,
+  ResolvedRakunBunConfig,
 } from './types'
 
 const SCRIPT_ESCAPES: Record<string, string> = {
@@ -35,6 +35,8 @@ const renderNode = async (node: ReactNode): Promise<string> => {
   return await new Response(stream).text()
 }
 
+const RakunBunNotFound = (): null => null
+
 const markHeadElements = (html: string): string =>
   html.replace(/<(title|meta|link|style|base)(?=[\s>])/g, '<$1 data-rakun-head=""')
 
@@ -42,6 +44,11 @@ const resolveComponent = (
   module: PageModule,
   registry: RakunServerModuleRegistry
 ): { client: boolean; Component: ComponentType<PageModule> } => {
+  const entry = registry[module._type]
+  if (!entry && module._type === 'NotFound') {
+    return { client: false, Component: RakunBunNotFound }
+  }
+
   const BuiltinComponent = getRakunBuiltinModuleComponent(module._type)
   if (BuiltinComponent) {
     return {
@@ -50,7 +57,6 @@ const resolveComponent = (
     }
   }
 
-  const entry = registry[module._type]
   if (!entry) {
     throw new Error(`Rakun web module "${module._type}" is not registered.`)
   }
@@ -77,15 +83,22 @@ const renderPageBody = async (
   const renderModule = (module: PageModule, key: string): ReactNode => {
     const { client, Component } = resolveComponent(module, registry)
     const component = createElement(Component, { ...module, key })
-
-    if (!client) return component
-
-    return (
+    const rendered = client ? (
       <div data-rakun-client={module._type} data-rakun-props={encodeProps(module)} key={key}>
         <PageInfoProvider value={page.info} literals={page.literals}>
           {component}
         </PageInfoProvider>
       </div>
+    ) : (
+      component
+    )
+
+    return module._type === 'NotFound' ? (
+      <div data-rakun-not-found="" key={key}>
+        {rendered}
+      </div>
+    ) : (
+      rendered
     )
   }
 
@@ -129,25 +142,22 @@ const getSeoHead = (page: PageOutput): ReactNode => {
   )
 }
 
-const toAttributes = (attributes: Record<string, string> | undefined): string =>
-  Object.entries(attributes ?? {})
-    .map(
-      ([name, value]) =>
-        ` ${name.replace(/[^a-zA-Z0-9:_-]/g, '')}="${value
-          .replace(/&/g, '&amp;')
-          .replace(/"/g, '&quot;')
-          .replace(/</g, '&lt;')}"`
-    )
-    .join('')
+const injectBeforeClosingTag = (html: string, tag: 'body' | 'head', content: string): string => {
+  const index = html.toLowerCase().lastIndexOf(`</${tag}>`)
+  if (index < 0) {
+    throw new Error(`Rakun src/document.tsx must render an <${tag}> element.`)
+  }
+  return `${html.slice(0, index)}${content}${html.slice(index)}`
+}
 
-const isDocumentResult = (value: unknown): value is RakunBunDocument =>
-  Boolean(
-    value &&
-    typeof value === 'object' &&
-    !Array.isArray(value) &&
-    !isValidElement(value) &&
-    ('body' in value || 'head' in value || 'htmlAttributes' in value || 'bodyAttributes' in value)
-  )
+const injectAfterOpeningTag = (html: string, tag: 'head', content: string): string => {
+  const match = new RegExp(`<${tag}(?:\\s[^>]*)?>`, 'i').exec(html)
+  if (match?.index === undefined) {
+    throw new Error(`Rakun src/document.tsx must render an <${tag}> element.`)
+  }
+  const index = match.index + match[0].length
+  return `${html.slice(0, index)}${content}${html.slice(index)}`
+}
 
 const collectPageAssets = (page: PageOutput, manifest: RakunBuildManifest): RakunBunPageAssets => {
   const types = new Set<string>()
@@ -174,12 +184,15 @@ const collectPageAssets = (page: PageOutput, manifest: RakunBuildManifest): Raku
 
 export const renderRakunRoute = async ({
   config,
+  document,
   manifest,
   page,
   path,
   registry,
 }: {
-  config: Pick<RakunBunConfig, 'document'> & { server: { development: boolean } }
+  config: Pick<ResolvedRakunBunConfig, 'server'> &
+    Partial<Pick<ResolvedRakunBunConfig, 'apiBasePath' | 'manager'>>
+  document?: RakunBunDocumentImport
   manifest: RakunBuildManifest
   page: PageOutput
   path: string
@@ -204,50 +217,58 @@ export const renderRakunRoute = async ({
   return await runWithPageInfo(
     page.info,
     async () => {
-      const defaultBody = await renderPageBody(page, registry)
-      const custom = config.document
-        ? await config.document({ assets, body: defaultBody, page, path })
-        : undefined
-      const document = isDocumentResult(custom)
-        ? custom
-        : custom === undefined
-          ? {}
-          : { body: custom }
-      const body = document.body ?? defaultBody
-      const defaultHead = getSeoHead(page)
-      const head = markHeadElements(
-        await renderNode(
-          <Fragment>
-            {defaultHead}
-            {document.head}
-          </Fragment>
-        )
-      )
+      const body = await renderPageBody(page, registry)
       const bodyHtml = await renderNode(body)
+      const head = markHeadElements(await renderNode(<Fragment>{getSeoHead(page)}</Fragment>))
       const styles = assets.styles.map((href) => `<link rel="stylesheet" href="${href}">`).join('')
       const browserConfig = {
         dev: config.server.development,
+        reloadBasePaths: [
+          config.apiBasePath ?? '/api',
+          ...(config.manager ? [config.manager.basePath] : []),
+          '/assets',
+          '/_rakun',
+        ],
         rscPath: '/_rakun/rsc',
       }
       const initialAssets = serializeScriptValue(assets)
       const navigation = manifest.navigation
         ? `<script type="module" src="${manifest.navigation}"></script>`
         : ''
-      const html = [
-        '<!doctype html>',
-        `<html${toAttributes(document.htmlAttributes)}>`,
-        '<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-        head,
-        styles,
-        '</head>',
-        `<body${toAttributes(document.bodyAttributes)}><div id="rakun-root">`,
-        bodyHtml,
-        '</div>',
-        `<script>window.__RAKUN_BUN__=${serializeScriptValue(browserConfig)}</script>`,
-        `<script type="application/json" data-rakun-assets>${initialAssets}</script>`,
-        navigation,
-        '</body></html>',
-      ].join('')
+      const root = <div id="rakun-root" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+      const Document = document?.default
+      if (document && !Document) {
+        throw new Error('Rakun src/document.tsx must export a default component.')
+      }
+      const documentNode = Document ? (
+        <Document assets={assets} page={page} path={path}>
+          {root}
+        </Document>
+      ) : (
+        <html>
+          <head />
+          <body>{root}</body>
+        </html>
+      )
+      let html = await renderNode(documentNode)
+      if (!/<html(?:\s|>)/i.test(html)) {
+        throw new Error('Rakun src/document.tsx must render an <html> element.')
+      }
+      html = injectAfterOpeningTag(
+        html,
+        'head',
+        '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+      )
+      html = injectBeforeClosingTag(html, 'head', [head, styles].join(''))
+      html = injectBeforeClosingTag(
+        html,
+        'body',
+        [
+          `<script>window.__RAKUN_BUN__=${serializeScriptValue(browserConfig)}</script>`,
+          `<script type="application/json" data-rakun-assets>${initialAssets}</script>`,
+          navigation,
+        ].join('')
+      )
 
       return {
         path,

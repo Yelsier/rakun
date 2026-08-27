@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path'
 
 import { afterEach, describe, expect, test } from 'bun:test'
 
-import { discoverRakunModules, hasUseClientDirective } from './modules'
+import { discoverRakunDocument, discoverRakunModules, hasUseClientDirective } from './modules'
 
 const temporaryDirectories: string[] = []
 
@@ -67,5 +67,25 @@ describe('discoverRakunModules', () => {
     ])
 
     await expect(discoverRakunModules(directory)).rejects.toThrow('Duplicate Rakun module "Hero"')
+  })
+})
+
+describe('discoverRakunDocument', () => {
+  test('accepts a server document and rejects a client document', async () => {
+    const root = await temporaryDirectory()
+    const documentFile = resolve(root, 'document.tsx')
+
+    expect(await discoverRakunDocument(documentFile)).toBeUndefined()
+
+    await writeFile(documentFile, 'export default function Document() { return null }')
+    expect(await discoverRakunDocument(documentFile)).toBe(documentFile)
+
+    await writeFile(
+      documentFile,
+      `'use client'\nexport default function Document() { return null }`
+    )
+    expect(discoverRakunDocument(documentFile)).rejects.toThrow(
+      'Rakun src/document.tsx must be a server component.'
+    )
   })
 })

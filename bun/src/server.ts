@@ -1,13 +1,16 @@
 import { mkdirSync, watch, type FSWatcher } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { resolve, sep } from 'node:path'
+import { dirname, resolve, sep } from 'node:path'
 import { timingSafeEqual } from 'node:crypto'
 
 import {
   ensureRakunBootstrap,
   ensureRakunInitialized,
   getRakunWebPage,
+  getRakunWebPreviewPage,
   getRakunWebStaticPaths,
+  getPlatform,
+  isRealtimeEndpointRequest,
   recordApiError,
   runWithRakunRequestTrace,
   type RakunBootstrapOptions,
@@ -25,6 +28,7 @@ import type {
   RakunBuildManifest,
   RakunBunBuildResult,
   RakunBunConfig,
+  RakunBunDocumentImport,
   RakunBunWebSource,
   RakunServerModuleRegistry,
   RenderedRoute,
@@ -35,6 +39,7 @@ type BunWebSocketData = { kind: 'dev' }
 
 type RakunBunInternalOptions = {
   cwd?: string
+  document?: RakunBunDocumentImport
   registry?: RakunServerModuleRegistry
 }
 
@@ -54,11 +59,27 @@ const loadBuildManifest = async (outDir: string): Promise<RakunBuildManifest> =>
     await readFile(resolve(outDir, 'manifests', 'build.json'), 'utf8')
   ) as RakunBuildManifest
 
-const getWebSource = (config: ResolvedRakunBunConfig): RakunBunWebSource =>
-  config.web ?? {
-    getPage: async (input) => await getRakunWebPage(input),
+const getPreviewToken = (config: ResolvedRakunBunConfig, input: PageInput): string | undefined => {
+  const tokenParam =
+    config.manager !== false && config.manager.preview !== false
+      ? config.manager.preview.tokenParam
+      : 'rakun_preview'
+  return input.search ? (new URLSearchParams(input.search).get(tokenParam) ?? undefined) : undefined
+}
+
+const getWebSource = (config: ResolvedRakunBunConfig): RakunBunWebSource => {
+  if (config.web) return config.web
+
+  return {
+    getPage: async (input) => {
+      const token = getPreviewToken(config, input)
+      return token
+        ? await getRakunWebPreviewPage({ ...input, token })
+        : await getRakunWebPage(input)
+    },
     getStaticPaths: async () => await getRakunWebStaticPaths(),
   }
+}
 
 const withBunBootstrap = (
   bootstrap: RakunBootstrapOptions,
@@ -128,18 +149,22 @@ export class RakunBunApplication {
   readonly config: ResolvedRakunBunConfig
   private readonly web: RakunBunWebSource
   private readonly api = createRakunApiHandler()
+  private document?: RakunBunDocumentImport
   private registry: RakunServerModuleRegistry
   private manifest?: RakunBuildManifest
   private cache: RakunRouteCache
   private staticPaths = new Set<string>()
   private server?: Bun.Server<BunWebSocketData>
-  private watcher?: FSWatcher
+  private watchers: FSWatcher[] = []
+  private developmentRebuild?: Promise<void>
+  private queuedDevelopmentRebuild = false
   private prepared = false
   private readonly prebuilt: boolean
 
   constructor(config: RakunBunConfig, internal: RakunBunInternalOptions = {}) {
     this.config = resolveRakunConfig(config, internal.cwd)
     this.web = getWebSource(this.config)
+    this.document = internal.document
     this.registry = internal.registry ?? {}
     this.prebuilt = internal.registry !== undefined
     this.cache = new RakunRouteCache(
@@ -151,6 +176,7 @@ export class RakunBunApplication {
   async build(options: { clean?: boolean } = {}): Promise<RakunBunBuildResult> {
     await this.prepareBootstrap()
     const code = await buildRakunCode(this.config, options)
+    this.document = code.document
     this.registry = code.registry
     this.manifest = code.manifest
     await this.refreshStaticPaths()
@@ -219,19 +245,36 @@ export class RakunBunApplication {
 
   async serve(): Promise<Bun.Server<BunWebSocketData>> {
     await this.prepare()
+    let server: Bun.Server<BunWebSocketData> | undefined
+    const handleRequest = (request: Request): Response | Promise<Response> => {
+      const metadata = getPlatform().realtime.metadata
+      if (
+        metadata.transport === 'sse' &&
+        isRealtimeEndpointRequest({
+          basePath: this.config.apiBasePath,
+          endpoint: metadata.endpoint,
+          method: request.method,
+          requestUrl: request.url,
+        })
+      ) {
+        server?.timeout(request, 0)
+      }
+
+      return this.fetch(request)
+    }
     const routes = {
-      [`${this.config.apiBasePath}/*`]: (request: Request) => this.fetch(request),
-      [`${this.config.apiBasePath}`]: (request: Request) => this.fetch(request),
-      '/_rakun/revalidate': (request: Request) => this.fetch(request),
-      '/_rakun/rsc/*': (request: Request) => this.fetch(request),
+      [`${this.config.apiBasePath}/*`]: handleRequest,
+      [`${this.config.apiBasePath}`]: handleRequest,
+      '/_rakun/revalidate': handleRequest,
+      '/_rakun/rsc/*': handleRequest,
       '/_rakun/dev': (request: Request) =>
         this.server?.upgrade(request, { data: { kind: 'dev' } })
           ? undefined
           : new Response(null, { status: 426 }),
-      '/assets/*': (request: Request) => this.fetch(request),
-      '/*': (request: Request) => this.fetch(request),
+      '/assets/*': handleRequest,
+      '/*': handleRequest,
     }
-    this.server = Bun.serve<BunWebSocketData>({
+    server = Bun.serve<BunWebSocketData>({
       development: this.config.server.development,
       hostname: this.config.server.hostname,
       port: this.config.server.port,
@@ -243,13 +286,14 @@ export class RakunBunApplication {
         message() {},
       },
     })
+    this.server = server
     if (this.config.server.development) this.startWatcher()
     return this.server
   }
 
   stop(): void {
-    this.watcher?.close()
-    this.watcher = undefined
+    for (const watcher of this.watchers) watcher.close()
+    this.watchers = []
     this.server?.stop()
     this.server = undefined
   }
@@ -292,6 +336,7 @@ export class RakunBunApplication {
       manifest: this.getManifest(),
       page,
       path,
+      document: this.document,
       registry: this.registry,
     })
   }
@@ -379,18 +424,47 @@ export class RakunBunApplication {
 
   private startWatcher(): void {
     let timer: ReturnType<typeof setTimeout> | undefined
-    mkdirSync(this.config.modulesDir, { recursive: true })
-    this.watcher = watch(this.config.modulesDir, { recursive: true }, () => {
+    const sourceDir = dirname(this.config.documentFile)
+    const candidates = Array.from(new Set([sourceDir, this.config.modulesDir]))
+    const roots = candidates.filter(
+      (candidate, index, candidates) =>
+        !candidates.some(
+          (parent, parentIndex) =>
+            parentIndex !== index && candidate !== parent && candidate.startsWith(`${parent}${sep}`)
+        )
+    )
+    const rebuild = () => {
       if (timer) clearTimeout(timer)
       timer = setTimeout(() => {
-        void this.rebuildForDevelopment()
+        this.scheduleDevelopmentRebuild()
       }, 75)
+    }
+
+    for (const root of roots) {
+      mkdirSync(root, { recursive: true })
+      this.watchers.push(watch(root, { recursive: true }, rebuild))
+    }
+  }
+
+  private scheduleDevelopmentRebuild(): void {
+    if (this.developmentRebuild) {
+      this.queuedDevelopmentRebuild = true
+      return
+    }
+
+    this.developmentRebuild = this.rebuildForDevelopment().finally(() => {
+      this.developmentRebuild = undefined
+      if (!this.queuedDevelopmentRebuild || !this.server) return
+
+      this.queuedDevelopmentRebuild = false
+      this.scheduleDevelopmentRebuild()
     })
   }
 
   private async rebuildForDevelopment(): Promise<void> {
     try {
       const code = await buildRakunCode(this.config)
+      this.document = code.document
       this.registry = code.registry
       this.manifest = code.manifest
       await this.refreshStaticPaths()

@@ -421,6 +421,20 @@ describe('dynamic data query filters', () => {
     })
   })
 
+  test('normalizes numeric filter values before trimming', () => {
+    expect(
+      buildFilter(
+        {
+          combinator: 'and',
+          conditions: [
+            { field: 'views', operator: 'equals', value: 10 as unknown as string },
+          ],
+        },
+        [{ label: 'views', value: 'views', kind: 'number' }],
+      ),
+    ).toEqual({ views: 10 })
+  })
+
   test('builds and reads values from the current context and root document', () => {
     const state = {
       combinator: 'and' as const,

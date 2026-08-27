@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import type { RakunBootstrapOptions } from '@rakun-kit/core'
 import type {
   PageInput,
@@ -9,18 +9,15 @@ import type {
 
 export type MaybePromise<T> = T | Promise<T>
 
-export type RakunBunDocumentContext = {
+export type RakunBunDocumentProps = {
   assets: RakunBunPageAssets
-  body: ReactNode
+  children: ReactNode
   page: PageOutput
   path: string
 }
 
-export type RakunBunDocument = {
-  body?: ReactNode
-  head?: ReactNode
-  htmlAttributes?: Record<string, string>
-  bodyAttributes?: Record<string, string>
+export type RakunBunDocumentImport = {
+  default?: ComponentType<RakunBunDocumentProps>
 }
 
 export type RakunBunWebSource = {
@@ -30,6 +27,12 @@ export type RakunBunWebSource = {
 
 export type RakunBunManagerOptions = {
   basePath?: string
+  preview?: false | RakunBunManagerPreviewOptions
+}
+
+export type RakunBunManagerPreviewOptions = {
+  webBaseUrl?: string | URL
+  tokenParam?: string
 }
 
 export type RakunBunRevalidationOptions = {
@@ -46,7 +49,6 @@ export type RakunBunServerOptions = {
 export type RakunBunConfig = {
   apiBasePath?: string
   bootstrap?: RakunBootstrapOptions | (() => RakunBootstrapOptions)
-  document?: (context: RakunBunDocumentContext) => MaybePromise<RakunBunDocument | ReactNode>
   manager?: false | RakunBunManagerOptions
   modulesDir?: string
   outDir?: string
@@ -61,7 +63,13 @@ export type ResolvedRakunBunConfig = Omit<
   'apiBasePath' | 'manager' | 'modulesDir' | 'outDir' | 'rootDir' | 'server'
 > & {
   apiBasePath: string
-  manager: false | Required<RakunBunManagerOptions>
+  documentFile: string
+  manager:
+    | false
+    | {
+        basePath: string
+        preview: false | { webBaseUrl: string; tokenParam: string }
+      }
   modulesDir: string
   outDir: string
   rootDir: string

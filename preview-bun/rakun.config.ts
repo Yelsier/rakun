@@ -1,60 +1,63 @@
-import type { PageInput, PageOutput } from '@rakun-kit/core/contracts'
-import { defineRakunConfig } from '@rakun-kit/bun'
+import type { RakunBootstrapOptions, RakunBunConfig } from '@rakun-kit/bun'
 
-const copy = {
-  title: 'Rakun on Bun',
-  description: 'One Bun process, server-rendered modules, and small client islands.',
-  homeLink: 'Static home',
-  dynamicLink: 'Dynamic example',
-  staticBadge: 'Static route',
-  dynamicBadge: 'Dynamic route',
-  counterLabel: 'Interactive island',
-  routesLabel: 'Preview routes',
-} as const
+import { Counter, Page, PageSection, previewManagerLanguages } from './src/rakun'
 
-const getPage = ({ path }: PageInput): PageOutput => {
-  const isStatic = path === '/'
-
-  return {
-    renderMode: isStatic ? 'static' : 'dynamic',
-    ...(isStatic ? { ttl: 60 } : {}),
-    seo: {
-      _id: `seo:${path}`,
-      _type: 'Seo',
-      title: isStatic ? copy.title : `${copy.title} · ${path}`,
-      description: copy.description,
+export const bootstrap: RakunBootstrapOptions = {
+  literals: {
+    'previewBun.counterLabel': {
+      defaultMessage: 'Interactive island',
+      description: 'Label shown beside the Bun preview client counter',
+      usedBy: ['Counter'],
     },
-    literals: copy,
-    info: { path },
-    layout: [
-      {
-        type: 'content',
-        modules: [
-          {
-            _id: `preview:${path}`,
-            _type: 'PreviewPage',
-            badge: isStatic ? copy.staticBadge : copy.dynamicBadge,
-            description: copy.description,
-            dynamicLink: copy.dynamicLink,
-            homeLink: copy.homeLink,
-            path,
-            routesLabel: copy.routesLabel,
-            title: copy.title,
-          },
-          {
-            _id: `counter:${path}`,
-            _type: 'Counter',
-            initial: isStatic ? 1 : 0,
-            label: copy.counterLabel,
-          },
-        ],
-      },
-    ],
-  }
+    'previewBun.homeLink': {
+      defaultMessage: 'Home page',
+      description: 'Link from the Bun preview page to its home route',
+      usedBy: ['NotFound', 'PageSection'],
+    },
+    'previewBun.managerLink': {
+      defaultMessage: 'Manager',
+      description: 'Link from the Bun preview page to the Rakun manager',
+      usedBy: ['PageSection'],
+    },
+    'previewBun.navigationLabel': {
+      defaultMessage: 'Preview routes',
+      description: 'Accessible label for the Bun preview route links',
+      usedBy: ['PageSection'],
+    },
+    'previewBun.notFoundTitle': {
+      defaultMessage: 'Page not found',
+      description: 'Heading shown for missing Bun preview routes',
+      usedBy: ['NotFound'],
+    },
+  },
+  internalContentTypes: {
+    Page,
+  },
+  contentTypes: [PageSection, Counter],
+  managerLanguages: previewManagerLanguages,
+  routes: [
+    {
+      key: 'pages',
+      contentType: Page.name,
+      field: 'slug',
+      hasPage: true,
+      dynamic: false,
+      defaultBasePath: '',
+      layout: [{ type: 'content' }],
+    },
+  ],
+  mongo: {
+    MONGO_URI: process.env.MONGO_URI ?? 'mongodb://127.0.0.1:27017/rakun_preview_bun',
+    ENVIRONMENT: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+  },
+  logger: {
+    level: 'debug',
+    prettify: true,
+  },
 }
 
-export default defineRakunConfig({
-  manager: false,
+const bunConfig: RakunBunConfig = {
+  bootstrap,
   modulesDir: './src/modules',
   revalidation: {
     token: process.env.RAKUN_REVALIDATE_TOKEN ?? 'preview-bun-token',
@@ -62,14 +65,6 @@ export default defineRakunConfig({
   server: {
     port: Number(process.env.PORT ?? 4200),
   },
-  web: {
-    getPage,
-    getStaticPaths: () => ({
-      items: [{ path: '/', ttl: 60 }],
-    }),
-  },
-  document: ({ body }) => ({
-    body,
-    htmlAttributes: { lang: 'en' },
-  }),
-})
+}
+
+export default bunConfig

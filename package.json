@@ -71,6 +71,7 @@
     "preview:mail:check": "bun run --filter @rakun-kit/preview mail:check",
     "preview:mail:send": "bun run --filter @rakun-kit/preview mail:send-test",
     "preview:bun": "bun run --filter @rakun-kit/preview-bun dev",
+    "preview:bun:seed": "bun run --filter @rakun-kit/preview-bun seed",
     "preview:next": "bun run --elide-lines=0 --filter @rakun-kit/preview-next dev",
     "preview:next:mail": "bun run --filter @rakun-kit/preview-next mail:preview",
     "preview:next:mail:check": "bun run --filter @rakun-kit/preview-next mail:check",

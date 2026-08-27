@@ -6,5 +6,5 @@
     "types": ["bun", "node", "react", "react-dom"],
     "noEmit": true
   },
-  "include": ["rakun.config.ts", "src/**/*.ts", "src/**/*.tsx"]
+  "include": ["rakun.config.ts", "seed.ts", "src/**/*.ts", "src/**/*.tsx"]
 }

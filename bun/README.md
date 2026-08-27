@@ -7,7 +7,7 @@ process.
 ## Install
 
 ```sh
-bun add @rakun-kit/bun @rakun-kit/core react react-dom
+bun add @rakun-kit/bun @rakun-kit/core @rakun-kit/manager-react @rakun-kit/react react react-dom
 ```
 
 Add scripts to the application:
@@ -22,24 +22,34 @@ Add scripts to the application:
 }
 ```
 
-Create `rakun.config.ts`:
+Create a typed `rakun.config.ts`. `bootstrap` accepts the same
+`RakunBootstrapOptions` used by the other Rakun adapters; the remaining fields
+configure the Bun framework:
 
 ```ts
-import { defineRakunConfig } from '@rakun-kit/bun'
+import type { RakunBunConfig } from '@rakun-kit/bun'
 import { createRakunBootstrap } from './src/rakun/bootstrap'
 
-export default defineRakunConfig({
+const bunConfig: RakunBunConfig = {
   bootstrap: createRakunBootstrap,
   modulesDir: './src/modules',
   revalidation: {
     token: process.env.RAKUN_REVALIDATE_TOKEN!,
   },
-})
+}
+
+export default bunConfig
 ```
 
 The default paths are `/api`, `/manager`, `/_rakun/rsc`, `/_rakun/revalidate`,
 and `/assets`. `revalidation` configures core to call the same Bun process after
 Rakun resolves affected content to paths.
+
+The manager preview is enabled for the same Bun origin by default. Set
+`manager: { preview: false }` to disable it, or provide `webBaseUrl` and
+`tokenParam` when the web application is hosted elsewhere or uses a custom
+preview query parameter. Preview requests with that token are resolved through
+Rakun's `web.previewPage` operation.
 
 ## Filesystem modules
 
@@ -66,6 +76,10 @@ export default function Counter({ initial = 0 }) {
 }
 ```
 
+An unresolved route uses the framework's empty `NotFound` fallback and returns
+HTTP 404. Add `src/modules/NotFound.tsx` to render an application-specific 404
+module; Bun keeps the response status and marker automatically.
+
 Rakun page content stays separate from this code. A content save regenerates
 only the HTML and path-scoped render payload; source changes rebuild code and
 hashed assets.
@@ -78,18 +92,31 @@ gets HTML plus a `flight.rsc` render payload. Other paths resolve through
 the rendered tree, and imports only client chunks referenced by the destination
 page.
 
-Use `document` to add application shell markup:
+Add `src/document.tsx` to define the application shell. It is a server component
+and follows the same `children` layout shape as a Next.js root layout:
 
 ```tsx
-export default defineRakunConfig({
-  bootstrap: createRakunBootstrap,
-  document: ({ body }) => ({
-    head: <link rel="icon" href="/favicon.svg" />,
-    body: <div className="site">{body}</div>,
-    htmlAttributes: { lang: 'en' },
-  }),
-})
+import type { RakunBunDocumentProps } from '@rakun-kit/bun'
+
+import './globals.css'
+
+export default function Document({ children, page }: RakunBunDocumentProps) {
+  return (
+    <html lang={page.language?.code ?? 'en'}>
+      <head>
+        <link rel="icon" href="/favicon.svg" />
+      </head>
+      <body>
+        <div className="site">{children}</div>
+      </body>
+    </html>
+  )
+}
 ```
+
+The framework bundles global CSS imported by the document and injects page SEO,
+styles, navigation scripts, and the Rakun root inside the rendered document. The
+file must export a default server component.
 
 ## Path invalidation
 
@@ -118,9 +145,11 @@ content relationships and calculating affected paths.
 
 ## Development and production
 
-`rakun-bun dev` watches the module directory, rebuilds generated registries and
-server/client graphs, regenerates static pages, and replaces the rendered tree
-over the development WebSocket. A failed hot update falls back to a page reload.
+`rakun-bun dev` watches `src` and an external module directory when configured,
+rebuilds the document, generated registries, and server/client graphs,
+regenerates static pages, and replaces the rendered tree over the development
+WebSocket. A failed rebuild leaves the current application active; a
+browser-side update failure falls back to a page reload.
 
 `rakun-bun build` writes:
 
@@ -140,7 +169,8 @@ Run the production output with `rakun-bun start` or `bun dist/server.js`.
 
 ## Public API
 
-- `defineRakunConfig()` and `loadRakunConfig()`
+- `RakunBunConfig`, `RakunBunDocumentProps`, `loadRakunConfig()`, and
+  `resolveRakunConfig()`
 - `createRakunBun()` and `startRakunBun()`
 - `RakunBunApplication.build()`, `.fetch()`, `.serve()`, `.invalidatePath()`,
   and `.stop()`

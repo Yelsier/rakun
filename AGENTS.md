@@ -22,7 +22,7 @@ Main packages:
 - `openai`: automatic translation adapter using OpenAI.
 - `plugin-code-editor`: manager plugin for code blocks in RichText fields.
 - `preview`: local Vite + Express development app.
-- `preview-bun`: small database-free Bun framework preview.
+- `preview-bun`: small MongoDB-backed Bun framework preview.
 - `preview-next`: local Next.js app; it has its own `AGENTS.md`.
 - `create-rakun-app`: project generator with official starter templates; its
   Next.js template is kept intentionally smaller than `preview-next`.
@@ -38,6 +38,7 @@ Main packages:
 - Build the project generator: `bun run build:create-rakun-app`
 - Vite/Express preview: `bun run preview`, `bun run preview:api`, `bun run preview:web`
 - Bun preview: `bun run preview:bun`
+- Seed Bun preview: `bun run preview:bun:seed`
 - Next preview: `bun run preview:next`
 
 ## Style

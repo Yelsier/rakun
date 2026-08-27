@@ -110,8 +110,10 @@ type IteratorModuleContentType = EncodedRelationField['contentType'] & {
   modulePicker?: ModulePickerMetadata
 }
 
-const cleanText = (value: string | undefined) => {
-  const trimmed = value?.trim()
+const cleanText = (value: unknown) => {
+  if (typeof value !== 'string') return undefined
+
+  const trimmed = value.trim()
   return trimmed ? trimmed : undefined
 }
 

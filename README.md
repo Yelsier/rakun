@@ -45,7 +45,7 @@ with Bun, Express, and Next.js integrations available.
 | `@rakun-kit/plugin-code-editor` | Manager plugin for code blocks in RichText fields.                                                                              |
 | `create-rakun-app`              | CLI that scaffolds Rakun applications from maintained framework templates.                                                      |
 | `@rakun-kit/preview`            | Local development app, not intended for publication.                                                                            |
-| `@rakun-kit/preview-bun`        | Small database-free Bun framework preview, not intended for publication.                                                        |
+| `@rakun-kit/preview-bun`        | Small MongoDB-backed Bun framework preview, not intended for publication.                                                       |
 
 ## AI Documentation
 

@@ -16,6 +16,7 @@ type FlightPayload = {
 
 type RakunBrowserConfig = {
   dev?: boolean
+  reloadBasePaths: string[]
   rscPath: string
 }
 
@@ -31,6 +32,9 @@ const loadedStyles = new Set(
   )
 )
 const loadedScripts = new Map<string, Promise<Record<string, unknown>>>()
+
+const isWithinBasePath = (pathname: string, basePath: string): boolean =>
+  pathname === basePath || pathname.startsWith(`${basePath}/`)
 
 const loadStyles = (assets: PageAssets): void => {
   for (const href of assets.styles) {
@@ -80,6 +84,10 @@ const navigate = async (url: URL, replace = false): Promise<void> => {
   const config = window.__RAKUN_BUN__
   const root = document.querySelector<HTMLElement>('#rakun-root')
   if (!config || !root) {
+    location.assign(url)
+    return
+  }
+  if (config.reloadBasePaths.some((basePath) => isWithinBasePath(url.pathname, basePath))) {
     location.assign(url)
     return
   }
