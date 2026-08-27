@@ -29,6 +29,9 @@ Defaults: API `/api`, manager `/manager`, modules `src/modules`, output `dist`,
 port `3000`, RSC transport `/_rakun/rsc`, assets `/assets`, and path
 revalidation `/_rakun/revalidate`.
 
+Bun's native password implementation is used for manager passwords, so Bun
+applications do not need to install `bcrypt`.
+
 Manager preview is enabled for the same origin by default. Disable it with
 `manager: { preview: false }`, or configure `manager.preview.webBaseUrl` and
 `manager.preview.tokenParam` for a separate web host or custom query parameter.

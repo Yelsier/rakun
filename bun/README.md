@@ -10,6 +10,9 @@ process.
 bun add @rakun-kit/bun @rakun-kit/core @rakun-kit/manager-react @rakun-kit/react react react-dom
 ```
 
+Bun uses its native password implementation, so this adapter does not require
+the `bcrypt` package.
+
 Add scripts to the application:
 
 ```json

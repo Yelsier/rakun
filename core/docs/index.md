@@ -50,12 +50,13 @@ repository, not installable packages, so they do not have installed manuals.
 ## Install and peer requirements
 
 ```sh
-bun add @rakun-kit/core mongodb bcrypt ffmpeg-static zod
+bun add @rakun-kit/core mongodb ffmpeg-static zod
 # Node.js image optimization only
 bun add sharp
 ```
 
-`mongodb`, `bcrypt` and `ffmpeg-static` are peer dependencies. `sharp` is an
+`mongodb` and `ffmpeg-static` are peer dependencies. `bcrypt` is only needed by
+Node runtimes; Bun uses its native password implementation. `sharp` is an
 optional peer used by the default Node.js image processor and as the fallback
 for Bun versions without `Bun.Image`. Adapters and optional services are
 separate packages.

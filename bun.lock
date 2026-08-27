@@ -68,6 +68,7 @@
         "sharp": "^0.34.5",
       },
       "optionalPeers": [
+        "bcrypt",
         "sharp",
       ],
     },

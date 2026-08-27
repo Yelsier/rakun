@@ -1,6 +1,26 @@
 import { requirePeerDependency } from "../../lib/utils/peerDependencies";
+import { isBun } from "../../platform";
 
 type Bcrypt = typeof import("bcrypt");
+
+type BunPassword = {
+  hashSync: (
+    password: string,
+    options: { algorithm: "bcrypt"; cost: number },
+  ) => string;
+  verifySync: (password: string, hash: string) => boolean;
+};
+
+type BunRuntime = typeof globalThis & {
+  Bun?: {
+    password?: BunPassword;
+  };
+};
+
+const getBunPassword = (): BunPassword | undefined => {
+  if (!isBun()) return undefined;
+  return (globalThis as BunRuntime).Bun?.password;
+};
 
 const getBcrypt = () =>
   requirePeerDependency<Bcrypt>(
@@ -11,10 +31,16 @@ const getBcrypt = () =>
 
 export const verifyPassword = (password: string, hash: string) => {
   if (!isBcryptHash(hash)) return false;
+  const bunPassword = getBunPassword();
+  if (bunPassword) return bunPassword.verifySync(password, hash);
   return getBcrypt().compareSync(password, hash);
 };
 
 export const hashPassword = (password: string) => {
+  const bunPassword = getBunPassword();
+  if (bunPassword) {
+    return bunPassword.hashSync(password, { algorithm: "bcrypt", cost: 10 });
+  }
   return getBcrypt().hashSync(password, 10);
 };
 
