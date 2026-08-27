@@ -1,6 +1,6 @@
 import { mkdirSync, watch, type FSWatcher } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { dirname, resolve, sep } from 'node:path'
+import { dirname, relative, resolve, sep } from 'node:path'
 import { timingSafeEqual } from 'node:crypto'
 
 import {
@@ -22,6 +22,7 @@ import { buildRakunCode, describeBuild, writeRakunManifests } from './build'
 import { RakunRouteCache } from './cache'
 import { normalizeRakunPath, resolveRakunConfig } from './config'
 import { jsonResponse } from './http'
+import { hasUseClientDirective } from './modules'
 import { createBunPlatform } from './platform'
 import { renderRakunRoute } from './render'
 import type {
@@ -158,6 +159,8 @@ export class RakunBunApplication {
   private watchers: FSWatcher[] = []
   private developmentRebuild?: Promise<void>
   private queuedDevelopmentRebuild = false
+  private pendingDevelopmentFiles = new Set<string>()
+  private pendingDevelopmentUnknown = false
   private prepared = false
   private readonly prebuilt: boolean
 
@@ -433,7 +436,12 @@ export class RakunBunApplication {
             parentIndex !== index && candidate !== parent && candidate.startsWith(`${parent}${sep}`)
         )
     )
-    const rebuild = () => {
+    const rebuild = (root: string, filename: string | Buffer | null) => {
+      if (filename === null) {
+        this.pendingDevelopmentUnknown = true
+      } else {
+        this.pendingDevelopmentFiles.add(resolve(root, filename.toString()))
+      }
       if (timer) clearTimeout(timer)
       timer = setTimeout(() => {
         this.scheduleDevelopmentRebuild()
@@ -442,7 +450,9 @@ export class RakunBunApplication {
 
     for (const root of roots) {
       mkdirSync(root, { recursive: true })
-      this.watchers.push(watch(root, { recursive: true }, rebuild))
+      this.watchers.push(
+        watch(root, { recursive: true }, (eventType, filename) => rebuild(root, filename))
+      )
     }
   }
 
@@ -463,16 +473,58 @@ export class RakunBunApplication {
 
   private async rebuildForDevelopment(): Promise<void> {
     try {
-      const code = await buildRakunCode(this.config)
+      const buildClient = await this.consumeDevelopmentClientBuild()
+      const previousStaticPaths = this.staticPaths
+      const code = await buildRakunCode(this.config, {
+        client: buildClient,
+        previousManifest: this.manifest,
+      })
       this.document = code.document
       this.registry = code.registry
       this.manifest = code.manifest
       await this.refreshStaticPaths()
-      for (const path of this.staticPaths) await this.cache.regenerate(path)
+      for (const path of new Set([...previousStaticPaths, ...this.staticPaths])) {
+        this.cache.remove(path)
+      }
+      await writeRakunManifests(this.config.outDir, this.manifest, Array.from(this.staticPaths))
       this.server?.publish('rakun-dev', 'update')
     } catch (error) {
       console.error('Rakun development rebuild failed.', error)
     }
+  }
+
+  private async consumeDevelopmentClientBuild(): Promise<boolean | string[]> {
+    const unknown = this.pendingDevelopmentUnknown
+    const files = Array.from(this.pendingDevelopmentFiles)
+    this.pendingDevelopmentUnknown = false
+    this.pendingDevelopmentFiles.clear()
+    if (unknown) return true
+
+    const clientModules = new Set<string>()
+    for (const file of files) {
+      if (file === resolve(this.config.documentFile)) continue
+      const moduleRelative = relative(this.config.modulesDir, file)
+      if (moduleRelative.startsWith('..') || moduleRelative.includes(`${sep}..${sep}`)) {
+        continue
+      }
+      const parts = moduleRelative.split(sep)
+      const isModuleEntry =
+        parts.length === 1 || (parts.length === 2 && /^index\.[^.]+$/.test(parts.at(-1) ?? ''))
+      if (!isModuleEntry) return true
+      const source = await readFile(file, 'utf8').catch(() => undefined)
+      if (source === undefined) {
+        const previous = this.manifest?.modules.find((module) => module.file === file)
+        if (previous?.client) clientModules.add(previous.name)
+        continue
+      }
+      if (hasUseClientDirective(source)) {
+        const previous = this.manifest?.modules.find((module) => module.file === file)
+        if (!previous) return true
+        clientModules.add(previous.name)
+      }
+    }
+
+    return Array.from(clientModules)
   }
 }
 

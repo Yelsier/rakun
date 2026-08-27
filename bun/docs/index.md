@@ -88,8 +88,10 @@ the shell should not hardcode content copy.
 - Filesystem page routing and Server Actions are unsupported.
 - Navigation uses Rakun's path-scoped `text/x-component` render payload; client
   boundaries hydrate as isolated React roots.
-- Development changes under `src` or an external module directory trigger graph
-  rebuild, static regeneration, and a rendered-tree hot update over WebSocket;
-  failed rebuilds leave the current application active, while browser-side
+- Development changes under `src` or an external module directory trigger an
+  incremental graph rebuild when possible and a rendered-tree hot update over
+  WebSocket. Server-only changes keep the existing browser and manager assets;
+  static routes are invalidated and regenerated lazily on the next request.
+  Failed rebuilds leave the current application active, while browser-side
   update failures fall back to reload.
 - No `invalidateTag` support.

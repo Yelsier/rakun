@@ -208,7 +208,11 @@ export const writeRakunManifests = async (
 
 export const buildRakunCode = async (
   config: ResolvedRakunBunConfig,
-  options: { clean?: boolean } = {}
+  options: {
+    clean?: boolean
+    client?: boolean | string[]
+    previousManifest?: RakunBuildManifest
+  } = {}
 ): Promise<{
   generatedRegistry: string
   document?: RakunBunDocumentImport
@@ -239,6 +243,18 @@ export const buildRakunCode = async (
     config.apiBasePath
   )
 
+  const clientModuleNames = Array.isArray(options.client) ? options.client : undefined
+  const partialClientBuild = !!clientModuleNames && !!options.previousManifest
+  const requestedClientModules = partialClientBuild ? new Set(clientModuleNames) : undefined
+  const clientEntrypoints = requestedClientModules
+    ? clientEntries.entries.filter((entry) =>
+        Array.from(clientEntries.modules.entries()).some(
+          ([name, moduleEntry]) => moduleEntry === entry && requestedClientModules.has(name)
+        )
+      )
+    : clientEntries.entries
+  const shouldBuildClient = options.client !== false || !options.previousManifest
+  const hasClientBuild = shouldBuildClient && clientEntrypoints.length > 0
   const [serverBuild, clientBuild] = await Promise.all([
     Bun.build({
       entrypoints: [generatedRegistry],
@@ -249,26 +265,28 @@ export const buildRakunCode = async (
       sourcemap: config.server.development ? 'linked' : 'none',
       target: 'bun',
     }),
-    Bun.build({
-      entrypoints: clientEntries.entries,
-      format: 'esm',
-      metafile: true,
-      minify: !config.server.development,
-      naming: {
-        asset: '[name]-[hash].[ext]',
-        chunk: 'chunk-[hash].[ext]',
-        entry: '[name]-[hash].[ext]',
-      },
-      outdir: assetsDir,
-      plugins: [createRakunRuntimeResolver(config.rootDir)],
-      publicPath: '/assets/',
-      sourcemap: config.server.development ? 'linked' : 'none',
-      splitting: true,
-      target: 'browser',
-    }),
+    hasClientBuild
+      ? Bun.build({
+          entrypoints: clientEntrypoints,
+          format: 'esm',
+          metafile: true,
+          minify: !config.server.development,
+          naming: {
+            asset: '[name]-[hash].[ext]',
+            chunk: 'chunk-[hash].[ext]',
+            entry: '[name]-[hash].[ext]',
+          },
+          outdir: assetsDir,
+          plugins: [createRakunRuntimeResolver(config.rootDir)],
+          publicPath: '/assets/',
+          sourcemap: config.server.development ? 'linked' : 'none',
+          splitting: true,
+          target: 'browser',
+        })
+      : Promise.resolve(undefined),
   ])
   assertBuild(serverBuild, 'Rakun server graph build')
-  assertBuild(clientBuild, 'Rakun client graph build')
+  if (clientBuild) assertBuild(clientBuild, 'Rakun client graph build')
 
   const serverArtifact = serverBuild.outputs.find((output) => output.kind === 'entry-point')
   if (!serverArtifact) throw new Error('Rakun server graph has no entry output.')
@@ -281,38 +299,73 @@ export const buildRakunCode = async (
     throw new Error('Rakun src/document.tsx must export a default component.')
   }
 
-  const client: RakunClientManifest = {}
-  for (const [name, entry] of clientEntries.modules) {
-    const artifact = getEntryOutput(clientBuild, entry)
-    const outputMeta = getOutputMetadata(clientBuild, artifact)
-    const styles = outputMeta?.cssBundle ? [`/assets/${basename(outputMeta.cssBundle)}`] : undefined
-    client[name] = {
-      chunk: toAssetUrl(assetsDir, artifact),
-      ...(styles?.length ? { styles } : {}),
+  const client: RakunClientManifest =
+    clientBuild && !partialClientBuild ? {} : { ...(options.previousManifest?.client ?? {}) }
+  for (const name of Object.keys(client)) {
+    if (!clientEntries.modules.has(name)) delete client[name]
+  }
+  if (clientBuild) {
+    for (const [name, entry] of clientEntries.modules) {
+      if (partialClientBuild && !requestedClientModules?.has(name)) continue
+      const artifact = getEntryOutput(clientBuild, entry)
+      const outputMeta = getOutputMetadata(clientBuild, artifact)
+      const styles = outputMeta?.cssBundle
+        ? [`/assets/${basename(outputMeta.cssBundle)}`]
+        : undefined
+      client[name] = {
+        chunk: toAssetUrl(assetsDir, artifact),
+        ...(styles?.length ? { styles } : {}),
+      }
     }
   }
-  const navigation = toAssetUrl(assetsDir, getEntryOutput(clientBuild, clientEntries.navigation))
-  const managerArtifact = clientEntries.manager
-    ? getEntryOutput(clientBuild, clientEntries.manager)
-    : undefined
-  const managerMeta = managerArtifact ? getOutputMetadata(clientBuild, managerArtifact) : undefined
-  const managerAssets = [
-    ...(managerArtifact ? [toAssetUrl(assetsDir, managerArtifact)] : []),
-    ...(managerMeta?.cssBundle ? [`/assets/${basename(managerMeta.cssBundle)}`] : []),
-  ]
+  const navigation =
+    clientBuild && !partialClientBuild
+      ? toAssetUrl(assetsDir, getEntryOutput(clientBuild, clientEntries.navigation))
+      : (options.previousManifest?.navigation ?? '')
+  const managerAssets =
+    clientBuild && !partialClientBuild
+      ? (() => {
+          const managerArtifact = clientEntries.manager
+            ? getEntryOutput(clientBuild, clientEntries.manager)
+            : undefined
+          const managerMeta = managerArtifact
+            ? getOutputMetadata(clientBuild, managerArtifact)
+            : undefined
+          return [
+            ...(managerArtifact ? [toAssetUrl(assetsDir, managerArtifact)] : []),
+            ...(managerMeta?.cssBundle ? [`/assets/${basename(managerMeta.cssBundle)}`] : []),
+          ]
+        })()
+      : (options.previousManifest?.managerAssets ?? [])
   const serverCss = serverBuild.outputs.filter((output) => output.path.endsWith('.css'))
   await Promise.all(
     serverCss.map((output) => copyFile(output.path, resolve(assetsDir, basename(output.path))))
   )
   const clientModuleStyles = new Set(Object.values(client).flatMap((entry) => entry.styles ?? []))
   const managerStyleSet = new Set(managerAssets.filter((asset) => asset.endsWith('.css')))
-  const assets = [
-    ...serverCss.map((output) => `/assets/${basename(output.path)}`),
-    ...clientBuild.outputs
-      .filter((output) => output.path.endsWith('.css'))
-      .map((output) => toAssetUrl(assetsDir, output))
-      .filter((asset) => !clientModuleStyles.has(asset) && !managerStyleSet.has(asset)),
-  ]
+  const assets =
+    clientBuild && !partialClientBuild
+      ? [
+          ...serverCss.map((output) => `/assets/${basename(output.path)}`),
+          ...clientBuild.outputs
+            .filter((output) => output.path.endsWith('.css'))
+            .map((output) => toAssetUrl(assetsDir, output))
+            .filter((asset) => !clientModuleStyles.has(asset) && !managerStyleSet.has(asset)),
+        ]
+      : Array.from(
+          new Set([
+            ...(options.previousManifest?.assets ?? []).filter(
+              (asset) => !/^\/assets\/modules-[^/]+\.css$/.test(asset)
+            ),
+            ...serverCss.map((output) => `/assets/${basename(output.path)}`),
+            ...(clientBuild
+              ? clientBuild.outputs
+                  .filter((output) => output.path.endsWith('.css'))
+                  .map((output) => toAssetUrl(assetsDir, output))
+                  .filter((asset) => !clientModuleStyles.has(asset) && !managerStyleSet.has(asset))
+              : []),
+          ])
+        )
   const manifest: RakunBuildManifest = {
     assets,
     client,

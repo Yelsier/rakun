@@ -145,11 +145,12 @@ content relationships and calculating affected paths.
 
 ## Development and production
 
-`rakun-bun dev` watches `src` and an external module directory when configured,
-rebuilds the document, generated registries, and server/client graphs,
-regenerates static pages, and replaces the rendered tree over the development
-WebSocket. A failed rebuild leaves the current application active; a
-browser-side update failure falls back to a page reload.
+`rakun-bun dev` watches `src` and an external module directory when configured.
+It rebuilds the document and server graph for server-only changes, rebuilds only
+the affected client entries when a client module changes, invalidates static
+routes for lazy regeneration, and replaces the rendered tree over the
+development WebSocket. A failed rebuild leaves the current application active;
+a browser-side update failure falls back to a page reload.
 
 `rakun-bun build` writes:
 
