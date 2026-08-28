@@ -1,6 +1,6 @@
 import type { RakunBunDocumentProps } from '@rakun-kit/bun'
 
-import './modules/preview.css'
+import './styles.css'
 
 export default function Document({ children, page }: RakunBunDocumentProps) {
   const locale =

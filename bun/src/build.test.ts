@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import { join, resolve } from 'node:path'
 
 import { afterEach, expect, test } from 'bun:test'
+import type { Root } from 'postcss'
 
 import { buildRakunServerBundle } from './build'
 import { formatRakunBuildReport } from './report'
@@ -39,6 +40,19 @@ test('builds server/client graphs and a static route', async () => {
   let heading = 'Page'
   const application = createRakunBun(
     {
+      css: {
+        plugins: [
+          {
+            postcssPlugin: 'rakun-test-css-plugin',
+            Once(root: Root) {
+              root.append({
+                nodes: [{ prop: '--rakun-test-css', value: 'enabled' }],
+                selector: ':root',
+              })
+            },
+          },
+        ],
+      },
       revalidation: { token: 'test-token' },
       rootDir: root,
       server: { development: false, hostname: '127.0.0.1', port: 0 },
@@ -94,6 +108,11 @@ test('builds server/client graphs and a static route', async () => {
     true
   )
   expect(result.manifest.assets.some((asset) => asset.endsWith('.css'))).toBe(true)
+  const stylesheet = result.manifest.assets.find((asset) => asset.endsWith('.css'))
+  expect(stylesheet).toBeDefined()
+  expect(await readFile(resolve(root, 'dist', stylesheet!.slice(1)), 'utf8')).toContain(
+    '--rakun-test-css: enabled'
+  )
   const builtAssets = await readdir(resolve(root, 'dist', 'assets'))
   expect(builtAssets.some((asset) => asset.startsWith('chunk-'))).toBe(false)
   const managerBuiltAssets = await readdir(resolve(root, 'dist', 'assets', 'manager'), {

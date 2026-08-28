@@ -1,4 +1,5 @@
 import type { ComponentType, ReactNode } from 'react'
+import type { AcceptedPlugin } from 'postcss'
 import type { RakunBootstrapOptions } from '@rakun-kit/core'
 import type {
   PageInput,
@@ -46,9 +47,15 @@ export type RakunBunServerOptions = {
   development?: boolean
 }
 
+export type RakunBunCssOptions = {
+  /** PostCSS plugins applied to CSS imported from this application's source tree. */
+  plugins?: AcceptedPlugin[]
+}
+
 export type RakunBunConfig = {
   apiBasePath?: string
   bootstrap?: RakunBootstrapOptions | (() => RakunBootstrapOptions)
+  css?: RakunBunCssOptions
   manager?: false | RakunBunManagerOptions
   modulesDir?: string
   outDir?: string

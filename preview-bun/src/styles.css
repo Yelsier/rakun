@@ -1,0 +1,65 @@
+@import 'tailwindcss';
+@source './';
+
+:root {
+  color: #24201c;
+  background: #f5efe4;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+#rakun-root {
+  width: min(42rem, 100%);
+}
+
+main {
+  @apply grid gap-4;
+}
+
+@theme {
+  --color-preview-ink: #24201c;
+  --color-preview-paper: #fffaf2;
+  --color-preview-border: #d8ccba;
+  --color-preview-muted: #62584d;
+  --color-preview-accent: #923b29;
+}
+
+.preview-card,
+.preview-counter {
+  @apply rounded-2xl border border-preview-border bg-preview-paper shadow-[0_1rem_3rem_rgb(62_48_31_/_10%)];
+}
+
+.preview-card {
+  @apply p-6 sm:p-14;
+}
+
+.preview-card h1 {
+  @apply m-0 mb-2 font-serif text-5xl font-bold leading-[0.95] sm:text-7xl;
+}
+
+.preview-card p {
+  @apply max-w-xl text-lg leading-relaxed text-preview-muted;
+}
+
+.preview-card nav {
+  @apply mt-8 flex flex-wrap gap-4;
+}
+
+.preview-card a {
+  @apply font-bold text-preview-accent underline;
+}
+
+.preview-counter {
+  @apply flex items-center justify-between gap-4 p-4;
+}
+
+.preview-counter button {
+  @apply cursor-pointer rounded-xl bg-preview-ink px-4 py-3 font-bold text-white;
+}

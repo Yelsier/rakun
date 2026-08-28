@@ -1,12 +1,7 @@
 import type { RakunBootstrapOptions, RakunBunConfig } from '@rakun-kit/bun'
+import tailwindcss from '@tailwindcss/postcss'
 
-import {
-  Counter,
-  LinkSection,
-  Page,
-  PageSection,
-  previewManagerLanguages,
-} from './src/rakun'
+import { Counter, LinkSection, Page, PageSection, previewManagerLanguages } from './src/rakun'
 
 export const bootstrap: RakunBootstrapOptions = {
   literals: {
@@ -64,6 +59,9 @@ export const bootstrap: RakunBootstrapOptions = {
 
 const bunConfig: RakunBunConfig = {
   bootstrap,
+  css: {
+    plugins: [tailwindcss()],
+  },
   modulesDir: './src/modules',
   revalidation: {
     token: process.env.RAKUN_REVALIDATE_TOKEN ?? 'preview-bun-token',

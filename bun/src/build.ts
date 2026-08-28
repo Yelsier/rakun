@@ -3,6 +3,7 @@ import { basename, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { createManagerResolver, writeManagerIconRegistry } from './manager-build'
+import { createRakunCssProcessor } from './css'
 import { discoverRakunDocument, discoverRakunModules } from './modules'
 import type {
   RakunBuildManifest,
@@ -152,7 +153,10 @@ const buildBrowserEntries = async ({
       entry: '[name]-[hash].[ext]',
     },
     outdir: assetsDir,
-    plugins: plugins ?? [createRakunRuntimeResolver(config.rootDir)],
+    plugins: [
+      ...(plugins ?? [createRakunRuntimeResolver(config.rootDir)]),
+      ...[createRakunCssProcessor(config)].filter((plugin): plugin is Bun.BunPlugin => !!plugin),
+    ],
     publicPath,
     sourcemap: config.server.development ? 'linked' : 'none',
     splitting,
@@ -430,6 +434,9 @@ export const buildRakunCode = async (
       naming: 'modules-[hash].[ext]',
       outdir: serverDir,
       packages: 'external',
+      plugins: [
+        ...[createRakunCssProcessor(config)].filter((plugin): plugin is Bun.BunPlugin => !!plugin),
+      ],
       sourcemap: config.server.development ? 'linked' : 'none',
       target: 'bun',
     }),

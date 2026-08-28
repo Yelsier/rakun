@@ -144,7 +144,26 @@ export default function Document({ children, page }: RakunBunDocumentProps) {
 
 The framework bundles global CSS imported by the document and injects page SEO,
 styles, navigation scripts, and the Rakun root inside the rendered document. The
-file must export a default server component.
+file must export a default server component. Configure PostCSS plugins through
+`css.plugins`; Rakun runs them for CSS from the application source tree in both
+development and production. For Tailwind CSS v4:
+
+```sh
+bun add -d tailwindcss @tailwindcss/postcss
+```
+
+```ts
+import tailwindcss from '@tailwindcss/postcss'
+
+const bunConfig: RakunBunConfig = {
+  css: {
+    plugins: [tailwindcss()],
+  },
+}
+```
+
+Then import `@import 'tailwindcss';` from the stylesheet directly. No generated
+CSS file or separate watcher is required.
 
 ## Path invalidation
 
@@ -215,7 +234,7 @@ rebuilds immediate.
 
 ## Public API
 
-- `RakunBunConfig`, `RakunBunDocumentProps`, `loadRakunConfig()`, and
+- `RakunBunConfig`, `RakunBunCssOptions`, `RakunBunDocumentProps`, `loadRakunConfig()`, and
   `resolveRakunConfig()`
 - `createRakunBun()` and `startRakunBun()`
 - `RakunBunApplication.build()`, `.fetch()`, `.serve()`, `.invalidatePath()`,

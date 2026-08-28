@@ -106,6 +106,25 @@ document is bundled as a global stylesheet. The component also receives `page`,
 `'use client'` directive is rejected. Keep user-facing content in Rakun literals;
 the shell should not hardcode content copy.
 
+Configure PostCSS through `css.plugins`. Rakun applies those plugins to CSS
+files from the application source tree during development and production, so a
+Tailwind v4 setup imports its source stylesheet directly from `document.tsx`:
+
+```sh
+bun add -d tailwindcss @tailwindcss/postcss
+```
+
+```ts
+import tailwindcss from '@tailwindcss/postcss'
+
+const bunConfig: RakunBunConfig = {
+  css: { plugins: [tailwindcss()] },
+}
+```
+
+Use `@import 'tailwindcss';` in that stylesheet. Rakun serves the processed
+asset; do not add a separate generated stylesheet or CSS watcher.
+
 ## Constraints
 
 - Bun `>=1.4.0`, React `>=19`, ESM only.

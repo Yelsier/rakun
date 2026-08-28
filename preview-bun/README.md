@@ -21,6 +21,11 @@ Open `http://localhost:4200/`, `http://localhost:4200/about`, or
 The development revalidation token defaults to `preview-bun-token` and can be
 replaced with `RAKUN_REVALIDATE_TOKEN`.
 
+The preview uses Tailwind CSS v4 through the Bun framework CSS pipeline. Import
+`src/styles.css` from `src/document.tsx`, configure the PostCSS plugin in
+`rakun.config.ts`, and use utility classes anywhere under `src/`; development
+rebuilds them automatically.
+
 Production smoke test:
 
 ```sh
