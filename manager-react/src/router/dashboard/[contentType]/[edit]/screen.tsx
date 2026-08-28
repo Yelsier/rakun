@@ -1,8 +1,8 @@
 'use client'
 
-import type { EncodedContentType, Permission } from '@rakun-kit/core/client'
+import { lazy, Suspense } from 'react'
 
-import EditPage from './edit'
+import type { EncodedContentType, Permission } from '@rakun-kit/core/client'
 import type { FieldValue } from './_fields/shared'
 
 import { useManagerQuery } from '@/client/react'
@@ -13,6 +13,8 @@ import { useSession } from '@/state/session'
 import type { ManagerPreviewConfig } from '@/router/shared/types'
 import { ContentCollaborationProvider } from '@/collaboration/ContentCollaborationProvider'
 import { useTranslations } from '@/i18n'
+
+const EditPage = lazy(() => import('./edit'))
 
 export const ManagerContentTypeEditScreen = ({
   contentType,
@@ -100,13 +102,15 @@ export const ManagerContentTypeEditScreen = ({
         if (!ready) return <Loading />
 
         return (
-          <EditPage
-            defaultData={data as Record<string, FieldValue>}
-            contentType={contentType}
-            preview={preview}
-            siteUrl={siteUrl}
-            onAfterRestore={() => itemQuery.refetch()}
-          />
+          <Suspense fallback={<Loading />}>
+            <EditPage
+              defaultData={data as Record<string, FieldValue>}
+              contentType={contentType}
+              preview={preview}
+              siteUrl={siteUrl}
+              onAfterRestore={() => itemQuery.refetch()}
+            />
+          </Suspense>
         )
       }}
     </ContentCollaborationProvider>
