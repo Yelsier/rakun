@@ -10,6 +10,7 @@ import {
   getRakunWebPreviewPage,
   getRakunWebStaticPaths,
   getPlatform,
+  handlePublicMediaRequest,
   isRealtimeEndpointRequest,
   recordApiError,
   runWithRakunRequestTrace,
@@ -257,6 +258,17 @@ export class RakunBunApplication {
         const segments = pathname.slice(this.config.apiBasePath.length).split('/').filter(Boolean)
         if (request.method === 'GET' && segments.join('/') === 'health') {
           return jsonResponse({ ok: true }, 200, { 'Cache-Control': 'no-store' })
+        }
+        if (
+          (request.method === 'GET' || request.method === 'HEAD') &&
+          segments[0] === 'media' &&
+          segments[1] === 'public'
+        ) {
+          const publicMediaResponse = await handlePublicMediaRequest({
+            request,
+            pathSegments: segments.slice(2),
+          })
+          if (publicMediaResponse) return publicMediaResponse
         }
         return await this.api(request, segments)
       }

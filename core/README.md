@@ -1155,6 +1155,14 @@ APIs:
 
 The service supports prepare/finalize upload, URL generation, folders, and media optimization depending on adapter/configuration. Manager uploads encode original file names for transport, so Unicode names (including accents, non-Latin scripts, and emoji) are preserved without placing invalid characters in HTTP headers.
 
+Adapters can implement `getPublicObject` to let every Rakun server adapter proxy
+public media at its normal `/media/public/<key>` API route. This keeps browser
+URLs stable even when the object store is private or only supports expiring
+presigned URLs. The core handler validates the key under `public/`, forwards
+byte ranges, preserves object metadata, and applies long-lived caching by
+default. The storage adapter receives server-side credentials; never expose its
+presigned storage URL as the public media URL.
+
 Optimized video uploads use the `ffmpeg-static` peer dependency and produce an MP4 primary object plus MP4 and WebM entries in `sources`. Existing image-only optimize options remain compatible; use `video: { quality: 80 }` to configure video quality explicitly.
 
 Existing images and videos can be reimported from the media manager with the selected optimization settings. The replacement uses new storage keys and updates the existing `Media` record only after every requested variant has been written, preserving its ID and content references. Preview generation stores a compact `data:image/...` string on `previewUrl` for LQIP use in `@rakun-kit/react` `Image`, instead of writing a separate preview object to storage.

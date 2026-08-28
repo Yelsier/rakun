@@ -1,10 +1,13 @@
 import express from "express";
 import type { RequestHandler, Router } from "express";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 
 import {
   ensureRakunInitialized,
   getRakunBootstrapOptions,
   handleMediaBinaryUpload,
+  handlePublicMediaRequest,
   runWithRakunRequestTrace,
 } from "@rakun-kit/core";
 import {
@@ -54,6 +57,26 @@ export const rakunExpressLocalService = (
   return router;
 };
 
+const writeFetchResponse = async (
+  response: Response,
+  res: Parameters<RequestHandler>[1],
+): Promise<void> => {
+  res.status(response.status);
+  response.headers.forEach((value, key) => {
+    res.setHeader(key, value);
+  });
+
+  if (!response.body) {
+    res.end();
+    return;
+  }
+
+  await pipeline(
+    Readable.fromWeb(response.body as import("node:stream/web").ReadableStream),
+    res,
+  );
+};
+
 export const rakunExpress = (
   options: RakunExpressOptions = {},
 ): RequestHandler => {
@@ -100,6 +123,40 @@ export const rakunExpress = (
   if (localMediaConfig) {
     router.use(rakunExpressLocalService(localMediaConfig));
   }
+
+  router.use("/media/public", async (req, res, next) => {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      next();
+      return;
+    }
+
+    try {
+      const headers = new Headers();
+      for (const [name, value] of Object.entries(req.headers)) {
+        if (Array.isArray(value)) {
+          for (const item of value) {
+            headers.append(name, item);
+          }
+        } else if (value) {
+          headers.set(name, value);
+        }
+      }
+      const response = await handlePublicMediaRequest({
+        request: new Request(`http://rakun.local${req.originalUrl || req.url}`, {
+          headers,
+          method: req.method,
+        }),
+        pathSegments: req.path.split("/").filter(Boolean),
+      });
+      if (!response) {
+        next();
+        return;
+      }
+      await writeFetchResponse(response, res);
+    } catch (error) {
+      next(error);
+    }
+  });
 
   if (getRakunBootstrapOptions()?.media) {
     router.post("/media/upload", async (req, res, next) => {

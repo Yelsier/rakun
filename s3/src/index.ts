@@ -6,6 +6,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Readable } from "node:stream";
 
 import type {
   MediaAccess,
@@ -28,6 +29,54 @@ export type S3MediaServiceConfig = {
   getExpiresInSeconds?: number;
   defaultAccess?: MediaAccess;
 };
+
+const toWebStream = (body: unknown): ReadableStream<Uint8Array> => {
+  if (body instanceof ReadableStream) {
+    return body;
+  }
+
+  if (
+    body &&
+    typeof body === "object" &&
+    "transformToWebStream" in body &&
+    typeof body.transformToWebStream === "function"
+  ) {
+    return body.transformToWebStream() as ReadableStream<Uint8Array>;
+  }
+
+  if (body instanceof Readable) {
+    return Readable.toWeb(body) as ReadableStream<Uint8Array>;
+  }
+
+  if (body instanceof Uint8Array) {
+    return new ReadableStream({
+      start(controller) {
+        controller.enqueue(body);
+        controller.close();
+      },
+    });
+  }
+
+  if (
+    body &&
+    typeof body === "object" &&
+    Symbol.asyncIterator in body &&
+    typeof body[Symbol.asyncIterator] === "function"
+  ) {
+    return Readable.toWeb(
+      Readable.from(body as AsyncIterable<Uint8Array>),
+    ) as ReadableStream<Uint8Array>;
+  }
+
+  throw new Error("Unsupported S3 response body");
+};
+
+const encodePathForUrl = (value: string): string =>
+  value
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
 
 export class S3Adapter implements StorageAdapter {
   private readonly s3: S3Client;
@@ -228,6 +277,44 @@ export class S3Adapter implements StorageAdapter {
     }
   }
 
+  async getPublicObject(input: {
+    key: string;
+    method: "GET" | "HEAD";
+    range?: string;
+  }) {
+    const Bucket = this.bucket("public");
+    const command =
+      input.method === "HEAD"
+        ? new HeadObjectCommand({ Bucket, Key: input.key })
+        : new GetObjectCommand({
+            Bucket,
+            Key: input.key,
+            Range: input.range,
+          });
+    const output = await this.s3.send(command);
+
+    return {
+      acceptRanges: output.AcceptRanges,
+      body:
+        input.method === "GET" && "Body" in output && output.Body
+          ? toWebStream(output.Body)
+          : undefined,
+      cacheControl: output.CacheControl,
+      contentDisposition: output.ContentDisposition,
+      contentEncoding: output.ContentEncoding,
+      contentLanguage: output.ContentLanguage,
+      contentLength: output.ContentLength,
+      contentRange: "ContentRange" in output ? output.ContentRange : undefined,
+      contentType: output.ContentType,
+      etag: output.ETag,
+      expires: output.Expires,
+      lastModified: output.LastModified,
+      status:
+        output.$metadata.httpStatusCode ||
+        ("ContentRange" in output && output.ContentRange ? 206 : 200),
+    };
+  }
+
   async deleteObject(input: { key: string; access: MediaAccess }) {
     const Bucket = this.bucket(input.access);
     Logger.addTrace("s3.media.deleteObject: start", {
@@ -255,7 +342,10 @@ export class S3Adapter implements StorageAdapter {
   publicUrl(input: { key: string; access: MediaAccess }) {
     if (input.access !== "public") return null;
     if (!this.cfg.publicBaseUrl) return null;
-    return `${this.cfg.publicBaseUrl.replace(/\/$/, "")}/${input.key}`;
+    const relativeToPublic = input.key.startsWith("public/")
+      ? input.key.slice("public/".length)
+      : input.key;
+    return `${this.cfg.publicBaseUrl.replace(/\/$/, "")}/${encodePathForUrl(relativeToPublic)}`;
   }
 }
 
@@ -268,6 +358,9 @@ export const createS3MediaServiceConfig = (
   const uploadUrl =
     config.uploadUrl ??
     (config.baseUrl ? joinUrlPath(config.baseUrl, "/media/upload") : undefined);
+  const publicBaseUrl =
+    config.publicBaseUrl ??
+    (config.baseUrl ? joinUrlPath(config.baseUrl, "/media/public") : undefined);
 
   return {
     adapter: new S3Adapter({
@@ -276,7 +369,7 @@ export const createS3MediaServiceConfig = (
       forcePathStyle: config.forcePathStyle,
       publicBucket: config.publicBucket,
       privateBucket: config.privateBucket,
-      publicBaseUrl: config.publicBaseUrl,
+      publicBaseUrl,
       publicCacheControl: config.publicCacheControl,
       putExpiresInSeconds: config.putExpiresInSeconds,
       getExpiresInSeconds: config.getExpiresInSeconds,

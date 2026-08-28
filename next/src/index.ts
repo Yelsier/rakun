@@ -2,6 +2,7 @@ import {
   ensureRakunInitialized,
   getRakunBootstrapOptions,
   handleMediaBinaryUpload,
+  handlePublicMediaRequest,
   type RakunBootstrapOptions,
   type MediaBinaryUploadRequest,
   type MediaBinaryUploadResponse,
@@ -151,6 +152,20 @@ const createHandler = (options: RakunNextOptions = {}): RakunNextHandler => {
 
         if (localMediaResponse) {
           return localMediaResponse;
+        }
+
+        if (
+          (request.method === "GET" || request.method === "HEAD") &&
+          segments[0] === "media" &&
+          segments[1] === "public"
+        ) {
+          const publicMediaResponse = await handlePublicMediaRequest({
+            request,
+            pathSegments: segments.slice(2),
+          });
+          if (publicMediaResponse) {
+            return publicMediaResponse;
+          }
         }
 
         if (

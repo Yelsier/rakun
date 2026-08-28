@@ -47,3 +47,4 @@ export function getMediaService(): MediaService {
 
 export * from "./mediaService";
 export * from "./adapters";
+export * from './publicMedia'

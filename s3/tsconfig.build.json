@@ -8,5 +8,6 @@
       "@rakun-kit/core": ["../core/dist/esm/index.d.ts"],
       "@rakun-kit/core/logger": ["../core/dist/esm/lib/Logger.d.ts"]
     }
-  }
+  },
+  "exclude": ["src/**/*.test.ts"]
 }

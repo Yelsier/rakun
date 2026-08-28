@@ -21,7 +21,6 @@ rakunBootstrap({
     publicBucket: process.env.RAKUN_PUBLIC_BUCKET!,
     privateBucket: process.env.RAKUN_PRIVATE_BUCKET!,
     baseUrl: '/api/rakun',
-    publicBaseUrl: process.env.RAKUN_PUBLIC_MEDIA_URL,
     defaultAccess: 'private',
   }),
 })
@@ -37,7 +36,12 @@ in the server environment and never pass this config into browser modules.
 - Uploads normally target Rakun's `/media/upload`, prefixed by `baseUrl`; set
   `uploadUrl` only to replace that endpoint entirely.
 - Private reads return expiring presigned `GetObject` URLs.
-- Public reads use `publicBaseUrl/key` when `publicBaseUrl` is set.
+- With `baseUrl`, public reads use the stable Rakun route
+  `baseUrl/media/public/<key>` by default. Rakun streams from S3 with its
+  server credentials, so the public bucket can remain private and browser URLs
+  never contain an expiring S3 signature.
+- Set `publicBaseUrl` only when a CDN or other public origin should serve the
+  object directly instead of Rakun.
 - `putExpiresInSeconds`, `getExpiresInSeconds` and `publicCacheControl` tune
   upload/read expiry and public caching.
 
