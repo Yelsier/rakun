@@ -76,6 +76,9 @@ remains the source of truth.
 - Custom transport: `createManagerClient` from `/client/request`.
 - Router bridge: `createPathManagerNavigation` from `/state/navigation`.
 
+Hosts can use `preloadManagerPath` to prefetch built-in route chunks from their
+own router or link component.
+
 Use operation names and payloads from Rakun contracts; do not recreate endpoint
 types in host code. Keep `baseUrl` (API) distinct from `basePath` (manager UI).
 

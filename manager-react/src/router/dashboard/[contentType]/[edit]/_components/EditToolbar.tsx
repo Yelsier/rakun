@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  ArrowLeft,
   ChevronDown,
   Copy,
   Eye,
@@ -40,10 +41,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useSidebar } from '@/components/ui/sidebar'
 import { createManagerQueryKey, useManagerMutation, useManagerQuery } from '@/client/react'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { useTranslations } from '@/i18n'
 import { cn } from '@/lib/utils'
+import { useManagerNavigation } from '@/state/navigation'
 import { useContentCollaboration } from '@/collaboration/ContentCollaborationProvider'
 
 const visibilitySelectStyles: Record<EditableDocumentVisibility, string> = {
@@ -129,10 +132,13 @@ export const EditToolbar = ({
 }) => {
   const t = useTranslations()
   const collaboration = useContentCollaboration()
+  const { isMobile, setOpen, setOpenMobile } = useSidebar()
+  const navigation = useManagerNavigation()
   const [commentsOpen, setCommentsOpen] = useState(false)
   const {
     activeTab,
     contentTypeId,
+    contentTypeName,
     discardPending,
     documentActions,
     editableVisibility,
@@ -172,6 +178,16 @@ export const EditToolbar = ({
   const hasMoreActions = Boolean(contentTypeId) || translationEnabled || isTrashed
   const hasPrimaryMenuActions = Boolean(contentTypeId && !isTrashed) || translationEnabled
 
+  const exitToList = () => {
+    if (isMobile) setOpenMobile(true)
+    else setOpen(true)
+
+    const route = { name: 'content.list' as const, contentType: contentTypeName }
+    const listHref = navigation.href(route)
+    if (navigation.pushPath) navigation.pushPath(listHref)
+    else navigation.push?.(route)
+  }
+
   useEffect(() => {
     const search = new URLSearchParams(window.location.search)
     setCommentsOpen(search.get('comments') === 'open' || search.get('review') === 'open')
@@ -186,6 +202,19 @@ export const EditToolbar = ({
   return (
     <div className="z-50 flex shrink-0 flex-wrap items-center gap-2 bg-background pb-3">
       <div className="flex min-w-0 flex-[1_1_20rem] flex-wrap items-center gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              aria-label={t('contentEdit.backToList')}
+              size="icon"
+              variant="outline"
+              onClick={exitToList}
+            >
+              <ArrowLeft />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{t('contentEdit.backToList')}</TooltipContent>
+        </Tooltip>
         {compactEditorAvailable ? (
           <div>
             <Button

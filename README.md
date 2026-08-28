@@ -5,7 +5,7 @@ without locking the application into one framework.
 
 The idea is simple: describe your content model once, bootstrap Rakun with the
 runtime services you want, and expose the manager/API through whatever adapter
-fits your app. Rakun ships with adapters for Express and Next.js, plus a React
+fits your app. Rakun ships with adapters for Bun, Express, and Next.js, plus a React
 manager UI, but the core is intentionally open enough for other adapters to be
 built around it.
 
@@ -23,7 +23,7 @@ space:
 - keep enough low-level APIs public so custom integrations are possible
 
 At the moment the project focuses on MongoDB-backed content and a React manager,
-with Express and Next.js integrations available.
+with Bun, Express, and Next.js integrations available.
 
 ## Packages
 
@@ -33,6 +33,7 @@ with Express and Next.js integrations available.
 | `@rakun-kit/manager-react`      | React manager application, manager clients, navigation helpers and styles.                                                      |
 | `@rakun-kit/manager-locales`    | Optional manager UI translations exposed through one subpath per language.                                                      |
 | `@rakun-kit/express`            | Express adapter for Rakun APIs, media routes and optional tRPC support.                                                         |
+| `@rakun-kit/bun`                | Bun framework for one-process API, manager, filesystem modules, SSR and static routes.                                          |
 | `@rakun-kit/next`               | Next.js adapter for APIs, media routes and mounting the manager.                                                                |
 | `@rakun-kit/trpc`               | tRPC router adapter for Rakun operations.                                                                                       |
 | `@rakun-kit/react`              | Framework-neutral React helpers for rendering Rakun web modules.                                                                |
@@ -44,6 +45,7 @@ with Express and Next.js integrations available.
 | `@rakun-kit/plugin-code-editor` | Manager plugin for code blocks in RichText fields.                                                                              |
 | `create-rakun-app`              | CLI that scaffolds Rakun applications from maintained framework templates.                                                      |
 | `@rakun-kit/preview`            | Local development app, not intended for publication.                                                                            |
+| `@rakun-kit/preview-bun`        | Small MongoDB-backed Bun framework preview, not intended for publication.                                                       |
 
 ## AI Documentation
 
@@ -202,6 +204,12 @@ Run the local preview app:
 
 ```sh
 bun preview
+```
+
+or
+
+```sh
+bun preview:bun
 ```
 
 or

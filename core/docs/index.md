@@ -16,6 +16,7 @@ same `dist/docs/index.md` location.
 | `@rakun-kit/core`               | Domain model, bootstrap, operations, auth, routes, media, mail and shared contracts | This file                                                       |
 | `@rakun-kit/next`               | Next.js App Router API, manager, media and web rendering                            | `node_modules/@rakun-kit/next/dist/docs/index.md`               |
 | `@rakun-kit/express`            | Express API and local-media adapter                                                 | `node_modules/@rakun-kit/express/dist/docs/index.md`            |
+| `@rakun-kit/bun`                | Bun server, manager, filesystem modules, SSR and static route generation            | `node_modules/@rakun-kit/bun/dist/docs/index.md`                |
 | `@rakun-kit/trpc`               | Typed tRPC router for manager and web operations                                    | `node_modules/@rakun-kit/trpc/dist/docs/index.md`               |
 | `@rakun-kit/react`              | Framework-neutral React module rendering                                            | `node_modules/@rakun-kit/react/dist/docs/index.md`              |
 | `@rakun-kit/manager-react`      | Manager UI, clients, navigation and plugin runtime                                  | `node_modules/@rakun-kit/manager-react/dist/docs/index.md`      |
@@ -28,12 +29,12 @@ same `dist/docs/index.md` location.
 | `@rakun-kit/plugin-code-editor` | Code blocks in manager RichText fields                                              | `node_modules/@rakun-kit/plugin-code-editor/dist/docs/index.md` |
 | `create-rakun-app`              | Official project generator and framework starter templates                          | `node_modules/create-rakun-app/dist/docs/index.md`              |
 
-Choose one server adapter (`next` or `express`). Add `trpc` only if the host
+Choose one server adapter (`next`, `express`, or `bun`). Add `trpc` only if the host
 wants tRPC, one media adapter if uploads are required, and one mail adapter if
-outbound mail is required. `manager-react` is normally consumed through the
-Next adapter; use it directly for custom hosts.
+outbound mail is required. `manager-react` is normally consumed through the Bun
+or Next adapter; use it directly for custom hosts.
 
-`preview` and `preview-next` are private example applications in the Rakun
+`preview`, `preview-bun`, and `preview-next` are private example applications in the Rakun
 repository, not installable packages, so they do not have installed manuals.
 
 ## Typical architecture
@@ -49,12 +50,13 @@ repository, not installable packages, so they do not have installed manuals.
 ## Install and peer requirements
 
 ```sh
-bun add @rakun-kit/core mongodb bcrypt ffmpeg-static zod
+bun add @rakun-kit/core mongodb ffmpeg-static zod
 # Node.js image optimization only
 bun add sharp
 ```
 
-`mongodb`, `bcrypt` and `ffmpeg-static` are peer dependencies. `sharp` is an
+`mongodb` and `ffmpeg-static` are peer dependencies. `bcrypt` is only needed by
+Node runtimes; Bun uses its native password implementation. `sharp` is an
 optional peer used by the default Node.js image processor and as the fallback
 for Bun versions without `Bun.Image`. Adapters and optional services are
 separate packages.

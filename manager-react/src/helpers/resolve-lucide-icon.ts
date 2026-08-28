@@ -20,7 +20,7 @@ const toKebabCase = (value: string) =>
     .toLowerCase()
 
 export const resolveLucideIconName = (name?: string): IconName | undefined => {
-  if (!name) return undefined
+  if (typeof name !== 'string' || !name) return undefined
 
   const normalizedName = toKebabCase(name)
   return isIconName(normalizedName) ? normalizedName : undefined

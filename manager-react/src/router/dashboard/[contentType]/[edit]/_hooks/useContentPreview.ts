@@ -484,12 +484,12 @@ export const useContentPreview = ({
   }, [postPreviewInspectorMessage, previewInspectorEnabled])
 
   const handlePreview = useCallback(async () => {
-    if (!preview || !previewRoute) return
+    if (!preview || !previewRoute) return false
 
     const data = readFormData()
     const templateModules = readTemplateModules?.()
 
-    if (!data || (readTemplateModules && !templateModules)) return
+    if (!data || (readTemplateModules && !templateModules)) return false
 
     setPreviewOpen(true)
     setPreviewError(null)
@@ -506,18 +506,20 @@ export const useContentPreview = ({
         routeKey: previewRoute.key,
       })
 
-      if (requestId !== previewRequestId.current) return
+      if (requestId !== previewRequestId.current) return true
 
       updatePreviewFrame({
         forceUrl: !previewOpen || !previewUrl,
         path: result.path,
         token: result.token,
       })
+      return true
     } catch {
-      if (requestId !== previewRequestId.current) return
+      if (requestId !== previewRequestId.current) return true
 
       setPreviewError(t('contentEdit.previewCouldNotLoad'))
       toast.error(t('contentEdit.previewCouldNotLoad'))
+      return true
     }
   }, [
     contentTypeId,

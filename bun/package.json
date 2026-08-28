@@ -1,0 +1,70 @@
+{
+  "name": "@rakun-kit/bun",
+  "version": "0.1.0",
+  "description": "Bun framework adapter for Rakun APIs, manager, filesystem modules, SSR, and static routes.",
+  "license": "MIT",
+  "author": {
+    "name": "Yago Claros",
+    "url": "https://github.com/Yelsier"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yelsier/rakun.git",
+    "directory": "bun"
+  },
+  "bugs": {
+    "url": "https://github.com/Yelsier/rakun/issues"
+  },
+  "homepage": "https://github.com/Yelsier/rakun/tree/main/bun#readme",
+  "type": "module",
+  "main": "./dist/esm/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "bin": {
+    "rakun-bun": "./dist/esm/cli.js"
+  },
+  "scripts": {
+    "build": "rm -rf dist && bun run build:esm && node ../scripts/copy-package-docs.mjs",
+    "build:esm": "tsc -b --force tsconfig.build.json && node ../scripts/fix-dist-imports.mjs dist/esm",
+    "test": "bun test src"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@rakun-kit/core": "^1.6.0",
+    "@rakun-kit/manager-react": "^1.5.8",
+    "@rakun-kit/react": "^1.6.0"
+  },
+  "peerDependencies": {
+    "react": ">=19.0.0",
+    "react-dom": ">=19.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.13",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./client": {
+      "types": "./dist/esm/client/index.d.ts",
+      "import": "./dist/esm/client/index.js",
+      "default": "./dist/esm/client/index.js"
+    },
+    "./client/navigation": {
+      "types": "./dist/esm/client/navigation.d.ts",
+      "import": "./dist/esm/client/navigation.js",
+      "default": "./dist/esm/client/navigation.js"
+    }
+  }
+}

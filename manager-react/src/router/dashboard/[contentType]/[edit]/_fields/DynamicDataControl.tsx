@@ -538,20 +538,25 @@ const operatorNeedsValue = (operator: FilterOperator) =>
 
 const parseFilterValue = (condition: FilterCondition, fieldOptions: SourceFieldOption[]) => {
   const kind = fieldOptions.find((option) => option.value === condition.field)?.kind
-  const parseValue = (value: string) =>
-    kind === 'number' && value.trim() !== '' && Number.isFinite(Number(value))
-      ? Number(value)
-      : value.trim()
+  const parseValue = (rawValue: unknown) => {
+    const value = typeof rawValue === 'string' ? rawValue : String(rawValue ?? '')
+    const trimmed = value.trim()
+
+    return kind === 'number' && trimmed !== '' && Number.isFinite(Number(trimmed))
+      ? Number(trimmed)
+      : trimmed
+  }
+  const conditionValue =
+    typeof condition.value === 'string' ? condition.value : String(condition.value ?? '')
 
   if (condition.operator === 'in' || condition.operator === 'notIn') {
-    return condition.value
+    return conditionValue
       .split(',')
-      .map((value) => value.trim())
-      .filter(Boolean)
       .map(parseValue)
+      .filter(Boolean)
   }
 
-  return parseValue(condition.value)
+  return parseValue(conditionValue)
 }
 
 const buildFilterCondition = (condition: FilterCondition, fieldOptions: SourceFieldOption[]) => {
@@ -564,13 +569,16 @@ const buildFilterCondition = (condition: FilterCondition, fieldOptions: SourceFi
   if (condition.operator === 'notExists') {
     return { [condition.field]: { $exists: false } }
   }
-  if (!condition.value.trim()) return undefined
+  const conditionValue =
+    typeof condition.value === 'string' ? condition.value : String(condition.value ?? '')
+
+  if (!conditionValue.trim()) return undefined
 
   const value =
     condition.valueSource === 'current'
-      ? { [DYNAMIC_QUERY_CURRENT_VALUE_KEY]: condition.value }
+      ? { [DYNAMIC_QUERY_CURRENT_VALUE_KEY]: conditionValue }
       : condition.valueSource === 'document'
-        ? { [DYNAMIC_QUERY_DOCUMENT_VALUE_KEY]: condition.value }
+        ? { [DYNAMIC_QUERY_DOCUMENT_VALUE_KEY]: conditionValue }
         : parseFilterValue(condition, fieldOptions)
   const mongoOperator: Partial<Record<FilterOperator, string>> = {
     notEquals: '$ne',

@@ -120,24 +120,48 @@ const EditorSurface = () => {
 
 const EditPageContent = () => {
   const t = useTranslations()
-  const { activeTab, canPreview, handleTabChange, previewState } = useEditPageContext()
+  const {
+    activeTab,
+    canPreview,
+    contentTypeId,
+    contentTypeName,
+    form,
+    handleTabChange,
+    languageCode,
+    localeVariantRoute,
+    previewState,
+    template,
+  } = useEditPageContext()
   const {
     isMobile,
     setOpen: setLayoutSidebarOpen,
     setOpenMobile: setLayoutSidebarOpenMobile,
   } = useSidebar()
   const canSplitEditor = useCanSplitEditor()
-  const autoPreviewRequested = useRef(false)
+  const autoPreviewRequested = useRef<string | null>(null)
   const layoutSidebarClosed = useRef(false)
   const [compactEditorOpen, setCompactEditorOpen] = useState(false)
   const compactEditorAvailable = !isMobile && canPreview && !canSplitEditor
+  const autoPreviewKey = `${contentTypeName}:${contentTypeId ?? 'new'}:${languageCode}:${localeVariantRoute?.key ?? ''}`
 
   useEffect(() => {
-    if (isMobile || !canPreview || autoPreviewRequested.current) return
+    if (isMobile || !canPreview || form.formRevision === 0 || template.pending) return
+    if (autoPreviewRequested.current === autoPreviewKey) return
 
-    autoPreviewRequested.current = true
-    void previewState.handlePreview()
-  }, [canPreview, isMobile, previewState.handlePreview])
+    autoPreviewRequested.current = autoPreviewKey
+    void previewState.handlePreview().then((started) => {
+      if (!started && autoPreviewRequested.current === autoPreviewKey) {
+        autoPreviewRequested.current = null
+      }
+    })
+  }, [
+    autoPreviewKey,
+    canPreview,
+    form.formRevision,
+    isMobile,
+    previewState.handlePreview,
+    template.pending,
+  ])
 
   useIsomorphicLayoutEffect(() => {
     if (layoutSidebarClosed.current) return

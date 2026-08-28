@@ -759,10 +759,14 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                       data-rakun-manager-module-navigation-id={`${id}.${item.uid}`}
                       data-rakun-manager-module-title={moduleTitle}
                     >
-                      <Collapsible defaultOpen={!noModulesToRender} className="w-full">
+                      <Collapsible
+                        defaultOpen={!noModulesToRender}
+                        className="group/module w-full"
+                      >
                         <Card
                           className={cn(
                             'w-full',
+                            'group-data-[state=closed]/module:py-3',
                             item.visibleWhen &&
                               !isVisibleForCurrentDocument &&
                               'border-dashed opacity-70'
@@ -867,26 +871,19 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 </CardTitle>
-                                {isSavedModule || item.visibleWhen ? (
+                                {item.visibleWhen ? (
                                   <div className="flex min-w-0 flex-wrap items-center gap-2">
-                                    {isSavedModule ? (
-                                      <Badge variant="secondary" className="max-w-full shrink">
-                                        <span className="truncate">{t('common.global')}</span>
-                                      </Badge>
-                                    ) : null}
-                                    {item.visibleWhen ? (
-                                      <Badge variant="outline" className="max-w-full shrink">
-                                        <span className="truncate">
-                                          {isVisibleForCurrentDocument
-                                            ? t('modules.conditional')
-                                            : t('modules.hiddenForDocument', {
-                                                contentType:
-                                                  props.parentContentType?.name ??
-                                                  t('modules.documentFallback'),
-                                              })}
-                                        </span>
-                                      </Badge>
-                                    ) : null}
+                                    <Badge variant="outline" className="max-w-full shrink">
+                                      <span className="truncate">
+                                        {isVisibleForCurrentDocument
+                                          ? t('modules.conditional')
+                                          : t('modules.hiddenForDocument', {
+                                              contentType:
+                                                props.parentContentType?.name ??
+                                                t('modules.documentFallback'),
+                                            })}
+                                      </span>
+                                    </Badge>
                                   </div>
                                 ) : null}
                               </div>
@@ -894,7 +891,12 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                           </CardHeader>
                           {!noModulesToRender ? (
                             <CollapsibleContent forceMount className="data-[state=closed]:hidden">
-                              <CardContent>
+                              <CardContent className="grid gap-4">
+                                {isSavedModule ? (
+                                  <Badge variant="secondary" className="w-fit max-w-full">
+                                    <span className="truncate">{t('common.global')}</span>
+                                  </Badge>
+                                ) : null}
                                 <FieldComponent
                                   key={fieldKey}
                                   id={`${id}.${item.uid}.${fieldConfig.name}`}
