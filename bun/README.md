@@ -103,6 +103,23 @@ retain only genuinely shared supporting chunks. Lucide's runtime registry is
 also reduced to the menu and module-picker icons declared by the bootstrapped
 content types instead of emitting the complete icon catalog.
 
+The manager receives a Bun-provided `linkComponent`; Bun owns manager click
+routing and prefetches built-in route chunks on hover, focus, or touch.
+
+Internal links prefetch their flight and destination client modules on hover,
+focus, or touch, so the subsequent navigation can reuse the warmed response.
+API and manager links keep their normal full-document navigation behavior.
+
+Use the exported `Link` component for web links when prefetch needs to be
+disabled for a specific destination:
+
+```tsx
+import { Link } from '@rakun-kit/bun'
+
+<Link href="/about">About</Link>
+<Link href="/large-report" prefetch={false}>Large report</Link>
+```
+
 Add `src/document.tsx` to define the application shell. It is a server component
 and follows the same `children` layout shape as a Next.js root layout:
 

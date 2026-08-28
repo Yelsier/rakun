@@ -22,6 +22,14 @@ export const Counter = new ContentType({
   },
 })
 
+export const LinkSection = new ContentType({
+  name: 'LinkSection',
+  fields: {
+    label: f.string().required(),
+    link: f.link().required(),
+  },
+})
+
 export const Page = new ContentType({
   name: 'Page',
   permissions: 'Page',
@@ -37,6 +45,7 @@ export const Page = new ContentType({
   iterator: [
     { contentType: PageSection, type: 'existing' },
     { contentType: Counter, type: 'new' },
+    { contentType: LinkSection, type: 'new' },
   ],
   listFields: ['title', 'slug'],
   uniques: [['slug']],
@@ -44,6 +53,7 @@ export const Page = new ContentType({
 
 export const keyedContentTypes = {
   Counter,
+  LinkSection,
   Page,
   PageSection,
 }

@@ -7,7 +7,7 @@ export default function NotFound() {
     <section className="preview-card">
       <h1>{t({ key: 'previewBun.notFoundTitle' })}</h1>
       <nav>
-        <a href="/en/">{t({ key: 'previewBun.homeLink' })}</a>
+        <a href="/">{t({ key: 'previewBun.homeLink' })}</a>
       </nav>
     </section>
   )

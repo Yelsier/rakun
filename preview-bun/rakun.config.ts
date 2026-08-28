@@ -1,6 +1,12 @@
 import type { RakunBootstrapOptions, RakunBunConfig } from '@rakun-kit/bun'
 
-import { Counter, Page, PageSection, previewManagerLanguages } from './src/rakun'
+import {
+  Counter,
+  LinkSection,
+  Page,
+  PageSection,
+  previewManagerLanguages,
+} from './src/rakun'
 
 export const bootstrap: RakunBootstrapOptions = {
   literals: {
@@ -33,7 +39,7 @@ export const bootstrap: RakunBootstrapOptions = {
   internalContentTypes: {
     Page,
   },
-  contentTypes: [PageSection, Counter],
+  contentTypes: [PageSection, Counter, LinkSection],
   managerLanguages: previewManagerLanguages,
   routes: [
     {

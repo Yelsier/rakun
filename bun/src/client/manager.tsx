@@ -1,8 +1,20 @@
-import { useEffect, useState } from 'react'
+import {
+  startTransition,
+  useEffect,
+  useState,
+  type FocusEvent,
+  type MouseEvent,
+  type TouchEvent,
+} from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { ManagerBrowserApp } from '@rakun-kit/manager-react/app/runtime-app'
 import { createHttpManagerClient } from '@rakun-kit/manager-react/client/http'
+import {
+  preloadManagerPath,
+  type ManagerLinkProps,
+  useOptionalManagerNavigation,
+} from '@rakun-kit/manager-react'
 import '@rakun-kit/manager-react/styles.css'
 
 declare const __RAKUN_API_BASE_PATH__: string
@@ -19,6 +31,84 @@ const preview = __RAKUN_MANAGER_PREVIEW_ENABLED__
     }
   : undefined
 
+const BunManagerLink = ({
+  children,
+  href,
+  onClick,
+  onFocus,
+  onMouseEnter,
+  onTouchStart,
+  ...props
+}: ManagerLinkProps) => {
+  const navigation = useOptionalManagerNavigation()
+
+  const prefetch = () => {
+    if (props.target || props.download || href.startsWith('#')) return
+
+    const url = new URL(href, window.location.href)
+    if (url.origin !== window.location.origin) return
+    preloadManagerPath(`${url.pathname}${url.search}`, {
+      basePath: __RAKUN_MANAGER_BASE_PATH__,
+    })
+  }
+
+  const handleMouseEnter = (event: MouseEvent<HTMLAnchorElement>) => {
+    onMouseEnter?.(event)
+    if (!event.defaultPrevented) prefetch()
+  }
+
+  const handleFocus = (event: FocusEvent<HTMLAnchorElement>) => {
+    onFocus?.(event)
+    if (!event.defaultPrevented) prefetch()
+  }
+
+  const handleTouchStart = (event: TouchEvent<HTMLAnchorElement>) => {
+    onTouchStart?.(event)
+    if (!event.defaultPrevented) prefetch()
+  }
+
+  const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    onClick?.(event)
+    const pushPath = navigation?.pushPath
+
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      props.target ||
+      props.download ||
+      !pushPath ||
+      href.startsWith('#')
+    ) {
+      return
+    }
+
+    const url = new URL(href, window.location.href)
+    if (url.origin !== window.location.origin) return
+
+    event.preventDefault()
+    startTransition(() => {
+      pushPath(`${url.pathname}${url.search}${url.hash}`)
+    })
+  }
+
+  return (
+    <a
+      {...props}
+      href={href}
+      onClick={handleClick}
+      onFocus={handleFocus}
+      onMouseEnter={handleMouseEnter}
+      onTouchStart={handleTouchStart}
+    >
+      {children}
+    </a>
+  )
+}
+
 const ManagerApp = () => {
   const [current, setCurrent] = useState(() => location.pathname + location.search)
 
@@ -33,6 +123,7 @@ const ManagerApp = () => {
     <ManagerBrowserApp
       basePath={__RAKUN_MANAGER_BASE_PATH__}
       client={client}
+      linkComponent={BunManagerLink}
       pathname={url.pathname}
       preview={preview}
       realtimeBaseUrl={__RAKUN_API_BASE_PATH__}

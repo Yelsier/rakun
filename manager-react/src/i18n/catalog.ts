@@ -727,6 +727,7 @@ export const managerMessages = {
   'contentEdit.tabSeo': { defaultMessage: 'Seo' },
   'contentEdit.tabVariants': { defaultMessage: 'Variants' },
   'contentEdit.tabHistory': { defaultMessage: 'History' },
+  'contentEdit.backToList': { defaultMessage: 'Back to list' },
   'contentEdit.viewPage': { defaultMessage: 'View page' },
   'contentEdit.templateContent': { defaultMessage: 'Content' },
   'contentEdit.templateContentDescription': {

@@ -56,6 +56,10 @@ initial script and each built-in manager screen remains a lazy root bundle;
 only dependencies shared by multiple screens stay as supporting chunks. The
 Bun build also includes only the Lucide menu and module-picker icons declared
 by bootstrapped content types, avoiding a chunk for every icon in the library.
+Internal links prefetch their flight and destination client modules on hover,
+focus, or touch; API and manager links are excluded from this client navigation.
+The public `Link` component opts into this behavior by default and accepts
+`prefetch={false}` to skip prefetching for an individual web link.
 
 Missing routes use an empty built-in `NotFound` module and return HTTP 404.
 Create `src/modules/NotFound.tsx` to override its rendered content; the adapter
@@ -86,6 +90,9 @@ manager code is never shared with or downloaded by a web page. The API handler
 exposes core operation definitions, preserves auth cookies and origin checks,
 records all operation errors through core, serves the configured binary media
 upload operation, and exposes core SSE realtime.
+
+Bun supplies the manager `linkComponent`, so its browser router controls clicks
+and prefetches built-in manager route chunks on hover, focus, or touch.
 
 ## Document convention
 

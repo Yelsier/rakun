@@ -9,7 +9,7 @@ import {
 import { updateSingleRouteMap } from '@rakun-kit/core/api-utils'
 
 import { bootstrap } from './rakun.config'
-import { Counter, Page, PageSection } from './src/rakun'
+import { Counter, LinkSection, Page, PageSection } from './src/rakun'
 
 const mongoUri = bootstrap.mongo?.MONGO_URI
 
@@ -161,6 +161,17 @@ const seed = async () => {
                 },
               },
             },
+            {
+              name: LinkSection.name,
+              value: {
+                type: 'new',
+                data: {
+                  label: 'Read about Rakun on Bun',
+                  link: { href: '/about', title: 'About' },
+                  _type: LinkSection.name,
+                },
+              },
+            },
           ],
           _type: Page.name,
           updatedAt: now(),
@@ -171,6 +182,61 @@ const seed = async () => {
     )
 
     if (!page) throw new Error('Failed to seed the page')
+
+    const aboutSection = await db.collection(PageSection.name).findOneAndUpdate(
+      { title: 'About Rakun on Bun' },
+      {
+        $set: {
+          title: 'About Rakun on Bun',
+          body: 'A second page for testing Bun client navigation and link prefetching.',
+          _type: PageSection.name,
+          updatedAt: now(),
+        },
+        $setOnInsert: { createdAt: now() },
+      },
+      { upsert: true, returnDocument: 'after' }
+    )
+
+    if (!aboutSection) throw new Error('Failed to seed the about section')
+
+    const aboutPage = await db.collection(Page.name).findOneAndUpdate(
+      { 'slug.en': 'about' },
+      {
+        $set: {
+          title: translatable('About'),
+          slug: translatable('about'),
+          _trashed: false,
+          _visibility: 'published',
+          [ITERATOR_FIELD_NAME]: [
+            {
+              name: PageSection.name,
+              value: {
+                type: 'existing',
+                contentType: PageSection.name,
+                _id: aboutSection._id,
+              },
+            },
+            {
+              name: LinkSection.name,
+              value: {
+                type: 'new',
+                data: {
+                  label: 'Return home',
+                  link: { href: '/', title: 'Home' },
+                  _type: LinkSection.name,
+                },
+              },
+            },
+          ],
+          _type: Page.name,
+          updatedAt: now(),
+        },
+        $setOnInsert: { createdAt: now() },
+      },
+      { upsert: true, returnDocument: 'after' }
+    )
+
+    if (!aboutPage) throw new Error('Failed to seed the about page')
 
     const route = await db.collection('Route').findOne({
       contentType: Page.name,
@@ -198,6 +264,7 @@ const seed = async () => {
     )
 
     await seedRouteMap({ db, language, page, route })
+    await seedRouteMap({ db, language, page: aboutPage, route })
     console.log('Seeded preview-bun: admin@example.com / admin123')
   } finally {
     await client.close()

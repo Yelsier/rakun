@@ -1,4 +1,8 @@
-import { lazy } from "react";
+import {
+  lazy as reactLazy,
+  type ComponentType,
+  type LazyExoticComponent,
+} from "react";
 
 import LanguageSelector from "../../components/LanguageSelector";
 import { VariantSelector } from "../../components/VariantSelector";
@@ -7,8 +11,27 @@ import { CollaborationPresence } from '../../components/CollaborationPresence'
 import {
   defineManagerRoute,
   getSearchParam,
+  matchRoutePath,
   type AnyManagerRouteDefinition,
 } from "./route-schema";
+import type { ManagerResolvedRouteKind } from './types'
+import { getManagerRelativePathname } from '../../state/navigation'
+
+type PreloadableComponent<T extends ComponentType<any>> = LazyExoticComponent<T> & {
+  preload: () => Promise<{ default: T }>
+}
+
+const lazy = <T extends ComponentType<any>>(
+  load: () => Promise<{ default: T }>,
+): PreloadableComponent<T> => {
+  let promise: Promise<{ default: T }> | undefined
+  const preload = () => {
+    promise ??= load()
+    return promise
+  }
+
+  return Object.assign(reactLazy(preload), { preload }) as PreloadableComponent<T>
+}
 
 const ManagerAccountScreen = lazy(() =>
   import("../dashboard/account").then((module) => ({
@@ -505,3 +528,52 @@ export const managerRouteDefinitions = [
     ),
   }),
 ] as const satisfies readonly AnyManagerRouteDefinition[];
+
+const managerRoutePreloads: Partial<
+  Record<ManagerResolvedRouteKind, () => Promise<unknown>>
+> = {
+  login: ManagerLoginScreen.preload,
+  'login-callback': ManagerLoginCallbackScreen.preload,
+  'forgot-password': ManagerForgotPasswordScreen.preload,
+  'reset-password': ManagerResetPasswordScreen.preload,
+  mfa: ManagerMfaScreen.preload,
+  'dashboard-home': ManagerDashboardHomeScreen.preload,
+  account: ManagerAccountScreen.preload,
+  'debugging-home': ManagerDebuggingHomeScreen.preload,
+  'api-routes': ManagerApiRoutesScreen.preload,
+  'debugging-logs': ManagerSettingsLogsScreen.preload,
+  'debugging-security': ManagerSettingsSecurityScreen.preload,
+  seo: ManagerSeoScreen.preload,
+  'media-library': ManagerMediaLibraryScreen.preload,
+  users: ManagerUsersScreen.preload,
+  'settings-home': ManagerSettingsHomeScreen.preload,
+  'settings-system': ManagerSettingsSystemScreen.preload,
+  'settings-review-policies': ManagerSettingsReviewPoliciesScreen.preload,
+  'settings-languages': ManagerSettingsLanguagesScreen.preload,
+  'settings-routes': ManagerSettingsRoutesScreen.preload,
+  'settings-route-paths': ManagerSettingsRoutePathsScreen.preload,
+  'settings-user-roles': ManagerSettingsUserRolesScreen.preload,
+  'settings-user-roles-create': ManagerSettingsUserRoleCreateScreen.preload,
+  'settings-user-roles-edit': ManagerSettingsUserRoleEditScreen.preload,
+  'settings-literals': ManagerSettingsLiteralsScreen.preload,
+  'settings-redirects': ManagerSettingsRedirectsScreen.preload,
+  'settings-robots': ManagerSettingsRobotsScreen.preload,
+  'settings-seo': ManagerSettingsSeoScreen.preload,
+  'settings-llms': ManagerSettingsLlmsScreen.preload,
+  'content-create': ManagerContentTypeCreateScreen.preload,
+  'content-edit': ManagerContentTypeEditScreen.preload,
+  'content-list': ManagerContentTypeListScreen.preload,
+}
+
+export const preloadManagerPath = (
+  pathname: string,
+  options: { basePath?: string } = {},
+): void => {
+  const managerPathname =
+    getManagerRelativePathname(pathname, options).replace(/\/+$/, '') || '/'
+  const definition = managerRouteDefinitions.find((item) =>
+    matchRoutePath(item.path, managerPathname),
+  )
+  const preload = definition ? managerRoutePreloads[definition.kind] : undefined
+  if (preload) void preload()
+}

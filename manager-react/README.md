@@ -31,7 +31,8 @@ export function ManagerPage() {
 Built-in screens are split by manager route and loaded on first visit. Lucide
 names configured for content-type and module-picker icons remain unrestricted;
 the manager accepts kebab-case or PascalCase names and loads the selected icon
-on demand.
+on demand. Hosts can use `preloadManagerPath` when their router wants to
+prefetch a built-in route chunk.
 
 ## Realtime synchronization
 
@@ -104,6 +105,9 @@ const navigation = createPathManagerNavigation({
   replace: (href) => router.replace(href),
 })
 ```
+
+Hosts that own the router can pass a `linkComponent` to `ManagerBrowserApp` and
+use `preloadManagerPath` from the router package to warm built-in route chunks.
 
 ## Link fields
 

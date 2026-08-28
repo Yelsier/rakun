@@ -13,8 +13,9 @@ bun preview:bun:seed
 bun preview:bun
 ```
 
-Open `http://localhost:4200/en/` or `http://localhost:4200/manager`. The seeded
-manager login is `admin@example.com` / `admin123`. MongoDB defaults to
+Open `http://localhost:4200/`, `http://localhost:4200/about`, or
+`http://localhost:4200/manager`. The seeded manager login is
+`admin@example.com` / `admin123`. MongoDB defaults to
 `mongodb://127.0.0.1:27017/rakun_preview_bun`.
 
 The development revalidation token defaults to `preview-bun-token` and can be

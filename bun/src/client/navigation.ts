@@ -32,6 +32,7 @@ const loadedStyles = new Set(
   )
 )
 const loadedScripts = new Map<string, Promise<Record<string, unknown>>>()
+const prefetchedFlights = new Map<string, Promise<FlightPayload | undefined>>()
 
 const isWithinBasePath = (pathname: string, basePath: string): boolean =>
   pathname === basePath || pathname.startsWith(`${basePath}/`)
@@ -47,9 +48,9 @@ const loadStyles = (assets: PageAssets): void => {
   }
 }
 
-const loadClientModules = async (assets: PageAssets): Promise<void> => {
+const importClientModules = async (assets: PageAssets): Promise<Record<string, unknown>[]> => {
   loadStyles(assets)
-  const modules = await Promise.all(
+  return Promise.all(
     assets.scripts.map((src) => {
       let loaded = loadedScripts.get(src)
       if (!loaded) {
@@ -59,12 +60,76 @@ const loadClientModules = async (assets: PageAssets): Promise<void> => {
       return loaded
     })
   )
+}
 
+const loadClientModules = async (assets: PageAssets): Promise<void> => {
+  const modules = await importClientModules(assets)
   for (const loaded of modules) {
     if (typeof loaded.hydrate === 'function') {
       ;(loaded.hydrate as () => void)()
     }
   }
+}
+
+const getFlight = async (url: URL): Promise<FlightPayload | undefined> => {
+  const key = `${url.pathname}${url.search}`
+  const prefetched = prefetchedFlights.get(key)
+  if (prefetched) return prefetched
+
+  const config = window.__RAKUN_BUN__
+  if (!config) return undefined
+
+  const request = fetch(`${config.rscPath}${url.pathname}${url.search}`, {
+    headers: { Accept: 'text/x-component' },
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        prefetchedFlights.delete(key)
+        return undefined
+      }
+      return (await response.json()) as FlightPayload
+    })
+    .catch((error) => {
+      prefetchedFlights.delete(key)
+      throw error
+    })
+
+  prefetchedFlights.set(key, request)
+  return request
+}
+
+const getInternalAnchorUrl = (anchor: HTMLAnchorElement): URL | undefined => {
+  const config = window.__RAKUN_BUN__
+  if (
+    !config ||
+    anchor.target ||
+    anchor.download ||
+    anchor.dataset.rakunReload !== undefined
+  ) {
+    return undefined
+  }
+
+  const url = new URL(anchor.href, location.href)
+  if (
+    url.origin !== location.origin ||
+    (url.pathname === location.pathname && url.search === location.search) ||
+    config.reloadBasePaths.some((basePath) => isWithinBasePath(url.pathname, basePath))
+  ) {
+    return undefined
+  }
+
+  return url
+}
+
+const isPrefetchableAnchor = (anchor: HTMLAnchorElement): URL | undefined => {
+  if (anchor.dataset.rakunPrefetch === 'false') return undefined
+  return getInternalAnchorUrl(anchor)
+}
+
+const prefetch = (url: URL): void => {
+  void getFlight(url)
+    .then((payload) => (payload ? importClientModules(payload.assets) : undefined))
+    .catch(() => undefined)
 }
 
 const applyHead = (html: string): void => {
@@ -92,16 +157,12 @@ const navigate = async (url: URL, replace = false): Promise<void> => {
     return
   }
 
-  const response = await fetch(`${config.rscPath}${url.pathname}${url.search}`, {
-    headers: { Accept: 'text/x-component' },
-  })
-
-  if (!response.ok) {
+  const payload = await getFlight(url)
+  if (!payload) {
     location.assign(url)
     return
   }
 
-  const payload = (await response.json()) as FlightPayload
   if (payload.redirect) {
     location.assign(payload.redirect.to)
     return
@@ -127,21 +188,31 @@ document.addEventListener('click', (event) => {
   }
 
   const anchor = (event.target as Element | null)?.closest<HTMLAnchorElement>('a[href]')
-  if (!anchor || anchor.target || anchor.download || anchor.dataset.rakunReload !== undefined) {
-    return
-  }
-
-  const url = new URL(anchor.href, location.href)
-  if (
-    url.origin !== location.origin ||
-    (url.pathname === location.pathname && url.search === location.search)
-  ) {
-    return
-  }
+  const url = anchor ? getInternalAnchorUrl(anchor) : undefined
+  if (!url) return
 
   event.preventDefault()
   void navigate(url).catch(() => location.assign(url))
 })
+
+const prefetchFromEvent = (event: Event): void => {
+  const anchor = (event.target as Element | null)?.closest<HTMLAnchorElement>('a[href]')
+  const url = anchor ? isPrefetchableAnchor(anchor) : undefined
+  if (url) prefetch(url)
+}
+
+document.addEventListener('pointerover', (event) => {
+  const anchor = (event.target as Element | null)?.closest<HTMLAnchorElement>('a[href]')
+  if (
+    !anchor ||
+    (event.relatedTarget instanceof Node && anchor.contains(event.relatedTarget))
+  ) {
+    return
+  }
+  prefetchFromEvent(event)
+})
+document.addEventListener('focusin', prefetchFromEvent)
+document.addEventListener('touchstart', prefetchFromEvent, { passive: true })
 
 addEventListener('popstate', () => {
   void navigate(new URL(location.href), true).catch(() => location.reload())
@@ -157,6 +228,7 @@ if (window.__RAKUN_BUN__?.dev) {
   const socket = new WebSocket(`${protocol}//${location.host}/_rakun/dev`)
   socket.addEventListener('message', (event) => {
     if (event.data === 'update') {
+      prefetchedFlights.clear()
       void navigate(new URL(location.href), true).catch(() => location.reload())
     }
   })
