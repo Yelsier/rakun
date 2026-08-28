@@ -29,6 +29,10 @@ Defaults: API `/api`, manager `/manager`, modules `src/modules`, output `dist`,
 port `3000`, RSC transport `/_rakun/rsc`, assets `/assets`, and path
 revalidation `/_rakun/revalidate`.
 
+`public/` sits beside `src/` and is served from `/` before Rakun page rendering,
+like Next.js `public/`. A production build copies it to `dist/public`; development
+reads directly from the source directory.
+
 Bun's native password implementation is used for manager passwords, so Bun
 applications do not need to install `bcrypt`.
 

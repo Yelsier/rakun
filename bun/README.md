@@ -48,6 +48,10 @@ The default paths are `/api`, `/manager`, `/_rakun/rsc`, `/_rakun/revalidate`,
 and `/assets`. `revalidation` configures core to call the same Bun process after
 Rakun resolves affected content to paths.
 
+Files in `public/` at the application root (next to `src/`) are served from the
+same URL path, before web page rendering. Production builds copy that directory
+to `dist/public`, while development serves it directly from the source folder.
+
 The manager preview is enabled for the same Bun origin by default. Set
 `manager: { preview: false }` to disable it, or provide `webBaseUrl` and
 `tokenParam` when the web application is hosted elsewhere or uses a custom

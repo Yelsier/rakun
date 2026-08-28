@@ -20,9 +20,11 @@ test('builds server/client graphs and a static route', async () => {
   const root = await mkdtemp(resolve(import.meta.dir, '..', '.tmp-rakun-bun-'))
   directories.push(root)
   const modulesDir = resolve(root, 'src', 'modules')
-  await mkdir(modulesDir, { recursive: true })
+  const publicDir = resolve(root, 'public')
+  await Promise.all([mkdir(modulesDir, { recursive: true }), mkdir(publicDir, { recursive: true })])
   await Promise.all([
     writeFile(resolve(root, 'src', 'document.css'), 'body { color: rgb(12, 34, 56); }'),
+    writeFile(resolve(publicDir, 'robots.txt'), 'User-agent: *\nDisallow:'),
     writeFile(
       resolve(root, 'src', 'document.tsx'),
       `import './document.css'\nexport default function Document({ children }) { return <html lang="es"><head><meta name="shell" content="document" /></head><body><header>Document shell</header>{children}</body></html> }`
@@ -108,6 +110,9 @@ test('builds server/client graphs and a static route', async () => {
     true
   )
   expect(result.manifest.assets.some((asset) => asset.endsWith('.css'))).toBe(true)
+  expect(await readFile(resolve(root, 'dist', 'public', 'robots.txt'), 'utf8')).toBe(
+    'User-agent: *\nDisallow:'
+  )
   const stylesheet = result.manifest.assets.find((asset) => asset.endsWith('.css'))
   expect(stylesheet).toBeDefined()
   expect(await readFile(resolve(root, 'dist', stylesheet!.slice(1)), 'utf8')).toContain(
@@ -183,6 +188,11 @@ test('builds server/client graphs and a static route', async () => {
   expect(responseHtml.indexOf('<meta charset="utf-8"')).toBeLessThan(
     responseHtml.indexOf('<meta name="shell"')
   )
+
+  const publicFile = await application.fetch(new Request('http://localhost/robots.txt'))
+  expect(publicFile.status).toBe(200)
+  expect(publicFile.headers.get('cache-control')).toBe('public, max-age=0')
+  expect(await publicFile.text()).toBe('User-agent: *\nDisallow:')
 
   const previewResponse = await application.fetch(
     new Request('http://localhost/?rakun_preview=test-token')

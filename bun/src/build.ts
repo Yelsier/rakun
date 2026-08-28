@@ -1,4 +1,4 @@
-import { copyFile, mkdir, rm, writeFile } from 'node:fs/promises'
+import { copyFile, cp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { basename, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -393,8 +393,18 @@ export const buildRakunCode = async (
   }
   const generatedDir = resolve(config.rootDir, '.rakun', 'generated')
   const assetsDir = resolve(config.outDir, 'assets')
+  const publicDir = resolve(config.rootDir, 'public')
+  const outputPublicDir = resolve(config.outDir, 'public')
   if (!options.clean && !options.previousManifest) {
     await rm(assetsDir, { recursive: true, force: true })
+  }
+  if (!config.server.development) {
+    await rm(outputPublicDir, { recursive: true, force: true })
+    await cp(publicDir, outputPublicDir, { recursive: true, force: true }).catch(
+      (error: NodeJS.ErrnoException) => {
+        if (error.code !== 'ENOENT') throw error
+      }
+    )
   }
   const managerAssetsDir = resolve(assetsDir, 'manager')
   const serverDir = resolve(config.outDir, 'server')

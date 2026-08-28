@@ -175,6 +175,39 @@ const serveAsset = async (
   })
 }
 
+const servePublicFile = async (
+  config: ResolvedRakunBunConfig,
+  request: Request,
+  prebuilt: boolean
+): Promise<Response | null> => {
+  if (request.method !== 'GET' && request.method !== 'HEAD') return null
+
+  let pathname: string
+  try {
+    pathname = decodeURIComponent(new URL(request.url).pathname)
+  } catch {
+    return new Response(null, { status: 404 })
+  }
+  const relative = pathname.replace(/^\/+/, '')
+  if (!relative) return null
+
+  const publicRoot = resolve(prebuilt ? config.outDir : config.rootDir, 'public')
+  const path = resolve(publicRoot, relative)
+  if (path !== publicRoot && !path.startsWith(`${publicRoot}${sep}`)) {
+    return new Response(null, { status: 404 })
+  }
+
+  const file = Bun.file(path)
+  if (!(await file.exists())) return null
+
+  return new Response(request.method === 'HEAD' ? null : file, {
+    headers: {
+      'Cache-Control': config.server.development ? 'no-store' : 'public, max-age=0',
+      'Content-Type': file.type,
+    },
+  })
+}
+
 const managerHtml = (config: ResolvedRakunBunConfig, manifest: RakunBuildManifest): string => {
   const styles = manifest.managerAssets
     .filter((asset) => asset.endsWith('.css'))
@@ -294,6 +327,8 @@ export class RakunBunApplication {
       if (pathname === '/_rakun/dev') {
         return new Response(null, { status: 426 })
       }
+      const publicFile = await servePublicFile(this.config, request, this.prebuilt)
+      if (publicFile) return publicFile
       return await this.handlePage(request, pathname)
     })
   }
