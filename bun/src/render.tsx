@@ -29,10 +29,19 @@ const serializeScriptValue = (value: unknown): string =>
     (character) => SCRIPT_ESCAPES[character] ?? character
   )
 
-const renderNode = async (node: ReactNode): Promise<string> => {
-  const stream = await renderToReadableStream(node)
+const renderNode = async (node: ReactNode, identifierPrefix?: string): Promise<string> => {
+  const stream = await renderToReadableStream(node, { identifierPrefix })
   await stream.allReady
   return await new Response(stream).text()
+}
+
+const getIdentifierPrefix = (key: string): string => {
+  let hash = 2_166_136_261
+  for (let index = 0; index < key.length; index += 1) {
+    hash ^= key.charCodeAt(index)
+    hash = Math.imul(hash, 16_777_619)
+  }
+  return `rakun-${(hash >>> 0).toString(36)}-`
 }
 
 const RakunBunNotFound = (): null => null
@@ -80,25 +89,35 @@ const renderPageBody = async (
 ): Promise<ReactNode> => {
   const rendered: ReactNode[] = []
 
-  const renderModule = (module: PageModule, key: string): ReactNode => {
+  const renderModule = async (module: PageModule, key: string): Promise<ReactNode> => {
     const { client, Component } = resolveComponent(module, registry)
     const component = createElement(Component, { ...module, key })
-    const rendered = client ? (
-      <div data-rakun-client={module._type} data-rakun-props={encodeProps(module)} key={key}>
+
+    if (client) {
+      const identifierPrefix = getIdentifierPrefix(key)
+      const html = await renderNode(
         <PageInfoProvider value={page.info} literals={page.literals}>
           {component}
-        </PageInfoProvider>
-      </div>
-    ) : (
-      component
-    )
+        </PageInfoProvider>,
+        identifierPrefix
+      )
+      return (
+        <div
+          data-rakun-client={module._type}
+          data-rakun-identifier-prefix={identifierPrefix}
+          data-rakun-props={encodeProps(module)}
+          dangerouslySetInnerHTML={{ __html: html }}
+          key={key}
+        />
+      )
+    }
 
     return module._type === 'NotFound' ? (
       <div data-rakun-not-found="" key={key}>
-        {rendered}
+        {component}
       </div>
     ) : (
-      rendered
+      component
     )
   }
 
@@ -106,7 +125,7 @@ const renderPageBody = async (
     if (item.type === 'module') {
       if (item.module) {
         rendered.push(
-          renderModule(item.module, `layout:${item.key}:${item.module._id}:${layoutIndex}`)
+          await renderModule(item.module, `layout:${item.key}:${item.module._id}:${layoutIndex}`)
         )
       }
       continue
@@ -114,8 +133,11 @@ const renderPageBody = async (
 
     rendered.push(
       <main key={`content:${layoutIndex}`}>
-        {item.modules.map((module, moduleIndex) =>
-          renderModule(module, `content:${module._id}:${layoutIndex}:${moduleIndex}`)
+        {await Promise.all(
+          item.modules.map(
+            async (module, moduleIndex) =>
+              await renderModule(module, `content:${module._id}:${layoutIndex}:${moduleIndex}`)
+          )
         )}
       </main>
     )

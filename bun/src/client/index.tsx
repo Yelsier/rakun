@@ -41,7 +41,10 @@ export const hydrateRakunModule = (
       element,
       <PageInfoProvider value={info} literals={literals}>
         <Component {...decodeProps(element.dataset.rakunProps)} />
-      </PageInfoProvider>
+      </PageInfoProvider>,
+      {
+        identifierPrefix: element.dataset.rakunIdentifierPrefix,
+      }
     )
   }
 }

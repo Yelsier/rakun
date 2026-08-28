@@ -35,7 +35,7 @@ test('builds server/client graphs and a static route', async () => {
     ),
     writeFile(
       resolve(modulesDir, 'Counter.tsx'),
-      `'use client'\nimport { useState } from 'react'\nexport default function Counter({ initial }) { const [value] = useState(initial); return <span>{value}</span> }`
+      `'use client'\nimport { useId, useState } from 'react'\nexport default function Counter({ initial }) { const [value] = useState(initial); const id = useId(); return <span id={id}>{value}</span> }`
     ),
   ])
 
@@ -184,6 +184,8 @@ test('builds server/client graphs and a static route', async () => {
   expect(responseHtml).toContain('<title data-rakun-head="">Title /</title>')
   expect(responseHtml).toContain('<link rel="stylesheet" href="/assets/')
   expect(responseHtml).not.toContain('/assets/manager/')
+  expect(responseHtml).toMatch(/data-rakun-identifier-prefix="rakun-[^"]+"/)
+  expect(responseHtml).toMatch(/id="_rakun-[^"]+"/)
   expect(responseHtml).toContain('"reloadBasePaths":["/api"')
   expect(responseHtml.indexOf('<meta charset="utf-8"')).toBeLessThan(
     responseHtml.indexOf('<meta name="shell"')
