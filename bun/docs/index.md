@@ -48,8 +48,10 @@ Create `src/modules/Name.tsx` or `src/modules/Name/index.tsx`. Do not create or
 maintain a registry. Module names come from the file or containing directory;
 duplicates fail. Export a default component or named `component`.
 
-Modules without `'use client'` render only on the server. Put the directive at
-the top of modules needing hooks or browser APIs. The build emits one
+Modules without a client dependency render only on the server. Put `'use client'`
+at the top of modules needing hooks or browser APIs. Rakun follows static imports
+and promotes a module to a client boundary when it reaches a client component,
+including `Image` and other client exports from `@rakun-kit/react`. The build emits one
 self-contained browser bundle per client boundary. It does not create shared
 chunks between web modules, navigation, and the manager; the page flight lists
 only the bundles used by that destination. Content props do not participate in

@@ -68,6 +68,57 @@ describe('discoverRakunModules', () => {
 
     await expect(discoverRakunModules(directory)).rejects.toThrow('Duplicate Rakun module "Hero"')
   })
+
+  test('promotes modules that import nested or package client components', async () => {
+    const directory = await temporaryDirectory()
+    const packageDirectory = resolve(directory, 'node_modules', 'client-package')
+    await Promise.all([
+      mkdir(resolve(directory, 'components'), { recursive: true }),
+      mkdir(packageDirectory, { recursive: true }),
+    ])
+    await Promise.all([
+      writeFile(
+        resolve(directory, 'Image.tsx'),
+        `import Image from './components/Image'\nexport default () => <Image />`
+      ),
+      writeFile(
+        resolve(directory, 'components', 'Image.tsx'),
+        `'use client'\nexport default () => null`
+      ),
+      writeFile(
+        resolve(directory, 'PackageImage.tsx'),
+        `import Image from 'client-package'\nexport default () => <Image />`
+      ),
+      writeFile(
+        resolve(directory, 'Types.tsx'),
+        `import type Image from 'client-package'\nexport default () => null`
+      ),
+      writeFile(
+        resolve(directory, 'RakunImage.tsx'),
+        `import { Image } from '@rakun-kit/react'\nexport default () => <Image />`
+      ),
+      writeFile(
+        resolve(directory, 'RakunText.tsx'),
+        `import { useT } from '@rakun-kit/react'\nexport default () => useT()`
+      ),
+      writeFile(
+        resolve(packageDirectory, 'package.json'),
+        JSON.stringify({ exports: './index.js', name: 'client-package', type: 'module' })
+      ),
+      writeFile(resolve(packageDirectory, 'index.js'), `export { default } from './Image.js'`),
+      writeFile(resolve(packageDirectory, 'Image.js'), `'use client'\nexport default () => null`),
+    ])
+
+    const modules = await discoverRakunModules(directory)
+
+    expect(modules.map(({ client, name }) => ({ client, name }))).toEqual([
+      { client: true, name: 'Image' },
+      { client: true, name: 'PackageImage' },
+      { client: true, name: 'RakunImage' },
+      { client: false, name: 'RakunText' },
+      { client: false, name: 'Types' },
+    ])
+  })
 })
 
 describe('discoverRakunDocument', () => {

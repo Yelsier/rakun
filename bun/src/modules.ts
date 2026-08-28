@@ -1,9 +1,20 @@
 import { readdir, readFile } from 'node:fs/promises'
-import { extname, relative, resolve, sep } from 'node:path'
+import { dirname, extname, relative, resolve, sep } from 'node:path'
 
 import type { RakunModuleDefinition } from './types'
 
 const MODULE_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx'])
+const IMPORT_SPECIFIER = /\b(import|export)\s+(type\s+)?(?:[^'"`]*?\s+from\s+)?['"]([^'"]+)['"]/g
+const RAKUN_REACT_IMPORT = /\bimport\s+(?!type\b)([^'"`]+?)\s+from\s+['"]@rakun-kit\/react['"]/g
+const RAKUN_REACT_CLIENT_EXPORTS = new Set([
+  'ErrorBoundary',
+  'Image',
+  'JsonViewer',
+  'LazyViewport',
+  'ModuleRenderer',
+  'RakunImage',
+  'useClientT',
+])
 
 const hasUseClientDirective = (source: string): boolean => {
   let remaining = source.replace(/^\uFEFF/, '').replace(/^#![^\r\n]*(?:\r?\n|$)/, '')
@@ -19,6 +30,66 @@ const hasUseClientDirective = (source: string): boolean => {
   }
 
   return false
+}
+
+const getImportSpecifiers = (source: string): string[] =>
+  Array.from(source.matchAll(IMPORT_SPECIFIER), (match) =>
+    match[2] ? undefined : match[3]
+  ).filter((specifier): specifier is string => !!specifier)
+
+const importsRakunReactClientExport = (source: string): boolean =>
+  Array.from(source.matchAll(RAKUN_REACT_IMPORT)).some((match) =>
+    Array.from(RAKUN_REACT_CLIENT_EXPORTS).some((name) =>
+      new RegExp(`\\b${name}\\b`).test(match[1] ?? '')
+    )
+  )
+
+const hasClientDependency = async (
+  file: string,
+  cache: Map<string, boolean>,
+  visiting: Set<string>
+): Promise<boolean> => {
+  const resolvedFile = resolve(file)
+  const cached = cache.get(resolvedFile)
+  if (cached !== undefined) return cached
+  if (visiting.has(resolvedFile) || !MODULE_EXTENSIONS.has(extname(resolvedFile))) return false
+
+  visiting.add(resolvedFile)
+  try {
+    const source = await readFile(resolvedFile, 'utf8')
+    if (hasUseClientDirective(source)) {
+      cache.set(resolvedFile, true)
+      return true
+    }
+
+    for (const specifier of getImportSpecifiers(source)) {
+      if (specifier === '@rakun-kit/react') {
+        if (importsRakunReactClientExport(source)) {
+          cache.set(resolvedFile, true)
+          return true
+        }
+        continue
+      }
+      let dependency: string
+      try {
+        dependency = Bun.resolveSync(specifier, dirname(resolvedFile))
+      } catch {
+        continue
+      }
+      if (await hasClientDependency(dependency, cache, visiting)) {
+        cache.set(resolvedFile, true)
+        return true
+      }
+    }
+
+    cache.set(resolvedFile, false)
+    return false
+  } catch {
+    cache.set(resolvedFile, false)
+    return false
+  } finally {
+    visiting.delete(resolvedFile)
+  }
 }
 
 const getModuleName = (modulesDir: string, file: string): string => {
@@ -64,9 +135,10 @@ export const discoverRakunModules = async (
       return parts.length === 1 || (parts.length === 2 && /^index\.[^.]+$/.test(parts.at(-1) ?? ''))
     })
     .sort()
+  const clientDependencyCache = new Map<string, boolean>()
   const modules = await Promise.all(
     files.map(async (file) => ({
-      client: hasUseClientDirective(await readFile(file, 'utf8')),
+      client: await hasClientDependency(file, clientDependencyCache, new Set()),
       file,
       name: getModuleName(modulesDir, file),
     }))

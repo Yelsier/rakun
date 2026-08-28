@@ -70,7 +70,9 @@ src/modules/Gallery/index.tsx
 The resulting names are `Hero` and `Gallery`. Duplicate names fail the build.
 Modules are server-rendered by default and their code is absent from browser
 bundles. A top-level `'use client'` directive creates a self-contained browser
-bundle and a hydrated island:
+bundle and a hydrated island. Rakun also follows static imports, so a server
+module is promoted to a client boundary when it imports a client component from
+another file or `Image` (and other client exports) from `@rakun-kit/react`:
 
 ```tsx
 'use client'
