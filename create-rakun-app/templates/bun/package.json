@@ -6,6 +6,10 @@
   "engines": {
     "bun": ">=1.4.0"
   },
+  "overrides": {
+    "@diceui/mention": "0.8.0",
+    "@diceui/tags-input": "0.7.2"
+  },
   "scripts": {
     "dev": "rakun-bun dev",
     "build": "rakun-bun build",

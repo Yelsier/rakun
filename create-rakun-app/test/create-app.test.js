@@ -54,6 +54,10 @@ describe('create-rakun-app', () => {
     expect(packageJson.dependencies.next).toBe(resolvedVersions.next)
     expect(packageJson.dependencies['@rakun-kit/core']).toBe(resolvedVersions['@rakun-kit/core'])
     expect(packageJson.dependencies['@rakun-kit/next']).toBe(resolvedVersions['@rakun-kit/next'])
+    expect(packageJson.overrides).toMatchObject({
+      '@diceui/mention': '0.8.0',
+      '@diceui/tags-input': '0.7.2',
+    })
     expect(JSON.stringify(packageJson)).not.toContain('latest')
     expect(JSON.stringify(packageJson)).not.toContain('__VERSION_')
     expect(
@@ -93,6 +97,10 @@ describe('create-rakun-app', () => {
     expect(packageJson.dependencies['@rakun-kit/react']).toBe(resolvedVersions['@rakun-kit/react'])
     expect(packageJson.dependencies.next).toBeUndefined()
     expect(packageJson.dependencies.bcrypt).toBeUndefined()
+    expect(packageJson.overrides).toMatchObject({
+      '@diceui/mention': '0.8.0',
+      '@diceui/tags-input': '0.7.2',
+    })
     expect(requestedPolicies).toContain('@rakun-kit/bun')
     expect(requestedPolicies).not.toContain('next')
     expect(requestedPolicies).not.toContain('bcrypt')

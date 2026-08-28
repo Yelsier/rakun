@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "overrides": {
+    "@diceui/mention": "0.8.0",
+    "@diceui/tags-input": "0.7.2"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
