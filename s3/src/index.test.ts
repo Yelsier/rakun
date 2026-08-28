@@ -6,13 +6,13 @@ describe('S3Adapter public URLs', () => {
   test('maps public object keys to the stable media route without duplicating the prefix', () => {
     const adapter = new S3Adapter({
       privateBucket: 'private',
-      publicBaseUrl: 'https://example.test/api/media/public',
+      publicBaseUrl: 'https://example.test/api/media',
       publicBucket: 'public',
       region: 'eu-west-1',
     })
 
     expect(adapter.publicUrl({ access: 'public', key: 'public/uploads/hello world.png' })).toBe(
-      'https://example.test/api/media/public/uploads/hello%20world.png'
+      'https://example.test/api/media/uploads/hello%20world.png'
     )
     expect(adapter.publicUrl({ access: 'private', key: 'private/uploads/private.png' })).toBeNull()
   })

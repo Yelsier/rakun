@@ -124,7 +124,7 @@ export const rakunExpress = (
     router.use(rakunExpressLocalService(localMediaConfig));
   }
 
-  router.use("/media/public", async (req, res, next) => {
+  router.use("/media", async (req, res, next) => {
     if (req.method !== "GET" && req.method !== "HEAD") {
       next();
       return;

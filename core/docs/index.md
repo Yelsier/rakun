@@ -478,7 +478,7 @@ Core defines service contracts; concrete integrations are separate:
 - Media: use `@rakun-kit/s3`, or local media from the selected framework
   adapter. Configure the result as `media` in bootstrap.
 - Storage adapters may expose `getPublicObject`; Next.js, Express and Bun then
-  serve public media through their normal `/media/public/<key>` API route. This
+  serve public media through their normal `/media/<key>` API route. This
   gives public Rakun media a stable application URL while the backing object
   store remains private or uses expiring storage URLs.
 - Mail: use `@rakun-kit/smtp` or `@rakun-kit/resend`; optionally render typed

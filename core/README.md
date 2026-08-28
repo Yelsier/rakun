@@ -1156,7 +1156,7 @@ APIs:
 The service supports prepare/finalize upload, URL generation, folders, and media optimization depending on adapter/configuration. Manager uploads encode original file names for transport, so Unicode names (including accents, non-Latin scripts, and emoji) are preserved without placing invalid characters in HTTP headers.
 
 Adapters can implement `getPublicObject` to let every Rakun server adapter proxy
-public media at its normal `/media/public/<key>` API route. This keeps browser
+public media at its normal `/media/<key>` API route. This keeps browser
 URLs stable even when the object store is private or only supports expiring
 presigned URLs. The core handler validates the key under `public/`, forwards
 byte ranges, preserves object metadata, and applies long-lived caching by

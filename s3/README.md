@@ -60,7 +60,7 @@ Behavior:
 - uploads use Rakun's `/media/upload` endpoint, prefixed by `baseUrl` when provided.
 - pass `uploadUrl` to override the upload endpoint completely.
 - private reads use presigned `GetObject` URLs.
-- public reads use a stable Rakun proxy URL at `baseUrl/media/public/<key>` by
+- public reads use a stable Rakun proxy URL at `baseUrl/media/<key>` by
   default. The S3 bucket may remain private: Rakun reads it with server
   credentials and streams the object with its cache and range metadata.
 - pass `publicBaseUrl` to use a CDN or another public origin instead of the

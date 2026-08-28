@@ -156,12 +156,11 @@ const createHandler = (options: RakunNextOptions = {}): RakunNextHandler => {
 
         if (
           (request.method === "GET" || request.method === "HEAD") &&
-          segments[0] === "media" &&
-          segments[1] === "public"
+          segments[0] === "media"
         ) {
           const publicMediaResponse = await handlePublicMediaRequest({
             request,
-            pathSegments: segments.slice(2),
+            pathSegments: segments.slice(1),
           });
           if (publicMediaResponse) {
             return publicMediaResponse;

@@ -37,7 +37,7 @@ in the server environment and never pass this config into browser modules.
   `uploadUrl` only to replace that endpoint entirely.
 - Private reads return expiring presigned `GetObject` URLs.
 - With `baseUrl`, public reads use the stable Rakun route
-  `baseUrl/media/public/<key>` by default. Rakun streams from S3 with its
+  `baseUrl/media/<key>` by default. Rakun streams from S3 with its
   server credentials, so the public bucket can remain private and browser URLs
   never contain an expiring S3 signature.
 - Set `publicBaseUrl` only when a CDN or other public origin should serve the

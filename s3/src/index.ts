@@ -360,7 +360,7 @@ export const createS3MediaServiceConfig = (
     (config.baseUrl ? joinUrlPath(config.baseUrl, "/media/upload") : undefined);
   const publicBaseUrl =
     config.publicBaseUrl ??
-    (config.baseUrl ? joinUrlPath(config.baseUrl, "/media/public") : undefined);
+    (config.baseUrl ? joinUrlPath(config.baseUrl, "/media") : undefined);
 
   return {
     adapter: new S3Adapter({
