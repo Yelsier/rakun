@@ -115,7 +115,33 @@ const getStatus = (route: RenderedRoute): number => {
   return notFound ? 404 : 200
 }
 
-const serveAsset = async (config: ResolvedRakunBunConfig, request: Request): Promise<Response> => {
+const acceptsGzip = (request: Request): boolean => {
+  const encodings = new Map(
+    (request.headers.get('Accept-Encoding') ?? '')
+      .split(',')
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean)
+      .map((value) => {
+        const [encoding, ...parameters] = value.split(';').map((part) => part.trim())
+        const quality = parameters.find((parameter) => parameter.startsWith('q='))?.slice(2)
+        return [encoding, quality === undefined ? 1 : Number(quality)] as const
+      })
+  )
+  return (encodings.get('gzip') ?? encodings.get('*') ?? 0) > 0
+}
+
+const isCompressibleAsset = (file: Bun.BunFile): boolean =>
+  file.size >= 1_024 &&
+  /^(?:text\/|application\/(?:javascript|json|wasm|xml)|image\/svg\+xml)/.test(file.type)
+
+const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer =>
+  bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer
+
+const serveAsset = async (
+  config: ResolvedRakunBunConfig,
+  request: Request,
+  compressedAssets: Map<string, ArrayBuffer>
+): Promise<Response> => {
   const pathname = decodeURIComponent(new URL(request.url).pathname)
   const relative = pathname.replace(/^\/assets\/?/, '')
   const assetsRoot = resolve(config.outDir, 'assets')
@@ -125,12 +151,26 @@ const serveAsset = async (config: ResolvedRakunBunConfig, request: Request): Pro
   }
   const file = Bun.file(path)
   if (!(await file.exists())) return new Response(null, { status: 404 })
+  const headers = new Headers({
+    'Cache-Control': config.server.development ? 'no-store' : 'public, max-age=31536000, immutable',
+    'Content-Type': file.type,
+  })
+
+  if (!config.server.development && isCompressibleAsset(file)) {
+    headers.set('Vary', 'Accept-Encoding')
+    if (acceptsGzip(request)) {
+      let compressed = compressedAssets.get(path)
+      if (!compressed) {
+        compressed = toArrayBuffer(Bun.gzipSync(await file.bytes()))
+        compressedAssets.set(path, compressed)
+      }
+      headers.set('Content-Encoding', 'gzip')
+      return new Response(compressed, { headers })
+    }
+  }
+
   return new Response(file, {
-    headers: {
-      'Cache-Control': config.server.development
-        ? 'no-store'
-        : 'public, max-age=31536000, immutable',
-    },
+    headers,
   })
 }
 
@@ -163,6 +203,7 @@ export class RakunBunApplication {
   private pendingDevelopmentUnknown = false
   private prepared = false
   private readonly prebuilt: boolean
+  private readonly compressedAssets = new Map<string, ArrayBuffer>()
 
   constructor(config: RakunBunConfig, internal: RakunBunInternalOptions = {}) {
     this.config = resolveRakunConfig(config, internal.cwd)
@@ -182,14 +223,14 @@ export class RakunBunApplication {
     this.document = code.document
     this.registry = code.registry
     this.manifest = code.manifest
+    this.compressedAssets.clear()
     await this.refreshStaticPaths()
 
-    for (const path of this.staticPaths) {
-      await this.cache.regenerate(path)
-    }
+    const routes: RenderedRoute[] = []
+    for (const path of this.staticPaths) routes.push(await this.cache.regenerate(path))
     await writeRakunManifests(this.config.outDir, this.manifest, Array.from(this.staticPaths))
     this.prepared = true
-    return describeBuild(this.config, this.manifest, Array.from(this.staticPaths))
+    return describeBuild(this.config, this.manifest, routes)
   }
 
   async invalidatePath(path: string): Promise<void> {
@@ -224,7 +265,7 @@ export class RakunBunApplication {
         return await this.handleRevalidation(request)
       }
       if (pathname === '/assets' || pathname.startsWith('/assets/')) {
-        return await serveAsset(this.config, request)
+        return await serveAsset(this.config, request, this.compressedAssets)
       }
       if (pathname === '/_rakun/rsc' || pathname.startsWith('/_rakun/rsc/')) {
         const pagePath = normalizeRakunPath(url.pathname.slice('/_rakun/rsc'.length) || '/')
@@ -345,12 +386,15 @@ export class RakunBunApplication {
   }
 
   private async getRoute(request: Request, path: string): Promise<RenderedRoute> {
+    const input = getRequestPageInput(request, path)
+    if (getPreviewToken(this.config, input)) return await this.renderPath(path, input)
+
     if (this.staticPaths.has(path)) {
       const cached = this.cache.get(path)
       if (cached) return cached
       return await this.cache.regenerate(path)
     }
-    return await this.renderPath(path, getRequestPageInput(request, path))
+    return await this.renderPath(path, input)
   }
 
   private async handlePage(request: Request, path: string): Promise<Response> {
@@ -364,7 +408,11 @@ export class RakunBunApplication {
     return new Response(route.html, {
       status: getStatus(route),
       headers: {
-        'Cache-Control': this.staticPaths.has(path) ? 'public' : 'no-store',
+        'Cache-Control':
+          this.staticPaths.has(path) &&
+          !getPreviewToken(this.config, getRequestPageInput(request, path))
+            ? 'public, max-age=0, must-revalidate'
+            : 'no-store',
         'Content-Type': 'text/html; charset=utf-8',
       },
     })
@@ -374,7 +422,11 @@ export class RakunBunApplication {
     const route = await this.getRoute(request, path)
     return new Response(JSON.stringify(route.flight), {
       headers: {
-        'Cache-Control': this.staticPaths.has(path) ? 'public' : 'no-store',
+        'Cache-Control':
+          this.staticPaths.has(path) &&
+          !getPreviewToken(this.config, getRequestPageInput(request, path))
+            ? 'public, max-age=0, must-revalidate'
+            : 'no-store',
         'Content-Type': 'text/x-component; charset=utf-8',
       },
     })

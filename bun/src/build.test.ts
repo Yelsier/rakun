@@ -1,9 +1,10 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
 import { afterEach, expect, test } from 'bun:test'
 
 import { buildRakunServerBundle } from './build'
+import { formatRakunBuildReport } from './report'
 import { createRakunBun } from './server'
 
 const directories: string[] = []
@@ -43,30 +44,40 @@ test('builds server/client graphs and a static route', async () => {
       server: { development: false, hostname: '127.0.0.1', port: 0 },
       web: {
         getStaticPaths: () => ({ items: [{ path: '/', ttl: 60 }] }),
-        getPage: ({ path }) =>
-          path === '/missing'
+        getPage: ({ path, search }) =>
+          search?.includes('rakun_preview=')
             ? {
                 renderMode: 'dynamic',
                 layout: [
                   {
                     type: 'content',
-                    modules: [{ _id: 'not-found', _type: 'NotFound' }],
+                    modules: [{ _id: 'preview', _type: 'Hero', title: 'Preview value' }],
                   },
                 ],
               }
-            : {
-                renderMode: 'static',
-                seo: { title: `Title ${path}` },
-                layout: [
-                  {
-                    type: 'content',
-                    modules: [
-                      { _id: 'hero', _type: 'Hero', title: `${heading} ${path}` },
-                      { _id: 'counter', _type: 'Counter', initial: 2 },
-                    ],
-                  },
-                ],
-              },
+            : path === '/missing'
+              ? {
+                  renderMode: 'dynamic',
+                  layout: [
+                    {
+                      type: 'content',
+                      modules: [{ _id: 'not-found', _type: 'NotFound' }],
+                    },
+                  ],
+                }
+              : {
+                  renderMode: 'static',
+                  seo: { title: `Title ${path}` },
+                  layout: [
+                    {
+                      type: 'content',
+                      modules: [
+                        { _id: 'hero', _type: 'Hero', title: `${heading} ${path}` },
+                        { _id: 'counter', _type: 'Counter', initial: 2 },
+                      ],
+                    },
+                  ],
+                },
       },
     },
     { cwd: root }
@@ -74,22 +85,73 @@ test('builds server/client graphs and a static route', async () => {
 
   const result = await application.build({ clean: true })
   expect(result.staticPaths).toEqual(['/'])
+  expect(result.routes[0]?.assets.clientModules).toEqual(['Counter'])
   expect(result.manifest.client.Counter?.chunk).toMatch(/^\/assets\/module-0000\.generated-/)
   expect(result.manifest.client.Hero).toBeUndefined()
   expect(result.manifest.managerAssets.some((asset) => asset.endsWith('.js'))).toBe(true)
   expect(result.manifest.managerAssets.some((asset) => asset.endsWith('.css'))).toBe(true)
+  expect(result.manifest.managerAssets.every((asset) => asset.startsWith('/assets/manager/'))).toBe(
+    true
+  )
   expect(result.manifest.assets.some((asset) => asset.endsWith('.css'))).toBe(true)
+  const builtAssets = await readdir(resolve(root, 'dist', 'assets'))
+  expect(builtAssets.some((asset) => asset.startsWith('chunk-'))).toBe(false)
+  const managerBuiltAssets = await readdir(resolve(root, 'dist', 'assets', 'manager'), {
+    recursive: true,
+  })
+  const managerScripts = managerBuiltAssets.filter((asset) => asset.endsWith('.js'))
+  expect(managerScripts.length).toBeGreaterThan(1)
+  expect(managerScripts.length).toBeLessThan(100)
+  expect(managerScripts.some((asset) => asset.startsWith('chunk-'))).toBe(true)
+  const counterScript = result.manifest.client.Counter?.chunk
+  expect(counterScript).toBeDefined()
+  expect(await readFile(resolve(root, 'dist', counterScript!.slice(1)), 'utf8')).not.toContain(
+    '/assets/chunk-'
+  )
+  const rawCounter = await readFile(resolve(root, 'dist', counterScript!.slice(1)))
+  const compressedCounterResponse = await application.fetch(
+    new Request(`http://localhost${counterScript}`, {
+      headers: { 'Accept-Encoding': 'gzip' },
+    })
+  )
+  expect(compressedCounterResponse.headers.get('content-encoding')).toBe('gzip')
+  expect(compressedCounterResponse.headers.get('vary')).toBe('Accept-Encoding')
+  const compressedCounter = new Uint8Array(await compressedCounterResponse.arrayBuffer())
+  expect(compressedCounter.byteLength).toBeLessThan(rawCounter.byteLength)
+  expect(Bun.gunzipSync(compressedCounter)).toEqual(new Uint8Array(rawCounter))
+  const uncompressedCounterResponse = await application.fetch(
+    new Request(`http://localhost${counterScript}`, {
+      headers: { 'Accept-Encoding': 'gzip;q=0, *;q=1' },
+    })
+  )
+  expect(uncompressedCounterResponse.headers.get('content-encoding')).toBeNull()
+  expect(new Uint8Array(await uncompressedCounterResponse.arrayBuffer())).toEqual(
+    new Uint8Array(rawCounter)
+  )
   const managerScript = result.manifest.managerAssets.find((asset) => asset.endsWith('.js'))
   expect(managerScript).toBeDefined()
-  expect(await readFile(resolve(root, 'dist', managerScript!.slice(1)), 'utf8')).toContain(
-    '/manager/contentTypes'
+  const managerEntrySource = await readFile(resolve(root, 'dist', managerScript!.slice(1)), 'utf8')
+  expect(managerEntrySource).toContain('import("/assets/manager/')
+  expect(managerEntrySource).not.toMatch(/(?:from|import)\s*["']\/assets\/manager\/[^"']+\.js["']/)
+  const managerSources = await Promise.all(
+    managerScripts.map(
+      async (asset) => await readFile(resolve(root, 'dist', 'assets', 'manager', asset), 'utf8')
+    )
   )
-  expect(await readFile(resolve(root, 'dist', managerScript!.slice(1)), 'utf8')).toContain(
-    'realtimeBaseUrl'
-  )
+  const managerSource = managerSources.join('\n')
+  expect(managerSource).toContain('/manager/contentTypes')
+  expect(managerSource).toContain('realtimeBaseUrl')
+  for (const source of managerSources) {
+    for (const match of source.matchAll(/["']\/assets\/manager\/([^"']+\.js)["']/g)) {
+      expect(Bun.file(resolve(root, 'dist', 'assets', 'manager', match[1]!)).size).toBeGreaterThan(
+        0
+      )
+    }
+  }
 
   const response = await application.fetch(new Request('http://localhost/'))
   expect(response.status).toBe(200)
+  expect(response.headers.get('cache-control')).toBe('public, max-age=0, must-revalidate')
   const responseHtml = await response.text()
   expect(responseHtml).toContain('<h1>Page /</h1>')
   expect(responseHtml).toContain('<html lang="es">')
@@ -97,10 +159,17 @@ test('builds server/client graphs and a static route', async () => {
   expect(responseHtml).toContain('<meta name="shell" content="document"/>')
   expect(responseHtml).toContain('<title data-rakun-head="">Title /</title>')
   expect(responseHtml).toContain('<link rel="stylesheet" href="/assets/')
+  expect(responseHtml).not.toContain('/assets/manager/')
   expect(responseHtml).toContain('"reloadBasePaths":["/api"')
   expect(responseHtml.indexOf('<meta charset="utf-8"')).toBeLessThan(
     responseHtml.indexOf('<meta name="shell"')
   )
+
+  const previewResponse = await application.fetch(
+    new Request('http://localhost/?rakun_preview=test-token')
+  )
+  expect(previewResponse.headers.get('cache-control')).toBe('no-store')
+  expect(await previewResponse.text()).toContain('<h1>Preview value</h1>')
 
   const notFoundResponse = await application.fetch(new Request('http://localhost/missing'))
   expect(notFoundResponse.status).toBe(404)
@@ -113,6 +182,7 @@ test('builds server/client graphs and a static route', async () => {
     expect(await served.text()).toContain('<h1>Page /</h1>')
     const flight = await fetch(new URL('/_rakun/rsc/', server.url))
     expect(flight.headers.get('content-type')).toContain('text/x-component')
+    expect(flight.headers.get('cache-control')).toBe('public, max-age=0, must-revalidate')
     const manager = await fetch(new URL('/manager', server.url))
     expect(await manager.text()).toContain('rakun-manager-root')
 
@@ -140,7 +210,7 @@ test('builds server/client graphs and a static route', async () => {
     `export default {
       manager: false,
       rootDir: ${JSON.stringify(root)},
-      server: { development: false, hostname: '127.0.0.1', port: 0 },
+      server: { hostname: '127.0.0.1', port: 0 },
       web: {
         getStaticPaths: () => ({ items: [{ path: '/', ttl: 60 }] }),
         getPage: ({ path }) => ({
@@ -155,10 +225,42 @@ test('builds server/client graphs and a static route', async () => {
     configPath,
     generatedRegistry: resolve(root, '.rakun', 'generated', 'modules.generated.ts'),
   })
+  const buildReport = await formatRakunBuildReport({
+    config: application.config,
+    result,
+    serverPath: productionServer,
+  })
+  expect(buildReport).toContain('Routes (1 static)')
+  expect(buildReport).toContain('navigation, Counter')
+  expect(buildReport).toContain('Gzip')
+  expect(buildReport).toContain('Manager initial')
+  expect(buildReport).toContain('Manager routes')
+  expect(buildReport).toContain('Manager output')
+  expect(buildReport).toContain('Total output')
+  const collapsedReport = await formatRakunBuildReport({
+    config: application.config,
+    result: {
+      ...result,
+      routes: Array.from({ length: 25 }, (_, index) => ({
+        ...result.routes[0]!,
+        path: `/route-${index}`,
+      })),
+      staticPaths: Array.from({ length: 25 }, (_, index) => `/route-${index}`),
+    },
+    serverPath: productionServer,
+  })
+  expect(collapsedReport).toContain('5 routes omitted')
   const production = (await import(`${productionServer}?t=${Date.now()}`)) as {
     app: typeof application
   }
   try {
+    expect(production.app.config.server.development).toBe(false)
+    const productionAssetResponse = await production.app.fetch(
+      new Request(`http://localhost${counterScript}`, {
+        headers: { 'Accept-Encoding': 'gzip' },
+      })
+    )
+    expect(productionAssetResponse.headers.get('content-encoding')).toBe('gzip')
     const productionResponse = await production.app.fetch(new Request('http://localhost/dynamic'))
     const productionHtml = await productionResponse.text()
     expect(productionHtml).toContain('<header>Document shell</header>')

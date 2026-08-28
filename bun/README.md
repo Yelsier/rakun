@@ -65,8 +65,8 @@ src/modules/Gallery/index.tsx
 
 The resulting names are `Hero` and `Gallery`. Duplicate names fail the build.
 Modules are server-rendered by default and their code is absent from browser
-bundles. A top-level `'use client'` directive creates a browser chunk and a
-hydrated island:
+bundles. A top-level `'use client'` directive creates a self-contained browser
+bundle and a hydrated island:
 
 ```tsx
 'use client'
@@ -92,8 +92,16 @@ hashed assets.
 `web.staticPaths` is the source of truth for build-time routes. Each static path
 gets HTML plus a `flight.rsc` render payload. Other paths resolve through
 `web.page` at request time. Client navigation requests `/_rakun/rsc/*`, swaps
-the rendered tree, and imports only client chunks referenced by the destination
-page.
+the rendered tree, and imports only client bundles referenced by the
+destination page. Web module bundles, navigation, and the manager are built as
+independent graphs, so a public page never downloads manager code or incidental
+shared chunks. The manager keeps its own lazy-loaded graph under
+`/assets/manager/`; route chunks produced by `React.lazy` load only after that
+manager route is visited. Production builds consolidate the manager shell into
+one initial script, emit one lazy root bundle per built-in manager screen, and
+retain only genuinely shared supporting chunks. Lucide's runtime registry is
+also reduced to the menu and module-picker icons declared by the bootstrapped
+content types instead of emitting the complete icon catalog.
 
 Add `src/document.tsx` to define the application shell. It is a server component
 and follows the same `children` layout shape as a Next.js root layout:
@@ -146,6 +154,11 @@ Content-Type: application/json
 `invalidateTag` is intentionally not implemented. Rakun remains responsible for
 content relationships and calculating affected paths.
 
+Static HTML and flight responses require browser revalidation, so a regenerated
+path cannot remain hidden behind a stale browser cache. Requests carrying the
+manager preview token bypass the static route cache entirely and are served
+with `Cache-Control: no-store`.
+
 ## Development and production
 
 `rakun-bun dev` watches `src` and an external module directory when configured.
@@ -169,7 +182,19 @@ dist/
     routes.json
 ```
 
+The build report includes elapsed time and lists prerendered routes with their
+HTML, flight, raw client asset, and gzip transfer sizes, followed by each client
+bundle with its raw and gzip sizes, runtime routes, the manager's initial
+payload and complete lazy output, server bundle, and total output size. Large
+route and bundle lists keep their first and last entries and collapse the middle. The programmatic
+`RakunBunApplication.build()` result exposes the same per-route asset and byte
+metadata through `routes`.
+
 Run the production output with `rakun-bun start` or `bun dist/server.js`.
+Production assets are gzip-compressed on demand with Bun's native compressor
+when the browser advertises support through `Accept-Encoding`. Compressed bytes
+are cached in memory, while development serves the original files to keep
+rebuilds immediate.
 
 ## Public API
 

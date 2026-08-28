@@ -45,9 +45,17 @@ maintain a registry. Module names come from the file or containing directory;
 duplicates fail. Export a default component or named `component`.
 
 Modules without `'use client'` render only on the server. Put the directive at
-the top of modules needing hooks or browser APIs. The build emits one entry
-chunk per client boundary plus shared chunks. Content props do not participate
-in chunk identity.
+the top of modules needing hooks or browser APIs. The build emits one
+self-contained browser bundle per client boundary. It does not create shared
+chunks between web modules, navigation, and the manager; the page flight lists
+only the bundles used by that destination. Content props do not participate in
+bundle identity. The manager is a separate split graph under `/assets/manager/`,
+so its `React.lazy` route chunks retain on-demand loading without becoming web
+dependencies. In production, its static shell dependencies are folded into one
+initial script and each built-in manager screen remains a lazy root bundle;
+only dependencies shared by multiple screens stay as supporting chunks. The
+Bun build also includes only the Lucide menu and module-picker icons declared
+by bootstrapped content types, avoiding a chunk for every icon in the library.
 
 Missing routes use an empty built-in `NotFound` module and return HTTP 404.
 Create `src/modules/NotFound.tsx` to override its rendered content; the adapter
@@ -65,13 +73,19 @@ which paths are affected. Regeneration finishes and persists a new generation
 before the live in-memory pointer changes. Do not add content relationships,
 module invalidation, tags, or `invalidateTag` to this package.
 
+Static HTML and flight responses require browser revalidation after a path is
+regenerated. Manager preview-token requests bypass the static route cache and
+use `Cache-Control: no-store`, so they always render their preview payload.
+
 ## Manager and API
 
 The manager is bundled from `@rakun-kit/manager-react` and mounted at
 `/manager` unless disabled with `manager: false`. It uses the configured API
-base path. The API handler exposes core operation definitions, preserves auth
-cookies and origin checks, records all operation errors through core, serves
-the configured binary media upload operation, and exposes core SSE realtime.
+base path. Its browser graph is independent from the public web graph, so
+manager code is never shared with or downloaded by a web page. The API handler
+exposes core operation definitions, preserves auth cookies and origin checks,
+records all operation errors through core, serves the configured binary media
+upload operation, and exposes core SSE realtime.
 
 ## Document convention
 
@@ -97,4 +111,14 @@ the shell should not hardcode content copy.
   static routes are invalidated and regenerated lazily on the next request.
   Failed rebuilds leave the current application active, while browser-side
   update failures fall back to reload.
+- `rakun-bun build` reports elapsed time, generated routes, HTML and flight
+  bytes, raw and gzip client asset sizes, client bundle sizes and usage, runtime
+  routes, manager initial size, lazy page and supporting chunk counts, total
+  lazy output size, server size, and total output. Long route and bundle lists
+  collapse their middle entries.
+  `RakunBunApplication.build()` exposes the underlying per-route metadata
+  through `result.routes`.
+- Production assets are compressed on demand with Bun's native gzip support
+  when requested through `Accept-Encoding`; compressed bytes are cached in
+  memory. Development assets remain uncompressed.
 - No `invalidateTag` support.

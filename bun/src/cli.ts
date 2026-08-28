@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url'
 
 import { buildRakunServerBundle } from './build'
 import { loadRakunConfig } from './config'
+import { formatRakunBuildReport } from './report'
 import { createRakunBun, startRakunBun } from './server'
 
 const args = process.argv.slice(2)
@@ -15,6 +16,9 @@ const configPath =
 const absoluteConfigPath = resolve(process.cwd(), configPath)
 
 const run = async (): Promise<void> => {
+  if (command === 'dev') process.env.NODE_ENV = 'development'
+  if (command === 'build' || command === 'start') process.env.NODE_ENV = 'production'
+
   if (command === 'start' && configFlag < 0) {
     await import(pathToFileURL(resolve(process.cwd(), 'dist', 'server.js')).href)
     return
@@ -29,6 +33,7 @@ const run = async (): Promise<void> => {
   }
 
   if (command === 'build') {
+    const startedAt = performance.now()
     config.server.development = false
     const application = createRakunBun(config, { cwd: config.rootDir })
     const result = await application.build({ clean: true })
@@ -38,7 +43,14 @@ const run = async (): Promise<void> => {
       configPath: absoluteConfigPath,
       generatedRegistry,
     })
-    console.log(`Rakun build complete: ${result.staticPaths.length} static route(s), ${server}`)
+    console.log(
+      await formatRakunBuildReport({
+        config,
+        durationMs: performance.now() - startedAt,
+        result,
+        serverPath: server,
+      })
+    )
     return
   }
 

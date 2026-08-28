@@ -131,8 +131,16 @@ export type RenderedRoute = {
   path: string
 }
 
+export type RakunBuiltRoute = {
+  assets: RakunBunPageAssets
+  flightBytes: number
+  htmlBytes: number
+  path: string
+}
+
 export type RakunBunBuildResult = {
   manifest: RakunBuildManifest
   outDir: string
+  routes: RakunBuiltRoute[]
   staticPaths: string[]
 }

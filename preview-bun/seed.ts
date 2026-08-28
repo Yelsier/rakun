@@ -6,6 +6,7 @@ import {
   getPermissionList,
   ITERATOR_FIELD_NAME,
 } from '@rakun-kit/core'
+import { updateSingleRouteMap } from '@rakun-kit/core/api-utils'
 
 import { bootstrap } from './rakun.config'
 import { Counter, Page, PageSection } from './src/rakun'
@@ -30,22 +31,33 @@ const seedRouteMap = async ({
   page: Document
   route: Document
 }) => {
-  await db.collection('RouteMap').updateOne(
-    { path: '/en/' },
+  const routeKey = bootstrap.routes?.find(
+    (definition) => definition.contentType === Page.name && definition.hasPage
+  )?.key
+  if (!routeKey) throw new Error('Failed to find the configured page route key')
+
+  await db.collection('RouteLocaleVariant').updateOne(
+    { routeId: route._id, groupId: page._id, languageId: language._id },
     {
       $set: {
-        path: '/en/',
+        routeId: route._id,
+        routeKey,
         contentType: Page.name,
-        contentTypeId: page._id.toString(),
-        routeId: route._id.toString(),
-        languageId: language._id.toString(),
-        _type: 'RouteMap',
+        groupId: page._id,
+        languageId: language._id,
+        documentId: page._id,
+        _type: 'RouteLocaleVariant',
         updatedAt: now(),
       },
       $setOnInsert: { createdAt: now() },
     },
     { upsert: true }
   )
+
+  await updateSingleRouteMap({
+    contentType: Page.name,
+    contentTypeId: page._id.toString(),
+  })
 }
 
 const seed = async () => {
@@ -136,7 +148,7 @@ const seed = async () => {
               value: {
                 type: 'existing',
                 contentType: PageSection.name,
-                _id: section._id.toString(),
+                _id: section._id,
               },
             },
             {
@@ -175,7 +187,7 @@ const seed = async () => {
           homePage: {
             type: 'existing',
             contentType: Page.name,
-            _id: page._id.toString(),
+            _id: page._id,
           },
           _type: 'RouteSettings',
           updatedAt: now(),
