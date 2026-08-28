@@ -14,13 +14,55 @@ const templates = [
     id: 'nextjs',
     aliases: ['next'],
     label: 'Next.js',
+    packages: [
+      '@rakun-kit/core',
+      '@rakun-kit/manager-react',
+      '@rakun-kit/next',
+      'next',
+      'react',
+      'react-dom',
+      '@types/node',
+      '@types/react',
+      '@types/react-dom',
+      'bcrypt',
+      '@types/bcrypt',
+      'dotenv',
+      'mongodb',
+      'sharp',
+      'tsx',
+      'typescript',
+    ],
+  },
+  {
+    id: 'bun',
+    aliases: ['bunjs'],
+    label: 'Bun',
+    packages: [
+      '@rakun-kit/bun',
+      '@rakun-kit/core',
+      '@rakun-kit/manager-react',
+      '@rakun-kit/react',
+      '@tailwindcss/postcss',
+      'tailwindcss',
+      'mongodb',
+      'react',
+      'react-dom',
+      '@types/bun',
+      '@types/node',
+      '@types/react',
+      '@types/react-dom',
+      'typescript',
+    ],
   },
 ]
 
 export const PACKAGE_VERSION_POLICIES = [
+  { name: '@rakun-kit/bun', placeholder: '__VERSION_RAKUN_BUN__' },
   { name: '@rakun-kit/core', placeholder: '__VERSION_RAKUN_CORE__' },
   { name: '@rakun-kit/manager-react', placeholder: '__VERSION_RAKUN_MANAGER_REACT__' },
   { name: '@rakun-kit/next', placeholder: '__VERSION_RAKUN_NEXT__' },
+  { name: '@rakun-kit/react', placeholder: '__VERSION_RAKUN_REACT__' },
+  { name: '@tailwindcss/postcss', placeholder: '__VERSION_TAILWIND_POSTCSS__' },
   { name: 'next', placeholder: '__VERSION_NEXT__' },
   { name: 'react', placeholder: '__VERSION_REACT__' },
   { name: 'react-dom', placeholder: '__VERSION_REACT_DOM__' },
@@ -29,9 +71,11 @@ export const PACKAGE_VERSION_POLICIES = [
   { name: '@types/react-dom', placeholder: '__VERSION_TYPES_REACT_DOM__' },
   { name: 'bcrypt', placeholder: '__VERSION_BCRYPT__', line: '6' },
   { name: '@types/bcrypt', placeholder: '__VERSION_TYPES_BCRYPT__', line: '6' },
+  { name: '@types/bun', placeholder: '__VERSION_TYPES_BUN__' },
   { name: 'dotenv', placeholder: '__VERSION_DOTENV__', line: '17' },
   { name: 'mongodb', placeholder: '__VERSION_MONGODB__', line: '7' },
   { name: 'sharp', placeholder: '__VERSION_SHARP__', line: '0.34' },
+  { name: 'tailwindcss', placeholder: '__VERSION_TAILWIND__' },
   { name: 'tsx', placeholder: '__VERSION_TSX__', line: '4' },
   { name: 'typescript', placeholder: '__VERSION_TYPESCRIPT__', line: '6' },
 ]
@@ -124,10 +168,11 @@ const resolvePackageVersion = async ({ policy, fetchImpl, registryUrl }) => {
 
 export const resolvePackageVersions = async ({
   fetchImpl = globalThis.fetch,
+  policies = PACKAGE_VERSION_POLICIES,
   registryUrl = NPM_REGISTRY_URL,
 } = {}) => {
   const entries = await Promise.all(
-    PACKAGE_VERSION_POLICIES.map(async (policy) => [
+    policies.map(async (policy) => [
       policy.name,
       await resolvePackageVersion({ policy, fetchImpl, registryUrl }),
     ])
@@ -135,9 +180,9 @@ export const resolvePackageVersions = async ({
   return Object.fromEntries(entries)
 }
 
-const getVersionReplacements = (versions) =>
+const getVersionReplacements = (versions, policies) =>
   Object.fromEntries(
-    PACKAGE_VERSION_POLICIES.map((policy) => {
+    policies.map((policy) => {
       const version = versions[policy.name]
       if (!version) {
         throw new CreateRakunAppError(`No resolved version was provided for ${policy.name}.`)
@@ -152,7 +197,7 @@ Usage:
   create-rakun-app [project-directory] [options]
 
 Options:
-  -t, --template <name>       Starter template (available: nextjs)
+  -t, --template <name>       Starter template (available: nextjs, bun)
       --package-manager <pm>  npm, pnpm, yarn, or bun
       --no-install            Create files without installing dependencies
   -h, --help                  Show this help
@@ -160,7 +205,7 @@ Options:
 
 Examples:
   create-rakun-app my-site --template nextjs
-  bunx create-rakun-app my-site --template nextjs
+  bunx create-rakun-app my-site --template bun
 `
 
 const takeOptionValue = (args, index, option) => {
@@ -392,7 +437,10 @@ export const createApp = async ({
   const packageManager = validatePackageManager(requestedPackageManager ?? detectPackageManager())
 
   await assertEmptyTarget(targetDirectory)
-  const versions = await resolveVersions()
+  const policies = PACKAGE_VERSION_POLICIES.filter((policy) =>
+    template.packages.includes(policy.name)
+  )
+  const versions = await resolveVersions({ policies })
   await mkdir(targetDirectory, { recursive: true })
 
   const templateDirectory = await getTemplateDirectory(template.id)
@@ -401,7 +449,7 @@ export const createApp = async ({
     destination: targetDirectory,
     replacements: {
       __PROJECT_NAME__: toPackageName(targetDirectory),
-      ...getVersionReplacements(versions),
+      ...getVersionReplacements(versions, policies),
     },
   })
   await copyFile(
@@ -433,7 +481,7 @@ const run = async () => {
 
   if ((!options.template || !options.projectDirectory) && !process.stdin.isTTY) {
     throw new CreateRakunAppError(
-      'Interactive prompts require a terminal. Pass a project directory and --template nextjs.'
+      'Interactive prompts require a terminal. Pass a project directory and --template nextjs or --template bun.'
     )
   }
 
@@ -457,9 +505,12 @@ const run = async () => {
     install: options.install,
   })
 
-  process.stdout.write(`\nCreated ${result.relativeDirectory} with the Next.js template.\n\n`)
   process.stdout.write(
-    `Pinned Next.js ${result.versions.next} and @rakun-kit/core ${
+    `\nCreated ${result.relativeDirectory} with the ${result.template} template.\n\n`
+  )
+  const frameworkPackage = result.template === 'bun' ? '@rakun-kit/bun' : 'next'
+  process.stdout.write(
+    `Pinned ${frameworkPackage} ${result.versions[frameworkPackage]} and @rakun-kit/core ${
       result.versions['@rakun-kit/core']
     }.\n\n`
   )

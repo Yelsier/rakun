@@ -1,0 +1,4 @@
+node_modules/
+.rakun/
+dist/
+.env.local

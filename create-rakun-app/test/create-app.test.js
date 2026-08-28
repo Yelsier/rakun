@@ -69,6 +69,46 @@ describe('create-rakun-app', () => {
     expect(await stat(path.join(result.targetDirectory, '.env.local'))).toBeTruthy()
   })
 
+  test('pins the Bun starter without Next.js or bcrypt', async () => {
+    const cwd = await mkdtemp(path.join(os.tmpdir(), 'create-rakun-app-'))
+    temporaryDirectories.push(cwd)
+    let requestedPolicies = []
+
+    const result = await createApp({
+      cwd,
+      install: false,
+      projectDirectory: 'bun-site',
+      resolveVersions: async ({ policies }) => {
+        requestedPolicies = policies.map((policy) => policy.name)
+        return resolvedVersions
+      },
+      template: 'bun',
+    })
+    const packageJson = JSON.parse(
+      await readFile(path.join(result.targetDirectory, 'package.json'), 'utf8')
+    )
+
+    expect(result.template).toBe('bun')
+    expect(packageJson.dependencies['@rakun-kit/bun']).toBe(resolvedVersions['@rakun-kit/bun'])
+    expect(packageJson.dependencies['@rakun-kit/react']).toBe(resolvedVersions['@rakun-kit/react'])
+    expect(packageJson.dependencies.next).toBeUndefined()
+    expect(packageJson.dependencies.bcrypt).toBeUndefined()
+    expect(requestedPolicies).toContain('@rakun-kit/bun')
+    expect(requestedPolicies).not.toContain('next')
+    expect(requestedPolicies).not.toContain('bcrypt')
+    expect(packageJson.devDependencies.tailwindcss).toBe(resolvedVersions.tailwindcss)
+    expect(await stat(path.join(result.targetDirectory, 'src/document.tsx'))).toBeTruthy()
+    expect(await readFile(path.join(result.targetDirectory, 'src/document.tsx'), 'utf8')).toContain(
+      "import './styles.css'"
+    )
+    expect(await readFile(path.join(result.targetDirectory, 'rakun.config.ts'), 'utf8')).toContain(
+      'plugins: [tailwindcss()]'
+    )
+    expect(await readFile(path.join(result.targetDirectory, 'seed.ts'), 'utf8')).toContain(
+      'Bun.password.hash'
+    )
+  })
+
   test('accepts next as an alias and refuses non-empty targets', async () => {
     const cwd = await mkdtemp(path.join(os.tmpdir(), 'create-rakun-app-'))
     temporaryDirectories.push(cwd)

@@ -9,20 +9,20 @@ npx create-rakun-app@latest my-site --template nextjs
 or with Bun:
 
 ```sh
-bunx create-rakun-app@latest my-site --template nextjs
+bunx create-rakun-app@latest my-site --template bun
 ```
 
 If `--template` is omitted, the CLI asks which framework to use. Next.js is the
-first and currently the only choice. Both `nextjs` and `next` are accepted as
-template names.
+default choice; Bun is also available. `next` is an alias for `nextjs`, and
+`bunjs` is an alias for `bun`.
 
-When creating the project, the CLI queries the npm registry for the newest
-Next.js, React, and Rakun releases and writes their exact numeric versions into
+When creating the project, the CLI queries the npm registry for the latest
+packages used by the selected template and writes exact numeric versions into
 the generated `package.json`. Supporting build and runtime packages are also
 pinned exactly, while version resolution keeps TypeScript and native packages
-on the compatible release lines validated by the template. The starter contains
-a minimal content model, API route, manager, web renderer, MongoDB config, and
-administrator seed command. It also mounts `/llms.txt`; the route remains a 404
+on the compatible release lines validated by the template. Each starter contains
+a minimal content model, manager, MongoDB config, and administrator seed
+command. The Next.js starter also mounts `/llms.txt`; the route remains a 404
 until an editor enables and curates it from Manager Settings.
 
 ## Options

@@ -1,0 +1,34 @@
+{
+  "name": "__PROJECT_NAME__",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "scripts": {
+    "dev": "rakun-bun dev",
+    "build": "rakun-bun build",
+    "start": "rakun-bun start",
+    "seed": "bun seed.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@rakun-kit/bun": "__VERSION_RAKUN_BUN__",
+    "@rakun-kit/core": "__VERSION_RAKUN_CORE__",
+    "@rakun-kit/manager-react": "__VERSION_RAKUN_MANAGER_REACT__",
+    "@rakun-kit/react": "__VERSION_RAKUN_REACT__",
+    "mongodb": "__VERSION_MONGODB__",
+    "react": "__VERSION_REACT__",
+    "react-dom": "__VERSION_REACT_DOM__"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "__VERSION_TAILWIND_POSTCSS__",
+    "@types/bun": "__VERSION_TYPES_BUN__",
+    "@types/node": "__VERSION_TYPES_NODE__",
+    "@types/react": "__VERSION_TYPES_REACT__",
+    "@types/react-dom": "__VERSION_TYPES_REACT_DOM__",
+    "tailwindcss": "__VERSION_TAILWIND__",
+    "typescript": "__VERSION_TYPESCRIPT__"
+  }
+}

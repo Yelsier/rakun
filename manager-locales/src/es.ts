@@ -481,6 +481,7 @@ export const esManagerMessages: ManagerLocalePack['messages'] = {
   'contentEdit.tabSeo': 'Seo',
   'contentEdit.tabVariants': 'Variantes',
   'contentEdit.tabHistory': 'Historial',
+  'contentEdit.backToList': 'Volver a la lista',
   'contentEdit.viewPage': 'Ver página',
   'contentEdit.templateContent': 'Contenido',
   'contentEdit.templateContentDescription':
