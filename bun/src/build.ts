@@ -41,15 +41,51 @@ const getInternalServerPath = (): string =>
     resolve(import.meta.dir, `server.${import.meta.url.endsWith('.ts') ? 'ts' : 'js'}`)
   )
 
+const getInternalLinkPath = (): string =>
+  toImportSpecifier(
+    resolve(import.meta.dir, `link.${import.meta.url.endsWith('.ts') ? 'tsx' : 'js'}`)
+  )
+
+const formatBuildMessage = (message: unknown): string => {
+  if (!(message instanceof Error)) return String(message)
+  const position = 'position' in message ? message.position : undefined
+  if (
+    !position ||
+    typeof position !== 'object' ||
+    !('file' in position) ||
+    !('line' in position) ||
+    !('column' in position)
+  ) {
+    return message.message
+  }
+  return `${message.message}\n    at ${String(position.file)}:${String(position.line)}:${Number(position.column) + 1}`
+}
+
 const assertBuild = (result: Bun.BuildOutput, label: string): void => {
   if (result.success) return
-  const messages = result.logs.map((log) => log.message).join('\n')
+  const messages = result.logs.map(formatBuildMessage).join('\n')
   throw new Error(`${label} failed${messages ? `:\n${messages}` : '.'}`)
+}
+
+const runBuild = async (options: Bun.BuildConfig, label: string): Promise<Bun.BuildOutput> => {
+  let result: Bun.BuildOutput
+  try {
+    result = await Bun.build(options)
+  } catch (error) {
+    const failures = error instanceof AggregateError ? error.errors : [error]
+    const messages = failures.map(formatBuildMessage).filter(Boolean).join('\n')
+    throw new Error(`${label} failed${messages ? `:\n${messages}` : '.'}`, { cause: error })
+  }
+  assertBuild(result, label)
+  return result
 }
 
 const createRakunRuntimeResolver = (rootDir: string): Bun.BunPlugin => ({
   name: 'rakun-runtime-resolver',
   setup(builder) {
+    builder.onResolve({ filter: /^@rakun-kit\/bun$/ }, () => ({
+      path: getInternalLinkPath(),
+    }))
     builder.onResolve({ filter: /^@rakun-kit\/core(?:\/.*)?$/ }, ({ path }) => {
       try {
         return { path: Bun.resolveSync(path, rootDir) }
@@ -154,29 +190,31 @@ const buildBrowserEntries = async ({
   splitting?: boolean
 }): Promise<Bun.BuildOutput | undefined> => {
   if (!entrypoints.length) return undefined
-  const result = await Bun.build({
-    define,
-    entrypoints,
-    format: 'esm',
-    jsx: { development: config.server.development },
-    metafile: true,
-    minify: !config.server.development,
-    naming: {
-      asset: '[name]-[hash].[ext]',
-      chunk: 'chunk-[hash].[ext]',
-      entry: '[name]-[hash].[ext]',
+  const result = await runBuild(
+    {
+      define,
+      entrypoints,
+      format: 'esm',
+      jsx: { development: config.server.development },
+      metafile: true,
+      minify: !config.server.development,
+      naming: {
+        asset: '[name]-[hash].[ext]',
+        chunk: 'chunk-[hash].[ext]',
+        entry: '[name]-[hash].[ext]',
+      },
+      outdir: assetsDir,
+      plugins: [
+        ...(plugins ?? [createRakunRuntimeResolver(config.rootDir)]),
+        ...[createRakunCssProcessor(config)].filter((plugin): plugin is Bun.BunPlugin => !!plugin),
+      ],
+      publicPath,
+      sourcemap: config.server.development ? 'linked' : 'none',
+      splitting,
+      target: 'browser',
     },
-    outdir: assetsDir,
-    plugins: [
-      ...(plugins ?? [createRakunRuntimeResolver(config.rootDir)]),
-      ...[createRakunCssProcessor(config)].filter((plugin): plugin is Bun.BunPlugin => !!plugin),
-    ],
-    publicPath,
-    sourcemap: config.server.development ? 'linked' : 'none',
-    splitting,
-    target: 'browser',
-  })
-  assertBuild(result, label)
+    label
+  )
   return result
 }
 
@@ -267,30 +305,32 @@ const optimizeManagerInitialGraph = async ({
       '\n'
     )
   )
-  const mergeResult = await Bun.build({
-    entrypoints: [mergeEntry],
-    format: 'esm',
-    jsx: { development: false },
-    minify: true,
-    naming: { entry: 'manager.generated-[hash].[ext]' },
-    outdir: assetsDir,
-    plugins: [
-      {
-        name: 'rakun-manager-initial-graph',
-        setup(builder) {
-          builder.onResolve({ filter: /^\/assets\/manager\// }, ({ kind, path }) =>
-            kind === 'dynamic-import'
-              ? { external: true, path }
-              : { path: resolve(assetsDir, basename(path)) }
-          )
+  const mergeResult = await runBuild(
+    {
+      entrypoints: [mergeEntry],
+      format: 'esm',
+      jsx: { development: false },
+      minify: true,
+      naming: { entry: 'manager.generated-[hash].[ext]' },
+      outdir: assetsDir,
+      plugins: [
+        {
+          name: 'rakun-manager-initial-graph',
+          setup(builder) {
+            builder.onResolve({ filter: /^\/assets\/manager\// }, ({ kind, path }) =>
+              kind === 'dynamic-import'
+                ? { external: true, path }
+                : { path: resolve(assetsDir, basename(path)) }
+            )
+          },
         },
-      },
-    ],
-    publicPath: '/assets/manager/',
-    splitting: false,
-    target: 'browser',
-  })
-  assertBuild(mergeResult, 'Rakun manager initial graph optimization')
+      ],
+      publicPath: '/assets/manager/',
+      splitting: false,
+      target: 'browser',
+    },
+    'Rakun manager initial graph optimization'
+  )
   const mergedArtifact = getEntryOutput(mergeResult, mergeEntry)
   const mergedUrl = `/assets/manager/${basename(mergedArtifact.path)}`
 
@@ -476,22 +516,25 @@ export const buildRakunCode = async (
   const [serverBuild, clientBuild, navigationBuild, managerBuild] = await Promise.all([
     cachedServer
       ? undefined
-      : Bun.build({
-          entrypoints: [generatedRegistry],
-          format: 'esm',
-          jsx: { development: config.server.development },
-          metafile: true,
-          naming: 'modules-[hash].[ext]',
-          outdir: serverDir,
-          packages: 'external',
-          plugins: [
-            ...[createRakunCssProcessor(config)].filter(
-              (plugin): plugin is Bun.BunPlugin => !!plugin
-            ),
-          ],
-          sourcemap: config.server.development ? 'linked' : 'none',
-          target: 'bun',
-        }),
+      : runBuild(
+          {
+            entrypoints: [generatedRegistry],
+            format: 'esm',
+            jsx: { development: config.server.development },
+            metafile: true,
+            naming: 'modules-[hash].[ext]',
+            outdir: serverDir,
+            packages: 'external',
+            plugins: [
+              ...[createRakunCssProcessor(config)].filter(
+                (plugin): plugin is Bun.BunPlugin => !!plugin
+              ),
+            ],
+            sourcemap: config.server.development ? 'linked' : 'none',
+            target: 'bun',
+          },
+          'Rakun server graph build'
+        ),
     shouldBuildClient
       ? buildBrowserEntries({
           assetsDir,
@@ -531,7 +574,6 @@ export const buildRakunCode = async (
         })
       : undefined,
   ])
-  if (serverBuild) assertBuild(serverBuild, 'Rakun server graph build')
   const managerEntryArtifact =
     managerBuild && clientEntries.manager
       ? await optimizeManagerInitialGraph({
@@ -681,16 +723,18 @@ export const buildRakunServerBundle = async ({
       )}, document, registry: modules })`,
     ].join('\n')
   )
-  const result = await Bun.build({
-    entrypoints: [entry],
-    format: 'esm',
-    jsx: { development: false },
-    naming: 'server.[ext]',
-    outdir: config.outDir,
-    packages: 'external',
-    target: 'bun',
-  })
-  assertBuild(result, 'Rakun production server build')
+  const result = await runBuild(
+    {
+      entrypoints: [entry],
+      format: 'esm',
+      jsx: { development: false },
+      naming: 'server.[ext]',
+      outdir: config.outDir,
+      packages: 'external',
+      target: 'bun',
+    },
+    'Rakun production server build'
+  )
   const artifact = result.outputs.find((output) => output.kind === 'entry-point')
   if (!artifact) throw new Error('Rakun production server has no output.')
   return artifact.path

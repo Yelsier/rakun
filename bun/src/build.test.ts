@@ -35,7 +35,7 @@ test('builds server/client graphs and a static route', async () => {
     ),
     writeFile(
       resolve(modulesDir, 'Counter.tsx'),
-      `'use client'\nimport { useId, useState } from 'react'\nexport default function Counter({ initial }) { const [value] = useState(initial); const id = useId(); return <span id={id}>{value}</span> }`
+      `'use client'\nimport { Link } from '@rakun-kit/bun'\nimport { useId, useState } from 'react'\nexport default function Counter({ initial }) { const [value] = useState(initial); const id = useId(); return <Link href="/counter"><span id={id}>{value}</span></Link> }`
     ),
   ])
 
@@ -181,6 +181,7 @@ test('builds server/client graphs and a static route', async () => {
   expect(response.headers.get('cache-control')).toBe('public, max-age=0, must-revalidate')
   const responseHtml = await response.text()
   expect(responseHtml).toContain('<h1>Page /</h1>')
+  expect(responseHtml).toContain('<a href="/counter"><span')
   expect(responseHtml).toContain('<html lang="es">')
   expect(responseHtml).toContain('<header>Document shell</header><div id="rakun-root">')
   expect(responseHtml).toContain('<meta name="shell" content="document"/>')
@@ -313,3 +314,27 @@ test('builds server/client graphs and a static route', async () => {
     'Rakun src/document.tsx must export a default component.'
   )
 }, 15_000)
+
+test('reports browser bundle diagnostics when Bun rejects a build', async () => {
+  const root = await mkdtemp(resolve(import.meta.dir, '..', '.tmp-rakun-bun-'))
+  directories.push(root)
+  const modulesDir = resolve(root, 'src', 'modules')
+  await mkdir(modulesDir, { recursive: true })
+  await writeFile(
+    resolve(modulesDir, 'Broken.tsx'),
+    `'use client'\nimport { AsyncLocalStorage } from 'async_hooks'\nexport default function Broken() { return <span>{String(AsyncLocalStorage)}</span> }`
+  )
+
+  const application = createRakunBun(
+    {
+      manager: false,
+      rootDir: root,
+      server: { development: true, hostname: '127.0.0.1', port: 0 },
+    },
+    { cwd: root }
+  )
+
+  await expect(application.build()).rejects.toThrow(
+    /Rakun client module build failed:\nBrowser build cannot import Node\.js builtin: "async_hooks"[\s\S]+Broken\.tsx:2:/
+  )
+})
