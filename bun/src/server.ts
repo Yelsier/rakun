@@ -444,6 +444,8 @@ export class RakunBunApplication {
       page,
       path,
       document: this.document,
+      devtools: this.config.server.development && !getPreviewToken(this.config, input),
+      devtoolsPath: `${path}${input.search ?? ''}`,
       registry: this.registry,
     })
   }

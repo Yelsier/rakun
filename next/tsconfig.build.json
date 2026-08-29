@@ -39,6 +39,7 @@
       ],
       "@rakun-kit/manager-react/link": ["../manager-react/dist/esm/link.d.ts"],
       "@rakun-kit/react": ["../react/dist/esm/index.d.ts"],
+      "@rakun-kit/react/devtools": ["../react/dist/esm/devtools.d.ts"],
       "@rakun-kit/react/translation": ["../react/dist/esm/translation.d.ts"],
       "@rakun-kit/trpc": ["../trpc/dist/esm/index.d.ts"]
     }

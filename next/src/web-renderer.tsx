@@ -9,9 +9,9 @@ import {
   type RakunModuleRegistry,
   type RakunWebPluginDefinition,
 } from '@rakun-kit/react'
+import { RakunDevToolbar, type RakunDevToolbarModule } from '@rakun-kit/react/devtools'
 
 import { PageInfoProvider, runWithPageInfo } from './translation'
-import { RakunDevToolbar, type RakunDevToolbarModule } from './web-dev-toolbar'
 import {
   RakunModuleInstrumentation,
   type RakunModuleInstrumentationMeta,

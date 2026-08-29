@@ -129,6 +129,9 @@ test('builds server/client graphs and a static route', async () => {
   expect(managerScripts.some((asset) => asset.startsWith('chunk-'))).toBe(true)
   const counterScript = result.manifest.client.Counter?.chunk
   expect(counterScript).toBeDefined()
+  expect(
+    await readFile(resolve(root, 'dist', result.manifest.navigation.slice(1)), 'utf8')
+  ).not.toContain('Open Rakun development toolbar')
   expect(await readFile(resolve(root, 'dist', counterScript!.slice(1)), 'utf8')).not.toContain(
     '/assets/chunk-'
   )
@@ -187,6 +190,8 @@ test('builds server/client graphs and a static route', async () => {
   expect(responseHtml).toMatch(/data-rakun-identifier-prefix="rakun-[^"]+"/)
   expect(responseHtml).toMatch(/id="_rakun-[^"]+"/)
   expect(responseHtml).toContain('"reloadBasePaths":["/api"')
+  expect(responseHtml).not.toContain('data-rakun-devtools')
+  expect(responseHtml).not.toContain('rakun-module-start:')
   expect(responseHtml.indexOf('<meta charset="utf-8"')).toBeLessThan(
     responseHtml.indexOf('<meta name="shell"')
   )

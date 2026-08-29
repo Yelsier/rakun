@@ -18,7 +18,7 @@ same `dist/docs/index.md` location.
 | `@rakun-kit/express`            | Express API and local-media adapter                                                 | `node_modules/@rakun-kit/express/dist/docs/index.md`            |
 | `@rakun-kit/bun`                | Bun server, manager, filesystem modules, SSR and static route generation            | `node_modules/@rakun-kit/bun/dist/docs/index.md`                |
 | `@rakun-kit/trpc`               | Typed tRPC router for manager and web operations                                    | `node_modules/@rakun-kit/trpc/dist/docs/index.md`               |
-| `@rakun-kit/react`              | Framework-neutral React module rendering                                            | `node_modules/@rakun-kit/react/dist/docs/index.md`              |
+| `@rakun-kit/react`              | Framework-neutral React module rendering and shared development UI                  | `node_modules/@rakun-kit/react/dist/docs/index.md`              |
 | `@rakun-kit/manager-react`      | Manager UI, clients, navigation and plugin runtime                                  | `node_modules/@rakun-kit/manager-react/dist/docs/index.md`      |
 | `@rakun-kit/manager-locales`    | Optional manager UI locale packs                                                    | `node_modules/@rakun-kit/manager-locales/dist/docs/index.md`    |
 | `@rakun-kit/s3`                 | S3 and S3-compatible media storage                                                  | `node_modules/@rakun-kit/s3/dist/docs/index.md`                 |

@@ -149,6 +149,12 @@ asset; do not add a separate generated stylesheet or CSS watcher.
   per request with `Cache-Control: no-store`. Static generation and route-cache
   persistence remain production behavior. Rakun initialization and development
   code compilation run concurrently during startup.
+- Normal development web pages automatically bundle the Rakun toolbar. It shows
+  route/document metadata, links to the configured manager, lists and highlights
+  layout/template/content modules without adding DOM wrappers, and exposes each
+  module's props. Flight navigation and live reload update it in place. Manager
+  preview pages omit it because they use the dedicated preview inspection flow.
+  Production builds contain no toolbar code, payload, or module markers.
 - The initial development build writes disposable browser-build metadata and
   assets under `.rakun/cache`, independently from `dist`. A later `rakun-bun dev`
   checks unchanged input metadata immediately and hashes only changed candidates

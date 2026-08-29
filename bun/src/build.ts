@@ -25,7 +25,7 @@ import type {
 
 const toImportSpecifier = (path: string): string => resolve(path).replace(/\\/g, '/')
 
-const getInternalClientPath = (name: 'index' | 'manager' | 'navigation'): string => {
+const getInternalClientPath = (name: 'devtools' | 'index' | 'manager' | 'navigation'): string => {
   const source = import.meta.url.endsWith('.ts')
   return toImportSpecifier(
     resolve(
@@ -87,7 +87,8 @@ const writeServerRegistry = async (
 const writeClientEntries = async (
   generatedDir: string,
   modules: RakunModuleDefinition[],
-  manager: ResolvedRakunBunConfig['manager']
+  manager: ResolvedRakunBunConfig['manager'],
+  development: boolean
 ): Promise<{
   manager?: string
   modules: Map<string, string>
@@ -95,7 +96,13 @@ const writeClientEntries = async (
 }> => {
   const clientModules = new Map<string, string>()
   const navigation = resolve(generatedDir, 'navigation.generated.ts')
-  await writeFile(navigation, `import ${JSON.stringify(getInternalClientPath('navigation'))}\n`)
+  await writeFile(
+    navigation,
+    [
+      ...(development ? [`import ${JSON.stringify(getInternalClientPath('devtools'))}`] : []),
+      `import ${JSON.stringify(getInternalClientPath('navigation'))}`,
+    ].join('\n')
+  )
 
   let index = 0
   for (const module of modules) {
@@ -422,7 +429,12 @@ export const buildRakunCode = async (
     discoverRakunDocument(config.documentFile),
   ])
   const generatedRegistry = await writeServerRegistry(generatedDir, modules, documentFile)
-  const clientEntries = await writeClientEntries(generatedDir, modules, config.manager)
+  const clientEntries = await writeClientEntries(
+    generatedDir,
+    modules,
+    config.manager,
+    config.server.development
+  )
 
   const cacheEligible =
     config.server.development &&

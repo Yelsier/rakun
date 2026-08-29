@@ -142,6 +142,9 @@ for private objects are never converted into public URLs.
   `JsonViewer` collapsible tree, and the `RakunLogoMark` / `RakunLogoBadge` SVG
   components. `JsonViewer` accepts theme colors and `defaultExpandedDepth`; use
   `-1` for a fully collapsed initial tree.
+- `@rakun-kit/react/devtools`: the client-side `RakunDevToolbar` and its module
+  metadata contract for framework adapters. Applications normally consume the
+  configured toolbar through Bun or Next.
 - `@rakun-kit/react/plugins`: web plugin contracts and registry composition.
 - `@rakun-kit/react/translation`: React translation helpers.
 

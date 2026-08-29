@@ -121,8 +121,28 @@ export type RakunBunPageAssets = {
   styles: string[]
 }
 
+export type RakunBunDevtoolsModule = {
+  module: PageModule
+  entryType: 'content' | 'layout' | 'template'
+  index: number
+  layoutIndex: number
+  layoutKey?: string
+  moduleIndex?: number
+}
+
+export type RakunBunDevtoolsPayload = {
+  modules: RakunBunDevtoolsModule[]
+  renderMode: PageOutput['renderMode']
+  path: string
+  language?: string
+  documentType?: string
+  documentId?: string
+  editHref?: string
+}
+
 export type RakunFlightPayload = {
   assets: RakunBunPageAssets
+  devtools?: RakunBunDevtoolsPayload
   head: string
   html: string
   path: string

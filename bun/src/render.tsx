@@ -8,6 +8,8 @@ import { PageInfoProvider, getRakunBuiltinModuleComponent, runWithPageInfo } fro
 
 import type {
   RakunBuildManifest,
+  RakunBunDevtoolsModule,
+  RakunBunDevtoolsPayload,
   RakunBunDocumentImport,
   RakunBunPageAssets,
   RakunServerModuleRegistry,
@@ -83,15 +85,30 @@ const resolveComponent = (
 const encodeProps = (props: PageModule): string =>
   Buffer.from(JSON.stringify(props)).toString('base64url')
 
+const markDevtoolsModules = (html: string): string =>
+  html
+    .replace(
+      /<rakun-dev-boundary\b[^>]*data-rakun-index="(\d+)"[^>]*>/g,
+      (_tag, index: string) => `<!--rakun-module-start:${index}-->`
+    )
+    .replace(/<\/rakun-dev-boundary>/g, '<!--rakun-module-end-->')
+
 const renderPageBody = async (
   page: PageOutput,
-  registry: RakunServerModuleRegistry
-): Promise<ReactNode> => {
+  registry: RakunServerModuleRegistry,
+  devtools: boolean
+): Promise<{ body: ReactNode; devtoolsModules: RakunBunDevtoolsModule[] }> => {
   const rendered: ReactNode[] = []
+  const devtoolsModules: RakunBunDevtoolsModule[] = []
 
-  const renderModule = async (module: PageModule, key: string): Promise<ReactNode> => {
+  const renderModule = async (
+    module: PageModule,
+    key: string,
+    meta: Omit<RakunBunDevtoolsModule, 'module'>
+  ): Promise<ReactNode> => {
     const { client, Component } = resolveComponent(module, registry)
     const component = createElement(Component, { ...module, key })
+    let renderedModule: ReactNode
 
     if (client) {
       const identifierPrefix = getIdentifierPrefix(key)
@@ -101,7 +118,7 @@ const renderPageBody = async (
         </PageInfoProvider>,
         identifierPrefix
       )
-      return (
+      renderedModule = (
         <div
           data-rakun-client={module._type}
           data-rakun-identifier-prefix={identifierPrefix}
@@ -110,44 +127,75 @@ const renderPageBody = async (
           key={key}
         />
       )
+    } else {
+      renderedModule =
+        module._type === 'NotFound' ? (
+          <div data-rakun-not-found="" key={key}>
+            {component}
+          </div>
+        ) : (
+          component
+        )
     }
 
-    return module._type === 'NotFound' ? (
-      <div data-rakun-not-found="" key={key}>
-        {component}
-      </div>
-    ) : (
-      component
+    if (!devtools) return renderedModule
+    devtoolsModules.push({ module, ...meta })
+    return createElement(
+      'rakun-dev-boundary',
+      { 'data-rakun-index': meta.index, key: `devtools:${key}` },
+      renderedModule
     )
   }
 
+  const templateModuleIds = new Set(page.templateModuleIds)
+  let pageModuleIndex = 0
   for (const [layoutIndex, item] of getPageLayout(page).entries()) {
     if (item.type === 'module') {
       if (item.module) {
+        const index = pageModuleIndex++
         rendered.push(
-          await renderModule(item.module, `layout:${item.key}:${item.module._id}:${layoutIndex}`)
+          await renderModule(item.module, `layout:${item.key}:${item.module._id}:${layoutIndex}`, {
+            entryType: 'layout',
+            index,
+            layoutIndex,
+            layoutKey: item.key,
+          })
         )
       }
       continue
     }
 
+    let contentModuleIndex = 0
     rendered.push(
       <main key={`content:${layoutIndex}`}>
         {await Promise.all(
-          item.modules.map(
-            async (module, moduleIndex) =>
-              await renderModule(module, `content:${module._id}:${layoutIndex}:${moduleIndex}`)
-          )
+          item.modules.map(async (module, moduleIndex) => {
+            const index = pageModuleIndex++
+            const template = templateModuleIds.has(module._id)
+            return await renderModule(
+              module,
+              `content:${module._id}:${layoutIndex}:${moduleIndex}`,
+              {
+                entryType: template ? 'template' : 'content',
+                index,
+                layoutIndex,
+                moduleIndex: template ? undefined : contentModuleIndex++,
+              }
+            )
+          })
         )}
       </main>
     )
   }
 
-  return (
-    <PageInfoProvider value={page.info} literals={page.literals}>
-      {rendered}
-    </PageInfoProvider>
-  )
+  return {
+    body: (
+      <PageInfoProvider value={page.info} literals={page.literals}>
+        {rendered}
+      </PageInfoProvider>
+    ),
+    devtoolsModules,
+  }
 }
 
 const getSeoHead = (page: PageOutput): ReactNode => {
@@ -204,6 +252,22 @@ const collectPageAssets = (page: PageOutput, manifest: RakunBuildManifest): Raku
   }
 }
 
+const getStringInfo = (info: PageOutput['info'], key: string): string | undefined => {
+  const value = info?.[key]
+  return typeof value === 'string' && value ? value : undefined
+}
+
+const getManagerEditHref = (
+  config: Partial<Pick<ResolvedRakunBunConfig, 'manager'>>,
+  documentType?: string,
+  documentId?: string
+): string | undefined => {
+  if (!config.manager || !documentType || !documentId) return undefined
+  return `${config.manager.basePath.replace(/\/+$/, '')}/${encodeURIComponent(
+    documentType
+  )}/${encodeURIComponent(documentId)}`
+}
+
 export const renderRakunRoute = async ({
   config,
   document,
@@ -211,6 +275,8 @@ export const renderRakunRoute = async ({
   page,
   path,
   registry,
+  devtools = config.server.development,
+  devtoolsPath = path,
 }: {
   config: Pick<ResolvedRakunBunConfig, 'server'> &
     Partial<Pick<ResolvedRakunBunConfig, 'apiBasePath' | 'manager'>>
@@ -219,6 +285,8 @@ export const renderRakunRoute = async ({
   page: PageOutput
   path: string
   registry: RakunServerModuleRegistry
+  devtools?: boolean
+  devtoolsPath?: string
 }): Promise<RenderedRoute> => {
   const assets = collectPageAssets(page, manifest)
 
@@ -239,8 +307,10 @@ export const renderRakunRoute = async ({
   return await runWithPageInfo(
     page.info,
     async () => {
-      const body = await renderPageBody(page, registry)
-      const bodyHtml = await renderNode(body)
+      const renderedPage = await renderPageBody(page, registry, devtools)
+      const bodyHtml = devtools
+        ? markDevtoolsModules(await renderNode(renderedPage.body))
+        : await renderNode(renderedPage.body)
       const head = markHeadElements(await renderNode(<Fragment>{getSeoHead(page)}</Fragment>))
       const styles = assets.styles.map((href) => `<link rel="stylesheet" href="${href}">`).join('')
       const browserConfig = {
@@ -254,6 +324,19 @@ export const renderRakunRoute = async ({
         rscPath: '/_rakun/rsc',
       }
       const initialAssets = serializeScriptValue(assets)
+      const documentType = getStringInfo(page.info, '_type')
+      const documentId = getStringInfo(page.info, '_id')
+      const devtoolsPayload: RakunBunDevtoolsPayload | undefined = devtools
+        ? {
+            modules: renderedPage.devtoolsModules.sort((left, right) => left.index - right.index),
+            renderMode: page.renderMode,
+            path: devtoolsPath,
+            language: page.language?.code,
+            documentType,
+            documentId,
+            editHref: getManagerEditHref(config, documentType, documentId),
+          }
+        : undefined
       const navigation = manifest.navigation
         ? `<script type="module" src="${manifest.navigation}"></script>`
         : ''
@@ -288,6 +371,11 @@ export const renderRakunRoute = async ({
         [
           `<script>window.__RAKUN_BUN__=${serializeScriptValue(browserConfig)}</script>`,
           `<script type="application/json" data-rakun-assets>${initialAssets}</script>`,
+          devtoolsPayload
+            ? `<script type="application/json" data-rakun-devtools>${serializeScriptValue(
+                devtoolsPayload
+              )}</script>`
+            : '',
           navigation,
         ].join('')
       )
@@ -297,6 +385,7 @@ export const renderRakunRoute = async ({
         html,
         flight: {
           assets,
+          ...(devtoolsPayload ? { devtools: devtoolsPayload } : {}),
           head,
           html: bodyHtml,
           path,

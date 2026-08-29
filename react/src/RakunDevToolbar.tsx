@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { PageModule } from '@rakun-kit/core/contracts'
-import { JsonViewer, RakunLogoMark } from '@rakun-kit/react'
+
+import { JsonViewer } from './JsonViewer'
+import { RakunLogoMark } from './RakunLogo'
 
 export type RakunDevToolbarModule = {
   module: PageModule

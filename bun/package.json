@@ -1,6 +1,6 @@
 {
   "name": "@rakun-kit/bun",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Bun framework adapter for Rakun APIs, manager, filesystem modules, SSR, and static routes.",
   "license": "MIT",
   "author": {
@@ -32,9 +32,9 @@
     "dist"
   ],
   "dependencies": {
-    "@rakun-kit/core": "^1.6.0",
-    "@rakun-kit/manager-react": "^1.5.8",
-    "@rakun-kit/react": "^1.6.0",
+    "@rakun-kit/core": "^1.7.2",
+    "@rakun-kit/manager-react": "^1.7.0",
+    "@rakun-kit/react": "^1.7.0",
     "postcss": "^8.5.14"
   },
   "peerDependencies": {

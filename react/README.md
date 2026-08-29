@@ -7,6 +7,12 @@ development and manager UI. `JsonViewer` provides the shared collapsible JSON
 tree used by Rakun debugging interfaces; use `defaultExpandedDepth={-1}` when
 the root should start collapsed.
 
+`@rakun-kit/react/devtools` exports the shared `RakunDevToolbar` client component
+used by framework adapters for development-only route and module inspection.
+Adapters provide its module metadata and DOM instrumentation; applications
+normally receive it through the Bun or Next integration instead of mounting it
+directly.
+
 Apps provide a module registry, so framework adapters stay open:
 
 ```tsx

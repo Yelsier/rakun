@@ -48,6 +48,7 @@
       ],
       "@rakun-kit/manager-react/link": ["../manager-react/src/link.tsx"],
       "@rakun-kit/react": ["../react/src/index.ts"],
+      "@rakun-kit/react/devtools": ["../react/src/devtools.ts"],
       "@rakun-kit/react/translation": ["../react/src/translation.ts"],
       "@rakun-kit/trpc": ["../trpc/src/index.ts"]
     }

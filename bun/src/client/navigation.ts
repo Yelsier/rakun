@@ -1,3 +1,5 @@
+import type { RakunBunDevtoolsPayload } from '../types'
+
 type PageAssets = {
   clientModules: string[]
   scripts: string[]
@@ -8,6 +10,7 @@ export {}
 
 type FlightPayload = {
   assets: PageAssets
+  devtools?: RakunBunDevtoolsPayload
   head: string
   html: string
   path: string
@@ -172,6 +175,13 @@ const navigate = async (url: URL, replace = false): Promise<void> => {
   applyHead(payload.head)
   await loadClientModules(payload.assets)
   history[replace ? 'replaceState' : 'pushState']({}, '', url)
+  if (config.dev) {
+    dispatchEvent(
+      new CustomEvent('rakun:devtools:update', {
+        detail: payload.devtools,
+      })
+    )
+  }
   scrollTo({ top: 0 })
 }
 

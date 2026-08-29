@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
 import { afterEach, expect, test } from 'bun:test'
@@ -51,8 +51,31 @@ test('treats development routes as dynamic without loading or populating the rou
   const third = await application.fetch(new Request('http://localhost/'))
 
   expect(first.headers.get('cache-control')).toBe('no-store')
-  expect(await first.text()).toContain('<p>1</p>')
+  const firstHtml = await first.text()
+  expect(firstHtml).toContain('<p>1</p>')
+  expect(firstHtml).toContain('data-rakun-devtools')
+  expect(firstHtml).toContain('<!--rakun-module-start:0--><p>1</p><!--rakun-module-end-->')
+  expect(firstHtml).not.toContain('<rakun-dev-boundary')
   expect(await second.text()).toContain('<p>2</p>')
   expect(await third.text()).toContain('<p>3</p>')
   expect(staticPathRequests).toBe(0)
+
+  const navigationPath = /<script type="module" src="([^"]+)"><\/script>/.exec(firstHtml)?.[1]
+  if (!navigationPath) throw new Error('Expected the development navigation bundle.')
+  expect(await readFile(resolve(root, 'dist', navigationPath.slice(1)), 'utf8')).toContain(
+    'Open Rakun development toolbar'
+  )
+
+  const flight = await application.fetch(
+    new Request('http://localhost/_rakun/rsc/', {
+      headers: { Accept: 'text/x-component' },
+    })
+  )
+  const flightPayload = (await flight.json()) as { devtools?: { modules?: unknown[] } }
+  expect(flightPayload.devtools?.modules).toHaveLength(1)
+
+  const preview = await application.fetch(
+    new Request('http://localhost/?rakun_preview=development-test')
+  )
+  expect(await preview.text()).not.toContain('data-rakun-devtools')
 }, 10_000)

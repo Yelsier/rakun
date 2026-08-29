@@ -10,7 +10,8 @@
       "@rakun-kit/core/contracts": ["../core/dist/esm/contracts.d.ts"],
       "@rakun-kit/core/errors": ["../core/dist/esm/lib/errors/index.d.ts"],
       "@rakun-kit/core/web": ["../core/dist/esm/web/index.d.ts"],
-      "@rakun-kit/react": ["../react/dist/esm/index.d.ts"]
+      "@rakun-kit/react": ["../react/dist/esm/index.d.ts"],
+      "@rakun-kit/react/devtools": ["../react/dist/esm/devtools.d.ts"]
     }
   },
   "references": [

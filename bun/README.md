@@ -227,6 +227,14 @@ marks the page as static. Route-cache persistence and static generation are only
 used by production builds and production servers. Rakun initialization runs in
 parallel with development code compilation to reduce cold-start latency.
 
+Normal web pages automatically include the Rakun development toolbar. It shows
+route and document metadata, links to the configured manager, lists rendered
+layout/template/content modules, highlights their wrapper-free DOM roots, and
+inspects the props received by each module. It follows client-side Bun
+navigation and reload updates. Manager preview pages keep their dedicated
+inspection flow and do not mount this toolbar. Production output contains
+neither the toolbar bundle nor its instrumentation markers.
+
 `rakun-bun build` displays the current phase and elapsed time while it loads
 configuration, bundles code, renders static routes, creates the production
 server, and analyzes the output. Interactive terminals use a spinner; redirected
