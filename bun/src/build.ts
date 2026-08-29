@@ -41,9 +41,9 @@ const getInternalServerPath = (): string =>
     resolve(import.meta.dir, `server.${import.meta.url.endsWith('.ts') ? 'ts' : 'js'}`)
   )
 
-const getInternalLinkPath = (): string =>
+const getInternalBrowserPath = (): string =>
   toImportSpecifier(
-    resolve(import.meta.dir, `link.${import.meta.url.endsWith('.ts') ? 'tsx' : 'js'}`)
+    resolve(import.meta.dir, `browser.${import.meta.url.endsWith('.ts') ? 'tsx' : 'js'}`)
   )
 
 const formatBuildMessage = (message: unknown): string => {
@@ -84,7 +84,7 @@ const createRakunRuntimeResolver = (rootDir: string): Bun.BunPlugin => ({
   name: 'rakun-runtime-resolver',
   setup(builder) {
     builder.onResolve({ filter: /^@rakun-kit\/bun$/ }, () => ({
-      path: getInternalLinkPath(),
+      path: getInternalBrowserPath(),
     }))
     builder.onResolve({ filter: /^@rakun-kit\/core(?:\/.*)?$/ }, ({ path }) => {
       try {

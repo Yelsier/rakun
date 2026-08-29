@@ -66,6 +66,10 @@ Internal links prefetch their flight and destination client modules on hover,
 focus, or touch; API and manager links are excluded from this client navigation.
 The public `Link` component opts into this behavior by default and accepts
 `prefetch={false}` to skip prefetching for an individual web link.
+Client modules can import `usePathname()` from `@rakun-kit/bun` to read the
+server-rendered pathname and react to Rakun navigation, including browser back
+and forward navigation. Like other React hooks, use it only from a client
+boundary.
 
 Missing routes use an empty built-in `NotFound` module and return HTTP 404.
 Create `src/modules/NotFound.tsx` to override its rendered content; the adapter

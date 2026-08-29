@@ -2,8 +2,11 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import { join, resolve } from 'node:path'
 
 import { afterEach, expect, test } from 'bun:test'
+import { createElement } from 'react'
+import { renderToReadableStream } from 'react-dom/server.browser'
 import type { Root } from 'postcss'
 
+import { RakunPathnameProvider, usePathname } from './browser'
 import { buildRakunServerBundle } from './build'
 import { formatRakunBuildReport } from './report'
 import { createRakunBun } from './server'
@@ -35,7 +38,7 @@ test('builds server/client graphs and a static route', async () => {
     ),
     writeFile(
       resolve(modulesDir, 'Counter.tsx'),
-      `'use client'\nimport { Link } from '@rakun-kit/bun'\nimport { useId, useState } from 'react'\nexport default function Counter({ initial }) { const [value] = useState(initial); const id = useId(); return <Link href="/counter"><span id={id}>{value}</span></Link> }`
+      `'use client'\nimport { Link, usePathname } from '@rakun-kit/bun'\nimport { useId, useState } from 'react'\nexport default function Counter({ initial }) { const [value] = useState(initial); const id = useId(); const pathname = usePathname(); return <Link href="/counter"><span id={id}>{pathname}:{value}</span></Link> }`
     ),
   ])
 
@@ -182,6 +185,8 @@ test('builds server/client graphs and a static route', async () => {
   const responseHtml = await response.text()
   expect(responseHtml).toContain('<h1>Page /</h1>')
   expect(responseHtml).toContain('<a href="/counter"><span')
+  expect(responseHtml).toMatch(/>\/<!-- -->:<!-- -->2<\/span>/)
+  expect(responseHtml).toContain('data-rakun-pathname="/"')
   expect(responseHtml).toContain('<html lang="es">')
   expect(responseHtml).toContain('<header>Document shell</header><div id="rakun-root">')
   expect(responseHtml).toContain('<meta name="shell" content="document"/>')
@@ -196,6 +201,11 @@ test('builds server/client graphs and a static route', async () => {
   expect(responseHtml.indexOf('<meta charset="utf-8"')).toBeLessThan(
     responseHtml.indexOf('<meta name="shell"')
   )
+
+  const dynamicPathHtml = await (
+    await application.fetch(new Request('http://localhost/current-path'))
+  ).text()
+  expect(dynamicPathHtml).toContain('data-rakun-pathname="/current-path"')
 
   const publicFile = await application.fetch(new Request('http://localhost/robots.txt'))
   expect(publicFile.status).toBe(200)
@@ -314,6 +324,19 @@ test('builds server/client graphs and a static route', async () => {
     'Rakun src/document.tsx must export a default component.'
   )
 }, 15_000)
+
+test('renders usePathname from the server pathname snapshot', async () => {
+  const Pathname = () => createElement('span', undefined, usePathname())
+  const stream = await renderToReadableStream(
+    createElement(
+      RakunPathnameProvider,
+      { pathname: '/current-path' },
+      createElement(Pathname)
+    )
+  )
+  await stream.allReady
+  expect(await new Response(stream).text()).toBe('<span>/current-path</span>')
+})
 
 test('reports browser bundle diagnostics when Bun rejects a build', async () => {
   const root = await mkdtemp(resolve(import.meta.dir, '..', '.tmp-rakun-bun-'))

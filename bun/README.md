@@ -126,6 +126,21 @@ import { Link } from '@rakun-kit/bun'
 <Link href="/large-report" prefetch={false}>Large report</Link>
 ```
 
+Client modules can read the current URL pathname with `usePathname()`. The hook
+returns the server-rendered pathname on first render and updates after Rakun
+client navigation, including browser back and forward navigation:
+
+```tsx
+'use client'
+
+import { usePathname } from '@rakun-kit/bun'
+
+export default function NavigationStatus() {
+  const pathname = usePathname()
+  return <span>{pathname}</span>
+}
+```
+
 Add `src/document.tsx` to define the application shell. It is a server component
 and follows the same `children` layout shape as a Next.js root layout:
 
@@ -277,6 +292,7 @@ rebuilds immediate.
   and `.stop()`
 - `discoverRakunModules()`
 - `createBunPlatform()`
+- `Link` and `usePathname()` for Bun client navigation
 - `RakunRouteCache`
 
 The `web` config hook can replace direct core reads for a remote or test data

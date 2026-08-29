@@ -6,6 +6,7 @@ import type { PageModule, PageOutput } from '@rakun-kit/core/contracts'
 import { getPageLayout } from '@rakun-kit/core/web'
 import { PageInfoProvider, getRakunBuiltinModuleComponent, runWithPageInfo } from '@rakun-kit/react'
 
+import { RakunPathnameProvider } from './browser'
 import type {
   RakunBuildManifest,
   RakunBunDevtoolsModule,
@@ -95,6 +96,7 @@ const markDevtoolsModules = (html: string): string =>
 
 const renderPageBody = async (
   page: PageOutput,
+  path: string,
   registry: RakunServerModuleRegistry,
   devtools: boolean
 ): Promise<{ body: ReactNode; devtoolsModules: RakunBunDevtoolsModule[] }> => {
@@ -113,15 +115,18 @@ const renderPageBody = async (
     if (client) {
       const identifierPrefix = getIdentifierPrefix(key)
       const html = await renderNode(
-        <PageInfoProvider value={page.info} literals={page.literals}>
-          {component}
-        </PageInfoProvider>,
+        <RakunPathnameProvider pathname={path}>
+          <PageInfoProvider value={page.info} literals={page.literals}>
+            {component}
+          </PageInfoProvider>
+        </RakunPathnameProvider>,
         identifierPrefix
       )
       renderedModule = (
         <div
           data-rakun-client={module._type}
           data-rakun-identifier-prefix={identifierPrefix}
+          data-rakun-pathname={path}
           data-rakun-props={encodeProps(module)}
           dangerouslySetInnerHTML={{ __html: html }}
           key={key}
@@ -190,9 +195,11 @@ const renderPageBody = async (
 
   return {
     body: (
-      <PageInfoProvider value={page.info} literals={page.literals}>
-        {rendered}
-      </PageInfoProvider>
+      <RakunPathnameProvider pathname={path}>
+        <PageInfoProvider value={page.info} literals={page.literals}>
+          {rendered}
+        </PageInfoProvider>
+      </RakunPathnameProvider>
     ),
     devtoolsModules,
   }
@@ -307,7 +314,7 @@ export const renderRakunRoute = async ({
   return await runWithPageInfo(
     page.info,
     async () => {
-      const renderedPage = await renderPageBody(page, registry, devtools)
+      const renderedPage = await renderPageBody(page, path, registry, devtools)
       const bodyHtml = devtools
         ? markDevtoolsModules(await renderNode(renderedPage.body))
         : await renderNode(renderedPage.body)

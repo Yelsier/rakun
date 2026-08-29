@@ -2,6 +2,9 @@ import type { ComponentType } from 'react'
 import { hydrateRoot } from 'react-dom/client'
 import { PageInfoProvider } from '@rakun-kit/react'
 
+import { RakunPathnameProvider } from '../browser'
+import { registerRakunClientRoot } from './events'
+
 const decodeProps = (value: string): Record<string, unknown> => {
   const base64 = value.replace(/-/g, '+').replace(/_/g, '/')
   const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
@@ -37,14 +40,17 @@ export const hydrateRakunModule = (
       element,
       'template[data-rakun-page-literals]'
     )
-    hydrateRoot(
+    const root = hydrateRoot(
       element,
-      <PageInfoProvider value={info} literals={literals}>
-        <Component {...decodeProps(element.dataset.rakunProps)} />
-      </PageInfoProvider>,
+      <RakunPathnameProvider pathname={element.dataset.rakunPathname ?? window.location.pathname}>
+        <PageInfoProvider value={info} literals={literals}>
+          <Component {...decodeProps(element.dataset.rakunProps)} />
+        </PageInfoProvider>
+      </RakunPathnameProvider>,
       {
         identifierPrefix: element.dataset.rakunIdentifierPrefix,
       }
     )
+    registerRakunClientRoot(root)
   }
 }

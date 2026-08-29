@@ -1,4 +1,5 @@
 import type { RakunBunDevtoolsPayload } from '../types'
+import { dispatchRakunPathnameChange, unmountRakunClientRoots } from './events'
 
 type PageAssets = {
   clientModules: string[]
@@ -171,10 +172,12 @@ const navigate = async (url: URL, replace = false): Promise<void> => {
     return
   }
 
+  unmountRakunClientRoots()
   root.innerHTML = payload.html
   applyHead(payload.head)
-  await loadClientModules(payload.assets)
   history[replace ? 'replaceState' : 'pushState']({}, '', url)
+  dispatchRakunPathnameChange()
+  await loadClientModules(payload.assets)
   if (config.dev) {
     dispatchEvent(
       new CustomEvent('rakun:devtools:update', {
