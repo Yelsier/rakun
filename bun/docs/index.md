@@ -143,10 +143,28 @@ asset; do not add a separate generated stylesheet or CSS watcher.
   static routes are invalidated and regenerated lazily on the next request.
   Failed rebuilds leave the current application active, while browser-side
   update failures fall back to reload.
+- Development treats every web route as dynamic: it does not call
+  `web.staticPaths`, prerender routes, populate the route cache, or return
+  cacheable web/flight responses. A page marked static by core is still rendered
+  per request with `Cache-Control: no-store`. Static generation and route-cache
+  persistence remain production behavior. Rakun initialization and development
+  code compilation run concurrently during startup.
+- The initial development build writes disposable browser-build metadata and
+  assets under `.rakun/cache`, independently from `dist`. A later `rakun-bun dev`
+  checks unchanged input metadata immediately and hashes only changed candidates
+  before reusing its client-module, navigation, and manager assets. Relevant
+  config, the client module set, cached outputs, Bun, and framework build code are
+  also validated. Incremental client rebuilds refresh this persistent state for
+  the next process. The development server graph is cached and validated
+  separately, then imported fresh into each process; any changed source input
+  rebuilds it. Keep `.rakun/` ignored; deleting it safely forces a cold
+  development build.
 - `rakun-bun build` reports elapsed time, generated routes, HTML and flight
   bytes, raw and gzip client asset sizes, client bundle sizes and usage, runtime
   routes, manager initial size, lazy page and supporting chunk counts, total
-  lazy output size, server size, and total output. Long route and bundle lists
+  lazy output size, server size, and total output. While running, it reports the
+  current phase with a spinner and elapsed time on interactive terminals, or
+  stable non-ANSI lines in redirected output and CI. Long route and bundle lists
   collapse their middle entries.
   `RakunBunApplication.build()` exposes the underlying per-route metadata
   through `result.routes`.

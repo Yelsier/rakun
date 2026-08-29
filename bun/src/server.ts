@@ -42,6 +42,7 @@ type BunWebSocketData = { kind: 'dev' }
 type RakunBunInternalOptions = {
   cwd?: string
   document?: RakunBunDocumentImport
+  onBuildProgress?: (message: string) => void
   registry?: RakunServerModuleRegistry
 }
 
@@ -238,11 +239,13 @@ export class RakunBunApplication {
   private prepared = false
   private readonly prebuilt: boolean
   private readonly compressedAssets = new Map<string, ArrayBuffer>()
+  private readonly onBuildProgress?: (message: string) => void
 
   constructor(config: RakunBunConfig, internal: RakunBunInternalOptions = {}) {
     this.config = resolveRakunConfig(config, internal.cwd)
     this.web = getWebSource(this.config)
     this.document = internal.document
+    this.onBuildProgress = internal.onBuildProgress
     this.registry = internal.registry ?? {}
     this.prebuilt = internal.registry !== undefined
     this.cache = new RakunRouteCache(
@@ -252,16 +255,26 @@ export class RakunBunApplication {
   }
 
   async build(options: { clean?: boolean } = {}): Promise<RakunBunBuildResult> {
-    await this.prepareBootstrap()
-    const code = await buildRakunCode(this.config, options)
+    this.onBuildProgress?.('Initializing Rakun')
+    const bootstrap = this.prepareBootstrap()
+    this.onBuildProgress?.('Building server and browser bundles')
+    const [code] = await Promise.all([buildRakunCode(this.config, options), bootstrap])
     this.document = code.document
     this.registry = code.registry
     this.manifest = code.manifest
     this.compressedAssets.clear()
-    await this.refreshStaticPaths()
 
     const routes: RenderedRoute[] = []
-    for (const path of this.staticPaths) routes.push(await this.cache.regenerate(path))
+    if (this.config.server.development) {
+      this.staticPaths.clear()
+    } else {
+      await this.refreshStaticPaths()
+      this.onBuildProgress?.(
+        `Rendering ${this.staticPaths.size} static route${this.staticPaths.size === 1 ? '' : 's'}`
+      )
+      for (const path of this.staticPaths) routes.push(await this.cache.regenerate(path))
+    }
+    this.onBuildProgress?.('Writing build manifests')
     await writeRakunManifests(this.config.outDir, this.manifest, Array.from(this.staticPaths))
     this.prepared = true
     return describeBuild(this.config, this.manifest, routes)
@@ -270,6 +283,10 @@ export class RakunBunApplication {
   async invalidatePath(path: string): Promise<void> {
     await this.prepare()
     const normalized = normalizeRakunPath(path)
+    if (this.config.server.development) {
+      this.cache.remove(normalized)
+      return
+    }
     await this.refreshStaticPaths()
     if (!this.staticPaths.has(normalized)) {
       this.cache.remove(normalized)
@@ -398,8 +415,8 @@ export class RakunBunApplication {
 
   private async prepare(): Promise<void> {
     if (this.prepared) return
-    await this.prepareBootstrap()
     if (this.prebuilt) {
+      await this.prepareBootstrap()
       this.manifest = await loadBuildManifest(this.config.outDir)
       await this.cache.load()
       await this.refreshStaticPaths()
@@ -433,7 +450,9 @@ export class RakunBunApplication {
 
   private async getRoute(request: Request, path: string): Promise<RenderedRoute> {
     const input = getRequestPageInput(request, path)
-    if (getPreviewToken(this.config, input)) return await this.renderPath(path, input)
+    if (this.config.server.development || getPreviewToken(this.config, input)) {
+      return await this.renderPath(path, input)
+    }
 
     if (this.staticPaths.has(path)) {
       const cached = this.cache.get(path)
@@ -455,6 +474,7 @@ export class RakunBunApplication {
       status: getStatus(route),
       headers: {
         'Cache-Control':
+          !this.config.server.development &&
           this.staticPaths.has(path) &&
           !getPreviewToken(this.config, getRequestPageInput(request, path))
             ? 'public, max-age=0, must-revalidate'
@@ -469,6 +489,7 @@ export class RakunBunApplication {
     return new Response(JSON.stringify(route.flight), {
       headers: {
         'Cache-Control':
+          !this.config.server.development &&
           this.staticPaths.has(path) &&
           !getPreviewToken(this.config, getRequestPageInput(request, path))
             ? 'public, max-age=0, must-revalidate'
@@ -572,7 +593,6 @@ export class RakunBunApplication {
   private async rebuildForDevelopment(): Promise<void> {
     try {
       const buildClient = await this.consumeDevelopmentClientBuild()
-      const previousStaticPaths = this.staticPaths
       const code = await buildRakunCode(this.config, {
         client: buildClient,
         previousManifest: this.manifest,
@@ -580,11 +600,8 @@ export class RakunBunApplication {
       this.document = code.document
       this.registry = code.registry
       this.manifest = code.manifest
-      await this.refreshStaticPaths()
-      for (const path of new Set([...previousStaticPaths, ...this.staticPaths])) {
-        this.cache.remove(path)
-      }
-      await writeRakunManifests(this.config.outDir, this.manifest, Array.from(this.staticPaths))
+      this.staticPaths.clear()
+      await writeRakunManifests(this.config.outDir, this.manifest)
       this.server?.publish('rakun-dev', 'update')
     } catch (error) {
       console.error('Rakun development rebuild failed.', error)

@@ -3,6 +3,10 @@ import { pathToFileURL } from 'node:url'
 
 import type { RakunBunConfig, ResolvedRakunBunConfig } from './types'
 
+const CONFIG_PATH = Symbol('rakun-config-path')
+
+type ConfigWithPath = RakunBunConfig & { [CONFIG_PATH]?: string }
+
 const normalizeBasePath = (value: string, fallback: string): string => {
   const normalized = (value.trim() || fallback).replace(/^\/+|\/+$/g, '')
   return `/${normalized}`
@@ -14,7 +18,7 @@ export const resolveRakunConfig = (
 ): ResolvedRakunBunConfig => {
   const rootDir = resolve(cwd, config.rootDir ?? '.')
 
-  return {
+  const resolvedConfig: ResolvedRakunBunConfig = {
     ...config,
     apiBasePath: normalizeBasePath(config.apiBasePath ?? '', '/api'),
     documentFile: resolve(rootDir, 'src', 'document.tsx'),
@@ -40,6 +44,11 @@ export const resolveRakunConfig = (
       development: config.server?.development ?? process.env.NODE_ENV !== 'production',
     },
   }
+  const configPath = (config as ConfigWithPath)[CONFIG_PATH]
+  if (configPath) {
+    Object.defineProperty(resolvedConfig, CONFIG_PATH, { value: configPath })
+  }
+  return resolvedConfig
 }
 
 export const loadRakunConfig = async (
@@ -55,8 +64,13 @@ export const loadRakunConfig = async (
     throw new Error(`Rakun config "${absolutePath}" must have a default export.`)
   }
 
-  return resolveRakunConfig(loaded.default, cwd)
+  const config = resolveRakunConfig(loaded.default, cwd)
+  Object.defineProperty(config, CONFIG_PATH, { value: absolutePath })
+  return config
 }
+
+export const getRakunConfigPath = (config: RakunBunConfig): string | undefined =>
+  (config as ConfigWithPath)[CONFIG_PATH]
 
 export const normalizeRakunPath = (value: string): string => {
   const [pathname = '/'] = value.trim().split(/[?#]/, 1)

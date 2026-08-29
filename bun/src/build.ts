@@ -4,6 +4,13 @@ import { pathToFileURL } from 'node:url'
 
 import { createManagerResolver, writeManagerIconRegistry } from './manager-build'
 import { createRakunCssProcessor } from './css'
+import { getRakunConfigPath } from './config'
+import {
+  loadDevelopmentBrowserCache,
+  loadDevelopmentServerCache,
+  saveDevelopmentBrowserCache,
+  saveDevelopmentServerCache,
+} from './development-cache'
 import { discoverRakunDocument, discoverRakunModules } from './modules'
 import type {
   RakunBuildManifest,
@@ -395,9 +402,6 @@ export const buildRakunCode = async (
   const assetsDir = resolve(config.outDir, 'assets')
   const publicDir = resolve(config.rootDir, 'public')
   const outputPublicDir = resolve(config.outDir, 'public')
-  if (!options.clean && !options.previousManifest) {
-    await rm(assetsDir, { recursive: true, force: true })
-  }
   if (!config.server.development) {
     await rm(outputPublicDir, { recursive: true, force: true })
     await cp(publicDir, outputPublicDir, { recursive: true, force: true }).catch(
@@ -410,7 +414,6 @@ export const buildRakunCode = async (
   const serverDir = resolve(config.outDir, 'server')
   await Promise.all([
     mkdir(generatedDir, { recursive: true }),
-    mkdir(assetsDir, { recursive: true }),
     mkdir(serverDir, { recursive: true }),
   ])
 
@@ -421,35 +424,62 @@ export const buildRakunCode = async (
   const generatedRegistry = await writeServerRegistry(generatedDir, modules, documentFile)
   const clientEntries = await writeClientEntries(generatedDir, modules, config.manager)
 
+  const cacheEligible =
+    config.server.development &&
+    !options.clean &&
+    !options.previousManifest &&
+    options.client === undefined
+  const serverCacheEligible = config.server.development && !options.clean
+  const browserCacheContext = {
+    config,
+    configPath: getRakunConfigPath(config),
+    modules,
+  }
+  const wantsFullBrowserBuild = options.client !== false || !options.previousManifest
+  const managerIconRegistry =
+    wantsFullBrowserBuild && clientEntries.manager
+      ? await writeManagerIconRegistry(generatedDir, config.rootDir)
+      : undefined
+  const [cachedManifest, cachedServer] = await Promise.all([
+    cacheEligible ? loadDevelopmentBrowserCache(browserCacheContext) : undefined,
+    serverCacheEligible ? loadDevelopmentServerCache(browserCacheContext) : undefined,
+  ])
+  if (!options.clean && !options.previousManifest && !cachedManifest) {
+    await rm(assetsDir, { recursive: true, force: true })
+  }
+  await mkdir(assetsDir, { recursive: true })
+
+  const previousManifest = options.previousManifest ?? cachedManifest
   const clientModuleNames = Array.isArray(options.client) ? options.client : undefined
-  const partialClientBuild = !!clientModuleNames && !!options.previousManifest
+  const partialClientBuild = !!clientModuleNames && !!previousManifest
   const requestedClientModules = partialClientBuild ? new Set(clientModuleNames) : undefined
   const clientEntrypoints = requestedClientModules
     ? Array.from(clientEntries.modules.entries())
         .filter(([name]) => requestedClientModules.has(name))
         .map(([, entry]) => entry)
     : Array.from(clientEntries.modules.values())
-  const shouldBuildClient = options.client !== false || !options.previousManifest
+  const shouldBuildClient = !cachedManifest && (options.client !== false || !previousManifest)
   const rebuildAllClientAssets = shouldBuildClient && !partialClientBuild
-  const managerIconRegistry =
-    rebuildAllClientAssets && clientEntries.manager
-      ? await writeManagerIconRegistry(generatedDir, config.rootDir)
-      : undefined
   const manager = config.manager
   const [serverBuild, clientBuild, navigationBuild, managerBuild] = await Promise.all([
-    Bun.build({
-      entrypoints: [generatedRegistry],
-      format: 'esm',
-      jsx: { development: config.server.development },
-      naming: 'modules-[hash].[ext]',
-      outdir: serverDir,
-      packages: 'external',
-      plugins: [
-        ...[createRakunCssProcessor(config)].filter((plugin): plugin is Bun.BunPlugin => !!plugin),
-      ],
-      sourcemap: config.server.development ? 'linked' : 'none',
-      target: 'bun',
-    }),
+    cachedServer
+      ? undefined
+      : Bun.build({
+          entrypoints: [generatedRegistry],
+          format: 'esm',
+          jsx: { development: config.server.development },
+          metafile: true,
+          naming: 'modules-[hash].[ext]',
+          outdir: serverDir,
+          packages: 'external',
+          plugins: [
+            ...[createRakunCssProcessor(config)].filter(
+              (plugin): plugin is Bun.BunPlugin => !!plugin
+            ),
+          ],
+          sourcemap: config.server.development ? 'linked' : 'none',
+          target: 'bun',
+        }),
     shouldBuildClient
       ? buildBrowserEntries({
           assetsDir,
@@ -489,7 +519,7 @@ export const buildRakunCode = async (
         })
       : undefined,
   ])
-  assertBuild(serverBuild, 'Rakun server graph build')
+  if (serverBuild) assertBuild(serverBuild, 'Rakun server graph build')
   const managerEntryArtifact =
     managerBuild && clientEntries.manager
       ? await optimizeManagerInitialGraph({
@@ -501,9 +531,10 @@ export const buildRakunCode = async (
         })
       : undefined
 
-  const serverArtifact = serverBuild.outputs.find((output) => output.kind === 'entry-point')
-  if (!serverArtifact) throw new Error('Rakun server graph has no entry output.')
-  const loaded = (await import(`${pathToFileURL(serverArtifact.path).href}?t=${Date.now()}`)) as {
+  const serverArtifact = serverBuild?.outputs.find((output) => output.kind === 'entry-point')
+  const serverArtifactPath = cachedServer?.artifact ?? serverArtifact?.path
+  if (!serverArtifactPath) throw new Error('Rakun server graph has no entry output.')
+  const loaded = (await import(`${pathToFileURL(serverArtifactPath).href}?t=${Date.now()}`)) as {
     document?: RakunBunDocumentImport
     modules?: RakunServerModuleRegistry
   }
@@ -514,7 +545,7 @@ export const buildRakunCode = async (
 
   const client: RakunClientManifest = rebuildAllClientAssets
     ? {}
-    : { ...(options.previousManifest?.client ?? {}) }
+    : { ...(previousManifest?.client ?? {}) }
   for (const name of Object.keys(client)) {
     if (!clientEntries.modules.has(name)) delete client[name]
   }
@@ -534,7 +565,7 @@ export const buildRakunCode = async (
   }
   const navigation = navigationBuild
     ? toAssetUrl(assetsDir, getEntryOutput(navigationBuild, clientEntries.navigation))
-    : (options.previousManifest?.navigation ?? '')
+    : (previousManifest?.navigation ?? '')
   const managerAssets = rebuildAllClientAssets
     ? (() => {
         if (!managerBuild || !clientEntries.manager) return []
@@ -545,16 +576,18 @@ export const buildRakunCode = async (
           ...(managerMeta?.cssBundle ? [`/assets/manager/${basename(managerMeta.cssBundle)}`] : []),
         ]
       })()
-    : (options.previousManifest?.managerAssets ?? [])
-  const serverCss = serverBuild.outputs.filter((output) => output.path.endsWith('.css'))
-  await Promise.all(
-    serverCss.map((output) => copyFile(output.path, resolve(assetsDir, basename(output.path))))
-  )
+    : (previousManifest?.managerAssets ?? [])
+  const serverCss =
+    cachedServer?.css ??
+    (serverBuild?.outputs ?? [])
+      .filter((output) => output.path.endsWith('.css'))
+      .map(({ path }) => path)
+  await Promise.all(serverCss.map((path) => copyFile(path, resolve(assetsDir, basename(path)))))
   const clientModuleStyles = new Set(Object.values(client).flatMap((entry) => entry.styles ?? []))
   const managerStyleSet = new Set(managerAssets.filter((asset) => asset.endsWith('.css')))
   const assets = rebuildAllClientAssets
     ? [
-        ...serverCss.map((output) => `/assets/${basename(output.path)}`),
+        ...serverCss.map((path) => `/assets/${basename(path)}`),
         ...(clientBuild?.outputs ?? [])
           .filter((output) => output.path.endsWith('.css'))
           .map((output) => toAssetUrl(assetsDir, output))
@@ -562,10 +595,10 @@ export const buildRakunCode = async (
       ]
     : Array.from(
         new Set([
-          ...(options.previousManifest?.assets ?? []).filter(
+          ...(previousManifest?.assets ?? []).filter(
             (asset) => !/^\/assets\/modules-[^/]+\.css$/.test(asset)
           ),
-          ...serverCss.map((output) => `/assets/${basename(output.path)}`),
+          ...serverCss.map((path) => `/assets/${basename(path)}`),
           ...(clientBuild
             ? clientBuild.outputs
                 .filter((output) => output.path.endsWith('.css'))
@@ -582,6 +615,33 @@ export const buildRakunCode = async (
     navigation,
   }
   await writeRakunManifests(config.outDir, manifest)
+  const shouldSaveBrowserCache =
+    config.server.development &&
+    !options.clean &&
+    !cachedManifest &&
+    (rebuildAllClientAssets || !!clientBuild)
+  await Promise.all([
+    shouldSaveBrowserCache
+      ? saveDevelopmentBrowserCache({
+          builds: [clientBuild, navigationBuild, managerBuild],
+          context: browserCacheContext,
+          extraOutputs: managerEntryArtifact ? [managerEntryArtifact] : [],
+          manifest,
+          reusePrevious: partialClientBuild,
+        }).catch((error) => {
+          console.warn('Rakun development browser cache could not be written.', error)
+        })
+      : undefined,
+    serverCacheEligible && !cachedServer && serverBuild && serverArtifact
+      ? saveDevelopmentServerCache({
+          artifact: serverArtifact,
+          build: serverBuild,
+          context: browserCacheContext,
+        }).catch((error) => {
+          console.warn('Rakun development server cache could not be written.', error)
+        })
+      : undefined,
+  ])
 
   return { document: loaded.document, generatedRegistry, manifest, registry: loaded.modules }
 }

@@ -210,7 +210,29 @@ routes for lazy regeneration, and replaces the rendered tree over the
 development WebSocket. A failed rebuild leaves the current application active;
 a browser-side update failure falls back to a page reload.
 
-`rakun-bun build` writes:
+The first development build stores the browser, navigation, and manager build
+metadata and assets in `.rakun/cache`. Later starts use file metadata as a fast
+path and verify changed candidates against the stored hashes before reusing the
+client, navigation, and manager output. The cache is independent from `dist`, so
+a production build does not make the next development start cold. Missing cached
+outputs or a changed dependency cause a normal rebuild. Incremental client
+rebuilds refresh the persistent cache for the following process. The server graph
+has its own validated cache and is imported into each new process; changing any
+of its source inputs rebuilds it. The cache is disposable and `.rakun/` should
+remain ignored by source control.
+
+Development does not load or prerender `web.staticPaths`. Every web and flight
+request is rendered dynamically with `Cache-Control: no-store`, even when core
+marks the page as static. Route-cache persistence and static generation are only
+used by production builds and production servers. Rakun initialization runs in
+parallel with development code compilation to reduce cold-start latency.
+
+`rakun-bun build` displays the current phase and elapsed time while it loads
+configuration, bundles code, renders static routes, creates the production
+server, and analyzes the output. Interactive terminals use a spinner; redirected
+output and CI receive stable log lines without terminal control codes.
+
+The command writes:
 
 ```text
 dist/
