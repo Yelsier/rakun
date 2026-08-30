@@ -91,6 +91,30 @@ Static HTML and flight responses require browser revalidation after a path is
 regenerated. Manager preview-token requests bypass the static route cache and
 use `Cache-Control: no-store`, so they always render their preview payload.
 
+Production keeps only a bounded LRU of rendered routes in process memory.
+Entries unused for five minutes are released and transparently reloaded from
+the latest complete disk generation; they are not regenerated merely because
+their memory entry expired. Gzip-compressed assets use a separate bounded LRU.
+Defaults are 128 routes, 32 MiB per cache, five-minute idle timeouts, and two
+completed disk generations per route. Tune them through `cache`:
+
+```ts
+const config: RakunBunConfig = {
+  cache: {
+    routeMaxEntries: 64,
+    routeMaxBytes: 16 * 1024 * 1024,
+    routeIdleTimeoutMs: 60_000,
+    routeMaxGenerations: 2,
+    assetMaxBytes: 16 * 1024 * 1024,
+    assetIdleTimeoutMs: 60_000,
+  },
+}
+```
+
+An idle timeout of `0` disables time-based eviction; a byte or entry limit of
+`0` disables that in-memory cache. At least one complete disk route generation
+is always retained.
+
 ## Manager and API
 
 The manager is bundled from `@rakun-kit/manager-react` and mounted at
@@ -179,6 +203,9 @@ asset; do not add a separate generated stylesheet or CSS watcher.
   `RakunBunApplication.build()` exposes the underlying per-route metadata
   through `result.routes`.
 - Production assets are compressed on demand with Bun's native gzip support
-  when requested through `Accept-Encoding`; compressed bytes are cached in
-  memory. Development assets remain uncompressed.
+  when requested through `Accept-Encoding`; compressed bytes use the bounded
+  memory cache described above. Development assets remain uncompressed.
+- `await app.stop()` closes the HTTP server and watchers, clears Bun memory
+  caches, and calls core `shutdownRakun()`. `startRakunBun()` installs graceful
+  `SIGTERM`/`SIGINT` handling, including MongoDB closure.
 - No `invalidateTag` support.

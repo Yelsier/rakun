@@ -90,9 +90,12 @@ export async function closeMongoService(): Promise<void> {
 
 export async function closeDatabase(config?: MongoConfig): Promise<void> {
   const uri = config?.MONGO_URI ?? _config?.MONGO_URI
-  if (uri) {
+  if (config && uri) {
     dbServices.delete(uri)
     dbServicePromises.delete(uri)
+  } else if (!config) {
+    dbServices.clear()
+    dbServicePromises.clear()
   }
   await closeDatabaseConnection(config)
 }

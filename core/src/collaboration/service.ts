@@ -1,20 +1,17 @@
 import { equalFlat } from 'lib0/array'
 import * as Y from 'yjs'
 
+import { getContentSnapshot, initializeContentDocument, replaceContentSnapshot } from './document'
 import {
-  getContentSnapshot,
-  initializeContentDocument,
-  replaceContentSnapshot,
-} from './document'
-import type {
-  CollaborationAdapter,
-  CollaborationPresence,
-  CollaborationPresenceState,
-  CollaborationRoomState,
-  CollaborationServiceConfig,
+  COLLABORATION_PRESENCE_TTL_MS,
+  type CollaborationAdapter,
+  type CollaborationPresence,
+  type CollaborationPresenceState,
+  type CollaborationRoomState,
+  type CollaborationServiceConfig,
 } from './types'
 
-const PRESENCE_TTL_MS = 45_000
+const DEFAULT_ROOM_IDLE_TIMEOUT_MS = 5 * 60_000
 
 type CollaborationRoom = {
   doc: Y.Doc
@@ -31,6 +28,11 @@ export type CollaborationSyncResult = {
   savedStateVector: Uint8Array
   presence: CollaborationPresence[]
   presenceChanged: boolean
+}
+
+type CollaborationRoomCacheEntry = {
+  lastAccessAt: number
+  promise: Promise<CollaborationRoom>
 }
 
 export interface CollaborationService {
@@ -63,24 +65,90 @@ export interface CollaborationService {
     initialSnapshot: Record<string, unknown>
   }) => Promise<boolean>
   delete: (roomId: string) => Promise<void>
+  dispose: () => void
 }
 
 export const createCollaborationServiceFromAdapter = (
-  config: CollaborationServiceConfig,
+  config: CollaborationServiceConfig
 ): CollaborationService => {
-  const rooms = new Map<string, Promise<CollaborationRoom>>()
+  const roomIdleTimeoutMs = config.roomIdleTimeoutMs ?? DEFAULT_ROOM_IDLE_TIMEOUT_MS
+  if (!Number.isSafeInteger(roomIdleTimeoutMs) || roomIdleTimeoutMs < 0) {
+    throw new Error('collaboration.roomIdleTimeoutMs must be a non-negative safe integer.')
+  }
+  const rooms = new Map<string, CollaborationRoomCacheEntry>()
   const localPresence = new Map<string, CollaborationPresenceState[]>()
   const locks = new Map<string, Promise<void>>()
-  const hasSharedPresence = Boolean(
-    config.adapter.loadPresence && config.adapter.savePresence,
-  )
+  let cleanupTimer: ReturnType<typeof setTimeout> | undefined
+  const hasSharedPresence = Boolean(config.adapter.loadPresence && config.adapter.savePresence)
+
+  const destroyRoom = (entry: CollaborationRoomCacheEntry): void => {
+    void entry.promise.then((room) => room.doc.destroy()).catch(() => undefined)
+  }
+
+  const cancelCleanup = (): void => {
+    if (!cleanupTimer) return
+    clearTimeout(cleanupTimer)
+    cleanupTimer = undefined
+  }
+
+  const scheduleCleanup = (): void => {
+    cancelCleanup()
+    if ((roomIdleTimeoutMs === 0 || rooms.size === 0) && localPresence.size === 0) return
+
+    const now = Date.now()
+    let nextExpiry = Number.POSITIVE_INFINITY
+    if (roomIdleTimeoutMs > 0) {
+      for (const [roomId, entry] of rooms) {
+        nextExpiry = Math.min(
+          nextExpiry,
+          locks.has(roomId) ? now + roomIdleTimeoutMs : entry.lastAccessAt + roomIdleTimeoutMs
+        )
+      }
+    }
+    for (const presence of localPresence.values()) {
+      for (const participant of presence) {
+        nextExpiry = Math.min(nextExpiry, participant.lastSeenAt + COLLABORATION_PRESENCE_TTL_MS)
+      }
+    }
+    cleanupTimer = setTimeout(
+      () => {
+        cleanupTimer = undefined
+        const now = Date.now()
+        for (const [roomId, entry] of rooms) {
+          if (
+            roomIdleTimeoutMs === 0 ||
+            locks.has(roomId) ||
+            now - entry.lastAccessAt < roomIdleTimeoutMs
+          ) {
+            continue
+          }
+          rooms.delete(roomId)
+          destroyRoom(entry)
+        }
+        for (const [roomId, presence] of localPresence) {
+          const active = presence.filter(
+            (participant) => now - participant.lastSeenAt <= COLLABORATION_PRESENCE_TTL_MS
+          )
+          if (active.length === 0) localPresence.delete(roomId)
+          else localPresence.set(roomId, active)
+        }
+        scheduleCleanup()
+      },
+      Math.max(1, nextExpiry - now)
+    )
+    cleanupTimer.unref?.()
+  }
 
   const loadRoom = (
     roomId: string,
-    initialSnapshot: Record<string, unknown>,
+    initialSnapshot: Record<string, unknown>
   ): Promise<CollaborationRoom> => {
     const existing = rooms.get(roomId)
-    if (existing) return existing
+    if (existing) {
+      existing.lastAccessAt = Date.now()
+      scheduleCleanup()
+      return existing.promise
+    }
 
     const loading = (async () => {
       const persisted = await config.adapter.load(roomId)
@@ -96,8 +164,13 @@ export const createCollaborationServiceFromAdapter = (
       return room
     })()
 
-    rooms.set(roomId, loading)
-    loading.catch(() => rooms.delete(roomId))
+    const entry = { lastAccessAt: Date.now(), promise: loading }
+    rooms.set(roomId, entry)
+    scheduleCleanup()
+    loading.catch(() => {
+      if (rooms.get(roomId) === entry) rooms.delete(roomId)
+      scheduleCleanup()
+    })
     return loading
   }
 
@@ -121,23 +194,21 @@ export const createCollaborationServiceFromAdapter = (
 
   const syncPresence = async (
     roomId: string,
-    update?: CollaborationPresence & { active: boolean },
+    update?: CollaborationPresence & { active: boolean }
   ) => {
     const now = Date.now()
     const stored = hasSharedPresence
-      ? (await config.adapter.loadPresence?.(roomId)) ?? []
-      : localPresence.get(roomId) ?? []
+      ? ((await config.adapter.loadPresence?.(roomId)) ?? [])
+      : (localPresence.get(roomId) ?? [])
     const active = stored.filter(
-      (participant) => now - participant.lastSeenAt <= PRESENCE_TTL_MS,
+      (participant) => now - participant.lastSeenAt <= COLLABORATION_PRESENCE_TTL_MS
     )
-    const previous = active.find(
-      (participant) => participant.clientId === update?.clientId,
-    )
+    const previous = active.find((participant) => participant.clientId === update?.clientId)
     let changed = active.length !== stored.length
 
     if (update) {
       const previousIndex = active.findIndex(
-        (participant) => participant.clientId === update.clientId,
+        (participant) => participant.clientId === update.clientId
       )
       const next = active.slice()
       if (previous && previous.userId !== update.userId) {
@@ -145,7 +216,7 @@ export const createCollaborationServiceFromAdapter = (
           changed,
           presence: active.map(
             ({ lastSeenAt: _lastSeenAt, connectionIds: _connectionIds, ...participant }) =>
-              participant,
+              participant
           ),
         }
       }
@@ -177,14 +248,15 @@ export const createCollaborationServiceFromAdapter = (
     if (hasSharedPresence) {
       await config.adapter.savePresence?.(roomId, active)
     } else {
-      localPresence.set(roomId, active)
+      if (active.length === 0) localPresence.delete(roomId)
+      else localPresence.set(roomId, active)
     }
+    scheduleCleanup()
 
     return {
       changed,
       presence: active.map(
-        ({ lastSeenAt: _lastSeenAt, connectionIds: _connectionIds, ...participant }) =>
-          participant,
+        ({ lastSeenAt: _lastSeenAt, connectionIds: _connectionIds, ...participant }) => participant
       ),
     }
   }
@@ -202,13 +274,13 @@ export const createCollaborationServiceFromAdapter = (
   }) => {
     const now = Date.now()
     const stored = hasSharedPresence
-      ? (await config.adapter.loadPresence?.(roomId)) ?? []
-      : localPresence.get(roomId) ?? []
+      ? ((await config.adapter.loadPresence?.(roomId)) ?? [])
+      : (localPresence.get(roomId) ?? [])
     const active = stored.filter(
-      (current) => now - current.lastSeenAt <= PRESENCE_TTL_MS,
+      (current) => now - current.lastSeenAt <= COLLABORATION_PRESENCE_TTL_MS
     )
     const participantIndex = active.findIndex(
-      (current) => current.clientId === participant.clientId,
+      (current) => current.clientId === participant.clientId
     )
     const current = active[participantIndex]
     let changed = active.length !== stored.length
@@ -229,9 +301,7 @@ export const createCollaborationServiceFromAdapter = (
           changed = true
         }
       } else if (current) {
-        const connectionIds = (current.connectionIds ?? []).filter(
-          (id) => id !== connectionId,
-        )
+        const connectionIds = (current.connectionIds ?? []).filter((id) => id !== connectionId)
         if (connectionIds.length) {
           active[participantIndex] = { ...current, connectionIds }
         } else {
@@ -244,8 +314,10 @@ export const createCollaborationServiceFromAdapter = (
     if (hasSharedPresence) {
       await config.adapter.savePresence?.(roomId, active)
     } else {
-      localPresence.set(roomId, active)
+      if (active.length === 0) localPresence.delete(roomId)
+      else localPresence.set(roomId, active)
     }
+    scheduleCleanup()
 
     return changed
   }
@@ -294,15 +366,27 @@ export const createCollaborationServiceFromAdapter = (
           savedStateVector: room.savedStateVector,
         }
       }),
-    hasUnsavedChanges: async ({ roomId, initialSnapshot }) => {
-      const room = await loadRoom(roomId, initialSnapshot)
-      return !equalFlat(Y.encodeStateVector(room.doc), room.savedStateVector)
-    },
+    hasUnsavedChanges: async ({ roomId, initialSnapshot }) =>
+      await withLock(roomId, async () => {
+        const room = await loadRoom(roomId, initialSnapshot)
+        return !equalFlat(Y.encodeStateVector(room.doc), room.savedStateVector)
+      }),
     delete: async (roomId) =>
       await withLock(roomId, async () => {
+        const entry = rooms.get(roomId)
         rooms.delete(roomId)
+        if (entry) destroyRoom(entry)
         localPresence.delete(roomId)
         await config.adapter.delete?.(roomId)
+        scheduleCleanup()
       }),
+    dispose: () => {
+      cancelCleanup()
+      for (const entry of rooms.values()) destroyRoom(entry)
+      rooms.clear()
+      localPresence.clear()
+      locks.clear()
+      config.adapter.dispose?.()
+    },
   }
 }

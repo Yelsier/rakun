@@ -147,10 +147,17 @@ rakunBootstrap({
       loadPresence: async (roomId) => loadRoomPresence(roomId),
       savePresence: async (roomId, presence) => saveRoomPresence(roomId, presence),
       delete: async (roomId) => deleteRoom(roomId),
+      dispose: () => closeRoomStore(),
     },
   },
 })
 ```
+
+Core releases a hydrated `Y.Doc` after five minutes without access and reloads
+it from the adapter on demand. Set `collaboration.roomIdleTimeoutMs` to tune
+that memory cache, or `0` to disable idle eviction. This does not delete adapter
+state or unsaved changes. Optional synchronous `adapter.dispose()` runs when
+the collaboration service is replaced or core shuts down.
 
 `state.update` and `state.savedStateVector` are opaque `Uint8Array` values.
 Store them outside the public content record. The built-in manager applies this
@@ -363,7 +370,7 @@ and blocks modules. `text` may be direct copy or a manager translation key
 supplied by the application locale packs. Use `.description(...)` instead for
 short guidance that should remain visible below the field label.
 
-`ensureRakunInitialized()` prepares logger, MongoDB, media, and route syncing. It uses a singleton promise to avoid concurrent initialization; if initialization fails, the promise is cleared so the next call can retry.
+`ensureRakunInitialized()` prepares logger, MongoDB, media, and route syncing. It uses a singleton promise to avoid concurrent initialization; if initialization fails, the promise and any partially opened MongoDB client are cleared so the next call can retry. Await `shutdownRakun()` when the host stops to close all MongoDB clients, release hydrated collaboration documents, and clear transient authentication state.
 
 `ensureRakunBootstrap(options)` only calls `rakunBootstrap` if the runtime has not been bootstrapped yet.
 
@@ -944,6 +951,8 @@ Connection:
 - `createMongoService(config)`: connects and creates handlers.
 - `getMongoService()`: returns the singleton or creates it from config.
 - `closeMongoService()`: closes the connection and clears the singleton.
+- `shutdownRakun()`: releases all core runtime resources for graceful host
+  shutdown or restart.
 
 `MongoConfig`:
 
@@ -951,8 +960,14 @@ Connection:
 type MongoConfig = {
   MONGO_URI: string
   ENVIRONMENT?: 'local' | 'development' | 'test' | 'production'
+  clientOptions?: MongoClientOptions
 }
 ```
+
+`clientOptions` is forwarded to the official MongoDB driver. Rakun defaults
+`maxIdleTimeMS` to 60 seconds, releasing unused pooled sockets; an explicit
+value overrides the default. The topology-monitoring connection stays active
+until `closeDatabase()`, `closeMongoService()`, or `shutdownRakun()` runs. In
 
 In environments other than `test`, the connection creates indexes defined by `createIndexes`.
 

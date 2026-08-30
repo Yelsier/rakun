@@ -161,12 +161,9 @@ describe('content collaboration service', () => {
       presence: { ...participant, clientId: 'tab-2' },
     })
 
-    expect(joined.presence.map(({ clientId }) => clientId).sort()).toEqual([
-      'tab-1',
-      'tab-2',
-    ])
+    expect(joined.presence.map(({ clientId }) => clientId).sort()).toEqual(['tab-1', 'tab-2'])
     expect(joined.presence.find(({ clientId }) => clientId === 'tab-1')?.fieldId).toBe(
-      'Article.title',
+      'Article.title'
     )
 
     const left = await service.sync({
@@ -215,7 +212,7 @@ describe('content collaboration service', () => {
         connectionId: 'sse-1',
         participant,
         active: false,
-      }),
+      })
     ).toBe(false)
     expect(
       await service.setPresenceConnection({
@@ -223,7 +220,7 @@ describe('content collaboration service', () => {
         connectionId: 'sse-2',
         participant,
         active: false,
-      }),
+      })
     ).toBe(true)
   })
 
@@ -278,5 +275,33 @@ describe('content collaboration service', () => {
         userId: 'user-1',
       }),
     ])
+  })
+
+  test('releases hydrated rooms after inactivity while preserving adapter state', async () => {
+    const memory = createMemoryCollaborationAdapter()
+    let loads = 0
+    const service = createCollaborationServiceFromAdapter({
+      adapter: {
+        ...memory,
+        load: async (roomId) => {
+          loads += 1
+          return await memory.load(roomId)
+        },
+      },
+      roomIdleTimeoutMs: 5,
+    })
+    const input = {
+      roomId: 'content:Article:idle-room',
+      initialSnapshot: { title: 'persisted' },
+    }
+
+    await service.sync(input)
+    expect(loads).toBe(1)
+    await Bun.sleep(15)
+    const reloaded = await service.sync(input)
+
+    expect(loads).toBe(2)
+    expect(reloaded.update.byteLength).toBeGreaterThan(0)
+    service.dispose()
   })
 })

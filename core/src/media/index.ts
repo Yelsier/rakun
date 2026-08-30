@@ -11,8 +11,8 @@ export type MediaServiceConfig = {
   uploadUrl?: string;
 };
 
-let _mediaService: MediaService;
-let _config: MediaServiceConfig;
+let _mediaService: MediaService | null = null;
+let _config: MediaServiceConfig | null = null;
 
 export const createMediaConnection = (config: MediaServiceConfig) => {
   _config = config;
@@ -44,6 +44,11 @@ export function getMediaService(): MediaService {
 
   return _mediaService;
 }
+
+export const resetMediaService = (): void => {
+  _mediaService = null;
+  _config = null;
+};
 
 export * from "./mediaService";
 export * from "./adapters";

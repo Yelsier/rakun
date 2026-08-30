@@ -98,7 +98,18 @@ Important bootstrap options are `literals`, `contentTypes`,
 - `ensureRakunBootstrap(options)` registers it only if needed. Framework
   adapters use this to tolerate development reloads.
 - `ensureRakunInitialized()` initializes logger, MongoDB, media and route sync.
-  It is concurrency-safe and retries after a failed initialization.
+  It is concurrency-safe, releases a partially opened MongoDB client after a
+  failed initialization, and retries on the next call.
+- `shutdownRakun()` closes every MongoDB client, releases hydrated
+  collaboration documents, and clears transient authentication state. Server
+  adapters should await it during graceful shutdown.
+
+`mongo.clientOptions` forwards options to the official MongoDB driver. Rakun
+defaults `maxIdleTimeMS` to 60 seconds so unused pooled sockets are released;
+set it explicitly to override that value. The driver's topology-monitoring
+connection remains active until `shutdownRakun()` because it is required to
+detect server availability. On Railway, use the database's private `MONGO_URL`
+for service-to-service traffic rather than its public TCP proxy URL.
 
 Do not import React, Next, Express, Vite or tRPC into core configuration modules.
 
@@ -206,6 +217,14 @@ multi-process or restart-durable deployment must pass a shared adapter through
 updates and saved state vectors; it must not write them into the public content
 document. `createMemoryCollaborationAdapter` is exported as the reference
 implementation.
+
+The service releases each hydrated `Y.Doc` after five minutes without access
+and reloads it from the adapter when needed. Set
+`collaboration.roomIdleTimeoutMs` to tune this process-memory cache, or `0` to
+disable idle eviction. Adapter state is never discarded by this purge, so
+unsaved changes keep the durability guarantees of the selected adapter. A
+custom adapter may implement synchronous `dispose()` to release its own
+process resources during `shutdownRakun()` or service replacement.
 
 Collaboration sync also carries ephemeral presence for each open browser tab.
 Presence reports the authenticated manager user and the currently focused

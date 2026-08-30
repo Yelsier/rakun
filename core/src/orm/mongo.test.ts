@@ -120,6 +120,7 @@ describe.serial("MongoDB Service", () => {
 
   it("should connect to the database", () => {
     expect(dbService.rawDB).toBeDefined();
+    expect((dbService.rawDB as Db).client.options.maxIdleTimeMS).toBe(60_000);
   });
 
   it("should fail on connect to the database error", async () => {

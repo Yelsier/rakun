@@ -40,6 +40,11 @@ export function hasTranslationService(): boolean {
   return Boolean(_translationService || _config);
 }
 
+export const resetTranslationService = (): void => {
+  _translationService = null;
+  _config = null;
+};
+
 export type { TranslationAdapter, TranslationService, TranslationServiceConfig };
 export * from "./adapters";
 export * from "./document";

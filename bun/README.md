@@ -58,6 +58,28 @@ The manager preview is enabled for the same Bun origin by default. Set
 preview query parameter. Preview requests with that token are resolved through
 Rakun's `web.previewPage` operation.
 
+Production route and gzip caches are bounded by count, bytes, and idle time.
+The defaults retain at most 128 rendered routes and 32 MiB in each cache, purge
+entries after five idle minutes, and keep the newest two complete disk
+generations per static route. Override them when needed:
+
+```ts
+const bunConfig: RakunBunConfig = {
+  cache: {
+    routeMaxEntries: 64,
+    routeMaxBytes: 16 * 1024 * 1024,
+    routeIdleTimeoutMs: 60_000,
+    routeMaxGenerations: 2,
+    assetMaxBytes: 16 * 1024 * 1024,
+    assetIdleTimeoutMs: 60_000,
+  },
+}
+```
+
+Expired routes are reloaded from disk without regeneration. Use `0` for an idle
+timeout to disable time-based eviction, or `0` for a byte/entry limit to disable
+that memory cache.
+
 ## Filesystem modules
 
 Both forms are discovered without an index registry:
@@ -280,20 +302,25 @@ metadata through `routes`.
 Run the production output with `rakun-bun start` or `bun dist/server.js`.
 Production assets are gzip-compressed on demand with Bun's native compressor
 when the browser advertises support through `Accept-Encoding`. Compressed bytes
-are cached in memory, while development serves the original files to keep
-rebuilds immediate.
+use the bounded memory cache, while development serves the original files to
+keep rebuilds immediate.
+
+`await app.stop()` closes HTTP, file watchers, MongoDB, hydrated collaboration
+documents, and Bun's memory caches. Applications started with `startRakunBun()`
+also perform this graceful cleanup for `SIGTERM` and `SIGINT`, including Railway
+deployment shutdowns.
 
 ## Public API
 
-- `RakunBunConfig`, `RakunBunCssOptions`, `RakunBunDocumentProps`, `loadRakunConfig()`, and
-  `resolveRakunConfig()`
+- `RakunBunConfig`, `RakunBunCacheOptions`, `RakunBunCssOptions`,
+  `RakunBunDocumentProps`, `loadRakunConfig()`, and `resolveRakunConfig()`
 - `createRakunBun()` and `startRakunBun()`
 - `RakunBunApplication.build()`, `.fetch()`, `.serve()`, `.invalidatePath()`,
   and `.stop()`
 - `discoverRakunModules()`
 - `createBunPlatform()`
 - `Link` and `usePathname()` for Bun client navigation
-- `RakunRouteCache`
+- `RakunRouteCache` and `RakunRouteCacheOptions`
 
 The `web` config hook can replace direct core reads for a remote or test data
 source. Normal monolithic applications should use `bootstrap` and let the

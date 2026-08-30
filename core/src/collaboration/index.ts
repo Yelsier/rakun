@@ -8,10 +8,16 @@ let collaborationService: CollaborationService | null = null
 export const createCollaborationService = (
   config: CollaborationServiceConfig = {
     adapter: createMemoryCollaborationAdapter(),
-  },
+  }
 ) => {
+  collaborationService?.dispose()
   collaborationService = createCollaborationServiceFromAdapter(config)
   return collaborationService
+}
+
+export const closeCollaborationService = (): void => {
+  collaborationService?.dispose()
+  collaborationService = null
 }
 
 export const getCollaborationService = () => {

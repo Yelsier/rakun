@@ -1,4 +1,4 @@
-import type { Db, MongoClient } from 'mongodb'
+import type { Db, MongoClient, MongoClientOptions } from 'mongodb'
 
 import { checkFailureCase, DbErrorUnknown } from './dbService'
 import { createIndexes } from './createIndexes'
@@ -9,6 +9,8 @@ type Environment = 'local' | 'development' | 'test' | 'production'
 export interface MongoConfig {
   MONGO_URI: string
   ENVIRONMENT?: Environment
+  /** MongoDB driver options. Idle pooled sockets close after 60 seconds by default. */
+  clientOptions?: MongoClientOptions
 }
 
 type DatabaseConnection = {
@@ -36,7 +38,7 @@ const getConnection = (uri: string): DatabaseConnection => {
 }
 
 export async function connectDatabase(
-  config: MongoConfig,
+  config: MongoConfig
 ): Promise<{ client: MongoClient; db: Db }> {
   checkFailureCase('ConnectionFailed')
   currentUri = config.MONGO_URI
@@ -55,9 +57,14 @@ export async function connectDatabase(
   }
 
   connection.connectPromise = (async () => {
+    let pendingClient: MongoClient | undefined
     try {
       const { MongoClient } = getMongoDB()
-      const client = await MongoClient.connect(config.MONGO_URI)
+      pendingClient = await MongoClient.connect(config.MONGO_URI, {
+        maxIdleTimeMS: 60_000,
+        ...config.clientOptions,
+      })
+      const client = pendingClient
       const db = client.db(config.MONGO_URI.split('/').pop()?.split('?')[0])
 
       if (config.ENVIRONMENT !== 'test') {
@@ -69,6 +76,11 @@ export async function connectDatabase(
 
       return { client, db }
     } catch (error) {
+      await pendingClient?.close().catch(() => undefined)
+      if (!connection.client) {
+        connections.delete(config.MONGO_URI)
+        if (currentUri === config.MONGO_URI) currentUri = null
+      }
       throw new DbErrorUnknown('Failed to connect to database: ' + String(error))
     } finally {
       connection.connectPromise = null
@@ -79,9 +91,16 @@ export async function connectDatabase(
 }
 
 export async function closeDatabase(config?: MongoConfig): Promise<void> {
-  const uri = config?.MONGO_URI ?? currentUri
-  if (!uri) return
+  if (!config) {
+    await Promise.all(Array.from(connections.keys(), async (uri) => await closeConnection(uri)))
+    currentUri = null
+    return
+  }
 
+  await closeConnection(config.MONGO_URI)
+}
+
+const closeConnection = async (uri: string): Promise<void> => {
   const connection = connections.get(uri)
   if (!connection) return
 
@@ -101,6 +120,7 @@ export async function closeDatabase(config?: MongoConfig): Promise<void> {
   if (!connection.client) {
     connection.db = null
     connections.delete(uri)
+    if (currentUri === uri) currentUri = null
     return
   }
 

@@ -7,6 +7,22 @@ type AttemptBucket = {
 };
 
 const attempts = new Map<string, AttemptBucket>();
+const MAX_ATTEMPT_BUCKETS = 10_000;
+let cleanupTimer: ReturnType<typeof setTimeout> | undefined;
+
+const cancelCleanup = () => {
+  if (!cleanupTimer) return;
+  clearTimeout(cleanupTimer);
+  cleanupTimer = undefined;
+};
+
+const scheduleCleanup = () => {
+  cancelCleanup();
+  if (attempts.size === 0) return;
+  const nextExpiry = Math.min(...Array.from(attempts.values(), ({ resetAt }) => resetAt));
+  cleanupTimer = setTimeout(() => cleanupExpiredAttempts(), Math.max(1, nextExpiry - Date.now()));
+  cleanupTimer.unref?.();
+};
 
 const cleanupExpiredAttempts = () => {
   const now = Date.now();
@@ -15,6 +31,7 @@ const cleanupExpiredAttempts = () => {
       attempts.delete(key);
     }
   }
+  scheduleCleanup();
 };
 
 export const getRequestRateLimitIdentifier = (ctx?: RakunRequestContext) => {
@@ -27,7 +44,11 @@ export const getRequestRateLimitIdentifier = (ctx?: RakunRequestContext) => {
       ? forwardedFor[0]
       : forwardedFor || (Array.isArray(realIp) ? realIp[0] : realIp));
 
-  return String(value || "unknown").split(",")[0]?.trim() || "unknown";
+  return (
+    String(value || "unknown")
+      .split(",")[0]
+      ?.trim() || "unknown"
+  );
 };
 
 export const assertAuthRateLimit = ({
@@ -50,13 +71,25 @@ export const assertAuthRateLimit = ({
     });
   }
 
+  attempts.delete(key);
   attempts.set(key, {
     count: bucket && bucket.resetAt > now ? bucket.count + 1 : 1,
     resetAt: bucket && bucket.resetAt > now ? bucket.resetAt : now + windowMs,
   });
+  while (attempts.size > MAX_ATTEMPT_BUCKETS) {
+    const oldest = attempts.keys().next();
+    if (oldest.done) break;
+    attempts.delete(oldest.value);
+  }
+  scheduleCleanup();
 };
 
 export const resetAuthRateLimit = (key: string) => {
   attempts.delete(key);
+  scheduleCleanup();
 };
 
+export const clearAuthRateLimits = () => {
+  attempts.clear();
+  cancelCleanup();
+};

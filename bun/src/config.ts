@@ -7,6 +7,19 @@ const CONFIG_PATH = Symbol('rakun-config-path')
 
 type ConfigWithPath = RakunBunConfig & { [CONFIG_PATH]?: string }
 
+const resolveCacheValue = (
+  name: string,
+  value: number | undefined,
+  fallback: number,
+  minimum = 0
+): number => {
+  const resolved = value ?? fallback
+  if (!Number.isSafeInteger(resolved) || resolved < minimum) {
+    throw new Error(`cache.${name} must be a safe integer greater than or equal to ${minimum}.`)
+  }
+  return resolved
+}
+
 const normalizeBasePath = (value: string, fallback: string): string => {
   const normalized = (value.trim() || fallback).replace(/^\/+|\/+$/g, '')
   return `/${normalized}`
@@ -21,6 +34,35 @@ export const resolveRakunConfig = (
   const resolvedConfig: ResolvedRakunBunConfig = {
     ...config,
     apiBasePath: normalizeBasePath(config.apiBasePath ?? '', '/api'),
+    cache: {
+      assetIdleTimeoutMs: resolveCacheValue(
+        'assetIdleTimeoutMs',
+        config.cache?.assetIdleTimeoutMs,
+        5 * 60_000
+      ),
+      assetMaxBytes: resolveCacheValue(
+        'assetMaxBytes',
+        config.cache?.assetMaxBytes,
+        32 * 1024 * 1024
+      ),
+      routeIdleTimeoutMs: resolveCacheValue(
+        'routeIdleTimeoutMs',
+        config.cache?.routeIdleTimeoutMs,
+        5 * 60_000
+      ),
+      routeMaxBytes: resolveCacheValue(
+        'routeMaxBytes',
+        config.cache?.routeMaxBytes,
+        32 * 1024 * 1024
+      ),
+      routeMaxEntries: resolveCacheValue('routeMaxEntries', config.cache?.routeMaxEntries, 128),
+      routeMaxGenerations: resolveCacheValue(
+        'routeMaxGenerations',
+        config.cache?.routeMaxGenerations,
+        2,
+        1
+      ),
+    },
     documentFile: resolve(rootDir, 'src', 'document.tsx'),
     manager:
       config.manager === false

@@ -52,9 +52,25 @@ export type RakunBunCssOptions = {
   plugins?: AcceptedPlugin[]
 }
 
+export type RakunBunCacheOptions = {
+  /** Maximum compressed asset bytes retained in process memory. Defaults to 32 MiB. */
+  assetMaxBytes?: number
+  /** Purge compressed assets after this many milliseconds without access. Defaults to 5 minutes. */
+  assetIdleTimeoutMs?: number
+  /** Maximum rendered-route bytes retained in process memory. Defaults to 32 MiB. */
+  routeMaxBytes?: number
+  /** Maximum rendered routes retained in process memory. Defaults to 128. */
+  routeMaxEntries?: number
+  /** Purge rendered routes after this many milliseconds without access. Defaults to 5 minutes. */
+  routeIdleTimeoutMs?: number
+  /** Completed on-disk generations retained per static route. Defaults to 2. */
+  routeMaxGenerations?: number
+}
+
 export type RakunBunConfig = {
   apiBasePath?: string
   bootstrap?: RakunBootstrapOptions | (() => RakunBootstrapOptions)
+  cache?: RakunBunCacheOptions
   css?: RakunBunCssOptions
   manager?: false | RakunBunManagerOptions
   modulesDir?: string
@@ -67,9 +83,10 @@ export type RakunBunConfig = {
 
 export type ResolvedRakunBunConfig = Omit<
   RakunBunConfig,
-  'apiBasePath' | 'manager' | 'modulesDir' | 'outDir' | 'rootDir' | 'server'
+  'apiBasePath' | 'cache' | 'manager' | 'modulesDir' | 'outDir' | 'rootDir' | 'server'
 > & {
   apiBasePath: string
+  cache: Required<RakunBunCacheOptions>
   documentFile: string
   manager:
     | false

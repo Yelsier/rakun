@@ -245,7 +245,7 @@ test('builds server/client graphs and a static route', async () => {
     expect(revalidated.status).toBe(200)
     expect(await (await fetch(server.url)).text()).toContain('<h1>Updated /</h1>')
   } finally {
-    application.stop()
+    await application.stop()
   }
 
   const routesManifest = await readFile(join(root, 'dist', 'manifests', 'routes.json'), 'utf8')
@@ -313,7 +313,7 @@ test('builds server/client graphs and a static route', async () => {
     expect(productionHtml).toContain('<header>Document shell</header>')
     expect(productionHtml).toContain('<h1>Production /dynamic</h1>')
   } finally {
-    production.app.stop()
+    await production.app.stop()
   }
 
   await writeFile(
@@ -328,11 +328,7 @@ test('builds server/client graphs and a static route', async () => {
 test('renders usePathname from the server pathname snapshot', async () => {
   const Pathname = () => createElement('span', undefined, usePathname())
   const stream = await renderToReadableStream(
-    createElement(
-      RakunPathnameProvider,
-      { pathname: '/current-path' },
-      createElement(Pathname)
-    )
+    createElement(RakunPathnameProvider, { pathname: '/current-path' }, createElement(Pathname))
   )
   await stream.allReady
   expect(await new Response(stream).text()).toBe('<span>/current-path</span>')

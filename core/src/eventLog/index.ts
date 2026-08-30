@@ -28,6 +28,11 @@ export const getEventLogService = (): EventLogService => {
 
 export const hasEventLogService = (): boolean => Boolean(eventLogService || config)
 
+export const resetEventLogService = (): void => {
+  eventLogService = null
+  config = null
+}
+
 export const recordEvent = (input: EventLogInput) => getEventLogService().record(input)
 
 export const queryEvents = (input?: EventLogQuery) => getEventLogService().query(input)

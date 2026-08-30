@@ -14,6 +14,7 @@ import {
   isRealtimeEndpointRequest,
   recordApiError,
   runWithRakunRequestTrace,
+  shutdownRakun,
   type RakunBootstrapOptions,
 } from '@rakun-kit/core'
 import type { PageInput } from '@rakun-kit/core/contracts'
@@ -23,6 +24,7 @@ import { buildRakunCode, describeBuild, writeRakunManifests } from './build'
 import { RakunRouteCache } from './cache'
 import { normalizeRakunPath, resolveRakunConfig } from './config'
 import { jsonResponse } from './http'
+import { BoundedMemoryCache } from './memory-cache'
 import { hasUseClientDirective } from './modules'
 import { createBunPlatform } from './platform'
 import { renderRakunRoute } from './render'
@@ -42,6 +44,7 @@ type BunWebSocketData = { kind: 'dev' }
 type RakunBunInternalOptions = {
   cwd?: string
   document?: RakunBunDocumentImport
+  handleProcessSignals?: boolean
   onBuildProgress?: (message: string) => void
   registry?: RakunServerModuleRegistry
 }
@@ -142,7 +145,7 @@ const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer =>
 const serveAsset = async (
   config: ResolvedRakunBunConfig,
   request: Request,
-  compressedAssets: Map<string, ArrayBuffer>
+  compressedAssets: BoundedMemoryCache<string, ArrayBuffer>
 ): Promise<Response> => {
   const pathname = decodeURIComponent(new URL(request.url).pathname)
   const relative = pathname.replace(/^\/assets\/?/, '')
@@ -237,9 +240,12 @@ export class RakunBunApplication {
   private pendingDevelopmentFiles = new Set<string>()
   private pendingDevelopmentUnknown = false
   private prepared = false
+  private bootstrapPrepared = false
   private readonly prebuilt: boolean
-  private readonly compressedAssets = new Map<string, ArrayBuffer>()
+  private readonly compressedAssets: BoundedMemoryCache<string, ArrayBuffer>
   private readonly onBuildProgress?: (message: string) => void
+  private stopping?: Promise<void>
+  private readonly processSignalHandlers = new Map<NodeJS.Signals, () => void>()
 
   constructor(config: RakunBunConfig, internal: RakunBunInternalOptions = {}) {
     this.config = resolveRakunConfig(config, internal.cwd)
@@ -250,8 +256,21 @@ export class RakunBunApplication {
     this.prebuilt = internal.registry !== undefined
     this.cache = new RakunRouteCache(
       resolve(this.config.outDir, 'routes'),
-      async (path) => await this.renderPath(path)
+      async (path) => await this.renderPath(path),
+      {
+        idleTimeoutMs: this.config.cache.routeIdleTimeoutMs,
+        maxBytes: this.config.cache.routeMaxBytes,
+        maxEntries: this.config.cache.routeMaxEntries,
+        maxGenerations: this.config.cache.routeMaxGenerations,
+      }
     )
+    this.compressedAssets = new BoundedMemoryCache({
+      idleTimeoutMs: this.config.cache.assetIdleTimeoutMs,
+      maxBytes: this.config.cache.assetMaxBytes,
+      maxEntries: Number.MAX_SAFE_INTEGER,
+      sizeOf: (value) => value.byteLength,
+    })
+    if (internal.handleProcessSignals) this.attachProcessSignalHandlers()
   }
 
   async build(options: { clean?: boolean } = {}): Promise<RakunBunBuildResult> {
@@ -309,10 +328,7 @@ export class RakunBunApplication {
         if (request.method === 'GET' && segments.join('/') === 'health') {
           return jsonResponse({ ok: true }, 200, { 'Cache-Control': 'no-store' })
         }
-        if (
-          (request.method === 'GET' || request.method === 'HEAD') &&
-          segments[0] === 'media'
-        ) {
+        if ((request.method === 'GET' || request.method === 'HEAD') && segments[0] === 'media') {
           const publicMediaResponse = await handlePublicMediaRequest({
             request,
             pathSegments: segments.slice(1),
@@ -398,11 +414,25 @@ export class RakunBunApplication {
     return this.server
   }
 
-  stop(): void {
-    for (const watcher of this.watchers) watcher.close()
-    this.watchers = []
-    this.server?.stop()
-    this.server = undefined
+  async stop(): Promise<void> {
+    if (this.stopping) return await this.stopping
+    this.stopping = this.stopRuntime()
+    try {
+      await this.stopping
+    } finally {
+      this.stopping = undefined
+    }
+  }
+
+  private attachProcessSignalHandlers(): void {
+    if (this.processSignalHandlers.size > 0) return
+    for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+      const handler = () => {
+        void this.stop().finally(() => process.exit(0))
+      }
+      this.processSignalHandlers.set(signal, handler)
+      process.once(signal, handler)
+    }
   }
 
   private async prepareBootstrap(): Promise<void> {
@@ -410,7 +440,10 @@ export class RakunBunApplication {
     const host =
       this.config.server.hostname === '0.0.0.0' ? '127.0.0.1' : this.config.server.hostname
     applyBootstrap(this.config, `${protocol}//${host}:${this.config.server.port}`)
-    if (this.config.bootstrap) await ensureRakunInitialized()
+    if (this.config.bootstrap) {
+      await ensureRakunInitialized()
+      this.bootstrapPrepared = true
+    }
   }
 
   private async prepare(): Promise<void> {
@@ -457,7 +490,7 @@ export class RakunBunApplication {
     }
 
     if (this.staticPaths.has(path)) {
-      const cached = this.cache.get(path)
+      const cached = await this.cache.getOrLoad(path)
       if (cached) return cached
       return await this.cache.regenerate(path)
     }
@@ -643,6 +676,32 @@ export class RakunBunApplication {
 
     return Array.from(clientModules)
   }
+
+  private async stopRuntime(): Promise<void> {
+    for (const [signal, handler] of this.processSignalHandlers) {
+      process.off(signal, handler)
+    }
+    this.processSignalHandlers.clear()
+    for (const watcher of this.watchers) watcher.close()
+    this.watchers = []
+    this.queuedDevelopmentRebuild = false
+    this.pendingDevelopmentFiles.clear()
+    this.pendingDevelopmentUnknown = false
+
+    const server = this.server
+    this.server = undefined
+    if (server) await server.stop(true)
+    if (this.developmentRebuild) await this.developmentRebuild.catch(() => undefined)
+
+    this.cache.dispose()
+    this.compressedAssets.dispose()
+    this.staticPaths.clear()
+    this.prepared = false
+    if (this.bootstrapPrepared) {
+      this.bootstrapPrepared = false
+      await shutdownRakun()
+    }
+  }
 }
 
 export const createRakunBun = (
@@ -654,8 +713,16 @@ export const startRakunBun = async (
   config: RakunBunConfig,
   internal: RakunBunInternalOptions = {}
 ): Promise<RakunBunApplication> => {
-  const application = createRakunBun(config, internal)
-  const server = await application.serve()
-  console.log(`Rakun listening on ${server.url}`)
-  return application
+  const application = createRakunBun(config, {
+    ...internal,
+    handleProcessSignals: true,
+  })
+  try {
+    const server = await application.serve()
+    console.log(`Rakun listening on ${server.url}`)
+    return application
+  } catch (error) {
+    await application.stop()
+    throw error
+  }
 }

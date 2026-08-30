@@ -43,23 +43,32 @@ const run = async (): Promise<void> => {
       cwd: config.rootDir,
       onBuildProgress: (message) => buildProgress?.update(message),
     })
-    const result = await application.build({ clean: true })
-    buildProgress?.update('Bundling the production server')
-    const generatedRegistry = resolve(config.rootDir, '.rakun', 'generated', 'modules.generated.ts')
-    const server = await buildRakunServerBundle({
-      config,
-      configPath: absoluteConfigPath,
-      generatedRegistry,
-    })
-    buildProgress?.update('Analyzing build output')
-    const report = await formatRakunBuildReport({
-      config,
-      durationMs: performance.now() - startedAt,
-      result,
-      serverPath: server,
-    })
-    buildProgress?.complete()
-    console.log(report)
+    try {
+      const result = await application.build({ clean: true })
+      buildProgress?.update('Bundling the production server')
+      const generatedRegistry = resolve(
+        config.rootDir,
+        '.rakun',
+        'generated',
+        'modules.generated.ts'
+      )
+      const server = await buildRakunServerBundle({
+        config,
+        configPath: absoluteConfigPath,
+        generatedRegistry,
+      })
+      buildProgress?.update('Analyzing build output')
+      const report = await formatRakunBuildReport({
+        config,
+        durationMs: performance.now() - startedAt,
+        result,
+        serverPath: server,
+      })
+      buildProgress?.complete()
+      console.log(report)
+    } finally {
+      await application.stop()
+    }
     return
   }
 

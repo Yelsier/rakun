@@ -33,6 +33,11 @@ export const getMailService = (): MailService => {
 
 export const hasMailService = (): boolean => Boolean(_mailService || _config)
 
+export const resetMailService = (): void => {
+  _mailService = null
+  _config = null
+}
+
 export const sendMail = (input: SendMailInput) => getMailService().send(input)
 
 export * from './adapters'

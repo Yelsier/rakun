@@ -59,6 +59,7 @@ export function createLogger({
   maxTraceEntries?: number;
   verbose?: boolean;
 } = {}) {
+  if (_logger) void _logger.close();
   const minLevel = LEVELS[level] ?? LEVELS.info;
   const traceStorage = new AsyncLocalStorage<{ steps: TraceStep[] }>();
   let globalTraceSteps: TraceStep[] = [];
@@ -71,6 +72,7 @@ export function createLogger({
   let scheduled = false;
   let dropped = 0;
   let timer: NodeJS.Timeout | null = null;
+  let closed = false;
 
   function shouldLog(lvl: LEVEL_KEY) {
     return (LEVELS[lvl] ?? 999) >= minLevel;
@@ -333,9 +335,20 @@ export function createLogger({
         drainAll();
       }),
     close: async () => {
+      if (closed) return;
+      closed = true;
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+      process.off("beforeExit", beforeExit);
       await api.flush();
       if (stream !== process.stdout) stream.end();
     },
+  };
+
+  const beforeExit = () => {
+    void api.flush();
   };
 
   if (flushIntervalMs > 0) {
@@ -343,16 +356,7 @@ export function createLogger({
     timer.unref?.();
   }
 
-  // Buen cierre
-  process.on("beforeExit", () => api.flush());
-  process.on("SIGTERM", async () => {
-    await api.close();
-    process.exit(0);
-  });
-  process.on("SIGINT", async () => {
-    await api.close();
-    process.exit(0);
-  });
+  process.on("beforeExit", beforeExit);
 
   _logger = api;
 
@@ -360,5 +364,12 @@ export function createLogger({
 }
 
 let _logger: ReturnType<typeof createLogger>;
+
+export async function closeLogger(): Promise<void> {
+  const logger = _logger;
+  if (!logger) return;
+  _logger = undefined!;
+  await logger.close();
+}
 
 export { _logger as Logger };

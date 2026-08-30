@@ -3,28 +3,38 @@ import {
   registerContentType,
   clearExternalContentTypes,
 } from "./lib/Registry";
-import { createLogger, Logger } from "./lib/Logger";
+import { closeLogger, createLogger, Logger } from "./lib/Logger";
 import * as internalContentTypes from "./internal-content-types";
 import { applyManagerRoleHooks } from "./internal-content-types/ManagerRoleHooks";
 import { applyManagerUserHooks } from "./internal-content-types/ManagerUserHooks";
 import { syncAdminRole } from "./internal-content-types/syncAdminRole";
 import { syncConfiguredRoutes } from "./api/utils/routes/syncConfiguredRoutes";
-import { createMongoConnection, getMongoService } from "./orm";
+import { closeDatabase, createMongoConnection, getMongoService } from "./orm";
 import { runMigrations } from "./orm/migrations";
-import { createMediaService, getMediaService } from "./media";
-import { createMailService, getMailService } from "./mail";
+import {
+  createMediaService,
+  getMediaService,
+  resetMediaService,
+} from "./media";
+import { createMailService, getMailService, resetMailService } from "./mail";
 import {
   createEventLogService,
   createMongoEventLogAdapter,
   getEventLogService,
+  resetEventLogService,
 } from "./eventLog";
 import {
   createTranslationService,
   getTranslationService,
   hasTranslationService,
+  resetTranslationService,
 } from "./translation";
 import { resolvePlatform, setPlatform } from "./platform";
-import { createCollaborationService } from "./collaboration";
+import {
+  closeCollaborationService,
+  createCollaborationService,
+} from "./collaboration";
+import { clearAuthRateLimits } from "./api/utils/authRateLimit";
 import { Fields } from "./lib/fields";
 import {
   getRakunBootstrapOptions,
@@ -43,18 +53,25 @@ import {
 let initPromise: Promise<void> | null = null;
 let initializedPluginIds = new Set<string>();
 
+const releaseRuntimeServices = (): void => {
+  closeCollaborationService();
+  clearAuthRateLimits();
+  resetMailService();
+  resetEventLogService();
+  resetMediaService();
+  resetTranslationService();
+};
+
 const ensureLogger = (): void => {
   const bootstrapOptions = getRakunBootstrapOptions();
 
   if (!Logger) {
-    createLogger({
-      level: "info",
-      prettify: true,
-    });
-  }
-
-  if (bootstrapOptions?.logger) {
-    createLogger(bootstrapOptions.logger);
+    createLogger(
+      bootstrapOptions?.logger ?? {
+        level: "info",
+        prettify: true,
+      },
+    );
   }
 };
 
@@ -115,9 +132,9 @@ const ensureTranslation = (): void => {
 };
 
 const ensureCollaboration = (): void => {
-  const config = getRakunBootstrapOptions()?.collaboration
-  createCollaborationService(config)
-}
+  const config = getRakunBootstrapOptions()?.collaboration;
+  createCollaborationService(config);
+};
 
 export const ensureRakunInitialized = async () => {
   if (initPromise) {
@@ -169,8 +186,23 @@ export const ensureRakunInitialized = async () => {
     await initPromise;
   } catch (error) {
     initPromise = null;
+    releaseRuntimeServices();
+    await closeDatabase();
+    await closeLogger();
     throw error;
   }
+};
+
+/** Release process resources created by Rakun so the runtime can stop or restart cleanly. */
+export const shutdownRakun = async (): Promise<void> => {
+  const initialization = initPromise;
+  initPromise = null;
+  if (initialization) await initialization.catch(() => undefined);
+
+  releaseRuntimeServices();
+  initializedPluginIds = new Set();
+  await closeDatabase();
+  await closeLogger();
 };
 
 export const runWithRakunRequestTrace = <T>(
@@ -329,6 +361,7 @@ export {
   createCollaborationService,
   createCollaborationServiceFromAdapter,
   createMemoryCollaborationAdapter,
+  closeCollaborationService,
   getCollaborationService,
   type CollaborationAdapter,
   type CollaborationPresence,
@@ -336,7 +369,7 @@ export {
   type CollaborationRoomState,
   type CollaborationService,
   type CollaborationServiceConfig,
-} from './collaboration'
+} from "./collaboration";
 export type {
   AccountRecoveryConfig,
   PasswordResetMailProps,
