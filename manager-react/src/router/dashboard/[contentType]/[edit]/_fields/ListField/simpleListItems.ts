@@ -5,9 +5,14 @@ export type SimpleListItem<Value> = {
 
 export const snapshotSimpleListOrder = <Value>(
   items: SimpleListItem<Value>[],
-  getState: (uid: string) => Value | undefined,
+  getState: (uid: string) => Value | undefined
 ) =>
   items.map((item) => ({
     uid: item.uid,
     value: getState(item.uid) ?? item.value,
   }))
+
+export const snapshotSimpleListValues = <Value>(
+  items: SimpleListItem<Value>[],
+  getState: (uid: string) => Value | undefined
+) => snapshotSimpleListOrder(items, getState).map((item) => item.value)

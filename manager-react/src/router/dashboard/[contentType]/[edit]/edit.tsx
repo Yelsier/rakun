@@ -149,7 +149,7 @@ const EditPageContent = () => {
     if (autoPreviewRequested.current === autoPreviewKey) return
 
     autoPreviewRequested.current = autoPreviewKey
-    void previewState.handlePreview().then((started) => {
+    void previewState.handlePreview({ automatic: true }).then((started) => {
       if (!started && autoPreviewRequested.current === autoPreviewKey) {
         autoPreviewRequested.current = null
       }

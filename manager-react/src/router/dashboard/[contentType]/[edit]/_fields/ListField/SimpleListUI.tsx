@@ -14,6 +14,7 @@ import { FieldWrapper } from '../shared/FieldWrapper'
 import { ItemLimitStatus } from '../shared/ItemLimitStatus'
 import {
   snapshotSimpleListOrder,
+  snapshotSimpleListValues,
   type SimpleListItem,
 } from './simpleListItems'
 import { useTranslations } from '@/i18n'
@@ -534,10 +535,9 @@ const GenericSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) =
   const getStateWithNested = () => {
     const states = getState()
     if (!states) return states
-    return (states as SimpleListItem<FieldValue>[]).map((item) => ({
-      uid: item.uid,
-      value: refs.current[item.uid]?.getState(),
-    }))
+    return snapshotSimpleListValues(states as SimpleListItem<FieldValue>[], (uid) =>
+      refs.current[uid]?.getState() as FieldValue | undefined,
+    )
   }
 
   const handleDelete = useCallback(
@@ -564,7 +564,7 @@ const GenericSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) =
       })) || []),
       {
         uid: crypto.randomUUID(),
-        value: undefined as unknown as FieldValue,
+        value: undefined,
       },
     ])
   }, [onValueChange])

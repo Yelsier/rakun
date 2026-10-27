@@ -245,6 +245,12 @@ the underlying canvas. On mobile, Rakun hides the preview, renders the editor as
 the main surface, and changes the section rail into a horizontally scrollable
 top bar.
 
+Opening the automatic preview reads the current working state without showing
+Save validation errors. Explicit preview refreshes and Save still validate the
+form. Existing relation selections remain available while their options load.
+Simple arrays share their field values directly; manager-only row identities
+are never included in collaborative or saved link arrays.
+
 IndexedDB persistence does not replace Save: local and shared CRDT updates are
 working state, while MongoDB and public/web reads change only after the server
 save operation succeeds. Save therefore requires connectivity.

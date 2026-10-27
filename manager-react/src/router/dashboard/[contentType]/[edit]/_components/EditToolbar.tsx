@@ -362,7 +362,7 @@ export const EditToolbar = ({
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top" sideOffset={8}>
-                {t('contentEdit.formHasErrors')}
+                {t('contentEdit.fixHasErrors')}
               </TooltipContent>
             </Tooltip>
             <DropdownMenu>
@@ -405,7 +405,7 @@ export const EditToolbar = ({
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top" sideOffset={8}>
-              {t('contentEdit.formHasErrors')}
+              {t('contentEdit.fixHasErrors')}
             </TooltipContent>
           </Tooltip>
         )}

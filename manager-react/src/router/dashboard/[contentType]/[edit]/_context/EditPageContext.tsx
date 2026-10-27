@@ -412,10 +412,10 @@ export const EditPageProvider = ({
     visibility,
   })
   const saveFormState = form.saveState
-  const readTemplateModules = useCallback(() => {
+  const readTemplateModules = useCallback(({ validate = true }: { validate?: boolean } = {}) => {
     if (!contentType.hasTemplate) return []
 
-    const value = templateRef.current?.getValue() as
+    const value = (validate ? templateRef.current?.getValue() : templateRef.current?.getState()) as
       | ({ _error?: string } & Record<string, unknown>)
       | undefined
     if (value?._error) {

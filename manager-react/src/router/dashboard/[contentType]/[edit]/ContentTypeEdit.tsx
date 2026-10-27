@@ -349,7 +349,7 @@ const ContentTypeEdit = forwardRef<
         )
 
         if (Object.values(values).some(hasNestedError)) {
-          const _error = t('contentEdit.formFixErrors')
+          const _error = t('contentEdit.fixFixErrors')
           addError(id, _error)
           return { _error }
         }
@@ -369,14 +369,27 @@ const ContentTypeEdit = forwardRef<
               return [fieldName, formState[fieldName]]
             }
 
-            return [fieldName, refs.current[i]?.getState()]
+            const fieldRef = refs.current[i]
+            return [
+              fieldName,
+              fieldRef ? fieldRef.getState() : defaultDataExtractor(fieldName, props.defaultData),
+            ]
           })
         )
         const bindings = cleanBindings(dynamicBindings)
         return bindings ? { ...states, _bindings: bindings } : states
       },
     }),
-    [addError, allItems, contentType.name, dynamicBindings, formState, id, visibleFieldNames]
+    [
+      addError,
+      allItems,
+      contentType.name,
+      dynamicBindings,
+      formState,
+      id,
+      props.defaultData,
+      visibleFieldNames,
+    ]
   )
 
   return (

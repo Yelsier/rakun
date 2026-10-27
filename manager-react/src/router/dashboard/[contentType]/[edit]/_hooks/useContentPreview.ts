@@ -19,8 +19,8 @@ type UseContentPreviewParams = {
   onModuleSelect?: (message: PreviewModuleSelectMessage) => void
   preview?: ManagerPreviewConfig
   previewRoute?: ContentTypeRouteMeta
-  readFormData: (options?: { showSaveError?: boolean }) => unknown | undefined
-  readTemplateModules?: () => unknown[] | undefined
+  readFormData: (options?: { showSaveError?: boolean; validate?: boolean }) => unknown | undefined
+  readTemplateModules?: (options?: { validate?: boolean }) => unknown[] | undefined
 }
 
 const defaultPreviewTokenParam = 'rakun_preview'
@@ -483,11 +483,11 @@ export const useContentPreview = ({
     postPreviewInspectorMessage(previewInspectorEnabled)
   }, [postPreviewInspectorMessage, previewInspectorEnabled])
 
-  const handlePreview = useCallback(async () => {
+  const handlePreview = useCallback(async ({ automatic = false }: { automatic?: boolean } = {}) => {
     if (!preview || !previewRoute) return false
 
-    const data = readFormData()
-    const templateModules = readTemplateModules?.()
+    const data = readFormData({ showSaveError: !automatic, validate: !automatic })
+    const templateModules = readTemplateModules?.({ validate: !automatic })
 
     if (!data || (readTemplateModules && !templateModules)) return false
 
@@ -518,7 +518,7 @@ export const useContentPreview = ({
       if (requestId !== previewRequestId.current) return true
 
       setPreviewError(t('contentEdit.previewCouldNotLoad'))
-      toast.error(t('contentEdit.previewCouldNotLoad'))
+      if (!automatic) toast.error(t('contentEdit.previewCouldNotLoad'))
       return true
     }
   }, [

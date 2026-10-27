@@ -30,6 +30,7 @@ export const useEditFormController = ({
 
   const saveState = useCallback(() => {
     draft.current = {
+      ...draft.current,
       ...(iterablesRef.current?.getState() as object),
       ...(nonIterablesRef.current?.getState() as object),
       ...(seoRef.current?.getState() as object),
@@ -37,8 +38,17 @@ export const useEditFormController = ({
   }, [])
 
   const readFormData = useCallback(
-    ({ showSaveError = true }: { showSaveError?: boolean } = {}) => {
+    ({
+      showSaveError = true,
+      validate = true,
+    }: { showSaveError?: boolean; validate?: boolean } = {}) => {
       saveState()
+      if (!validate) {
+        return {
+          ...draft.current,
+          ...(hasVisibility ? { _visibility: visibility } : {}),
+        }
+      }
       const iterablesValue = iterablesRef.current?.getValue() as
         | ({ _error?: string } & object)
         | undefined
