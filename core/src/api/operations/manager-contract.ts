@@ -122,6 +122,8 @@ import {
   prepareUploadOutput,
   reimportMediaInput,
   reimportMediaOutput,
+  generatePosterInput,
+  generatePosterOutput,
   replaceMediaInput,
   replaceMediaOutput,
   createPreviewInput,
@@ -709,6 +711,14 @@ export const createManagerOperationContracts = () =>
       description: "Reimport an image using the selected optimization settings",
       input: reimportMediaInput,
       output: reimportMediaOutput,
+      method: "post",
+    }),
+    "manager.media.generatePoster": defineOperationContract({
+      access: "auth",
+      kind: "mutation",
+      description: "Generate a video poster from a selected second",
+      input: generatePosterInput,
+      output: generatePosterOutput,
       method: "post",
     }),
     "manager.media.replace": defineOperationContract({

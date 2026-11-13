@@ -26,6 +26,7 @@ import {
 
 import { useTranslations } from '@/i18n'
 import type { MediaRecord } from '@/lib/media'
+import { useMedia } from '@/media'
 
 type ExpandedPreviewDialogProps = {
   preview: MediaRecord | null
@@ -33,6 +34,10 @@ type ExpandedPreviewDialogProps = {
   isSaving?: boolean
   onClose: () => void
   onSaveDetails: (input: { name: string; title: string; alt: string }) => Promise<void>
+  onSelectPoster: () => Promise<void>
+  onRemovePoster: () => Promise<void>
+  onGeneratePoster: (second: number) => Promise<void>
+  isGeneratingPoster?: boolean
 }
 
 export default function ExpandedPreviewDialog({
@@ -41,17 +46,25 @@ export default function ExpandedPreviewDialog({
   isSaving = false,
   onClose,
   onSaveDetails,
+  onSelectPoster,
+  onRemovePoster,
+  onGeneratePoster,
+  isGeneratingPoster = false,
 }: ExpandedPreviewDialogProps) {
   const t = useTranslations()
+  const { isMediaLibraryOpen } = useMedia()
   const [name, setName] = useState('')
   const [title, setTitle] = useState('')
   const [alt, setAlt] = useState('')
+  const [posterSecond, setPosterSecond] = useState('0')
 
   useEffect(() => {
     setName(preview?.name || '')
     setTitle(preview?.title || '')
     setAlt(preview?.alt || '')
   }, [preview?._id, preview?.title, preview?.name, preview?.alt])
+
+  useEffect(() => setPosterSecond('0'), [preview?._id])
 
   const hasChanges =
     !!preview &&
@@ -72,7 +85,7 @@ export default function ExpandedPreviewDialog({
     <Dialog
       open={!!preview}
       onOpenChange={(open) => {
-        if (!open) onClose()
+        if (!open && !isMediaLibraryOpen) onClose()
       }}
     >
       <DialogContent className="max-w-[95vw] p-4 sm:max-w-6xl">
@@ -113,6 +126,7 @@ export default function ExpandedPreviewDialog({
             ) : isVideo(preview.mime) ? (
               <video
                 src={preview.sources?.some((source) => source.url) ? undefined : previewUrl}
+                poster={preview.posterUrl}
                 controls
                 className="h-full w-full object-contain"
               >
@@ -181,6 +195,68 @@ export default function ExpandedPreviewDialog({
                     {t('common.save')}
                   </Button>
                 </div>
+
+                {isVideo(preview.mime) ? (
+                  <div className="space-y-3 rounded-md border p-3">
+                    <p className="font-medium">{t('media.posterTitle')}</p>
+                    {preview.posterUrl ? (
+                      <img
+                        src={preview.posterUrl}
+                        alt={t('media.posterTitle')}
+                        className="aspect-video w-full rounded-md bg-muted object-contain"
+                      />
+                    ) : (
+                      <p className="text-muted-foreground">{t('media.posterNone')}</p>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={isSaving || isGeneratingPoster}
+                        onClick={() => void onSelectPoster()}
+                      >
+                        {t('media.posterChoose')}
+                      </Button>
+                      {preview.posterMediaId ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          disabled={isSaving || isGeneratingPoster}
+                          onClick={() => void onRemovePoster()}
+                        >
+                          {t('media.posterRemove')}
+                        </Button>
+                      ) : null}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="media-poster-second">{t('media.posterSecond')}</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="media-poster-second"
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          value={posterSecond}
+                          onChange={(event) => setPosterSecond(event.target.value)}
+                        />
+                        <Button
+                          type="button"
+                          disabled={
+                            isSaving ||
+                            isGeneratingPoster ||
+                            !Number.isFinite(Number(posterSecond)) ||
+                            Number(posterSecond) < 0 ||
+                            !posterSecond.trim()
+                          }
+                          loading={isGeneratingPoster}
+                          onClick={() => void onGeneratePoster(Number(posterSecond))}
+                        >
+                          {t('media.posterGenerate')}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="grid grid-cols-1 gap-2">
                   <div>

@@ -213,13 +213,15 @@ const servePublicFile = async (
 }
 
 const managerHtml = (config: ResolvedRakunBunConfig, manifest: RakunBuildManifest): string => {
+  const versioned = (asset: string): string =>
+    manifest.managerVersion ? `${asset}?v=${manifest.managerVersion}` : asset
   const styles = manifest.managerAssets
     .filter((asset) => asset.endsWith('.css'))
-    .map((asset) => `<link rel="stylesheet" href="${asset}">`)
+    .map((asset) => `<link rel="stylesheet" href="${versioned(asset)}">`)
     .join('')
   const scripts = manifest.managerAssets
     .filter((asset) => asset.endsWith('.js'))
-    .map((asset) => `<script type="module" src="${asset}"></script>`)
+    .map((asset) => `<script type="module" src="${versioned(asset)}"></script>`)
     .join('')
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${styles}</head><body><div id="rakun-manager-root"></div>${scripts}</body></html>`
 }
@@ -354,7 +356,10 @@ export class RakunBunApplication {
           pathname.startsWith(`${this.config.manager.basePath}/`))
       ) {
         return new Response(managerHtml(this.config, this.getManifest()), {
-          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+          headers: {
+            'Cache-Control': 'no-store',
+            'Content-Type': 'text/html; charset=utf-8',
+          },
         })
       }
       if (pathname === '/_rakun/dev') {

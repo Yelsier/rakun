@@ -74,6 +74,9 @@ When a complete page response is passed, its top-level `literals` property is
 made available automatically to `useT`; it is not part of the public page
 `info` object. Custom providers can pass it through the separate `literals`
 prop on `PageInfoProvider`, or as the third argument to `runWithPageInfo`.
+`PageInfoProvider` serializes both values into HTML templates by default for
+browser hydration. Framework adapters that transport this data themselves can
+set `serialize={false}` and supply the same values when hydrating the client.
 
 Web plugins are explicit browser/runtime facets:
 
@@ -122,7 +125,9 @@ export function HeroImage({ image }) {
 elements. WebM sources are placed before MP4, so browsers that support WebM
 select it while the MP4 variant remains the fallback. Pass the populated media
 object directly; public storage keys are resolved with the same
-`mediaBaseUrl`/`mediaPublicPath` behavior as `Image`.
+`mediaBaseUrl`/`mediaPublicPath` behavior as `Image`. When the media has a
+`posterUrl`, `Video` uses it for the native `poster` attribute. An explicit
+`poster` prop overrides it.
 
 ```tsx
 import { Video } from '@rakun-kit/react'
@@ -143,8 +148,9 @@ for private objects are never converted into public URLs.
   components. `JsonViewer` accepts theme colors and `defaultExpandedDepth`; use
   `-1` for a fully collapsed initial tree.
 - `@rakun-kit/react/devtools`: the client-side `RakunDevToolbar` and its module
-  metadata contract for framework adapters. Applications normally consume the
-  configured toolbar through Bun or Next.
+  metadata contract for framework adapters. Its optional `onRefresh` callback
+  lets an adapter replace the default page reload with its own data refresh.
+  Applications normally consume the configured toolbar through Bun or Next.
 - `@rakun-kit/react/plugins`: web plugin contracts and registry composition.
 - `@rakun-kit/react/translation`: React translation helpers.
 

@@ -19,6 +19,7 @@ export type RakunVideoMedia = {
   width?: number | null
   height?: number | null
   sources?: RakunVideoSource[] | null
+  posterUrl?: string | null
 }
 
 type VideoElementProps = VideoHTMLAttributes<HTMLVideoElement>
@@ -109,6 +110,7 @@ export function RakunVideo({
   type,
   sources,
   fallbackSrc,
+  poster,
   title,
   width,
   height,
@@ -133,6 +135,7 @@ export function RakunVideo({
       title={title ?? video?.title ?? video?.name ?? undefined}
       width={width ?? video?.width ?? undefined}
       height={height ?? video?.height ?? undefined}
+      poster={poster ?? video?.posterUrl ?? undefined}
     >
       {resolvedSources.map((source) => (
         <source key={`${source.type ?? ''}:${source.src}`} src={source.src} type={source.type} />

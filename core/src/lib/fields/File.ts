@@ -77,6 +77,7 @@ const fileOutputSchema = z.object({
   url: z.string(),
   previewKey: z.string().nullable().optional(),
   previewUrl: z.string().nullable(),
+  posterUrl: z.string().nullable().optional(),
   name: z.string(),
   title: z.string().optional(),
   alt: z.string().nullable().optional(),

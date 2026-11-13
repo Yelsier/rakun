@@ -23,6 +23,7 @@ export type RakunDevToolbarProps = {
   documentId?: string
   editHref?: string
   initialOpen?: boolean
+  onRefresh?: () => void | Promise<void>
 }
 
 type HighlightRect = {
@@ -212,6 +213,7 @@ export function RakunDevToolbar({
   documentId,
   editHref,
   initialOpen = false,
+  onRefresh,
 }: RakunDevToolbarProps) {
   const [open, setOpen] = useState(initialOpen)
   const [hidden, setHidden] = useState(false)
@@ -221,6 +223,8 @@ export function RakunDevToolbar({
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const [highlight, setHighlight] = useState<HighlightRect | null>(null)
   const [pathname, setPathname] = useState('/')
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshError, setRefreshError] = useState(false)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const activeIndex = open && !closing ? (hoveredIndex ?? selectedIndex) : null
   const selected = useMemo(
@@ -328,6 +332,20 @@ export function RakunDevToolbar({
     }, 150)
   }
 
+  const refreshData = async () => {
+    if (refreshing) return
+    setRefreshing(true)
+    setRefreshError(false)
+    try {
+      if (onRefresh) await onRefresh()
+      else window.location.reload()
+    } catch {
+      setRefreshError(true)
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
   if (hidden) return null
 
   if (!open) {
@@ -404,6 +422,17 @@ export function RakunDevToolbar({
           <button
             type="button"
             className="rakun-dev-toolbar-action"
+            aria-label="Refresh page data and clear cached pages"
+            title="Refresh page data and clear cached pages"
+            disabled={refreshing}
+            onClick={() => void refreshData()}
+            style={{ ...buttonStyle, opacity: refreshing ? 0.6 : 1 }}
+          >
+            {refreshing ? 'Refreshing…' : 'Refresh data'}
+          </button>
+          <button
+            type="button"
+            className="rakun-dev-toolbar-action"
             aria-pressed={inspect}
             onClick={() => setInspect((value) => !value)}
             style={{
@@ -444,6 +473,12 @@ export function RakunDevToolbar({
             &minus;
           </button>
         </div>
+
+        {refreshError ? (
+          <div role="alert" style={{ padding: '0 8px 8px', color: colors.muted }}>
+            Could not refresh the page. Try again.
+          </div>
+        ) : null}
 
         {open ? (
           <div

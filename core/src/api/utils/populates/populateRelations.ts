@@ -202,6 +202,7 @@ export async function populateRelations<T extends ContentType>(
                 url: '',
                 previewKey: media.previewKey ?? null,
                 previewUrl: null,
+                posterUrl: null,
                 name: media.name || '',
                 title: media.title || media.name || '',
                 alt: media.alt || null,
@@ -218,7 +219,7 @@ export async function populateRelations<T extends ContentType>(
             const mediaService = getMediaService()
             const mediaSizes = toMediaSizeRecords((media as { sizes?: unknown }).sizes)
             const mediaSources = toMediaSourceRecords((media as { sources?: unknown }).sources)
-            const [resolved, resolvedPreview] = await Promise.all([
+            const [resolved, resolvedPreview, resolvedPoster] = await Promise.all([
               mediaService
                 .getMediaUrl({
                   key: media.key,
@@ -235,6 +236,16 @@ export async function populateRelations<T extends ContentType>(
                       })
                       .catch(() => null)
                   : Promise.resolve(null),
+              media.posterMediaId
+                ? (async () => {
+                    const poster = await db.get(Media, media.posterMediaId!).catch(() => null)
+                    if (!poster?.mime.startsWith('image/')) return null
+                    if (poster.access === 'private' && !options.exposePrivateMedia) return null
+                    return await mediaService
+                      .getMediaUrl({ key: poster.key, access: poster.access })
+                      .catch(() => null)
+                  })()
+                : Promise.resolve(null),
             ])
             const resolvedSizes = (
               await Promise.all(
@@ -282,6 +293,7 @@ export async function populateRelations<T extends ContentType>(
               url: originalUrl,
               previewKey: media.previewKey ?? null,
               previewUrl: resolvedPreview?.url || media.previewUrl || null,
+              posterUrl: resolvedPoster?.url || null,
               name: media.name || '',
               title: media.title || media.name || '',
               alt: media.alt || null,
@@ -301,6 +313,7 @@ export async function populateRelations<T extends ContentType>(
             return {
               url: '',
               previewUrl: null,
+              posterUrl: null,
               name: '',
               title: '',
               alt: null,

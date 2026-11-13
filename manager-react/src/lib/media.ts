@@ -77,6 +77,8 @@ export type MediaRecord = {
   previewKey?: string;
   previewUrl?: string;
   previewMime?: string;
+  posterMediaId?: string;
+  posterUrl?: string;
   sizes?: MediaSizeRecord[];
   sources?: MediaSourceRecord[];
   width?: number;

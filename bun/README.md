@@ -121,7 +121,9 @@ hashed assets.
 gets HTML plus a `flight.rsc` render payload. Other paths resolve through
 `web.page` at request time. Client navigation requests `/_rakun/rsc/*`, swaps
 the rendered tree, and imports only client bundles referenced by the
-destination page. Web module bundles, navigation, and the manager are built as
+destination page. Pages with client modules carry one JSON payload with their
+hydration props, page info, and literals; server-only pages omit it. Web module
+bundles, navigation, and the manager are built as
 independent graphs, so a public page never downloads manager code or incidental
 shared chunks. The manager keeps its own lazy-loaded graph under
 `/assets/manager/`; route chunks produced by `React.lazy` load only after that
@@ -130,6 +132,9 @@ one initial script, emit one lazy root bundle per built-in manager screen, and
 retain only genuinely shared supporting chunks. Lucide's runtime registry is
 also reduced to the menu and module-picker icons declared by the bootstrapped
 content types instead of emitting the complete icon catalog.
+The manager HTML is never cached, and every production manager asset URL,
+including lazy chunk imports, includes a build version. This prevents an older
+browser-cached chunk from being reused after an update.
 
 The manager receives a Bun-provided `linkComponent`; Bun owns manager click
 routing and prefetches built-in route chunks on hover, focus, or touch.
@@ -267,7 +272,9 @@ parallel with development code compilation to reduce cold-start latency.
 Normal web pages automatically include the Rakun development toolbar. It shows
 route and document metadata, links to the configured manager, lists rendered
 layout/template/content modules, highlights their wrapper-free DOM roots, and
-inspects the props received by each module. It follows client-side Bun
+inspects the props received by each module. **Refresh data** clears prefetched
+pages in the browser and fetches the current route again, keeping the scroll
+position. It follows client-side Bun
 navigation and reload updates. Manager preview pages keep their dedicated
 inspection flow and do not mount this toolbar. Production output contains
 neither the toolbar bundle nor its instrumentation markers.

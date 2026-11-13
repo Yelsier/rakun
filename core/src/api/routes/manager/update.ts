@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Media } from "../../../internal-content-types";
 import { UpdateInput } from "../../../schemas/manager/update";
 import { throwAppError } from "../../../lib/errors";
 import { Logger } from "../../../lib/Logger";
@@ -24,6 +25,7 @@ import {
 import { createSlugChangeRedirects } from "../../utils/redirects/createSlugChangeRedirects";
 import { computeSlugPathChanges } from "../../utils/redirects/slugPathChanges";
 import { publishLocaleVariantChanges } from '../../utils/realtime'
+import { revalidateMediaDependencies } from './media/replaceMedia'
 
 export const updateHandler = async ({
   input,
@@ -65,6 +67,34 @@ export const updateHandler = async ({
           return { basePath: routeData.basePath } as Record<string, unknown>;
         })()
       : data;
+
+  if (contentType.name === "Media" && "posterMediaId" in effectiveData) {
+    const video = await db.get(Media, id);
+    if (!video.mime.startsWith("video/")) {
+      throwAppError("VALIDATION", {
+        errors: [{ message: "Only videos can have a poster image" }],
+      });
+    }
+    const posterMediaId = effectiveData.posterMediaId;
+    if (posterMediaId !== null && posterMediaId !== undefined) {
+      if (typeof posterMediaId !== "string") {
+        throwAppError("VALIDATION", {
+          errors: [{ message: "A poster image must be selected from media" }],
+        });
+      }
+      const poster = await db.find(Media, { _id: posterMediaId });
+      if (!poster?.mime.startsWith("image/") || poster.status !== "uploaded") {
+        throwAppError("VALIDATION", {
+          errors: [{ message: "The selected poster must be an uploaded image" }],
+        });
+      }
+      if (video.access === "public" && poster.access !== "public") {
+        throwAppError("VALIDATION", {
+          errors: [{ message: "A public video needs a public poster image" }],
+        });
+      }
+    }
+  }
 
   const routeableContentType = isRouteableContentType(contentType.name);
   const currentDocument = contentType.documentVisibility || routeableContentType
@@ -185,6 +215,11 @@ export const updateHandler = async ({
       contentTypeId: updated._id,
       operation: "update",
     });
+    if (contentType.name === "Media" && "posterMediaId" in effectiveData) {
+      await revalidateMediaDependencies({
+        loadDependencies: () => db.findDependencies(Media, updated._id),
+      });
+    }
 
     if (pathChanges.length > 0) {
       await createSlugChangeRedirects({

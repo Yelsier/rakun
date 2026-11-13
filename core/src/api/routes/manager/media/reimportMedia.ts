@@ -14,6 +14,7 @@ import type { RakunRequestContext } from "../../../context";
 import { checkOwnership } from "../../../utils/checkOwnership";
 import { deleteMediaStorage } from "./deleteMediaStorage";
 import { resolveMediaRecordUrls } from "./resolveMediaRecordUrls";
+import { loadMediaRenderDependencies, revalidateMediaDependencies } from "./replaceMedia";
 
 type ReimportedMedia = Awaited<ReturnType<typeof optimizeMediaUpload>>;
 
@@ -221,6 +222,19 @@ export const reimportMediaHandler = async ({
   }
 
   const previousStorageRemoved = await cleanupStoredMedia(existing);
+  let dependencyCount = 0;
+  let dependenciesRevalidated = true;
+  try {
+    dependencyCount = await revalidateMediaDependencies({
+      loadDependencies: () => loadMediaRenderDependencies(db, existing._id),
+    });
+  } catch (error) {
+    dependenciesRevalidated = false;
+    Logger.error("manager.media.reimport: dependency revalidation failed", {
+      mediaId: existing._id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
   setApiSuccessEventData(ctx, {
     mediaId: existing._id,
     optimized: optimized.optimized,
@@ -230,6 +244,8 @@ export const reimportMediaHandler = async ({
     generatedSources: sources?.length ?? 0,
     generatedPreview: Boolean(optimized.preview),
     previousStorageRemoved,
+    dependencyCount,
+    dependenciesRevalidated,
   });
   Logger.addTrace("manager.media.reimport: completed", {
     mediaId: existing._id,

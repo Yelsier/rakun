@@ -186,7 +186,8 @@ manager edit screen, lists content/template/layout modules, highlights modules
 on hover or page selection, and exposes the props received by the selected
 module. Its options are ignored in production, where no instrumentation is
 mounted. Preview pages retain their separate manager inspector and omit this
-toolbar.
+toolbar. **Refresh data** reloads the page; database web reads are uncached in
+development, so it retrieves changes saved in the manager.
 
 The props pane uses the shared collapsible `JsonViewer` also used by the API
 Routes output. Its first level starts expanded, nested objects and arrays remain

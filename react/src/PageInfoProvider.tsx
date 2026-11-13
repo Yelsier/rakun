@@ -1,11 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { PageInfoClientProvider } from './PageInfoClientProvider'
-import {
-  getCurrentPageInfo,
-  setCurrentPageInfo,
-  setCurrentPageLiterals,
-} from './pageInfoStore'
+import { getCurrentPageInfo, setCurrentPageInfo, setCurrentPageLiterals } from './pageInfoStore'
 
 const pageInfoScriptEscapes: Record<string, string> = {
   '<': '\\u003c',
@@ -18,34 +14,33 @@ const pageInfoScriptEscapes: Record<string, string> = {
 const serializePageInfo = (value?: Record<string, unknown>) =>
   JSON.stringify(value ?? null).replace(
     /[<>&\u2028\u2029]/g,
-    (char) => pageInfoScriptEscapes[char] ?? char,
+    (char) => pageInfoScriptEscapes[char] ?? char
   )
 
 export function PageInfoProvider(props: {
   value?: Record<string, unknown>
   literals?: Record<string, string>
+  serialize?: boolean
   children: ReactNode
 }) {
-  const { value, literals, children } = props
-  const serializedValue = serializePageInfo(value)
-  const serializedLiterals = serializePageInfo(literals)
+  const { value, literals, serialize = true, children } = props
   setCurrentPageInfo(value)
   setCurrentPageLiterals(literals)
 
   return (
     <>
-      <template
-        data-rakun-page-info=""
-        dangerouslySetInnerHTML={{
-          __html: serializedValue,
-        }}
-      />
-      <template
-        data-rakun-page-literals=""
-        dangerouslySetInnerHTML={{
-          __html: serializedLiterals,
-        }}
-      />
+      {serialize ? (
+        <>
+          <template
+            data-rakun-page-info=""
+            dangerouslySetInnerHTML={{ __html: serializePageInfo(value) }}
+          />
+          <template
+            data-rakun-page-literals=""
+            dangerouslySetInnerHTML={{ __html: serializePageInfo(literals) }}
+          />
+        </>
+      ) : null}
       <PageInfoClientProvider value={value} literals={literals}>
         {children}
       </PageInfoClientProvider>
@@ -53,5 +48,4 @@ export function PageInfoProvider(props: {
   )
 }
 
-export const usePageInfo = (): Record<string, unknown> | undefined =>
-  getCurrentPageInfo()
+export const usePageInfo = (): Record<string, unknown> | undefined => getCurrentPageInfo()

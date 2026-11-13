@@ -107,6 +107,7 @@ export function useMediaPreviewRenderer({
       return (
         <video
           src={sources?.length ? undefined : src}
+          poster={item.posterUrl}
           className={cn('h-full w-full object-cover', className)}
         >
           {sources?.map((source) => (

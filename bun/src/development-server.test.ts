@@ -22,6 +22,10 @@ test('treats development routes as dynamic without loading or populating the rou
     resolve(modulesDir, 'Page.tsx'),
     `export default function Page({ request }) { return <p>{request}</p> }`
   )
+  await writeFile(
+    resolve(modulesDir, 'Client.tsx'),
+    `'use client'\nexport default function Client({ label }) { return <span>{label}</span> }`
+  )
   let pageRequests = 0
   let staticPathRequests = 0
   const application = createRakunBun({
@@ -32,7 +36,10 @@ test('treats development routes as dynamic without loading or populating the rou
       getPage: () => ({
         layout: [
           {
-            modules: [{ _id: 'page', _type: 'Page', request: ++pageRequests }],
+            modules: [
+              { _id: 'page', _type: 'Page', request: ++pageRequests },
+              { _id: 'client', _type: 'Client', label: 'Hydrated' },
+            ],
             type: 'content',
           },
         ],
@@ -55,6 +62,8 @@ test('treats development routes as dynamic without loading or populating the rou
   expect(firstHtml).toContain('<p>1</p>')
   expect(firstHtml).toContain('data-rakun-devtools')
   expect(firstHtml).toContain('<!--rakun-module-start:0--><p>1</p><!--rakun-module-end-->')
+  expect(firstHtml).toContain('data-rakun-client-index="0"')
+  expect(firstHtml.match(/data-rakun-page>/g)).toHaveLength(1)
   expect(firstHtml).not.toContain('<rakun-dev-boundary')
   expect(await second.text()).toContain('<p>2</p>')
   expect(await third.text()).toContain('<p>3</p>')
@@ -72,7 +81,7 @@ test('treats development routes as dynamic without loading or populating the rou
     })
   )
   const flightPayload = (await flight.json()) as { devtools?: { modules?: unknown[] } }
-  expect(flightPayload.devtools?.modules).toHaveLength(1)
+  expect(flightPayload.devtools?.modules).toHaveLength(2)
 
   const preview = await application.fetch(
     new Request('http://localhost/?rakun_preview=development-test')

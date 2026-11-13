@@ -86,7 +86,7 @@ export default function Previews() {
   const t = useTranslations()
   const managerClient = useManagerClient()
   const queryClient = useQueryClient()
-  const { uploadMedia, replaceMedia } = useMedia()
+  const { uploadMedia, replaceMedia, openMediaLibrary } = useMedia()
   const {
     currentFolderId,
     currentFolderPath,
@@ -211,6 +211,7 @@ export default function Previews() {
   const deleteMutation = useManagerMutation('manager.delete')
   const deleteFolderMutation = useManagerMutation('manager.media.deleteFolder')
   const updateMutation = useManagerMutation('manager.update')
+  const generatePosterMutation = useManagerMutation('manager.media.generatePoster')
 
   const media = ((data as { items?: MediaRecord[] } | undefined)?.items ?? []) as MediaRecord[]
   const childFoldersData = childFolders as { items: FolderItem[] } | undefined
@@ -715,6 +716,71 @@ export default function Previews() {
     }
   }
 
+  const handleSelectPoster = async () => {
+    const video = expandedPreview
+    if (!video) return
+    const selected = await openMediaLibrary({ mediaType: 'Image' })
+    if (!selected || Array.isArray(selected)) return
+    if (video.access === 'public' && selected.access !== 'public') {
+      toast.error(t('media.posterPublicRequired'))
+      return
+    }
+    try {
+      await updateMutation.mutateAsync({
+        contentType: 'Media',
+        id: video._id,
+        data: { posterMediaId: selected._id },
+      })
+      setExpandedPreview((current) =>
+        current?._id === video._id
+          ? { ...current, posterMediaId: selected._id, posterUrl: selected.url }
+          : current
+      )
+      await refetch()
+      toast.success(t('media.posterSelected'))
+    } catch (error) {
+      toast.error(getActionErrorMessage(error, t('media.posterError')))
+    }
+  }
+
+  const handleRemovePoster = async () => {
+    const video = expandedPreview
+    if (!video) return
+    try {
+      await updateMutation.mutateAsync({
+        contentType: 'Media',
+        id: video._id,
+        data: { posterMediaId: null },
+      })
+      setExpandedPreview((current) =>
+        current?._id === video._id
+          ? { ...current, posterMediaId: undefined, posterUrl: undefined }
+          : current
+      )
+      await refetch()
+      toast.success(t('media.posterRemoved'))
+    } catch (error) {
+      toast.error(getActionErrorMessage(error, t('media.posterError')))
+    }
+  }
+
+  const handleGeneratePoster = async (second: number) => {
+    const video = expandedPreview
+    if (!video) return
+    try {
+      const result = await generatePosterMutation.mutateAsync({ id: video._id, second })
+      setExpandedPreview((current) =>
+        current?._id === video._id
+          ? { ...current, posterMediaId: result.posterMediaId, posterUrl: result.posterUrl }
+          : current
+      )
+      await refetch()
+      toast.success(t('media.posterGenerated'))
+    } catch (error) {
+      toast.error(getActionErrorMessage(error, t('media.posterError')))
+    }
+  }
+
   const onRequestMove = (item: MediaRecord) => {
     setMoveTarget({
       id: item._id,
@@ -1190,6 +1256,10 @@ export default function Previews() {
           isSaving={updateMutation.isPending}
           onClose={() => setExpandedPreview(null)}
           onSaveDetails={handleSavePreviewDetails}
+          onSelectPoster={handleSelectPoster}
+          onRemovePoster={handleRemovePoster}
+          onGeneratePoster={handleGeneratePoster}
+          isGeneratingPoster={generatePosterMutation.isPending}
         />
       </MediaPreviewProvider>
     </div>

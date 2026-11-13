@@ -57,4 +57,12 @@ describe('Video', () => {
 
     expect(html).toBe('<video></video>')
   })
+
+  test('uses the selected media poster and allows an explicit override', () => {
+    const media = { url: '/video.mp4', posterUrl: '/poster.jpg' }
+    expect(renderToStaticMarkup(<Video video={media} />)).toContain('poster="/poster.jpg"')
+    expect(renderToStaticMarkup(<Video video={media} poster="/other.jpg" />)).toContain(
+      'poster="/other.jpg"'
+    )
+  })
 })

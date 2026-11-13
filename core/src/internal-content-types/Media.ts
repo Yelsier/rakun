@@ -21,6 +21,7 @@ export const Media = new ContentType({
     previewKey: Fields.string().optional(),
     previewUrl: Fields.string().type("Url").optional(),
     previewMime: Fields.string().optional(),
+    posterMediaId: Fields.string().optional(),
     sizes: Fields.array(Fields.string().type("RichText")).optional(),
     sources: Fields.array(Fields.string().type("RichText")).optional(),
     width: Fields.number().min(1).optional(),

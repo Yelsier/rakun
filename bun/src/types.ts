@@ -128,6 +128,7 @@ export type RakunBuildManifest = {
   assets: string[]
   client: RakunClientManifest
   managerAssets: string[]
+  managerVersion?: string
   modules: RakunModuleDefinition[]
   navigation: string
 }

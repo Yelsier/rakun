@@ -123,6 +123,9 @@ folder and every reference to it across the site. Referencing pages are
 revalidated when the project has route revalidation configured.
 The image editor can crop to a rectangle or circle, rotate, and flip the saved
 copy horizontally or vertically.
+In a video's details panel, choose an existing gallery image as its poster or
+enter a video second and generate one. Generated frames are saved as images in
+the same media folder. The poster can also be removed from the video.
 Optimization is enabled by default in the media library; generated image
 previews are stored as inline `data:image/...` strings on the media record for
 LQIP use.

@@ -485,8 +485,13 @@ const ContentTypeEdit = forwardRef<
 
           if (canCollapse) {
             return (
-              <Collapsible defaultOpen key={fieldName}>
-                <Card className={errorStyle({ error: !!error })}>
+              <Collapsible defaultOpen key={fieldName} className="group/relation">
+                <Card
+                  className={cn(
+                    errorStyle({ error: !!error }),
+                    'group-data-[state=closed]/relation:gap-0 group-data-[state=closed]/relation:py-2'
+                  )}
+                >
                   <CardHeader className="gap-0">
                     <div className="flex min-w-0 flex-wrap items-center gap-3">
                       <CollapsibleTrigger asChild>

@@ -7,7 +7,7 @@ import { renderToReadableStream } from 'react-dom/server.browser'
 import type { Root } from 'postcss'
 
 import { RakunPathnameProvider, usePathname } from './browser'
-import { buildRakunServerBundle } from './build'
+import { buildRakunServerBundle, versionManagerAssets } from './build'
 import { formatRakunBuildReport } from './report'
 import { createRakunBun } from './server'
 
@@ -17,6 +17,27 @@ afterEach(async () => {
   for (const directory of directories.splice(0)) {
     await rm(directory, { recursive: true, force: true })
   }
+})
+
+test('versions manager imports when a built chunk changes under the same file name', async () => {
+  const root = await mkdtemp(resolve(import.meta.dir, '..', '.tmp-rakun-manager-version-'))
+  directories.push(root)
+  const assetsDir = resolve(root, 'assets', 'manager')
+  await mkdir(assetsDir, { recursive: true })
+  await writeFile(resolve(assetsDir, 'entry.js'), 'import("/assets/manager/chunk.js")')
+  await writeFile(resolve(assetsDir, 'chunk.js'), 'export const value = 1')
+  const firstVersion = await versionManagerAssets(assetsDir)
+  expect(await readFile(resolve(assetsDir, 'entry.js'), 'utf8')).toBe(
+    `import("/assets/manager/chunk.js?v=${firstVersion}")`
+  )
+
+  await writeFile(resolve(assetsDir, 'entry.js'), 'import("/assets/manager/chunk.js")')
+  await writeFile(resolve(assetsDir, 'chunk.js'), 'export const value = 2')
+  const secondVersion = await versionManagerAssets(assetsDir)
+  expect(secondVersion).not.toBe(firstVersion)
+  expect(await readFile(resolve(assetsDir, 'entry.js'), 'utf8')).toBe(
+    `import("/assets/manager/chunk.js?v=${secondVersion}")`
+  )
 })
 
 test('builds server/client graphs and a static route', async () => {
@@ -86,6 +107,12 @@ test('builds server/client graphs and a static route', async () => {
                 }
               : {
                   renderMode: 'static',
+                  info: {
+                    title: `Title ${path}`,
+                    media: { previewUrl: 'data:image/webp;base64,example' },
+                    unsafeText: '</script><img src=x onerror=alert(1)>',
+                  },
+                  literals: { greeting: 'Hello' },
                   seo: { title: `Title ${path}` },
                   layout: [
                     {
@@ -93,6 +120,7 @@ test('builds server/client graphs and a static route', async () => {
                       modules: [
                         { _id: 'hero', _type: 'Hero', title: `${heading} ${path}` },
                         { _id: 'counter', _type: 'Counter', initial: 2 },
+                        { _id: 'counter-2', _type: 'Counter', initial: 3 },
                       ],
                     },
                   ],
@@ -112,6 +140,7 @@ test('builds server/client graphs and a static route', async () => {
   expect(result.manifest.managerAssets.every((asset) => asset.startsWith('/assets/manager/'))).toBe(
     true
   )
+  expect(result.manifest.managerVersion).toMatch(/^[a-f0-9]{16}$/)
   expect(result.manifest.assets.some((asset) => asset.endsWith('.css'))).toBe(true)
   expect(await readFile(resolve(root, 'dist', 'public', 'robots.txt'), 'utf8')).toBe(
     'User-agent: *\nDisallow:'
@@ -162,6 +191,7 @@ test('builds server/client graphs and a static route', async () => {
   expect(managerScript).toBeDefined()
   const managerEntrySource = await readFile(resolve(root, 'dist', managerScript!.slice(1)), 'utf8')
   expect(managerEntrySource).toContain('import("/assets/manager/')
+  expect(managerEntrySource).toContain(`?v=${result.manifest.managerVersion}`)
   expect(managerEntrySource).not.toMatch(/(?:from|import)\s*["']\/assets\/manager\/[^"']+\.js["']/)
   const managerSources = await Promise.all(
     managerScripts.map(
@@ -171,13 +201,27 @@ test('builds server/client graphs and a static route', async () => {
   const managerSource = managerSources.join('\n')
   expect(managerSource).toContain('/manager/contentTypes')
   expect(managerSource).toContain('realtimeBaseUrl')
+  let managerImportCount = 0
   for (const source of managerSources) {
-    for (const match of source.matchAll(/["']\/assets\/manager\/([^"']+\.js)["']/g)) {
+    expect(source).not.toMatch(/["']\/assets\/manager\/[^"'?]+\.js["']/)
+    for (const match of source.matchAll(/["']\/assets\/manager\/([^"']+\.js)\?v=([a-f0-9]{16})["']/g)) {
+      managerImportCount += 1
       expect(Bun.file(resolve(root, 'dist', 'assets', 'manager', match[1]!)).size).toBeGreaterThan(
         0
       )
+      expect(match[2]).toBe(result.manifest.managerVersion)
     }
   }
+  expect(managerImportCount).toBeGreaterThan(0)
+
+  const managerResponse = await application.fetch(new Request('http://localhost/manager'))
+  expect(managerResponse.headers.get('cache-control')).toBe('no-store')
+  const managerHtml = await managerResponse.text()
+  expect(managerHtml).toContain(`${managerScript}?v=${result.manifest.managerVersion}`)
+  const versionedManagerAsset = await application.fetch(
+    new Request(`http://localhost${managerScript}?v=${result.manifest.managerVersion}`)
+  )
+  expect(versionedManagerAsset.status).toBe(200)
 
   const response = await application.fetch(new Request('http://localhost/'))
   expect(response.status).toBe(200)
@@ -186,7 +230,20 @@ test('builds server/client graphs and a static route', async () => {
   expect(responseHtml).toContain('<h1>Page /</h1>')
   expect(responseHtml).toContain('<a href="/counter"><span')
   expect(responseHtml).toMatch(/>\/<!-- -->:<!-- -->2<\/span>/)
-  expect(responseHtml).toContain('data-rakun-pathname="/"')
+  expect(responseHtml.match(/data-rakun-client="Counter"/g)).toHaveLength(2)
+  expect(responseHtml.match(/data-rakun-page>/g)).toHaveLength(1)
+  expect(responseHtml).not.toContain('data-rakun-page-info')
+  expect(responseHtml).not.toContain('data-rakun-page-literals')
+  expect(responseHtml).not.toContain('data-rakun-props')
+  const pagePayload = JSON.parse(
+    responseHtml.match(/<script type="application\/json" data-rakun-page>(.*?)<\/script>/)?.[1] ??
+      ''
+  )
+  expect(pagePayload.info.media.previewUrl).toBe('data:image/webp;base64,example')
+  expect(pagePayload.info.unsafeText).toBe('</script><img src=x onerror=alert(1)>')
+  expect(responseHtml).not.toContain('</script><img src=x onerror=alert(1)>')
+  expect(pagePayload.literals).toEqual({ greeting: 'Hello' })
+  expect(pagePayload.modules.map((module: { initial: number }) => module.initial)).toEqual([2, 3])
   expect(responseHtml).toContain('<html lang="es">')
   expect(responseHtml).toContain('<header>Document shell</header><div id="rakun-root">')
   expect(responseHtml).toContain('<meta name="shell" content="document"/>')
@@ -205,7 +262,7 @@ test('builds server/client graphs and a static route', async () => {
   const dynamicPathHtml = await (
     await application.fetch(new Request('http://localhost/current-path'))
   ).text()
-  expect(dynamicPathHtml).toContain('data-rakun-pathname="/current-path"')
+  expect(dynamicPathHtml).toContain('data-rakun-client-index="1"')
 
   const publicFile = await application.fetch(new Request('http://localhost/robots.txt'))
   expect(publicFile.status).toBe(200)
@@ -220,7 +277,9 @@ test('builds server/client graphs and a static route', async () => {
 
   const notFoundResponse = await application.fetch(new Request('http://localhost/missing'))
   expect(notFoundResponse.status).toBe(404)
-  expect(await notFoundResponse.text()).toContain('data-rakun-not-found=""')
+  const notFoundHtml = await notFoundResponse.text()
+  expect(notFoundHtml).toContain('data-rakun-not-found=""')
+  expect(notFoundHtml).not.toContain('data-rakun-page>')
 
   const server = await application.serve()
   try {
@@ -230,6 +289,9 @@ test('builds server/client graphs and a static route', async () => {
     const flight = await fetch(new URL('/_rakun/rsc/', server.url))
     expect(flight.headers.get('content-type')).toContain('text/x-component')
     expect(flight.headers.get('cache-control')).toBe('public, max-age=0, must-revalidate')
+    const flightPayload = await flight.json()
+    expect(flightPayload.html).toContain('data-rakun-page>')
+    expect(flightPayload.html).not.toContain('data-rakun-page-info')
     const manager = await fetch(new URL('/manager', server.url))
     expect(await manager.text()).toContain('rakun-manager-root')
 

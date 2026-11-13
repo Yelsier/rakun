@@ -87,6 +87,28 @@ export const commitMediaReplacement = async <T>({
 
 type MediaDependency = { contentType: string; _id: string };
 
+export const loadMediaRenderDependencies = async (
+  db: Awaited<ReturnType<typeof getMongoService>>,
+  mediaId: string,
+): Promise<MediaDependency[]> => {
+  const direct = await db.findDependencies(Media, mediaId);
+  const videos = await db.list(Media, {
+    filter: { posterMediaId: mediaId },
+    options: { limit: 'all', fields: ['_id'] },
+  });
+  const videoDependencies = (
+    await Promise.all(videos.items.map((video) => db.findDependencies(Media, video._id)))
+  ).flat();
+  return Array.from(
+    new Map(
+      [...direct, ...videoDependencies].map((dependency) => [
+        `${dependency.contentType}:${dependency._id}`,
+        dependency,
+      ]),
+    ).values(),
+  );
+};
+
 export const revalidateMediaDependencies = async ({
   loadDependencies,
   revalidate = checkRevalidatePath,
@@ -253,7 +275,7 @@ export const replaceMediaHandler = async ({
   let dependenciesRevalidated = true;
   try {
     dependencyCount = await revalidateMediaDependencies({
-      loadDependencies: () => db.findDependencies(Media, existing._id),
+      loadDependencies: () => loadMediaRenderDependencies(db, existing._id),
     });
   } catch (error) {
     dependenciesRevalidated = false;

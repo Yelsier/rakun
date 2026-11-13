@@ -519,6 +519,11 @@ The `manager.media.replace` mutation applies the same safe storage sequence to
 a newly uploaded image. It preserves the existing media ID, editorial details,
 folder and relations while replacing its file metadata and generated variants,
 then revalidates documents that reference it when route revalidation is configured.
+Videos can link a gallery image by its `posterMediaId`; web file output resolves
+that reference to `posterUrl`. Public videos require a public poster. The
+`manager.media.generatePoster` mutation accepts a video ID and a second, extracts
+a JPEG frame with FFmpeg, saves it as a gallery image in the video's folder,
+links it as the poster, and revalidates documents referencing the video.
 When `generatePreview` is enabled, optimization stores a tiny `data:image/...`
 LQIP string on `previewUrl` instead of uploading a separate preview object.
 Its exact MIME may be selected by the runtime image processor; native Bun

@@ -5,6 +5,7 @@ import { createMediaService } from "../../../../media";
 import type { StorageAdapter } from "../../../../media";
 import {
   commitMediaReplacement,
+  loadMediaRenderDependencies,
   revalidateMediaDependencies,
 } from "./replaceMedia";
 
@@ -92,6 +93,27 @@ describe("commitMediaReplacement", () => {
 });
 
 describe("revalidateMediaDependencies", () => {
+  it("includes pages using videos that link the replaced poster image", async () => {
+    const dependencies = await loadMediaRenderDependencies(
+      {
+        findDependencies: async (_contentType: unknown, id: string) =>
+          id === 'poster-image'
+            ? [{ contentType: 'Page', _id: 'shared-page' }]
+            : [
+                { contentType: 'Page', _id: 'shared-page' },
+                { contentType: 'Article', _id: 'video-page' },
+              ],
+        list: async () => ({ items: [{ _id: 'video' }] }),
+      } as never,
+      'poster-image',
+    );
+
+    expect(dependencies).toEqual([
+      { contentType: 'Page', _id: 'shared-page' },
+      { contentType: 'Article', _id: 'video-page' },
+    ]);
+  });
+
   it("invalidates every document that directly references the media", async () => {
     const invalidated: string[] = [];
     const count = await revalidateMediaDependencies({

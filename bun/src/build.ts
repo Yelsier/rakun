@@ -1,4 +1,5 @@
-import { copyFile, cp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { copyFile, cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { basename, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -382,6 +383,37 @@ const optimizeManagerInitialGraph = async ({
   return mergedArtifact
 }
 
+// The manager optimizer rewrites chunks after Bun names them, so the original
+// file hashes cannot identify the final graph in browser caches.
+export const versionManagerAssets = async (assetsDir: string): Promise<string> => {
+  const files = (await readdir(assetsDir)).filter((name) => /\.(?:js|css)$/.test(name)).sort()
+  const sources = await Promise.all(
+    files.map(async (name) => {
+      const source = await readFile(resolve(assetsDir, name))
+      return { name, source }
+    })
+  )
+  const hash = createHash('sha256')
+  for (const { name, source } of sources) {
+    hash.update(name).update('\0').update(source).update('\0')
+  }
+  const version = hash.digest('hex').slice(0, 16)
+  await Promise.all(
+    sources
+      .filter(({ name }) => name.endsWith('.js'))
+      .map(async ({ name, source }) => {
+        const original = source.toString('utf8')
+        const versioned = original.replace(
+          /(["'])\/assets\/manager\/([^"'?]+\.js)\1/g,
+          (_match, quote: string, file: string) =>
+            `${quote}/assets/manager/${file}?v=${version}${quote}`
+        )
+        if (versioned !== original) await writeFile(resolve(assetsDir, name), versioned)
+      })
+  )
+  return version
+}
+
 const normalizeEntryPoint = (path: string): string =>
   resolve(path).replace(/\\/g, '/').toLowerCase()
 
@@ -584,6 +616,9 @@ export const buildRakunCode = async (
           result: managerBuild,
         })
       : undefined
+  const managerVersion = managerBuild && !config.server.development
+    ? await versionManagerAssets(managerAssetsDir)
+    : previousManifest?.managerVersion
 
   const serverArtifact = serverBuild?.outputs.find((output) => output.kind === 'entry-point')
   const serverArtifactPath = cachedServer?.artifact ?? serverArtifact?.path
@@ -665,6 +700,7 @@ export const buildRakunCode = async (
     assets,
     client,
     managerAssets,
+    managerVersion,
     modules,
     navigation,
   }

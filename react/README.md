@@ -145,7 +145,8 @@ wrapped in `<main>`.
 
 Media returned by Rakun can be rendered with the package's `Image` and `Video`
 components. `Video` puts WebM before MP4, allowing the browser to prefer WebM
-when it is supported and fall back to MP4 otherwise:
+when it is supported and fall back to MP4 otherwise. A selected gallery poster
+is used automatically through the video's `posterUrl`:
 
 ```tsx
 import { Image, Video } from '@rakun-kit/react'

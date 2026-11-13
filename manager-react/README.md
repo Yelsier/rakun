@@ -151,6 +151,9 @@ name, title, alt text, folder, status, and every relation to it. Rakun also
 revalidates directly referencing pages when route revalidation is configured.
 The image editor can crop to a rectangle or circle, rotate, and flip the saved
 copy horizontally or vertically.
+Open a video's details to choose a poster from the media gallery or generate
+one from a chosen second. The generated JPEG is added to the video's folder;
+the linked poster can be changed or removed later.
 
 ## Dynamic data mappings
 

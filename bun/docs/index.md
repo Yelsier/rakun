@@ -55,13 +55,18 @@ including `Image` and other client exports from `@rakun-kit/react`. The build em
 self-contained browser bundle per client boundary. It does not create shared
 chunks between web modules, navigation, and the manager; the page flight lists
 only the bundles used by that destination. Content props do not participate in
-bundle identity. The manager is a separate split graph under `/assets/manager/`,
+bundle identity. Pages with client modules serialize their hydration props,
+page info, and literals into one JSON payload. Server-only pages omit it. The
+manager is a separate split graph under `/assets/manager/`,
 so its `React.lazy` route chunks retain on-demand loading without becoming web
 dependencies. In production, its static shell dependencies are folded into one
 initial script and each built-in manager screen remains a lazy root bundle;
 only dependencies shared by multiple screens stay as supporting chunks. The
 Bun build also includes only the Lucide menu and module-picker icons declared
 by bootstrapped content types, avoiding a chunk for every icon in the library.
+Production manager HTML is served with `Cache-Control: no-store`. Its scripts,
+styles, and lazy chunk imports carry a build version in their URLs, so a new
+deployment cannot reuse an older cached chunk whose file name stayed the same.
 Internal links prefetch their flight and destination client modules on hover,
 focus, or touch; API and manager links are excluded from this client navigation.
 The public `Link` component opts into this behavior by default and accepts
@@ -182,6 +187,9 @@ asset; do not add a separate generated stylesheet or CSS watcher.
   layout/template/content modules without adding DOM wrappers, and exposes each
   module's props. Flight navigation and live reload update it in place. Manager
   preview pages omit it because they use the dedicated preview inspection flow.
+  **Refresh data** clears browser-prefetched pages and fetches the current route
+  again without losing scroll position. Development routes already bypass the
+  server route cache, so edits saved in the manager appear on the fresh read.
   Production builds contain no toolbar code, payload, or module markers.
 - The initial development build writes disposable browser-build metadata and
   assets under `.rakun/cache`, independently from `dist`. A later `rakun-bun dev`

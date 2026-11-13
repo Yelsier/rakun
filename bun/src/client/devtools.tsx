@@ -83,6 +83,10 @@ const updateDevtools = (payload?: RakunBunDevtoolsPayload): void => {
       documentType: payload.documentType,
       documentId: payload.documentId,
       editHref: payload.editHref,
+      onRefresh: () =>
+        new Promise<void>((resolve, reject) => {
+          dispatchEvent(new CustomEvent('rakun:devtools:refresh', { detail: { resolve, reject } }))
+        }),
     })
   )
 }

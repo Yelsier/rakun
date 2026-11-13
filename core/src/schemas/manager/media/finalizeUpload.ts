@@ -49,6 +49,8 @@ export const mediaRecordOutput = z.object({
   previewKey: z.string().optional(),
   previewUrl: z.url().optional(),
   previewMime: z.string().optional(),
+  posterMediaId: z.string().optional(),
+  posterUrl: z.url().optional(),
   sizes: z.array(mediaSizeOutput).optional(),
   sources: z.array(mediaSourceOutput).optional(),
   width: z.number().int().positive().optional(),

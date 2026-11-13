@@ -1,5 +1,3 @@
-import { Buffer } from 'node:buffer'
-
 import { Fragment, createElement, type ComponentType, type ReactNode } from 'react'
 import { renderToReadableStream } from 'react-dom/server.browser'
 import type { PageModule, PageOutput } from '@rakun-kit/core/contracts'
@@ -83,9 +81,6 @@ const resolveComponent = (
   return { client: entry.client, Component }
 }
 
-const encodeProps = (props: PageModule): string =>
-  Buffer.from(JSON.stringify(props)).toString('base64url')
-
 const markDevtoolsModules = (html: string): string =>
   html
     .replace(
@@ -99,8 +94,13 @@ const renderPageBody = async (
   path: string,
   registry: RakunServerModuleRegistry,
   devtools: boolean
-): Promise<{ body: ReactNode; devtoolsModules: RakunBunDevtoolsModule[] }> => {
+): Promise<{
+  body: ReactNode
+  clientProps: PageModule[]
+  devtoolsModules: RakunBunDevtoolsModule[]
+}> => {
   const rendered: ReactNode[] = []
+  const clientProps: PageModule[] = []
   const devtoolsModules: RakunBunDevtoolsModule[] = []
 
   const renderModule = async (
@@ -114,9 +114,10 @@ const renderPageBody = async (
 
     if (client) {
       const identifierPrefix = getIdentifierPrefix(key)
+      const clientIndex = clientProps.push(module) - 1
       const html = await renderNode(
         <RakunPathnameProvider pathname={path}>
-          <PageInfoProvider value={page.info} literals={page.literals}>
+          <PageInfoProvider value={page.info} literals={page.literals} serialize={false}>
             {component}
           </PageInfoProvider>
         </RakunPathnameProvider>,
@@ -125,9 +126,8 @@ const renderPageBody = async (
       renderedModule = (
         <div
           data-rakun-client={module._type}
+          data-rakun-client-index={clientIndex}
           data-rakun-identifier-prefix={identifierPrefix}
-          data-rakun-pathname={path}
-          data-rakun-props={encodeProps(module)}
           dangerouslySetInnerHTML={{ __html: html }}
           key={key}
         />
@@ -196,11 +196,12 @@ const renderPageBody = async (
   return {
     body: (
       <RakunPathnameProvider pathname={path}>
-        <PageInfoProvider value={page.info} literals={page.literals}>
+        <PageInfoProvider value={page.info} literals={page.literals} serialize={false}>
           {rendered}
         </PageInfoProvider>
       </RakunPathnameProvider>
     ),
+    clientProps,
     devtoolsModules,
   }
 }
@@ -315,9 +316,18 @@ export const renderRakunRoute = async ({
     page.info,
     async () => {
       const renderedPage = await renderPageBody(page, path, registry, devtools)
-      const bodyHtml = devtools
+      const renderedBodyHtml = devtools
         ? markDevtoolsModules(await renderNode(renderedPage.body))
         : await renderNode(renderedPage.body)
+      const bodyHtml = renderedPage.clientProps.length
+        ? `${renderedBodyHtml}<script type="application/json" data-rakun-page>${serializeScriptValue(
+            {
+              info: page.info,
+              literals: page.literals,
+              modules: renderedPage.clientProps,
+            }
+          )}</script>`
+        : renderedBodyHtml
       const head = markHeadElements(await renderNode(<Fragment>{getSeoHead(page)}</Fragment>))
       const styles = assets.styles.map((href) => `<link rel="stylesheet" href="${href}">`).join('')
       const browserConfig = {

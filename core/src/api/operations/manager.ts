@@ -98,6 +98,7 @@ import { regenerateRecoveryCodesHandler } from "../routes/manager/auth/mfa/regen
 import { prepareUploadHandler } from "../routes/manager/media/prepareUpload";
 import { finalizeUploadHandler } from "../routes/manager/media/finalizeUpload";
 import { reimportMediaHandler } from "../routes/manager/media/reimportMedia";
+import { generatePosterHandler } from "../routes/manager/media/generatePoster";
 import { replaceMediaHandler } from "../routes/manager/media/replaceMedia";
 import { getMediaUrlHandler } from "../routes/manager/media/getMediaUrl";
 import { createFolderHandler } from "../routes/manager/media/createFolder";
@@ -339,6 +340,9 @@ export const createManagerOperationDefinitions = () => {
     },
     "manager.media.reimport": {
       resolve: reimportMediaHandler,
+    },
+    "manager.media.generatePoster": {
+      resolve: generatePosterHandler,
     },
     "manager.media.replace": {
       resolve: replaceMediaHandler,

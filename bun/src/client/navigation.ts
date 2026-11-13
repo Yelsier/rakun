@@ -75,15 +75,16 @@ const loadClientModules = async (assets: PageAssets): Promise<void> => {
   }
 }
 
-const getFlight = async (url: URL): Promise<FlightPayload | undefined> => {
+const getFlight = async (url: URL, refresh = false): Promise<FlightPayload | undefined> => {
   const key = `${url.pathname}${url.search}`
-  const prefetched = prefetchedFlights.get(key)
+  const prefetched = refresh ? undefined : prefetchedFlights.get(key)
   if (prefetched) return prefetched
 
   const config = window.__RAKUN_BUN__
   if (!config) return undefined
 
   const request = fetch(`${config.rscPath}${url.pathname}${url.search}`, {
+    ...(refresh ? { cache: 'no-store' as const } : {}),
     headers: { Accept: 'text/x-component' },
   })
     .then(async (response) => {
@@ -104,12 +105,7 @@ const getFlight = async (url: URL): Promise<FlightPayload | undefined> => {
 
 const getInternalAnchorUrl = (anchor: HTMLAnchorElement): URL | undefined => {
   const config = window.__RAKUN_BUN__
-  if (
-    !config ||
-    anchor.target ||
-    anchor.download ||
-    anchor.dataset.rakunReload !== undefined
-  ) {
+  if (!config || anchor.target || anchor.download || anchor.dataset.rakunReload !== undefined) {
     return undefined
   }
 
@@ -149,7 +145,7 @@ const applyHead = (html: string): void => {
   }
 }
 
-const navigate = async (url: URL, replace = false): Promise<void> => {
+const navigate = async (url: URL, replace = false, refresh = false): Promise<void> => {
   const config = window.__RAKUN_BUN__
   const root = document.querySelector<HTMLElement>('#rakun-root')
   if (!config || !root) {
@@ -161,7 +157,7 @@ const navigate = async (url: URL, replace = false): Promise<void> => {
     return
   }
 
-  const payload = await getFlight(url)
+  const payload = await getFlight(url, refresh)
   if (!payload) {
     location.assign(url)
     return
@@ -185,8 +181,16 @@ const navigate = async (url: URL, replace = false): Promise<void> => {
       })
     )
   }
-  scrollTo({ top: 0 })
+  if (!refresh) scrollTo({ top: 0 })
 }
+
+addEventListener('rakun:devtools:refresh', (event) => {
+  const { resolve, reject } = (
+    event as CustomEvent<{ resolve: () => void; reject: (error: unknown) => void }>
+  ).detail
+  prefetchedFlights.clear()
+  void navigate(new URL(location.href), true, true).then(resolve, reject)
+})
 
 document.addEventListener('click', (event) => {
   if (
@@ -216,10 +220,7 @@ const prefetchFromEvent = (event: Event): void => {
 
 document.addEventListener('pointerover', (event) => {
   const anchor = (event.target as Element | null)?.closest<HTMLAnchorElement>('a[href]')
-  if (
-    !anchor ||
-    (event.relatedTarget instanceof Node && anchor.contains(event.relatedTarget))
-  ) {
+  if (!anchor || (event.relatedTarget instanceof Node && anchor.contains(event.relatedTarget))) {
     return
   }
   prefetchFromEvent(event)

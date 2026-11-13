@@ -766,7 +766,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                         <Card
                           className={cn(
                             'w-full',
-                            'group-data-[state=closed]/module:py-3',
+                            'group-data-[state=closed]/module:gap-0 group-data-[state=closed]/module:py-2',
                             item.visibleWhen &&
                               !isVisibleForCurrentDocument &&
                               'border-dashed opacity-70'

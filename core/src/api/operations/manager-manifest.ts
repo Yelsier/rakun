@@ -346,6 +346,11 @@ export const managerOperationManifest = {
     method: "post",
     path: "/manager/media/reimport",
   },
+  "manager.media.generatePoster": {
+    kind: "mutation",
+    method: "post",
+    path: "/manager/media/generatePoster",
+  },
   "manager.media.replace": {
     kind: "mutation",
     method: "post",

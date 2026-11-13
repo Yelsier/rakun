@@ -1,5 +1,7 @@
 import type { MediaAccess } from "../../../../media";
 import { getMediaService } from "../../../../media";
+import { Media } from "../../../../internal-content-types";
+import { getMongoService } from "../../../../orm";
 
 const getMediaAccess = (value: unknown): MediaAccess =>
   value === "private" ? "private" : "public";
@@ -62,7 +64,18 @@ export const resolveMediaRecordUrls = async <T extends Record<string, unknown>>(
   mediaRecord: T,
 ): Promise<T> => {
   const access = getMediaAccess(mediaRecord.access);
-  const [url, previewUrl, sizes, sources] = await Promise.all([
+  const posterUrl = async (): Promise<string | undefined> => {
+    if (typeof mediaRecord.posterMediaId !== "string") return undefined;
+    try {
+      const poster = await (await getMongoService()).get(Media, mediaRecord.posterMediaId);
+      if (!poster.mime.startsWith("image/")) return undefined;
+      if (access === "public" && poster.access === "private") return undefined;
+      return await resolveMediaUrl({ key: poster.key, access: poster.access });
+    } catch {
+      return undefined;
+    }
+  };
+  const [url, previewUrl, sizes, sources, resolvedPosterUrl] = await Promise.all([
     resolveMediaUrl({
       key: mediaRecord.key,
       access,
@@ -75,6 +88,7 @@ export const resolveMediaRecordUrls = async <T extends Record<string, unknown>>(
     }),
     resolveRelatedMedia(mediaRecord.sizes, access),
     resolveRelatedMedia(mediaRecord.sources, access),
+    posterUrl(),
   ]);
 
   return {
@@ -83,5 +97,6 @@ export const resolveMediaRecordUrls = async <T extends Record<string, unknown>>(
     previewUrl,
     sizes,
     sources,
+    posterUrl: resolvedPosterUrl,
   };
 };

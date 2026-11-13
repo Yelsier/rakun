@@ -113,6 +113,19 @@ export const deleteHandler = async ({
     documents: documentIds.length,
   });
 
+  if (contentType.name === Media.name) {
+    const videosUsingPoster = await db.list(Media, {
+      filter: { posterMediaId: id },
+      options: { limit: 'all', fields: ['_id'] },
+    });
+    if (videosUsingPoster.items.length > 0) {
+      throwAppError('CONFLICT', {
+        key: 'DEPENDENCIES_FOUND',
+        message: 'Remove this image from video posters before deleting it',
+      });
+    }
+  }
+
   if (dependencies.length > 0) {
     throwAppError("CONFLICT", {
       message: `Cannot delete item. It is referenced by other items: ${dependencies

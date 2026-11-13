@@ -221,6 +221,10 @@ export type {
   ReimportMediaOutput,
 } from "./schemas/manager/media/reimportMedia";
 export type {
+  GeneratePosterInput,
+  GeneratePosterOutput,
+} from "./schemas/manager/media/generatePoster";
+export type {
   ReplaceMediaInput,
   ReplaceMediaOutput,
 } from "./schemas/manager/media/replaceMedia";

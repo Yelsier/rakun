@@ -194,7 +194,8 @@ to normal web pages. It shows the current route and document, links to the
 manager edit screen, lists rendered content/template/layout modules, highlights
 the selected module on the page, and displays the props received by that
 module. Manager preview pages keep using their dedicated inspector and do not
-show the development toolbar.
+show the development toolbar. **Refresh data** reloads the page and reads the
+latest manager changes through the uncached development route.
 
 Module props use the same collapsible JSON tree as the API Routes output. The
 first level starts expanded while nested objects and arrays remain closed.
