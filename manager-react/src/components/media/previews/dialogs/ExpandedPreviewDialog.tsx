@@ -26,7 +26,6 @@ import {
 
 import { useTranslations } from '@/i18n'
 import type { MediaRecord } from '@/lib/media'
-import { useMedia } from '@/media'
 
 type ExpandedPreviewDialogProps = {
   preview: MediaRecord | null
@@ -52,7 +51,6 @@ export default function ExpandedPreviewDialog({
   isGeneratingPoster = false,
 }: ExpandedPreviewDialogProps) {
   const t = useTranslations()
-  const { isMediaLibraryOpen } = useMedia()
   const [name, setName] = useState('')
   const [title, setTitle] = useState('')
   const [alt, setAlt] = useState('')
@@ -85,7 +83,7 @@ export default function ExpandedPreviewDialog({
     <Dialog
       open={!!preview}
       onOpenChange={(open) => {
-        if (!open && !isMediaLibraryOpen) onClose()
+        if (!open) onClose()
       }}
     >
       <DialogContent className="max-w-[95vw] p-4 sm:max-w-6xl">

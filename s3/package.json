@@ -1,6 +1,6 @@
 {
   "name": "@rakun-kit/s3",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "S3 media storage adapter for Rakun.",
   "license": "MIT",
   "author": {

@@ -719,7 +719,16 @@ export default function Previews() {
   const handleSelectPoster = async () => {
     const video = expandedPreview
     if (!video) return
-    const selected = await openMediaLibrary({ mediaType: 'Image' })
+    setExpandedPreview(null)
+    let selected: Awaited<ReturnType<typeof openMediaLibrary>>
+    try {
+      selected = await openMediaLibrary({ mediaType: 'Image' })
+    } catch (error) {
+      toast.error(getActionErrorMessage(error, t('media.posterError')))
+      return
+    } finally {
+      setExpandedPreview(video)
+    }
     if (!selected || Array.isArray(selected)) return
     if (video.access === 'public' && selected.access !== 'public') {
       toast.error(t('media.posterPublicRequired'))

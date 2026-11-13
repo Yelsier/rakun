@@ -98,6 +98,22 @@ const sanitizeMime = (value: string | undefined): string => {
   return value.split(";")[0]?.trim() || "application/octet-stream";
 };
 
+export const isMissingStorageObjectError = (error: unknown): boolean => {
+  if (!error || typeof error !== "object") return false;
+  const value = error as {
+    name?: string;
+    code?: string;
+    $metadata?: { httpStatusCode?: number };
+  };
+  return (
+    value.$metadata?.httpStatusCode === 404 ||
+    value.name === "NotFound" ||
+    value.name === "NoSuchKey" ||
+    value.code === "NotFound" ||
+    value.code === "NoSuchKey"
+  );
+};
+
 const assertObjectDoesNotExist = async ({
   key,
   access,
@@ -108,8 +124,9 @@ const assertObjectDoesNotExist = async ({
   const media = getMediaService();
   try {
     await media.rawAdapter.headObject({ key, access });
-  } catch {
-    return;
+  } catch (error) {
+    if (isMissingStorageObjectError(error)) return;
+    throw error;
   }
 
   throwAppError("CONFLICT", {

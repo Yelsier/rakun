@@ -772,7 +772,7 @@ const ListUI: React.FC<ListPropsRef> = ({ id, ref, ...props }) => {
                               'border-dashed opacity-70'
                           )}
                         >
-                          <CardHeader className="gap-3">
+                          <CardHeader className="gap-3 group-data-[state=closed]/module:gap-0">
                             <CollapsibleTrigger asChild disabled={noModulesToRender}>
                               <div
                                 className="flex min-w-0 cursor-pointer flex-col gap-3"

@@ -1,6 +1,7 @@
 import z from 'zod'
 
 import { mediaAccessSchema } from './prepareUpload'
+import { mediaUrl } from './mediaUrl'
 
 export const getMediaUrlInput = z.object({
   key: z.string().min(1),
@@ -11,7 +12,7 @@ export const getMediaUrlInput = z.object({
 export const getMediaUrlOutput = z.object({
   key: z.string(),
   access: mediaAccessSchema,
-  url: z.url(),
+  url: mediaUrl,
   expiresAt: z.date().nullable(),
   isPublic: z.boolean(),
 })

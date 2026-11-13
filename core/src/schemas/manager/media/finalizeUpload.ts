@@ -1,6 +1,7 @@
 import z from 'zod'
 
 import { mediaAccessSchema, mediaUploadPurposeSchema } from './prepareUpload'
+import { mediaUrl } from './mediaUrl'
 
 export const mediaStatusSchema = z.enum(['uploaded', 'archived', 'deleted'])
 export const mediaOrientationSchema = z.enum(['portrait', 'landscape'])
@@ -14,7 +15,7 @@ export const mediaFolderRefOutput = z.object({
 
 export const mediaSizeOutput = z.object({
   key: z.string(),
-  url: z.url().optional(),
+  url: mediaUrl.optional(),
   width: z.number().int().positive(),
   height: z.number().int().positive(),
   mime: z.string(),
@@ -25,7 +26,7 @@ export const mediaSizeInput = mediaSizeOutput.omit({ url: true })
 
 export const mediaSourceOutput = z.object({
   key: z.string(),
-  url: z.url().optional(),
+  url: mediaUrl.optional(),
   mime: z.enum(['video/mp4', 'video/webm']),
   size: z.number().int().nonnegative(),
 })
@@ -45,12 +46,12 @@ export const mediaRecordOutput = z.object({
   extension: z.string().optional(),
   size: z.number().int().nonnegative(),
   etag: z.string().optional(),
-  url: z.url().optional(),
+  url: mediaUrl.optional(),
   previewKey: z.string().optional(),
-  previewUrl: z.url().optional(),
+  previewUrl: mediaUrl.optional(),
   previewMime: z.string().optional(),
   posterMediaId: z.string().optional(),
-  posterUrl: z.url().optional(),
+  posterUrl: mediaUrl.optional(),
   sizes: z.array(mediaSizeOutput).optional(),
   sources: z.array(mediaSourceOutput).optional(),
   width: z.number().int().positive().optional(),
@@ -84,7 +85,7 @@ export const finalizeUploadInput = z.object({
   mime: z.string().min(1).optional(),
   size: z.number().int().nonnegative().optional(),
   previewKey: z.string().min(1).optional(),
-  previewUrl: z.url().optional(),
+  previewUrl: mediaUrl.optional(),
   previewMime: z.string().min(1).optional(),
   sizes: z.array(mediaSizeInput).optional(),
   sources: z.array(mediaSourceInput).optional(),
@@ -107,7 +108,7 @@ export const finalizeUploadOutput = z.object({
   size: z.number().int().nonnegative(),
   mime: z.string().optional(),
   etag: z.string().optional(),
-  publicUrl: z.url().nullable(),
+  publicUrl: mediaUrl.nullable(),
   media: mediaRecordOutput,
   folder: mediaFolderRefOutput.optional(),
 })

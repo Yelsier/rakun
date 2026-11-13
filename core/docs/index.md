@@ -507,6 +507,10 @@ Core defines service contracts; concrete integrations are separate:
 
 Never expose adapter credentials in client modules. Public and private media
 have different URL semantics; do not replace stored media objects with raw URLs.
+Manager media responses accept absolute URLs and same-origin paths such as
+`/api/media/public/...`; local adapters and S3 setups using an API base path may
+return the latter. Set an absolute `publicBaseUrl` on the S3 adapter when media
+should use a public application or CDN origin.
 The built-in manager upload protocol preserves Unicode original file names,
 including accents, non-Latin scripts, and emoji, while storage object keys stay
 adapter-safe.

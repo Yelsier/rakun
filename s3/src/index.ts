@@ -234,6 +234,18 @@ export class S3Adapter implements StorageAdapter {
         etag: out.ETag,
       };
     } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "$metadata" in error &&
+        (error.$metadata as { httpStatusCode?: number } | undefined)?.httpStatusCode === 404
+      ) {
+        Logger.addTrace("s3.media.headObject: not found", {
+          bucket: Bucket,
+          key: input.key,
+        });
+        throw error;
+      }
       Logger.error("s3.media.headObject failed", {
         bucket: Bucket,
         key: input.key,

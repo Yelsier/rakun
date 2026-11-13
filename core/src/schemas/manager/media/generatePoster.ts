@@ -1,4 +1,5 @@
 import z from 'zod'
+import { mediaUrl } from './mediaUrl'
 
 export const generatePosterInput = z.object({
   id: z.string().min(1),
@@ -7,7 +8,7 @@ export const generatePosterInput = z.object({
 
 export const generatePosterOutput = z.object({
   posterMediaId: z.string(),
-  posterUrl: z.url().optional(),
+  posterUrl: mediaUrl.optional(),
 })
 
 export type GeneratePosterInput = z.infer<typeof generatePosterInput>

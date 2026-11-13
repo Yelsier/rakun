@@ -1,4 +1,5 @@
 import z from "zod";
+import { mediaUrl } from "./media/mediaUrl";
 
 const dateLike = z.union([z.date(), z.string()]);
 
@@ -23,9 +24,9 @@ export const contentVersionRecord = z.object({
       key: z.string().optional(),
       access: z.enum(["public", "private"]).optional(),
       mime: z.string().optional(),
-      url: z.url().optional(),
+      url: mediaUrl.optional(),
       previewKey: z.string().optional(),
-      previewUrl: z.url().optional(),
+      previewUrl: mediaUrl.optional(),
     })
     .optional(),
   reason: z.string().optional(),
