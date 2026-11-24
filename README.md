@@ -236,12 +236,6 @@ than the versions on npm. Otherwise the workflow increments the highest
 published stable patch version. Set the manifest version for an intended minor
 or major release. Generated release versions are applied in CI.
 
-Configure [Trusted Publishing](https://docs.npmjs.com/trusted-publishers/) in the
-npm settings for each `@rakun-kit` package and `create-rakun-app`. Select GitHub
-Actions, enter `Yelsier` as the owner, `rakun` as the repository and
-`publish-npm.yml` as the workflow filename, and enable `npm publish`. Then
-re-run the workflow to finish publishing the push.
-
 ## License
 
 Rakun is released under the MIT license. See `LICENSE` and
