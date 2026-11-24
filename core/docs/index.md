@@ -59,9 +59,9 @@ optional peer used by the default Node.js image processor and as the fallback
 for Bun versions without `Bun.Image`. Adapters and optional services are
 separate packages.
 
-The npm `latest` tag serves stable releases. Install the development channel
-by requesting `@beta`, for example `bun add @rakun-kit/core@beta`. When installing
-multiple Rakun packages from the development channel, request `@beta` for each.
+The npm `latest` tag serves stable releases. Use `@beta` to try a package with a
+prerelease, for example `bun add @rakun-kit/core@beta`. A beta release can install
+compatible prereleases of its Rakun dependencies.
 
 ## Bootstrap
 

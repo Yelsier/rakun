@@ -29,11 +29,14 @@ function readWorkspaces() {
   )
 }
 
-function changedPaths(before) {
+function changedPaths(before, branch) {
   if (!/^[0-9a-f]{40}$/.test(before ?? '')) {
     throw new Error('Expected the previous push commit in PUSH_BEFORE')
   }
-  if (/^0+$/.test(before)) return null
+  if (/^0+$/.test(before)) {
+    if (branch === 'main') return null
+    before = run('git', ['merge-base', 'origin/main', 'HEAD'], { capture: true })
+  }
 
   const exists = Bun.spawnSync(['git', 'cat-file', '-e', `${before}^{commit}`]).success
   if (!exists) run('git', ['fetch', '--no-tags', 'origin', before])
@@ -110,10 +113,14 @@ function pack(pkg, version, commit, betaVersions, destination) {
   for (const field of dependencyFields) {
     if (!manifest[field]) continue
     manifest[field] = Object.fromEntries(
-      Object.entries(manifest[field]).map(([name, range]) => [
-        name,
-        betaVersions.get(name) ?? range,
-      ])
+      Object.entries(manifest[field]).map(([name, range]) => {
+        const betaVersion = betaVersions.get(name)
+        const compatible =
+          betaVersion &&
+          (Bun.semver.satisfies(betaVersion, range) ||
+            Bun.semver.satisfies(betaVersion.split('-')[0], range))
+        return [name, compatible ? betaVersion : range]
+      })
     )
   }
   try {
@@ -127,43 +134,58 @@ function pack(pkg, version, commit, betaVersions, destination) {
   }
 }
 
+async function resolvePublishedBetaDependencies(packages, releases, betaVersions) {
+  const dependencies = new Set()
+  for (const name of releases.keys()) {
+    const { manifest } = packages.get(name)
+    for (const field of dependencyFields) {
+      for (const dependency of Object.keys(manifest[field] ?? {})) {
+        if (packages.has(dependency) && !betaVersions.has(dependency)) {
+          dependencies.add(dependency)
+        }
+      }
+    }
+  }
+  await Promise.all(
+    Array.from(dependencies, async (name) => {
+      const metadata = await registryPackage(name)
+      const betaVersion = metadata['dist-tags']?.beta
+      if (betaVersion) betaVersions.set(name, betaVersion)
+    })
+  )
+}
+
 const branch = process.env.GITHUB_REF_NAME
 if (branch !== 'main' && branch !== 'develop')
   throw new Error(`Unexpected release branch: ${branch}`)
 const tag = branch === 'main' ? 'latest' : 'beta'
 const commit = run('git', ['rev-parse', 'HEAD'], { capture: true })
 const packages = readWorkspaces()
-const paths = tag === 'latest' ? changedPaths(process.env.PUSH_BEFORE) : null
+const paths = changedPaths(process.env.PUSH_BEFORE, branch)
 const candidates = Array.from(packages).filter(([, pkg]) => !paths || hasChanges(pkg, paths))
 const runNumber = process.env.GITHUB_RUN_NUMBER
 if (tag === 'beta' && !/^[1-9]\d*$/.test(runNumber ?? '')) {
   throw new Error('Expected GITHUB_RUN_NUMBER for beta releases')
 }
-const betaVersions = new Map(
-  tag === 'beta'
-    ? candidates.map(([name, { manifest }]) => [
-        name,
-        `${manifest.version}-beta.${runNumber}.g${commit.slice(0, 12)}`,
-      ])
-    : []
-)
+const betaVersions = new Map()
 const releases = new Map()
-const releasePlans = await Promise.all(
-  candidates.map(async ([name, { manifest }]) => {
-    const metadata = await registryPackage(name)
-    const taggedVersion = metadata['dist-tags']?.[tag]
-    const versions = metadata.versions ?? {}
-    if (tag === 'beta') {
-      const version = betaVersions.get(name)
-      const taggedRun = Number(taggedVersion?.match(/-beta\.(\d+)\.g[0-9a-f]{12}$/)?.[1])
-      return [name, versions[version] || taggedRun > Number(runNumber) ? null : version]
-    }
-    const version = nextStableVersion(manifest.version, Object.keys(versions))
-    return [name, alreadyReleased(versions[taggedVersion]?.gitHead) ? null : version]
-  })
+const candidateMetadata = await Promise.all(
+  candidates.map(async ([name, pkg]) => [pkg, await registryPackage(name)])
 )
-for (const [name, version] of releasePlans) {
-  if (version) releases.set(name, version)
+for (const [{ manifest }, metadata] of candidateMetadata) {
+  const { name } = manifest
+  const taggedVersion = metadata['dist-tags']?.[tag]
+  const versions = metadata.versions ?? {}
+  if (tag === 'beta') {
+    const version = `${manifest.version}-beta.${runNumber}.g${commit.slice(0, 12)}`
+    const taggedRun = Number(taggedVersion?.match(/-beta\.(\d+)\.g[0-9a-f]{12}$/)?.[1] ?? 0)
+    const published = Object.hasOwn(versions, version)
+    if (!published && taggedRun > Number(runNumber)) continue
+    betaVersions.set(name, version)
+    if (!published) releases.set(name, version)
+  } else if (!alreadyReleased(versions[taggedVersion]?.gitHead)) {
+    releases.set(name, nextStableVersion(manifest.version, Object.keys(versions)))
+  }
 }
 
 const order = buildOrder(packages, releases.keys())
@@ -173,6 +195,7 @@ console.log(
 console.log(`Build: ${Array.from(order).join(', ') || 'none'}`)
 
 if (releases.size > 0 && !process.argv.includes('--plan-only')) {
+  if (tag === 'beta') await resolvePublishedBetaDependencies(packages, releases, betaVersions)
   run('bun', ['install', '--frozen-lockfile'])
   for (const name of order) run('bun', ['run', 'build'], { cwd: packages.get(name).dir })
   const destination = join(process.env.RUNNER_TEMP, 'rakun-npm')

@@ -224,12 +224,15 @@ For a comprehensive list of commands check the root `package.json`.
 
 ## npm releases
 
-Pushes to `develop` publish prereleases under the npm `beta` tag. The packages from
-each beta run use matching prerelease versions for their Rakun dependencies.
-Pushes to `main` publish under `latest` only the packages whose directories or
-shared build inputs changed in the push. The workflow also builds the local
-dependencies needed by those packages. A push with no package changes skips
-installation and compilation on `main`.
+Pushes to `develop` publish prereleases under the npm `beta` tag. Pushes to `main`
+publish stable versions under `latest`. On both branches, the workflow publishes
+only the packages whose directories or shared build inputs changed in the push.
+It also builds the local dependencies those packages need. A push with no
+package changes skips installation and compilation.
+
+Beta releases use compatible prereleases of their Rakun dependencies when
+available, including those published in the same run. Other dependencies keep
+their declared version ranges.
 
 Stable releases use the version in each package's manifest when it is newer
 than the versions on npm. Otherwise the workflow increments the highest
