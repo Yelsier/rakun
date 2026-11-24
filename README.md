@@ -222,6 +222,26 @@ bun preview:next
 
 For a comprehensive list of commands check the root `package.json`.
 
+## npm releases
+
+Pushes to `develop` publish prereleases under the npm `beta` tag. The packages from
+each beta run use matching prerelease versions for their Rakun dependencies.
+Pushes to `main` publish under `latest` only the packages whose directories or
+shared build inputs changed in the push. The workflow also builds the local
+dependencies needed by those packages. A push with no package changes skips
+installation and compilation on `main`.
+
+Stable releases use the version in each package's manifest when it is newer
+than the versions on npm. Otherwise the workflow increments the highest
+published stable patch version. Set the manifest version for an intended minor
+or major release. Generated release versions are applied in CI.
+
+Configure [Trusted Publishing](https://docs.npmjs.com/trusted-publishers/) in the
+npm settings for each `@rakun-kit` package and `create-rakun-app`. Select GitHub
+Actions, enter `Yelsier` as the owner, `rakun` as the repository and
+`publish-npm.yml` as the workflow filename, and enable `npm publish`. Then
+re-run the workflow to finish publishing the push.
+
 ## License
 
 Rakun is released under the MIT license. See `LICENSE` and

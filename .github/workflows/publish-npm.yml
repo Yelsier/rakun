@@ -1,0 +1,43 @@
+name: Publish npm packages
+
+on:
+  push:
+    branches: [develop, main]
+
+concurrency:
+  group: publish-npm-${{ github.ref }}
+  queue: max
+
+jobs:
+  publish:
+    if: ${{ !github.event.deleted }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+          registry-url: https://registry.npmjs.org
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - name: Prepare packages
+        id: prepare
+        env:
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: bun scripts/prepare-npm-release.mjs
+      - name: Publish to npm
+        if: steps.prepare.outputs.has-packages == 'true'
+        env:
+          NPM_TAG: ${{ steps.prepare.outputs.tag }}
+        run: |
+          while IFS= read -r tarball; do
+            npm publish "$tarball" --tag "$NPM_TAG" --access public --ignore-scripts --loglevel error
+          done < "$RUNNER_TEMP/rakun-npm/tarballs.txt"
