@@ -6,7 +6,7 @@ Your project code is licensed under MIT. Third-party packages remain under their
 
 ## License Summary
 
-- MIT: 440
+- MIT: 436
 - Apache-2.0: 117
 - ISC: 23
 - MPL-2.0: 12
@@ -391,7 +391,6 @@ Your project code is licensed under MIT. Third-party packages remain under their
 | @tanstack/react-query | 5.99.2 | MIT |
 | @tanstack/react-table | 8.21.3 | MIT |
 | @tanstack/table-core | 8.21.3 | MIT |
-| @trpc/server | 11.16.0 | MIT |
 | @tybys/wasm-util | 0.10.1 | MIT |
 | @types/babel__core | 7.20.5 | MIT |
 | @types/babel__generator | 7.27.0 | MIT |
@@ -450,7 +449,6 @@ Your project code is licensed under MIT. Third-party packages remain under their
 | convert-source-map | 2.0.0 | MIT |
 | cookie | 0.7.2 | MIT |
 | cookie-signature | 1.2.2 | MIT |
-| copy-anything | 4.0.5 | MIT |
 | csstype | 3.2.3 | MIT |
 | debug | 4.4.3 | MIT |
 | decamelize | 1.2.0 | MIT |
@@ -503,7 +501,6 @@ Your project code is licensed under MIT. Third-party packages remain under their
 | ipaddr.js | 1.9.1 | MIT |
 | is-fullwidth-code-point | 3.0.0 | MIT |
 | is-promise | 4.0.0 | MIT |
-| is-what | 5.5.0 | MIT |
 | isomorphic.js | 0.2.5 | MIT |
 | jiti | 2.6.1 | MIT |
 | js-tokens | 4.0.0 | MIT |
@@ -612,7 +609,6 @@ Your project code is licensed under MIT. Third-party packages remain under their
 | strip-ansi | 6.0.1 | MIT |
 | strnum | 2.2.3 | MIT |
 | styled-jsx | 5.1.6 | MIT |
-| superjson | 2.2.6 | MIT |
 | supports-color | 7.2.0 | MIT |
 | supports-color | 8.1.1 | MIT |
 | tabbable | 6.4.0 | MIT |

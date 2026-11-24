@@ -74,14 +74,6 @@ const client = createHttpManagerClient({
 const contentTypes = await client.request('manager.contentTypes')
 ```
 
-tRPC client adapter:
-
-```ts
-import { createTrpcManagerClient } from '@rakun-kit/manager-react/client/trpc'
-
-const managerClient = createTrpcManagerClient(trpcProxyClient)
-```
-
 Custom client:
 
 ```ts
@@ -434,7 +426,6 @@ conflicts report both plugin owners. Node replacements use Lexical's standard
 - `@rakun-kit/manager-react`: manager app, providers, clients, navigation, router, layout, media, and state helpers.
 - `@rakun-kit/manager-react/client/http`: HTTP manager client.
 - `@rakun-kit/manager-react/client/request`: transport-agnostic manager client.
-- `@rakun-kit/manager-react/client/trpc`: tRPC proxy client adapter.
 - `@rakun-kit/manager-react/app/runtime-app`: `ManagerRuntimeApp`, `ManagerBrowserApp`.
 - `@rakun-kit/manager-react/state/navigation`: navigation helpers and provider.
 - `@rakun-kit/manager-react/link`: link component provider.

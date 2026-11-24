@@ -1,0 +1,54 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "rootDir": "src",
+    "outDir": "dist/esm",
+    "paths": {
+      "@rakun-kit/core": ["../../core/dist/esm/index.d.ts"],
+      "@rakun-kit/core/contracts": ["../../core/dist/esm/contracts.d.ts"],
+      "@rakun-kit/core/literals": ["../../core/dist/esm/literals/index.d.ts"],
+      "@rakun-kit/core/web": ["../../core/dist/esm/web/index.d.ts"],
+      "@rakun-kit/core/errors": ["../../core/dist/esm/lib/errors/index.d.ts"],
+      "@rakun-kit/core/logger": ["../../core/dist/esm/lib/Logger.d.ts"],
+      "@rakun-kit/core/internal-content-types": [
+        "../../core/dist/esm/internal-content-types/index.d.ts"
+      ],
+      "@rakun-kit/manager-react": ["../../manager-react/dist/esm/index.d.ts"],
+      "@rakun-kit/manager-react/seo": [
+        "../../manager-react/dist/esm/seo/index.d.ts"
+      ],
+      "@rakun-kit/manager-react/client/http": [
+        "../../manager-react/dist/esm/client/http.d.ts"
+      ],
+      "@rakun-kit/manager-react/client/request": [
+        "../../manager-react/dist/esm/client/request.d.ts"
+      ],
+      "@rakun-kit/manager-react/app/runtime-app": [
+        "../../manager-react/dist/esm/app/runtime-app.d.ts"
+      ],
+      "@rakun-kit/manager-react/state/navigation": [
+        "../../manager-react/dist/esm/state/navigation.d.ts"
+      ],
+      "@rakun-kit/manager-react/state/theme-script": [
+        "../../manager-react/dist/esm/state/theme-script.d.ts"
+      ],
+      "@rakun-kit/manager-react/styles.css": [
+        "../../manager-react/dist/styles.css.d.ts"
+      ],
+      "@rakun-kit/manager-react/link": ["../../manager-react/dist/esm/link.d.ts"],
+      "@rakun-kit/react": ["../../react/dist/esm/index.d.ts"],
+      "@rakun-kit/react/devtools": ["../../react/dist/esm/devtools.d.ts"],
+      "@rakun-kit/react/translation": ["../../react/dist/esm/translation.d.ts"]
+    }
+  },
+  "references": [
+    {
+      "path": "../../core/tsconfig.build.json"
+    },
+    {
+      "path": "../../react/tsconfig.build.json"
+    }
+  ]
+}

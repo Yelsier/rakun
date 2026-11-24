@@ -1,6 +1,5 @@
 import type { MaybeTranslatableValue } from '@rakun-kit/core/types'
 import type { Id } from '@rakun-kit/core/client'
-import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { RelationExistingDefaltData, RelationFieldValue } from '@rakun-kit/core/client'
 
@@ -21,7 +20,7 @@ import {
 } from '@/components/ui/shadcn-io/combobox'
 import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
 import { decodeCamelCase } from '@/helpers/decodeCamelCase'
-import { useTRPC } from '@/components/trpc-provider'
+import { useManagerQuery } from '@/client/react'
 import { useEditErrorStore } from '@/hooks/app-store'
 
 const isRelationExistingDefaultData = (
@@ -51,10 +50,10 @@ const ExistingRelation: React.FC<RelationPropsRef> = ({ ref, ...props }) => {
 
   const field = props.contentType.listFields?.[0] || '_id'
 
-  const trpc = useTRPC()
 
-  const { data, error, isPending } = useQuery(
-    trpc.manager.list.queryOptions({
+  const { data, error, isPending } = useManagerQuery({
+    name: 'manager.list',
+    input: {
       contentType: props.contentType.name,
       query: {
         options: {
@@ -62,8 +61,8 @@ const ExistingRelation: React.FC<RelationPropsRef> = ({ ref, ...props }) => {
           fields: [field],
         },
       },
-    })
-  )
+    },
+  })
 
   const items =
     (

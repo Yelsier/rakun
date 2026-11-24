@@ -1,5 +1,5 @@
 'use client'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData } from '@tanstack/react-query'
 import type { RowSelectionState } from '@tanstack/react-table'
 import { Archive, Languages, Plus, RotateCcw, Trash } from 'lucide-react'
 import {
@@ -47,9 +47,8 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useTranslations } from '@/i18n'
 import { useLanguage } from '@/state/language'
-import { useTRPC } from '@/components/trpc-provider'
 import { useSession } from '@/state/session'
-import { useManagerMutation } from '@/client/react'
+import { useManagerMutation, useManagerQuery } from '@/client/react'
 import { confirm } from '@/components/confirm'
 import { getActionErrorMessage } from '@/helpers/get-action-error-message'
 import { useManagerUsers } from '@/state/users'
@@ -242,7 +241,6 @@ const ListContents: React.FC<{
     languageList.filter((item) => item.code !== language.code).map((item) => item.code)
   )
   const [bulkTranslationOverwrite, setBulkTranslationOverwrite] = useState(false)
-  const trpc = useTRPC()
   const { user, hasAnyPermission, hasPermissions } = useSession()
   const trimmedSearch = debouncedSearch.trim()
   const searchableFields = useMemo(() => {
@@ -273,8 +271,9 @@ const ListContents: React.FC<{
 
     return Object.keys(filter).length > 0 ? filter : undefined
   }, [creatorFilterIds, hasPageRoutes, isTrash, searchableFields, trimmedSearch])
-  const { data, refetch, isPending, isPlaceholderData } = useQuery({
-    ...trpc.manager.list.queryOptions({
+  const { data, refetch, isPending, isPlaceholderData } = useManagerQuery({
+    name: 'manager.list',
+    input: {
       contentType,
       ...(hasPageRoutes && !isTrash ? { languageCode: language.code } : {}),
       query: {
@@ -287,7 +286,7 @@ const ListContents: React.FC<{
             : undefined,
         },
       },
-    }),
+    },
     // Keep prior rows while filter/page/trash/content-type fetches settle so
     // `showInitialSkeleton` (isPending && !data) does not flash. Pair with
     // startTransition on navigation and list state updates.

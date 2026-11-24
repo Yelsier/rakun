@@ -17,7 +17,6 @@ same `dist/docs/index.md` location.
 | `@rakun-kit/next`               | Next.js App Router API, manager, media and web rendering                            | `node_modules/@rakun-kit/next/dist/docs/index.md`               |
 | `@rakun-kit/express`            | Express API and local-media adapter                                                 | `node_modules/@rakun-kit/express/dist/docs/index.md`            |
 | `@rakun-kit/bun`                | Bun server, manager, filesystem modules, SSR and static route generation            | `node_modules/@rakun-kit/bun/dist/docs/index.md`                |
-| `@rakun-kit/trpc`               | Typed tRPC router for manager and web operations                                    | `node_modules/@rakun-kit/trpc/dist/docs/index.md`               |
 | `@rakun-kit/react`              | Framework-neutral React module rendering and shared development UI                  | `node_modules/@rakun-kit/react/dist/docs/index.md`              |
 | `@rakun-kit/manager-react`      | Manager UI, clients, navigation and plugin runtime                                  | `node_modules/@rakun-kit/manager-react/dist/docs/index.md`      |
 | `@rakun-kit/manager-locales`    | Optional manager UI locale packs                                                    | `node_modules/@rakun-kit/manager-locales/dist/docs/index.md`    |
@@ -29,12 +28,11 @@ same `dist/docs/index.md` location.
 | `@rakun-kit/plugin-code-editor` | Code blocks in manager RichText fields                                              | `node_modules/@rakun-kit/plugin-code-editor/dist/docs/index.md` |
 | `create-rakun-app`              | Official project generator and framework starter templates                          | `node_modules/create-rakun-app/dist/docs/index.md`              |
 
-Choose one server adapter (`next`, `express`, or `bun`). Add `trpc` only if the host
-wants tRPC, one media adapter if uploads are required, and one mail adapter if
-outbound mail is required. `manager-react` is normally consumed through the Bun
-or Next adapter; use it directly for custom hosts.
+Choose one server adapter (`next`, `express`, or `bun`). Add one media adapter if
+uploads are required and one mail adapter if outbound mail is required.
+The Bun and Next adapters integrate `manager-react`. Custom hosts can use it directly.
 
-`preview`, `preview-bun`, and `preview-next` are private example applications in the Rakun
+`previews/express`, `previews/bun`, and `previews/next` are private example applications in the Rakun
 repository, not installable packages, so they do not have installed manuals.
 
 ## Typical architecture
@@ -111,7 +109,7 @@ connection remains active until `shutdownRakun()` because it is required to
 detect server availability. On Railway, use the database's private `MONGO_URL`
 for service-to-service traffic rather than its public TCP proxy URL.
 
-Do not import React, Next, Express, Vite or tRPC into core configuration modules.
+Do not import React, Next, Express or Vite into core configuration modules.
 
 ## Runtime platform
 

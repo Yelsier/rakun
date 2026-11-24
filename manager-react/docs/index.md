@@ -72,7 +72,6 @@ remains the source of truth.
 ## Clients and navigation
 
 - HTTP: `createHttpManagerClient` from `/client/http`.
-- tRPC: `createTrpcManagerClient` from `/client/trpc`.
 - Custom transport: `createManagerClient` from `/client/request`.
 - Router bridge: `createPathManagerNavigation` from `/state/navigation`.
 
@@ -409,7 +408,7 @@ settles; thrown errors leave it open.
 ## Public entrypoints
 
 - `@rakun-kit/manager-react`: manager apps, providers and common helpers.
-- `/client/http`, `/client/request`, `/client/trpc`: manager transports.
+- `/client/http`, `/client/request`: manager transports.
 - `/app/runtime-app`: runtime/browser app components.
 - `/state/navigation`, `/state/theme`, `/link`: host integration primitives.
 - `/plugins`, `/rich-text`: plugin and RichText extension contracts.

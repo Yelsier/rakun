@@ -1,6 +1,5 @@
 import type { MaybeTranslatableValue } from '@rakun-kit/core/types'
 import type { Id } from '@rakun-kit/core/client'
-import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import type { RelationPropsRef } from '.'
@@ -20,7 +19,7 @@ import {
 } from '@/components/ui/shadcn-io/combobox'
 import { decodeCamelCase } from '@/helpers/decodeCamelCase'
 import { useEditErrorStore } from '@/hooks/app-store'
-import { useTRPC } from '@/components/trpc-provider'
+import { useManagerQuery } from '@/client/react'
 import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
 
 type SelfRelationDefaultData = {
@@ -49,32 +48,15 @@ const SelfRelationUI: React.FC<RelationPropsRef> = ({ ref, ...props }) => {
   )
   const { getTranslation } = useLanguage()
   const { removeRelatedErrors } = useEditErrorStore()
-  const trpc = useTRPC()
 
   const field = contentType?.listFields?.[0] || '_id'
 
-  const { data, error, isPending } = useQuery({
-    ...trpc.manager.list.queryOptions(
-      contentType
-        ? {
-            contentType: contentType.name,
-            query: {
-              options: {
-                limit: 'all',
-                fields: [field],
-              },
-            },
-          }
-        : {
-            contentType: '',
-            query: {
-              options: {
-                limit: 'all',
-                fields: [field],
-              },
-            },
-          },
-    ),
+  const { data, error, isPending } = useManagerQuery({
+    name: 'manager.list',
+    input: {
+      contentType: contentType?.name ?? '',
+      query: { options: { limit: 'all', fields: [field] } },
+    },
     enabled: !!contentType,
   })
 

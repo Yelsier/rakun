@@ -9,23 +9,22 @@ Main packages:
 - `core`: shared domain logic, content types, fields, schemas, manager/web operations, auth, permissions, media, routes, redirects, translations, MongoDB, and contracts.
 - `manager-react`: React manager app, clients, internal routing, UI components, and packaged styles.
 - `manager-locales`: optional manager UI locale packs with one public subpath per language.
-- `express`: Express adapter for APIs, local media, and optional tRPC.
-- `bun`: Bun 1.4 framework for API, manager, filesystem modules, SSR, client
+- `adapters/express`: Express adapter for APIs and local media.
+- `adapters/bun`: Bun 1.4 framework for API, manager, filesystem modules, SSR, client
   boundaries, static generation, and path-based route cache regeneration.
-- `next`: Next.js App Router adapter for APIs, media, manager, and web rendering.
-- `trpc`: tRPC router built on top of Rakun operations.
+- `adapters/next`: Next.js App Router adapter for APIs, media, manager, and web rendering.
 - `react`: React helpers for rendering web modules.
-- `s3`: S3 media storage adapter.
-- `smtp`: SMTP mail adapter.
-- `resend`: Resend mail adapter.
-- `jsx-email`: JSX Email template renderer.
-- `openai`: automatic translation adapter using OpenAI.
-- `plugin-code-editor`: manager plugin for code blocks in RichText fields.
-- `preview`: local Vite + Express development app.
-- `preview-bun`: small MongoDB-backed Bun framework preview.
-- `preview-next`: local Next.js app; it has its own `AGENTS.md`.
+- `adapters/s3`: S3 media storage adapter.
+- `adapters/smtp`: SMTP mail adapter.
+- `adapters/resend`: Resend mail adapter.
+- `adapters/jsx-email`: JSX Email template renderer.
+- `adapters/openai`: automatic translation adapter using OpenAI.
+- `plugins/code-editor`: manager plugin for code blocks in RichText fields.
+- `previews/express`: local Vite + Express development app.
+- `previews/bun`: small MongoDB-backed Bun framework preview.
+- `previews/next`: local Next.js app; it has its own `AGENTS.md`.
 - `create-rakun-app`: project generator with official starter templates; its
-  Next.js template is kept intentionally smaller than `preview-next`.
+  Next.js template is kept intentionally smaller than `previews/next`.
 
 ## Commands
 
@@ -61,8 +60,8 @@ Main packages:
 - Successful API mutations are logged automatically with an operation-specific `<operation>.succeeded` event. Add explicit domain events as well when an action has meaningful phases or outcomes that the generic mutation event cannot express; do not log successful read-only queries by default.
 - Never hardcode user-facing copy. Web/content-facing text must be declared as Rakun literals; manager UI text must use the manager translation catalog and static translation keys.
 - If a change touches core-manager contracts, review both sides: `core/src/api/operations`, `core/src/schemas`, `manager-react/src/client`, and the affected screens.
-- If a change touches web routes, review `core/src/api/utils/routes`, `core/src/api/routes/web`, and adapters (`next`, `express`) when relevant.
-- If a change touches media, review `core/src/media`, `manager-react/src/components/media`, `express/src/media.ts`, `next/src/media.ts`, and `s3/src`.
+- If a change touches web routes, review `core/src/api/utils/routes`, `core/src/api/routes/web`, and adapters (`adapters/next`, `adapters/express`) when relevant.
+- If a change touches media, review `core/src/media`, `manager-react/src/components/media`, `adapters/express/src/media.ts`, `adapters/next/src/media.ts`, and `adapters/s3/src`.
 - Run the smallest test/build that covers the change; expand to `bun run build` when exports, shared types, or contracts change.
 
 ### Thematic Stack Validation
@@ -75,5 +74,5 @@ Main packages:
 
 - `manager-react/tsconfig.json` points to `.d.ts` files in `core/dist/esm`; if `core` changes and the manager cannot see new types, build `core`.
 - The core must stay agnostic of Express, Next, Vite, and React.
-- `preview-next` uses a modern Next.js version with its own rules; read `preview-next/AGENTS.md` before editing that app.
+- `previews/next` uses a modern Next.js version with its own rules; read `previews/next/AGENTS.md` before editing that app.
 - Do not assume a manager operation is frontend-only: it usually has a core contract/schema and manager consumer.

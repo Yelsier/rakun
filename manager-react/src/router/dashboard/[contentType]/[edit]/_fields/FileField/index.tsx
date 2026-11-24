@@ -31,7 +31,7 @@ import {
   SortableItemHandle,
 } from '@/components/ui/sortable'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useTRPC, useTRPCClient } from '@/components/trpc-provider'
+import { useManagerClient, useManagerQuery } from '@/client/react'
 import { useEditErrorStore } from '@/hooks/app-store'
 import type { MediaRecord } from '@/lib/media'
 import { formatFileSize } from '@/components/media/previews/utils/mediaPreview'
@@ -125,7 +125,7 @@ const SelectedMediaListItem = ({
   layout?: 'list' | 'grid'
 }) => {
   const t = useTranslations()
-  const trpcClient = useTRPCClient()
+  const client = useManagerClient()
   const display = getMediaDisplaySource(media)
   const canResolveImage =
     Boolean(media.mime?.startsWith('image/')) &&
@@ -146,10 +146,10 @@ const SelectedMediaListItem = ({
     queryFn: async () => {
       if (!display.key || !media.access) return ''
 
-      const result = (await trpcClient.manager.media.getUrl.query({
+      const result = await client.request('manager.media.getUrl', {
         key: display.key,
         access: media.access,
-      })) as { url: string }
+      })
 
       return result.url
     },
@@ -265,8 +265,7 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
   const t = useTranslations()
   const { language } = useLanguage()
   const { openMediaLibrary } = useMedia()
-  const trpc = useTRPC()
-  const trpcClient = useTRPCClient()
+  const client = useManagerClient()
   const addError = useEditErrorStore((state) => state.addError)
   const removeRelatedErrors = useEditErrorStore((state) => state.removeRelatedErrors)
   const error = useEditErrorStore(
@@ -321,15 +320,17 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
     setValueList(isMediaRelationArray(translated) ? translated : [])
   }, [language.code, props.isMultiple, props.isTranslatable, translationsList])
 
-  const { data: defaultMedia } = useQuery({
-    ...trpc.manager.get.queryOptions({
+  const { data: defaultMedia } = useManagerQuery({
+    name: 'manager.get',
+    input: {
       contentType: 'Media',
       id: value?._id || '',
-    }),
+    },
     enabled: !!value?._id && !selectedMedia,
   })
-  const { data: defaultMediaListRaw } = useQuery({
-    ...trpc.manager.list.queryOptions({
+  const { data: defaultMediaListRaw } = useManagerQuery({
+    name: 'manager.list',
+    input: {
       contentType: 'Media',
       query: {
         filter: {
@@ -338,8 +339,8 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
           },
         },
         options: { limit: 'all' },
-      } as never,
-    }),
+      },
+    },
     enabled: props.isMultiple && valueList.length > 0,
   })
 
@@ -406,10 +407,10 @@ const FileField: React.FC<FileFieldProps> = ({ ref, ...props }) => {
       if (!mediaForPreview) return ''
       const display = getMediaDisplaySource(mediaForPreview)
       if (!display.key) return ''
-      const result = (await trpcClient.manager.media.getUrl.query({
+      const result = await client.request('manager.media.getUrl', {
         key: display.key,
         access: mediaForPreview.access,
-      })) as { url: string }
+      })
       return result.url
     },
   })

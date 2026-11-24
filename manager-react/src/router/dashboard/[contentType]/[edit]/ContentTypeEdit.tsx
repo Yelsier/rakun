@@ -1,7 +1,6 @@
 'use client'
 
 import { CircleHelp, ChevronsUpDown, Languages } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { DynamicDocumentBindings, EncodedContentType } from '@rakun-kit/core/client'
@@ -35,7 +34,7 @@ import { useEditErrorStore } from '@/hooks/app-store'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Button } from '@/components/ui/button'
 import { deepEqual } from '@/helpers/deepEqual'
-import { useTRPC } from '@/components/trpc-provider'
+import { useManagerQuery } from '@/client/react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
@@ -254,10 +253,9 @@ const ContentTypeEdit = forwardRef<
   const t = useTranslations()
   const { contentType, id, collapsible, hideTitle } = props
   const dynamicSourceContentType = props.parentContentType ?? contentType
-  const trpc = useTRPC()
   const pluginRegistry = useManagerPlugins()
   const collaboration = useContentCollaboration()
-  const { data: contentTypesData } = useQuery(trpc.manager.contentTypes.queryOptions())
+  const { data: contentTypesData } = useManagerQuery({ name: 'manager.contentTypes', input: undefined })
 
   const { refs, setRef } = useArrayRefs<FieldRef>()
   const errors = useEditErrorStore((state) => state.errors)

@@ -145,12 +145,6 @@
       "require": "./dist/cjs/client/request.js",
       "default": "./dist/esm/client/request.js"
     },
-    "./client/trpc": {
-      "types": "./dist/esm/client/trpc.d.ts",
-      "import": "./dist/esm/client/trpc.js",
-      "require": "./dist/cjs/client/trpc.js",
-      "default": "./dist/esm/client/trpc.js"
-    },
     "./app/runtime-app": {
       "types": "./dist/esm/app/runtime-app.d.ts",
       "import": "./dist/esm/app/runtime-app.js",

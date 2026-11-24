@@ -5,7 +5,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { EncodedSimpleListField } from '@rakun-kit/core/client'
 import type { EncodedRelationField } from '@rakun-kit/core/client'
 import type { TranslatableValue } from '@rakun-kit/core/types'
-import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { fieldsMap, type FieldRef } from '../../ContentTypeEdit'
@@ -28,7 +27,7 @@ import {
   SortableItemHandle,
 } from '@/components/ui/sortable'
 import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
-import { useTRPC } from '@/components/trpc-provider'
+import { useManagerQuery } from '@/client/react'
 import { useEditErrorStore } from '@/hooks/app-store'
 import {
   Tags,
@@ -124,7 +123,6 @@ const mapPrimitiveDefaultDataToStrings = (
 const RelationSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) => {
   const t = useTranslations()
   const relationField = props.field as EncodedRelationField
-  const trpc = useTRPC()
   const { getTranslation } = useLanguage()
   const { removeRelatedErrors } = useEditErrorStore()
   const labelField = relationField.contentType.listFields?.[0] || '_id'
@@ -155,8 +153,9 @@ const RelationSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) 
       },
     })
 
-  const { data } = useQuery(
-    trpc.manager.list.queryOptions({
+  const { data } = useManagerQuery({
+    name: 'manager.list',
+    input: {
       contentType: relationField.contentType.name,
       query: {
         options: {
@@ -164,8 +163,8 @@ const RelationSimpleListUI: React.FC<SimpleListProps> = ({ id, ref, ...props }) 
           fields: [labelField],
         },
       },
-    }),
-  )
+    },
+  })
 
   const queryData = data as
     | { items?: Array<Record<string, unknown> & { _id: string }> }

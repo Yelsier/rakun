@@ -1,6 +1,6 @@
 # @rakun-kit/core
 
-`@rakun-kit/core` contains Rakun's shared domain model and runtime. It defines content types, fields, Zod schemas, manager/web operations, request context, MongoDB connection handling, media service, permissions, translations, and typed contracts used by adapters (`@rakun-kit/next`, `@rakun-kit/express`, `@rakun-kit/trpc`) and the manager client.
+`@rakun-kit/core` contains Rakun's shared domain model and runtime. It defines content types, fields, Zod schemas, manager/web operations, request context, MongoDB connection handling, media service, permissions, translations, and typed contracts used by adapters (`@rakun-kit/next`, `@rakun-kit/express`, `@rakun-kit/bun`) and the manager client.
 
 ## Main Entry
 
@@ -1253,8 +1253,8 @@ support this action. The cleanup mutation itself is logged after deletion.
 
 Failed API operations are persisted automatically as `api.operation.failed`
 events. This includes expected 4xx application errors and unexpected 5xx
-failures across the core operation wrapper and the Express, Next.js, and tRPC
-adapters. Events include the operation, status, method, kind, correlation ID,
+failures in the core operation wrapper and in the Express and Next.js adapters.
+Events include the operation, status, method, kind, correlation ID,
 and authenticated actor when available. Request payloads, application error
 causes, and raw internal error messages are not persisted.
 

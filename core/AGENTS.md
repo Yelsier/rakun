@@ -4,7 +4,7 @@
 
 `@rakun-kit/core` is the source of truth for the Rakun domain: content types, fields, Zod schemas, manager/web operations, request context, MongoDB, auth, permissions, routes, redirects, media, translations, and shared contracts.
 
-The core must not depend on React, Express, Next.js, Vite, or tRPC. Adapters translate framework requests into core operations.
+The core must not depend on React, Express, Next.js, or Vite. Adapters translate framework requests into core operations.
 
 ## Important Areas
 

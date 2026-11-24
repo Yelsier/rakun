@@ -2,17 +2,14 @@ import { z } from "zod";
 
 export const ErrorCatalog = {
   AUTH_REQUIRED: {
-    trpcCode: "UNAUTHORIZED",
     cause: z.object({}),
     code: 401,
   },
   FORBIDDEN: {
-    trpcCode: "FORBIDDEN",
     cause: z.object({ reason: z.string().optional() }),
     code: 403,
   },
   NOT_FOUND: {
-    trpcCode: "NOT_FOUND",
     cause: z.object({
       resource: z.string().optional(),
       id: z.string().optional(),
@@ -20,14 +17,12 @@ export const ErrorCatalog = {
     code: 404,
   },
   VALIDATION: {
-    trpcCode: "BAD_REQUEST",
     cause: z.object({
       errors: z.any(),
     }),
     code: 400,
   },
   CONFLICT: {
-    trpcCode: "CONFLICT",
     cause: z.object({
       key: z.string().optional(),
       message: z.string().optional(),
@@ -35,7 +30,6 @@ export const ErrorCatalog = {
     code: 409,
   },
   INTERNAL: {
-    trpcCode: "INTERNAL_SERVER_ERROR",
     cause: z.object({
       traceId: z.string().optional(),
       message: z.string().optional(),
@@ -43,7 +37,6 @@ export const ErrorCatalog = {
     code: 500,
   },
   FEATURE_UNSUPPORTED: {
-    trpcCode: "BAD_REQUEST",
     cause: z.object({
       feature: z.string().optional(),
       message: z.string().optional(),

@@ -2,7 +2,6 @@ import type { RefAttributes } from 'react'
 import type z from 'zod'
 import type { FieldUIType } from '@rakun-kit/core/client'
 import type { EncodedContentReferenceField } from '@rakun-kit/core/client'
-import { useQuery } from '@tanstack/react-query'
 
 import type { FieldRef } from '../../ContentTypeEdit'
 import MissingUI from '../Missing'
@@ -10,7 +9,7 @@ import { DefaultProps } from '../shared'
 import ContentReferenceMultiSelectUI from './ContentReferenceMultiSelectUI'
 import ContentReferenceSelectUI from './ContentReferenceSelectUI'
 
-import { useTRPC } from '@/components/trpc-provider'
+import { useManagerQuery } from '@/client/react'
 import { useLanguage } from '@/lib/providers/language/LanguageClientProvider'
 
 export type ContentReferenceProps = EncodedContentReferenceField & DefaultProps
@@ -28,12 +27,12 @@ const typeMap: {
 export const useContentReferenceOptions = (
   contentType: EncodedContentReferenceField['contentType'],
 ) => {
-  const trpc = useTRPC()
   const { getTranslation } = useLanguage()
   const labelField = contentType.listFields?.[0] || '_id'
 
-  const { data } = useQuery(
-    trpc.manager.list.queryOptions({
+  const { data } = useManagerQuery({
+    name: 'manager.list',
+    input: {
       contentType: contentType.name,
       query: {
         options: {
@@ -41,8 +40,8 @@ export const useContentReferenceOptions = (
           fields: [labelField],
         },
       },
-    }),
-  )
+    },
+  })
 
   const queryData = data as
     | { items?: Array<Record<string, unknown> & { _id: string }> }

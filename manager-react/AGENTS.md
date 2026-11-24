@@ -12,7 +12,7 @@ It must remain usable from external adapters. Do not assume it always runs insid
 - `src/app` and `src/router/app.tsx`: manager app mounting.
 - `src/router/shared`: internal route definitions, parsing, and rendering.
 - `src/router/dashboard`: dashboard screens, content type CRUD, and settings.
-- `src/client`: HTTP/tRPC/request clients and React hooks.
+- `src/client`: HTTP and transport-agnostic clients and React hooks.
 - `src/state`: navigation, session, language, and theme.
 - `src/components/ui`: base components.
 - `src/components/media`: media library, previews, upload, folders, and dialogs.

@@ -3,7 +3,6 @@
 import type { RouteSchema } from '@rakun-kit/core/internal-content-types'
 import type { EncodedContentType, LinkfieldValue } from '@rakun-kit/core/client'
 import { getListField } from '@rakun-kit/core/client'
-import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, ChevronRight, FileText, Home, Link2, LoaderCircle, X } from 'lucide-react'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -25,7 +24,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
-import { useTRPC } from '@/components/trpc-provider'
+import { useManagerQuery } from '@/client/react'
 import { decodeCamelCase } from '@/helpers/decodeCamelCase'
 import { resolveLucideIcon } from '@/helpers/resolve-lucide-icon'
 import { useTranslations } from '@/i18n'
@@ -54,7 +53,6 @@ const getLinkTitle = (value: LinkfieldValue) =>
 
 const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
   const t = useTranslations()
-  const trpc = useTRPC()
   const { getTranslation } = useLanguage()
   const [open, setOpen] = useState(false)
   const [activeRouteId, setActiveRouteId] = useState<string | null>(null)
@@ -88,21 +86,22 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
     data: routesData,
     error: routesError,
     isPending: routesPending,
-  } = useQuery(
-    trpc.manager.list.queryOptions({
+  } = useManagerQuery({
+    name: 'manager.list',
+    input: {
       contentType: 'Route',
       query: {
         options: {
           limit: 'all',
         },
       },
-    })
-  )
+    },
+  })
   const {
     data: contentTypesData,
     error: contentTypesError,
     isPending: contentTypesPending,
-  } = useQuery(trpc.manager.contentTypes.queryOptions())
+  } = useManagerQuery({ name: 'manager.contentTypes', input: undefined })
 
   const routes = useMemo(
     () =>
@@ -130,11 +129,12 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
     ? contentTypesByName.get(selectedRoute.contentType)
     : undefined
 
-  const { data: selectedDocument } = useQuery({
-    ...trpc.manager.get.queryOptions({
+  const { data: selectedDocument } = useManagerQuery({
+    name: 'manager.get',
+    input: {
       contentType: selectedRoute?.contentType ?? 'Route',
       id: internalValue?.contentTypeId ?? '',
-    }),
+    },
     enabled: Boolean(selectedRoute && internalValue?.contentTypeId),
   })
 
@@ -142,15 +142,16 @@ const LinkUI: React.FC<LinkPropsRef> = ({ id, ref, ...props }) => {
     data: routeItemsData,
     error: routeItemsError,
     isPending: routeItemsPending,
-  } = useQuery({
-    ...trpc.manager.list.queryOptions({
+  } = useManagerQuery({
+    name: 'manager.list',
+    input: {
       contentType: activeRoute?.contentType ?? 'Route',
       query: {
         options: {
           limit: 'all',
         },
       },
-    }),
+    },
     enabled: Boolean(activeRoute),
   })
 

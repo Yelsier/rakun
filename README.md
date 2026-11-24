@@ -27,15 +27,17 @@ with Bun, Express, and Next.js integrations available.
 
 ## Packages
 
+Server and service adapters live in `adapters/`, manager plugins in `plugins/`,
+and the Express, Bun, and Next.js example applications in `previews/`.
+
 | Package                         | Purpose                                                                                                                         |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | `@rakun-kit/core`               | Content types, fields, schemas, runtime bootstrap, operations, auth, media, event logs, routes, redirects and shared contracts. |
 | `@rakun-kit/manager-react`      | React manager application, manager clients, navigation helpers and styles.                                                      |
 | `@rakun-kit/manager-locales`    | Optional manager UI translations exposed through one subpath per language.                                                      |
-| `@rakun-kit/express`            | Express adapter for Rakun APIs, media routes and optional tRPC support.                                                         |
+| `@rakun-kit/express`            | Express adapter for Rakun APIs and media routes.                                                                                |
 | `@rakun-kit/bun`                | Bun framework for one-process API, manager, filesystem modules, SSR and static routes.                                          |
 | `@rakun-kit/next`               | Next.js adapter for APIs, media routes and mounting the manager.                                                                |
-| `@rakun-kit/trpc`               | tRPC router adapter for Rakun operations.                                                                                       |
 | `@rakun-kit/react`              | Framework-neutral React helpers for rendering Rakun web modules.                                                                |
 | `@rakun-kit/s3`                 | S3 media storage adapter.                                                                                                       |
 | `@rakun-kit/smtp`               | Nodemailer SMTP adapter for outbound mail.                                                                                      |
@@ -46,6 +48,7 @@ with Bun, Express, and Next.js integrations available.
 | `create-rakun-app`              | CLI that scaffolds Rakun applications from maintained framework templates.                                                      |
 | `@rakun-kit/preview`            | Local development app, not intended for publication.                                                                            |
 | `@rakun-kit/preview-bun`        | Small MongoDB-backed Bun framework preview, not intended for publication.                                                       |
+| `@rakun-kit/preview-next`       | Local Next.js App Router preview.                                                                                               |
 
 ## AI Documentation
 
@@ -139,7 +142,6 @@ That means a new adapter can be created by reusing:
 - `@rakun-kit/core` for bootstrap and operation handling
 - `@rakun-kit/manager-react` for the manager UI
 - `@rakun-kit/manager-react/client/request` for custom manager clients
-- `@rakun-kit/trpc` if the target platform already uses tRPC
 
 Current integrations cover Express and Next.js. The preview app uses Vite for
 local manager development, but Vite is not a required runtime target.

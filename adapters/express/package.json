@@ -1,0 +1,49 @@
+{
+  "name": "@rakun-kit/express",
+  "version": "1.5.0",
+  "description": "Express adapter for serving Rakun APIs, realtime, and media endpoints.",
+  "license": "MIT",
+  "author": {
+    "name": "Yago Claros",
+    "url": "https://github.com/Yelsier"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yelsier/rakun.git",
+    "directory": "adapters/express"
+  },
+  "bugs": {
+    "url": "https://github.com/Yelsier/rakun/issues"
+  },
+  "homepage": "https://github.com/Yelsier/rakun/tree/main/adapters/express#readme",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "scripts": {
+    "build": "rm -rf dist && bun run build:esm && bun run build:cjs && node ../../scripts/copy-package-docs.mjs",
+    "build:esm": "tsc -b --force tsconfig.build.json && node ../../scripts/fix-dist-imports.mjs dist/esm",
+    "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.build.cjs.json && node ../../scripts/write-cjs-package-json.mjs dist/cjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "peerDependencies": {
+    "@rakun-kit/core": "^1.6.0",
+    "express": "^5.2.1"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./media": {
+      "types": "./dist/esm/media.d.ts",
+      "import": "./dist/esm/media.js",
+      "require": "./dist/cjs/media.js",
+      "default": "./dist/esm/media.js"
+    }
+  }
+}
